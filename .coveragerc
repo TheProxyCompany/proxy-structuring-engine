@@ -1,8 +1,8 @@
 [run]
 branch = True
 source = pse
-omit =
-    tests/*
+; omit =
+;     tests/*
 
 [report]
 omit =
