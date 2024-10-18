@@ -74,7 +74,7 @@ log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff", "coverage", "numpy"]
+dev = ["pytest", "pytest-cov", "ruff", "coverage", "numpy", "flake8"]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
 jax = ["jax", "jaxlib"]
