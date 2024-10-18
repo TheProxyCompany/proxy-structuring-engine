@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "proxy-structuring-engine"
+name = "Proxy Structuring Engine"
 version = "1.0"
 authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
