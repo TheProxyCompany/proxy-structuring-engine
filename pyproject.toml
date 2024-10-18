@@ -47,6 +47,7 @@ dependencies = [
     "wheel",
     "sentencepiece",
     "protobuf",
+    "lexpy",
 ]
 
 [project.urls]
@@ -63,10 +64,10 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["structuring-engine"]
+packages = ["pse"]
 
 [tool.pytest.ini_options]
-log_cli = false
+log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
