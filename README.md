@@ -15,10 +15,9 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#how-it-works">How It Works</a> •
+  <a href="#overview">Overview</a> •
+  <a href="#features">Features</a> •
   <a href="#benchmarks">Benchmarks</a> •
-  <a href="#license">License</a>
 </p>
 
 ## Overview
@@ -29,13 +28,13 @@ The PSE enables error free custom tool calling, complex multi-step reasoning, an
 
 PSE achieves this through a novel schema-guided sampling approach, leveraging a Directed Acyclic Word Graph (DAWG) and finite state machines.
 
-## Get Started
+### Installation
 
 ```bash
 pip install pse
 ```
 
-## Key Features
+### Features
 
 * **JSON Schema Sampling:** Enforces schema constraints while maintaining creativity in model outputs.
 * **Enhanced Tool Calling:** Enables precise tool integration by guaranteeing valid JSON output, streamlining workflows and automation.
@@ -53,22 +52,18 @@ pip install pse
 
 ## Benchmarks
 
-PSE consistently outperforms traditional sampling methods in both speed and accuracy:
+The Proxy Structuring Engine consistently outperforms traditional sampling methods in both speed and accuracy:
 
 // add benchmarks here //
 
-## License
-
-PSE is released under the Apache 2.0 License. See the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgements
 
-PSE builds upon the groundwork laid by [LLM Structured Output](https://github.com/otriscon/llm-structured-output) and utilizes [lexpy](https://github.com/aosingh/lexpy) for efficient lexicon analysis.
+The PSE builds upon the groundwork laid by [LLM Structured Output](https://github.com/otriscon/llm-structured-output) and utilizes [lexpy](https://github.com/aosingh/lexpy) for efficient lexicon analysis.
 
 ---
 
 <p align="center">
-  Developed with ❤️ by the Proxy team :)
+  Made with care ❤️
 </p>
 
 <p align="center">

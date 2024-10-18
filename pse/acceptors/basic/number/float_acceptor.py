@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import Any
 
-from pse.state_machine.state_machine import StateMachine
 from pse.acceptors.basic.character_acceptors import digit_acceptor
 from pse.acceptors.basic.number.integer_acceptor import IntegerAcceptor
+from pse.acceptors.basic.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
-class FloatAcceptor(StateMachine):
+class FloatAcceptor(SequenceAcceptor):
     """
     Accepts a well-formed floating-point number as per JSON specification.
     """
@@ -20,13 +20,14 @@ class FloatAcceptor(StateMachine):
                 If None, a default sequence is used to parse a JSON property.
                 Defaults to None.
         """
-        super().__init__({
-            0: [(IntegerAcceptor(), 1)],
-            1: [(TextAcceptor("."), 2)],
-            2: [(digit_acceptor, "$")],
-        })
+        sequence = [IntegerAcceptor(), TextAcceptor("."), digit_acceptor]
+        super().__init__(sequence)
+        self._accepts_remaining_input = True
 
-    class Cursor(StateMachine.Cursor):
+    def __repr__(self) -> str:
+        return "FloatAcceptor()"
+
+    class Cursor(SequenceAcceptor.Cursor):
         """
         Cursor for navigating through the FloatAcceptor.
         Designed for inspectability and debugging purposes.
