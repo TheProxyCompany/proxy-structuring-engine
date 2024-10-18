@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pse"
+name = "proxy-structuring-engine"
 version = "1.0"
 authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
@@ -58,7 +58,7 @@ include = [
   "LICENSE",
   "README.md",
   "pyproject.toml",
-  "pse",
+  "structuring-engine",
 ]
 
 [tool.pytest.ini_options]
