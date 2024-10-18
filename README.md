@@ -9,6 +9,13 @@
 </p>
 
 <p align="center">
+  <img src="https://github.com/TheProxyCompany/proxy-structuring-engine/actions/workflows/python-app.yml/badge.svg" alt="Python CI"/>
+  <img src="https://img.shields.io/badge/coverage-90%25-brightgreen" alt="Coverage"/>
+  <img src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue" alt="Python Version"/>
+  <img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"/>
+</p>
+
+<p align="center">
   <a href="#key-features">Features</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
