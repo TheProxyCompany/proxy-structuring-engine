@@ -1,0 +1,14 @@
+[run]
+branch = True
+source = pse
+omit = tests/*
+
+[report]
+omit =
+    tests/*
+    */__init__.py
+exclude_lines =
+    def __repr__
+    def __str__
+    ^\s*if __name__ == ['"]__main__['"]:?
+    pragma: no cover
