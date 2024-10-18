@@ -11,11 +11,10 @@ authors = [
 ]
 description = "Proxy Structuring Engine: Make AI follow a predefined structure or schema without losing creativity or context."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "Apache License 2.0" }
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: Apache Software License",
