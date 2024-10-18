@@ -9,7 +9,7 @@ authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
   { name = "The Proxy Company", email = "contact@theproxy.company" },
 ]
-description = "Shape LLMs into large action models"
+description = "Make LLMs follow a predefined structure or schema without losing creativity or context."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache License 2.0" }
