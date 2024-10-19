@@ -9,10 +9,10 @@ authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
   { name = "The Proxy Company", email = "contact@theproxy.company" },
 ]
-description = "Proxy Structuring Engine: Make AI follow a predefined structure or schema without losing creativity or context."
+description = "Proxy Structuring Engine: Ensures AI-generated output adheres to predefined schemas without compromising creativity or context."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache License 2.0" }
+license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -23,7 +23,18 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-keywords = ["LLM", "large-action-models", "directed-acyclic-word-graph", "finite-automaton", "lazy-evaluation", "structured-output"]
+keywords = [
+    "LLM",
+    "large-action-models",
+    "directed-acyclic-word-graph",
+    "finite-automaton",
+    "lazy-evaluation",
+    "structured-output",
+    "schema-guided-sampling",
+    "AI-automation",
+    "JSON-schema",
+    "tool-integration",
+]
 
 dependencies = [
     "certifi",
@@ -55,11 +66,29 @@ Documentation = "https://github.com/TheProxyCompany/proxy-structuring-engine#rea
 Source = "https://github.com/TheProxyCompany/proxy-structuring-engine"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff", "coverage", "numpy", "flake8"]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "coverage",
+    "numpy",
+    "flake8",
+]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
 jax = ["jax", "jaxlib"]
-all = ["torch", "jax", "jaxlib", "mlx", "dev"]
+all = [
+    "torch",
+    "jax",
+    "jaxlib",
+    "mlx",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "coverage",
+    "numpy",
+    "flake8",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [

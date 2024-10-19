@@ -7,7 +7,6 @@ from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAccepto
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
 from pse.acceptors.basic.number.number_acceptor import NumberAcceptor
 
-
 @pytest.mark.parametrize(
     "input_str, expected_value",
     [

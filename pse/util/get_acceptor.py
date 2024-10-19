@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json
 from typing import Any, Callable, Dict, List, Optional
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
@@ -100,7 +101,7 @@ def get_json_acceptor(
     elif schema_type == "string":
         acceptor = StringSchemaAcceptor(schema, start_hook, end_hook)
     elif "const" in schema:
-        acceptor = TextAcceptor(schema["const"])
+        acceptor = TextAcceptor(json.dumps(schema["const"]))
     elif "enum" in schema:
         acceptor = EnumSchemaAcceptor(schema)
     elif schema_type == "object":

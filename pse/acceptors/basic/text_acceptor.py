@@ -169,7 +169,7 @@ class TextAcceptor(StateMachine):
             if self.consumed_character_count == len(self.acceptor.text):
                 return f"{self.acceptor}"
             else:
-                return f"{self.acceptor.__class__.__name__}.Cursor({repr(value)})"
+                return f"{self.acceptor.__class__.__name__}.Cursor(value=`{value}`)"
 
         @property
         def can_handle_remaining_input(self) -> bool:
