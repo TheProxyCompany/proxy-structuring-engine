@@ -3,7 +3,7 @@ from typing import Any
 
 from pse.acceptors.basic.character_acceptors import digit_acceptor
 from pse.acceptors.basic.number.integer_acceptor import IntegerAcceptor
-from pse.acceptors.basic.sequence_acceptor import SequenceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
 class FloatAcceptor(SequenceAcceptor):

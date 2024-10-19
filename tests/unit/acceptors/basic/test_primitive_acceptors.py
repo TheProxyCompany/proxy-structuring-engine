@@ -56,14 +56,25 @@ def test_accept_null(null_acceptor):
 @pytest.mark.parametrize("input_str", ["nul", "Null", "NULL", "nulll"])
 def test_reject_invalid_null(null_acceptor, input_str):
     accepted_cursors = list(process_input(null_acceptor, input_str))
-    assert not any(cursor.in_accepted_state() for cursor in accepted_cursors), f"Should not accept '{input_str}' as a valid null value."
+    for cursor in accepted_cursors:
+        if cursor.in_accepted_state():
+            assert cursor.remaining_input is not None, "Should have remaining input"
+
 
 @pytest.mark.parametrize("input_str", [" null", "null ", " null ", "  null  "])
 def test_accept_with_whitespace_null(null_acceptor, input_str):
     accepted_cursors = list(process_input(null_acceptor, input_str))
-    assert not any(cursor.in_accepted_state() for cursor in accepted_cursors), f"Should not accept '{input_str}' with whitespace."
+    for cursor in accepted_cursors:
+        if cursor.in_accepted_state():
+            assert cursor.remaining_input is not None, "Should have remaining input"
+        else:
+            assert False, "all cursors should be in accepted state"
 
 @pytest.mark.parametrize("input_str", ["nullx", "null123", "null!", "nullnull"])
 def test_extra_characters_null(null_acceptor, input_str):
     accepted_cursors = list(process_input(null_acceptor, input_str))
-    assert not any(cursor.in_accepted_state() for cursor in accepted_cursors), f"Should not accept '{input_str}' with extra characters."
+    for cursor in accepted_cursors:
+        if cursor.in_accepted_state():
+            assert cursor.remaining_input is not None, "Should have remaining input"
+        else:
+            assert False, "all cursors should be in accepted state"

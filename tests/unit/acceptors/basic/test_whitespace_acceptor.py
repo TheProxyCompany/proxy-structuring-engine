@@ -1,6 +1,9 @@
 import pytest
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.acceptors.json.string_acceptor import StringAcceptor
+from pse.acceptors.json.object_acceptor import ObjectAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.state_machine.state_machine import StateMachine
 from pse.state_machine.cursor import Cursor
 
@@ -160,19 +163,18 @@ def test_whitespace_acceptor_integration_with_text_acceptor():
     cursors = list(StateMachine.advance_all(cursors, "   hello"))
     assert any(cursor.in_accepted_state() for cursor in cursors)
 
-# def test_whitespace_acceptor_integration_with_object_acceptor():
-#     """Test WhitespaceAcceptor in the context of ObjectAcceptor."""
-#     from chisel.acceptors.json.object_acceptor import ObjectAcceptor
-#     input_str = '{ "key": "value", "number": 42 }'
-#     acceptor = ObjectAcceptor()
-#     cursors = list(acceptor.get_cursors())
-#     cursors = list(StateMachine.advance_all(cursors, input_str))
+def test_whitespace_acceptor_integration_with_object_acceptor():
+    """Test WhitespaceAcceptor in the context of ObjectAcceptor."""
+    input_str = '{ "key": "value", "number": 42 }'
+    acceptor = ObjectAcceptor()
+    cursors = list(acceptor.get_cursors())
+    cursors = list(StateMachine.advance_all(cursors, input_str))
 
-#     assert any(cursor.in_accepted_state() for cursor in cursors)
-#     for cursor in cursors:
-#         if cursor.in_accepted_state():
-#             obj = cursor.get_value()
-#             assert obj == {"key": "value", "number": 42}
+    assert any(cursor.in_accepted_state() for cursor in cursors)
+    for cursor in cursors:
+        if cursor.in_accepted_state():
+            obj = cursor.get_value()
+            assert obj == {"key": "value", "number": 42}
 
 def test_whitespace_acceptor_with_no_whitespace():
     """Test WhitespaceAcceptor when there's no whitespace between tokens."""
@@ -281,22 +283,22 @@ def test_whitespace_acceptor_state_machine():
     assert len(cursors) == 1
     assert any(cursor.in_accepted_state() for cursor in cursors)
 
-# def test_whitespace_acceptor_sequence_acceptor():
-#     """Test WhitespaceAcceptor in the context of SequenceAcceptor."""
-#     input_str = '"test"   :   '
-#     acceptors = [
-#         StringAcceptor(),
-#         WhitespaceAcceptor(),
-#         TextAcceptor(":"),
-#         WhitespaceAcceptor(),
-#     ]
-#     sequence_acceptor = SequenceAcceptor(acceptors)
-#     cursors = list(sequence_acceptor.get_cursors())
-#     cursors = list(StateMachine.advance_all(cursors, input_str))
-#     assert any(cursor.in_accepted_state() for cursor in cursors)
-#     for cursor in cursors:
-#         if cursor.in_accepted_state():
-#             assert cursor.get_value() == 'test   :   '
+def test_whitespace_acceptor_sequence_acceptor():
+    """Test WhitespaceAcceptor in the context of SequenceAcceptor."""
+    input_str = '"test"   :   '
+    acceptors = [
+        StringAcceptor(),
+        WhitespaceAcceptor(),
+        TextAcceptor(":"),
+        WhitespaceAcceptor(),
+    ]
+    sequence_acceptor = SequenceAcceptor(acceptors)
+    cursors = list(sequence_acceptor.get_cursors())
+    cursors = list(StateMachine.advance_all(cursors, input_str))
+    assert any(cursor.in_accepted_state() for cursor in cursors)
+    for cursor in cursors:
+        if cursor.in_accepted_state():
+            assert cursor.get_value() == 'test   :   '
 
 def test_max_whitespace_exceeded():
     """Test that WhitespaceAcceptor does not accept input exceeding max_whitespace."""

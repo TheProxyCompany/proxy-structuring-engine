@@ -118,6 +118,7 @@ class WhitespaceAcceptor(StateMachine):
                 if remaining_input and len(self.text) >= self.acceptor.min_whitespace:
                     copy = WhitespaceAcceptor.Cursor(self.acceptor, self.text)
                     copy.remaining_input = remaining_input
+                    copy._accepts_remaining_input = False
                     yield AcceptedState(copy)
                 return
 
