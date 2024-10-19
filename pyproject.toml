@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "proxy-structuring-engine"
-version = "0.0.1"
+version = "0.1"
 authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
   { name = "The Proxy Company", email = "contact@theproxy.company" },
