@@ -54,6 +54,13 @@ Homepage = "https://github.com/TheProxyCompany/proxy-structuring-engine"
 Documentation = "https://github.com/TheProxyCompany/proxy-structuring-engine#readme"
 Source = "https://github.com/TheProxyCompany/proxy-structuring-engine"
 
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "coverage", "numpy", "flake8"]
+mlx = ["mlx", "mlx-lm"]
+torch = ["torch"]
+jax = ["jax", "jaxlib"]
+all = ["torch", "jax", "jaxlib", "mlx", "dev"]
+
 [tool.hatch.build.targets.sdist]
 include = [
   "LICENSE",
@@ -70,10 +77,3 @@ log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
-
-[project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "ruff", "coverage", "numpy", "flake8"]
-mlx = ["mlx", "mlx-lm"]
-torch = ["torch"]
-jax = ["jax", "jaxlib"]
-all = ["torch", "jax", "jaxlib", "mlx", "dev"]
