@@ -1,7 +1,7 @@
 # Proxy Structuring Engine (PSE)
 
 <p align="center">
-  <img src="logo.png" alt="PSE Logo" height="300"/>
+  <img src="logo.png" alt="" height="300"/>
 </p>
 
 <p align="center">
