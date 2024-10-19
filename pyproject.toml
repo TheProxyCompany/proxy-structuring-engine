@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pse"
+name = "proxy-structuring-engine"
 version = "0.0.1"
 authors = [
   { name = "Jack Wind", email = "jckwind11@gmail.com" },
   { name = "The Proxy Company", email = "contact@theproxy.company" },
 ]
-description = "Proxy Structuring Engine: Ensures AI-generated output adheres to predefined schemas without compromising creativity or context."
+description = "Proxy Structuring Engine: Ensures AI-generated output adheres to predefined schemas without compromising creativity, speed, or context."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -95,7 +95,7 @@ include = [
   "LICENSE",
   "README.md",
   "pyproject.toml",
-  "structuring-engine",
+  "pse",
 ]
 
 [tool.hatch.build.targets.wheel]
