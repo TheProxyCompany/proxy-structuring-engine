@@ -19,10 +19,7 @@
   <a href="#overview">Overview</a> •
   <a href="#installation">Installation</a> •
   <a href="#features">Features</a> •
-  <a href="#usage">Usage</a> •
   <a href="#benchmarks">Benchmarks</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#license">License</a>
 </p>
 
 ## Overview
@@ -63,72 +60,11 @@ pip install pse[all]    # All optional features
 - 🧩 **Customizable Hooks**: `start_hook` and `end_hook` enable custom logic injection.
 - 🔄 **Robust Error Handling**: Facilitates debugging and integration.
 
-## Usage
-
-Here's a simple example demonstrating how to use PSE:
-
-```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from pse.util.driver import StructuredOutputDriver
-
-# Load a tokenizer and model from Hugging Face
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
-model = AutoModelForCausalLM.from_pretrained("gpt2")
-
-# Define your JSON schema
-schema = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "integer"},
-    },
-    "required": ["name", "age"]
-}
-
-# Initialize the StructuredOutputDriver
-driver = StructuredOutputDriver(tokenizer)
-driver.create_acceptor(schema)
-
-# Prepare input prompt
-prompt = "Generate a JSON object with a name and age:"
-
-# Encode the input prompt
-input_ids = tokenizer.encode(prompt, return_tensors='pt')
-
-# Generate text that adheres to the schema
-output = model.generate(
-    input_ids,
-    max_length=50,
-    pad_token_id=tokenizer.eos_token_id,
-    do_sample=True,
-    temperature=0.7,
-    # Include driver for schema enforcement
-    logits_processor=[driver]
-)
-
-# Decode and print the output
-print(tokenizer.decode(output[0], skip_special_tokens=True))
-```
-
-This example prompts the model to generate a JSON object that conforms to the specified schema.
-
-**Note**: Replace `"gpt2"` with your desired model.
-
 ## Benchmarks
 
 The Proxy Structuring Engine consistently outperforms traditional sampling methods in both speed and accuracy:
 
 *(Benchmarks will be added soon.)*
-
-## Contributing
-
-We welcome contributions! Here's how you can get involved:
-
-- **Report Issues**: If you find any bugs or have feature requests, please [open an issue](https://github.com/TheProxyCompany/proxy-structuring-engine/issues).
-- **Submit Pull Requests**: For code contributions, please fork the repository and submit a pull request.
-- **Improve Documentation**: Help us enhance our documentation and examples.
-
-Please read our [Contributing Guidelines](CONTRIBUTING.md) for detailed information.
 
 ## License
 
