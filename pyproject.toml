@@ -77,6 +77,11 @@ dev = [
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
 jax = ["jax", "jaxlib"]
+benchmark = [
+    "asv",
+    "outlines-core",
+    "lm-format-enforcer",
+]
 all = [
     "torch",
     "jax",

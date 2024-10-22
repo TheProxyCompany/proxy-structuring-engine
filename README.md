@@ -29,7 +29,7 @@ PSE achieves this through a novel schema-guided sampling approach, leveraging Di
 
 ## Installation
 
-PSE supports multiple backends such as **PyTorch**, **JAX**, and **mlx** for maximum flexibility and performance.
+PSE supports multiple backends such as **PyTorch**, **JAX**, and **MLX** for maximum flexibility and performance.
 
 To install the base package:
 
@@ -42,13 +42,13 @@ To install with optional backend support, use one of the following:
 ```bash
 pip install pse[torch]  # PyTorch support
 pip install pse[jax]    # JAX support
-pip install pse[mlx]    # mlx support
+pip install pse[mlx]    # MLX support
 pip install pse[all]    # All optional features
 ```
 
 ## Features
 
-- 🚀 **Multi-Backend Support**: Compatible with **PyTorch**, **JAX**, and **mlx** backends.
+- 🚀 **Multi-Backend Support**: Compatible with **PyTorch**, **JAX**, and **MLX** backends.
 - 🛠 **Schema-Guided Sampling**: Enforces JSON schema constraints during text generation.
 - ⚡ **High Performance**: Minimal overhead ensures fast generation speeds.
 - 🎨 **Maintains Creativity**: Preserves model creativity while enforcing structure.

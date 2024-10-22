@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import copy as shallow_copy
 from typing import Any, Iterable, List, Optional, Self, Set, TYPE_CHECKING
+from pprint import pformat
 
 from lexpy import DAWG
 
@@ -153,6 +154,12 @@ class Cursor(ABC):
         Returns:
             A set of selected substrings.
         """
+        logger.debug(
+            "Selecting substrings for cursor:\n"
+            f"  Current State: {self.current_state}\n"
+            f"  Depth: {depth}\n"
+            f"  DAWG Size: {len(dawg)}"
+        )
         return set()
 
     def get_valid_prefixes(self, dawg: DAWG) -> Set[str]:
@@ -166,14 +173,23 @@ class Cursor(ABC):
         """
         valid_prefixes: Set[str] = set()
         selected_substrings = self.select(dawg)
+
         logger.debug(
-            "Adding tokens starting with selected substrings for cursor %s",
-            self,
+            "Processing valid prefixes:\n"
+            f"  Cursor: {self.__class__.__name__}\n"
+            f"  Selected Substrings:\n{pformat(selected_substrings, indent=4)}"
         )
+
         for substr in selected_substrings:
-            logger.debug("Tokens starting with %s are valid", repr(substr))
+            logger.debug(
+                f"Finding tokens with prefix: {repr(substr)}\n"
+                f"  Current State: {self.current_state}"
+            )
             valid_prefixes.update(dawg.search_with_prefix(substr))  # type: ignore
 
+        logger.debug(
+            f"Found valid prefixes:\n{pformat(valid_prefixes, indent=4)}"
+        )
         return valid_prefixes
 
     def in_accepted_state(self) -> bool:
@@ -211,11 +227,20 @@ class Cursor(ABC):
         )
 
     def __repr__(self) -> str:
-        """Provides a detailed string representation of the cursor.
+        """Provides a detailed string representation of the cursor."""
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"    value={pformat(self.get_value(), indent=4)},\n"
+            f"    current_state={self.current_state!r},\n"
+            f"    target_state={self.target_state!r},\n"
+            f"    acceptor={self.acceptor!r}\n"
+            ")"
+        )
 
-        Returns:
-            A string representing the cursor's state and accumulated value.
-        """
-        value_repr = repr(self.get_value())
-        acceptor_repr = repr(self.acceptor)
-        return f"{self.__class__.__name__}({value_repr}, acceptor={acceptor_repr})"
+    def __str__(self) -> str:
+        """Provides a concise string representation of the cursor."""
+        return (
+            f"{self.__class__.__name__}("
+            f"state={self.current_state}, "
+            f"value={self.get_value()!r})"
+        )

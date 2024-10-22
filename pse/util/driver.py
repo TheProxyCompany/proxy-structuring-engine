@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
+from pprint import pformat
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from lexpy import DAWG
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
+from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
@@ -49,7 +51,7 @@ class OutputType(Enum):
         return self._delimiters
 
 
-class StructuredOutputDriver:
+class StructuredOutputDriver(LogitsProcessor):
     """
     Drives a StateMachineAcceptor to manage and validate structured outputs based on a given schema.
 
@@ -187,10 +189,12 @@ class StructuredOutputDriver:
         valid_prefixes: Set[str] = set()
         for cursor in self.cursors:
             valid_prefixes.update(cursor.get_valid_prefixes(self.dawg))
-        token_ids = self.tokenizer.convert_tokens_to_ids(list(valid_prefixes))
 
-        if not isinstance(token_ids, list):
-            token_ids = [token_ids]
+        token_ids: List[int] = [
+            token_id
+            for prefix in valid_prefixes
+            if (token_id := self.token_to_id.get(prefix)) is not None
+        ]
 
         return bias_logits(logits, set(token_ids))
 
@@ -246,17 +250,22 @@ class StructuredOutputDriver:
     def _build_vocabulary(self) -> None:
         """
         Integrates the tokenizer's vocabulary into the driver.
+        Maintains both the original and decoded forms of tokens.
         """
-        self.dawg: DAWG = DAWG()
+        self.dawg = DAWG()
         self.special_tokens_set = set()
-        for token, token_id in sorted(self.tokenizer.get_vocab().items()):
-            self.dawg.add(token)
-            if token in self.tokenizer.all_special_tokens:
-                self.special_tokens_set.update(token)
+        self.token_to_id: Dict[str, int] = {}  # mapping of decoded token to its ID
+        token_ids = list(self.tokenizer.get_vocab().values())
+        decoded_tokens: List[str] = self.tokenizer.batch_decode(token_ids)
 
-        self.vocabulary = (
-            set(self.tokenizer.get_vocab().keys()) - self.special_tokens_set
-        )
+        for decoded_token, token_id in sorted(zip(decoded_tokens, token_ids)):
+            self.dawg.add(decoded_token)
+            if decoded_token in self.tokenizer.all_special_tokens:
+                self.special_tokens_set.add(decoded_token)
+
+            self.token_to_id[decoded_token] = token_id
+
+        self.vocabulary = set(self.token_to_id.keys()) - self.special_tokens_set
         self.dawg.reduce()
 
     def _get_top_tokens(
@@ -300,7 +309,7 @@ class StructuredOutputDriver:
             if cursor.in_accepted_state():
                 break
 
-        logger.debug(f"New cursors={new_cursors}")
+        logger.debug(f"New cursors=\n{pformat(new_cursors, indent=2)}")
         return new_cursors
 
     def _waiting_for_trigger(self) -> bool:

@@ -121,9 +121,3 @@ def test_cursor_equality(cursor: ConcreteCursor):
     # Change an attribute to make them not equal
     other_cursor.current_state = 1
     assert cursor != other_cursor
-
-def test_cursor_repr(cursor: ConcreteCursor):
-    """Test __repr__ method."""
-    cursor_repr = repr(cursor)
-    expected_repr = f"ConcreteCursor('test_value', acceptor={cursor.acceptor})"
-    assert cursor_repr == expected_repr

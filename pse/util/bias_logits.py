@@ -76,7 +76,7 @@ def bias_logits_mlx(logits, accepted_token_ids: set[int]):
     num_accepted_tokens = len(accepted_token_ids)
 
     if not accepted_token_ids:
-        logger.warning("Accepted token IDs are empty. Returning logits without bias.")
+        logger.debug("Accepted token IDs are empty. Returning logits without bias.")
         return logits
 
     if num_accepted_tokens == vocab_size:

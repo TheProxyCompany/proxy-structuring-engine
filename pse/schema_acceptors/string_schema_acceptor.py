@@ -123,7 +123,6 @@ class StringSchemaAcceptor(StringAcceptor):
             super().complete_transition(transition_value, target_state, is_end_state)
             logger.debug(f"transition_value: {transition_value}, target_state: {target_state}, is_end_state: {is_end_state}")
 
-            # breakpoint()
             # Only update partial_value when processing actual string content
             if in_string_content and not is_end_state:
                 if self.is_escaping:

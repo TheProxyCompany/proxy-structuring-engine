@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pprint import pformat
 from typing import Any, Iterable, List, Optional, Set, Tuple, Type
 
 from lexpy import DAWG
@@ -88,7 +89,11 @@ class StateMachine(TokenAcceptor):
             yield cursor
             return
 
-        logger.debug("Advancing %s with `%s`", cursor, input_str)
+        logger.debug(
+            "\nAdvancing cursor:\n"
+            f"  Cursor: {pformat(cursor, indent=2)}\n"
+            f"  Input: '{input_str}'"
+        )
         successfully_advanced = False
         for followup_cursor in cursor.transition_cursor.advance(input_str):
             successfully_advanced = True
@@ -112,10 +117,10 @@ class StateMachine(TokenAcceptor):
                     yield new_cursor
 
         logger.debug(
-            "Successfully advanced: %s and %s can handle remaining input: %s",
-            successfully_advanced,
-            cursor,
-            cursor.can_handle_remaining_input,
+            "\nAdvancement status:\n"
+            f"  Successfully advanced: {successfully_advanced}\n"
+            f"  Cursor: {pformat(cursor, indent=2)}\n"
+            f"  Can handle remaining input: {cursor.can_handle_remaining_input}"
         )
 
         if not successfully_advanced and cursor.can_handle_remaining_input:
@@ -318,13 +323,25 @@ class StateMachine(TokenAcceptor):
             if self.target_state is not None and isinstance(self.acceptor, StateMachine) and self.in_accepted_state():
                 for acceptor, state in self.acceptor.get_edges(self.target_state):
                     # Go through the possible cursors from each edge's acceptor
-                    logger.debug("%sSelecting from downstream edge[%s -> %s]: %s", depth_prefix, self.target_state, state, acceptor)
+                    logger.debug(
+                        "\n%sDownstream edge analysis:\n"
+                        f"  Source state: {self.target_state}\n"
+                        f"  Target state: {state}\n"
+                        f"  Acceptor: {acceptor.__class__.__name__}\n"
+                        f"  Acceptor details: {pformat(acceptor, indent=2)}",
+                        depth_prefix
+                    )
                     for possible_next_cursor in acceptor.get_cursors():
                         prefixes = possible_next_cursor.select(dawg, depth + 1)
                         edge_cursor_prefixes.update(prefixes)
 
-            logger.debug("%sValid prefixes: %s", depth_prefix, valid_prefixes)
-            logger.debug("%sEdge cursor prefixes: %s", depth_prefix, edge_cursor_prefixes)
+            logger.debug(
+                "\nSelecting prefixes at depth %d:\n"
+                f"  Current state: {self.current_state}\n"
+                f"  Target state: {self.target_state}\n"
+                f"  Valid prefixes: {pformat(valid_prefixes, indent=2)}\n"
+                f"  Edge cursor prefixes: {pformat(edge_cursor_prefixes, indent=2)}"
+            )
             if not edge_cursor_prefixes:
                 return valid_prefixes
             return valid_prefixes.union(edge_cursor_prefixes)
@@ -410,20 +427,28 @@ class StateMachine(TokenAcceptor):
             Returns:
                 The string representation.
             """
-            history = ''.join(
-                str(cursor.get_value()) for cursor in self.accept_history if cursor.get_value()
-            )
-            history_repr = f"history={repr(history)}, " if history else ""
-            current_state_repr = f"{self.current_state}"
-            target_state_repr = f" -> {self.target_state}" if self.target_state is not None else ""
-            transition_repr = f" via {self.transition_cursor}" if self.transition_cursor else ""
-            remaining_input_repr = (
-                f", remaining_input={repr(self.remaining_input)}" if self.remaining_input else ""
-            )
-            return (
-                f"{self.acceptor.__class__.__name__}.Cursor({history_repr}state={current_state_repr}"
-                f"{target_state_repr}{transition_repr}{remaining_input_repr})"
-            )
+            components = []
+
+            if self.accept_history:
+                history = ''.join(str(cursor.get_value())
+                                for cursor in self.accept_history
+                                if cursor.get_value())
+                if history:
+                    components.append(f"history={repr(history)}")
+
+            components.append(f"state={self.current_state}")
+
+            if self.target_state is not None:
+                components.append(f"target={self.target_state}")
+
+            if self.transition_cursor:
+                components.append(f"via={self.transition_cursor}")
+
+            if self.remaining_input:
+                components.append(f"remaining='{self.remaining_input}'")
+
+            return f"{self.acceptor.__class__.__name__}.Cursor(\n  " + \
+                   ",\n  ".join(components) + "\n)"
 
 
 __all__ = ["StateMachine", "StateMachineGraph", "StateType"]

@@ -5,7 +5,7 @@ from lexpy import DAWG
 from pse.state_machine.state_machine import StateMachine
 from pse.state_machine.cursor import Cursor
 from pse.state_machine.accepted_state import AcceptedState
-from typing import Iterable, Set, cast
+from typing import Iterable, Set
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,23 +75,33 @@ class TextAcceptor(StateMachine):
 
         def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
             """
-            Selects the remaining text to be accepted.
+            Selects exact partial matches of the target text from the current position.
 
             Args:
                 dawg (DAWG): The DAWG to select from.
                 depth (int): The current depth of the cursor in the state machine.
             Returns:
-                Iterable[str]: An iterable containing the remaining text to be accepted.
+                Set[str]: A set containing exact partial matches of the target text.
             """
             if self.consumed_character_count >= len(self.acceptor.text):
                 return set()
 
             remaining_text = self.acceptor.text[self.consumed_character_count:]
+            results = set()
 
-            result = dawg.search_with_prefix(remaining_text)
+            # Only check if the exact partial text exists in the DAWG
+            if remaining_text in dawg:
+                results.add(remaining_text)
 
-            return set(cast(Iterable[str], result))
 
+            # Check if the exact partial prefixes exist in the DAWG
+            max_possible_match_len = min(len(remaining_text), 8)
+            for i in range(1, max_possible_match_len):
+                partial = remaining_text[:i]
+                if partial in dawg:
+                    results.add(partial)
+
+            return results
 
         def advance(self, value: str) -> Iterable[Cursor]:
             """
