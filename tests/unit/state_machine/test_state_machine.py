@@ -7,14 +7,15 @@ from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAccepto
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
 from pse.acceptors.basic.number.number_acceptor import NumberAcceptor
 
+
 @pytest.mark.parametrize(
-    "input_str, expected_value",
+    "token, expected_value",
     [
         ("true", True),
         ("false", False),
     ],
 )
-def test_boolean_acceptor(input_str, expected_value):
+def test_boolean_acceptor(token, expected_value):
     """Test StateMachine with BooleanAcceptor accepting 'true' or 'false'."""
     sm = StateMachine(
         graph={0: [(BooleanAcceptor(), 1)]},
@@ -23,24 +24,25 @@ def test_boolean_acceptor(input_str, expected_value):
     )
 
     cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, input_str))
+    cursors = list(StateMachine.advance_all(cursors, token))
 
     assert any(cursor.in_accepted_state() for cursor in cursors)
     for cursor in cursors:
         if cursor.in_accepted_state():
             assert cursor.get_value() == expected_value
 
+
 @pytest.mark.parametrize(
-    "input_str, acceptor_args, expected_value",
+    "token, acceptor_args, expected_value",
     [
-        ('"world"', {"text": '"world"'}, 'world'),
+        ('"world"', {"text": '"world"'}, "world"),
         ("data", {"text": "data"}, "data"),
-        ('"hello"', {"text": '"hello"'}, 'hello'),
+        ('"hello"', {"text": '"hello"'}, "hello"),
         ("I should use a tool", {"text": "I should use a tool"}, "I should use a tool"),
-        ('"chain_of_thought"', {"text": '"chain_of_thought"'}, 'chain_of_thought'),
+        ('"chain_of_thought"', {"text": '"chain_of_thought"'}, "chain_of_thought"),
     ],
 )
-def test_text_acceptor(input_str, acceptor_args, expected_value):
+def test_text_acceptor(token, acceptor_args, expected_value):
     """Test StateMachine with TextAcceptor transitions."""
     sm = StateMachine(
         graph={0: [(TextAcceptor(**acceptor_args), 1)]},
@@ -49,7 +51,7 @@ def test_text_acceptor(input_str, acceptor_args, expected_value):
     )
 
     cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, input_str))
+    cursors = list(StateMachine.advance_all(cursors, token))
 
     assert any(cursor.in_accepted_state() for cursor in cursors)
     for cursor in cursors:
@@ -150,13 +152,13 @@ def test_partial_matches():
 
 
 @pytest.mark.parametrize(
-    "input_str, expected_value",
+    "token, expected_value",
     [
         ("catdog", "catdog"),
         ("cardoor", "cardoor"),
     ],
 )
-def test_advance_all_multiple_states(input_str, expected_value):
+def test_advance_all_multiple_states(token, expected_value):
     """Test StateMachine.advance_all with multiple current states and transitions."""
     sm = StateMachine(
         graph={
@@ -172,7 +174,7 @@ def test_advance_all_multiple_states(input_str, expected_value):
     )
 
     cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, input_str))
+    cursors = list(StateMachine.advance_all(cursors, token))
 
     assert any(cursor.in_accepted_state() for cursor in cursors)
     for cursor in cursors:
@@ -386,7 +388,7 @@ def test_advance_cursor_no_transition():
     assert not cursor.in_accepted_state()
     # Ensure expects_more_input returns False
     assert not sm.expects_more_input(cursor)
-    cursors = list(sm.advance_cursor(cursor, input_str=""))
+    cursors = list(sm.advance_cursor(cursor, token=""))
     # Should not yield any cursors
     assert len(cursors) == 0
 
@@ -592,6 +594,6 @@ def test_advance_cursor_no_transition_and_not_expecting_more():
     assert not cursor.in_accepted_state()
     # Ensure expects_more_input returns False
     assert not sm.expects_more_input(cursor)
-    cursors = list(sm.advance_cursor(cursor, input_str=""))
+    cursors = list(sm.advance_cursor(cursor, token=""))
     # Should not yield any cursors
     assert len(cursors) == 0

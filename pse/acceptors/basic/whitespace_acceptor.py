@@ -82,7 +82,7 @@ class WhitespaceAcceptor(StateMachine):
 
             return valid_tokens
 
-        def advance(self, input: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """
             Advance the cursor with the given characters.
             Args:
@@ -91,23 +91,23 @@ class WhitespaceAcceptor(StateMachine):
             Returns:
                 List[WhitespaceAcceptor.Cursor]: List of new cursors after advancement.
             """
-            logger.debug(f"Advancing cursor: {self}, input: '{input}'")
+            logger.debug(f"Advancing cursor: {self}, input: '{token}'")
             if self.length_exceeded:
                 return []
 
             # Extract the valid whitespace prefix
             valid_length = 0
-            if input.isspace():
-                valid_length = len(input)
+            if token.isspace():
+                valid_length = len(token)
             else:
-                for c in input:
+                for c in token:
                     if c.isspace():
                         valid_length += 1
                     else:
                         break
 
-            valid_prefix = input[:valid_length]
-            remaining_input = input[valid_length:] or None
+            valid_prefix = token[:valid_length]
+            remaining_input = token[valid_length:] or None
 
             logger.debug(f"valid_prefix: {repr(valid_prefix)}")
             logger.debug(f"remaining_input: {repr(remaining_input)}")

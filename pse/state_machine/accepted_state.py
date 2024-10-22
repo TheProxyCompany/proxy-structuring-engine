@@ -4,6 +4,7 @@ from pse.state_machine.cursor import Cursor
 
 logger = logging.getLogger(__name__)
 
+
 class AcceptedState(Cursor):
     """Represents a cursor that has reached an accepted state.
 
@@ -59,11 +60,11 @@ class AcceptedState(Cursor):
         """
         return self.accepted_cursor.get_value()
 
-    def advance(self, input_str: str) -> Iterable[Cursor]:
+    def advance(self, token: str) -> Iterable[Cursor]:
         """Advance the accepted cursor with the given input.
 
         Args:
-            input_str: The input string to process.
+            token: The input string to process.
 
         Yields:
             Updated cursors after advancement.
@@ -87,7 +88,7 @@ class AcceptedState(Cursor):
             self.accepted_cursor.transition_cursor = transition_cursor
             self.accepted_cursor.target_state = self.accepted_cursor.current_state
 
-        yield from self.accepted_cursor.advance(input_str)
+        yield from self.accepted_cursor.advance(token)
 
         if transition_cursor:
             self.accepted_cursor.accept_history.append(transition_cursor)

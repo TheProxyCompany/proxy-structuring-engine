@@ -93,7 +93,7 @@ class StringCharacterAcceptor(TokenAcceptor):
             """
             return self.acceptor.valid_chars
 
-        def advance(self, input: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """
             Advance the cursor with the given input.
 
@@ -104,17 +104,17 @@ class StringCharacterAcceptor(TokenAcceptor):
                 List[Cursor]: List of new cursors after advancement.
             """
             logger.debug(
-                f"Advancing cursor in string char acceptor: {self}, with input: {input}"
+                f"Advancing cursor in string char acceptor: {self}, with input: {token}"
             )
             # clean the input of invalid characters
             valid_prefix = ""
-            remaining_input = input
+            remaining_input = token
 
-            for index, char in enumerate(input):
+            for index, char in enumerate(token):
                 if char not in INVALID_CHARS:
                     valid_prefix += char
                 else:
-                    remaining_input = input[index:]
+                    remaining_input = token[index:]
                     break
             else:
                 remaining_input = None

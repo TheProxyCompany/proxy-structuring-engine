@@ -47,9 +47,9 @@ def sequence_acceptor(
 def test_initialization(sequence_acceptor: SequenceAcceptor):
     """Test that the SequenceAcceptor initializes with the correct number and types of acceptors."""
     expected_acceptor_count = 4
-    assert len(sequence_acceptor.acceptors) == expected_acceptor_count, (
-        f"SequenceAcceptor should have {expected_acceptor_count} acceptors."
-    )
+    assert (
+        len(sequence_acceptor.acceptors) == expected_acceptor_count
+    ), f"SequenceAcceptor should have {expected_acceptor_count} acceptors."
 
     # Verify each acceptor is of the expected type
     assert isinstance(
@@ -160,7 +160,7 @@ def test_single_acceptor_sequence():
 
 
 @pytest.mark.parametrize(
-    "acceptors, input_str",
+    "acceptors, token",
     [
         ([WhitespaceAcceptor(), TextAcceptor("Alpha")], " Alpha"),
         (
@@ -170,12 +170,12 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: List[TokenAcceptor], input_str: str):
+def test_multiple_sequences(acceptors: List[TokenAcceptor], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
     cursors = list(sequence.get_cursors())
-    for char in input_str:
+    for char in token:
         cursors = StateMachine.advance_all(cursors, char)
     assert any(
         cursor.in_accepted_state() for cursor in cursors
-    ), f"Input '{input_str}' should be accepted by the given SequenceAcceptor."
+    ), f"Input '{token}' should be accepted by the given SequenceAcceptor."

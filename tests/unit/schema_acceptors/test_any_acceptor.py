@@ -35,17 +35,27 @@ def parse_input(acceptor: AnySchemaAcceptor, json_string: str) -> Any:
 
 
 @pytest.mark.parametrize(
-    "schemas, input_str, expected_result",
+    "schemas, token, expected_result",
     [
-        ([{"type": "number", "minimum": 0}, {"type": "string", "maxLength": 5}], "10", 10),
-        ([{"type": "number", "minimum": 0}, {"type": "string", "maxLength": 5}], '"test"', "test"),
+        (
+            [{"type": "number", "minimum": 0}, {"type": "string", "maxLength": 5}],
+            "10",
+            10,
+        ),
+        (
+            [{"type": "number", "minimum": 0}, {"type": "string", "maxLength": 5}],
+            '"test"',
+            "test",
+        ),
     ],
 )
-def test_accept_input_matching_single_schema(context, schemas, input_str, expected_result):
+def test_accept_input_matching_single_schema(context, schemas, token, expected_result):
     """Test that input matching a single schema is accepted."""
     acceptor = AnySchemaAcceptor(schemas=schemas, context=context)
-    result = parse_input(acceptor, input_str)
-    assert result == expected_result, f"AnyOfAcceptor should accept valid input {input_str}."
+    result = parse_input(acceptor, token)
+    assert (
+        result == expected_result
+    ), f"AnyOfAcceptor should accept valid input {token}."
 
 
 def test_accept_input_matching_multiple_schemas(context):
@@ -90,7 +100,10 @@ def test_complex_nested_schemas(context):
     """Test AnyOfAcceptor with complex nested schemas."""
     schema1 = {
         "type": "object",
-        "properties": {"name": {"type": "string"}, "age": {"type": "number", "minimum": 0}},
+        "properties": {
+            "name": {"type": "string"},
+            "age": {"type": "number", "minimum": 0},
+        },
         "required": ["name", "age"],
     }
     schema2 = {"type": "array", "items": {"type": "string"}, "minItems": 1}
@@ -101,11 +114,17 @@ def test_complex_nested_schemas(context):
 
     # Test with valid object
     result_object = parse_input(acceptor, valid_object)
-    assert result_object == {"name": "Alice", "age": 30}, "AnyOfAcceptor should accept valid object input."
+    assert result_object == {
+        "name": "Alice",
+        "age": 30,
+    }, "AnyOfAcceptor should accept valid object input."
 
     # Test with valid array
     result_array = parse_input(acceptor, valid_array)
-    assert result_array == ["apple", "banana"], "AnyOfAcceptor should accept valid array input."
+    assert result_array == [
+        "apple",
+        "banana",
+    ], "AnyOfAcceptor should accept valid array input."
 
 
 def test_partial_input(context):
@@ -120,17 +139,17 @@ def test_partial_input(context):
 
 
 @pytest.mark.parametrize(
-    "input_str, expected_result",
+    "token, expected_result",
     [
         ('"test"', "test"),  # Matches string schema
         ("123", 123),  # Matches number schema
     ],
 )
-def test_multiple_accepted_cursors(context, input_str, expected_result):
+def test_multiple_accepted_cursors(context, token, expected_result):
     """Test that AnyOfAcceptor handles multiple accepted cursors correctly."""
     schema1 = {"type": "string"}
     schema2 = {"type": "number"}
     acceptor = AnySchemaAcceptor(schemas=[schema1, schema2], context=context)
 
-    result = parse_input(acceptor, input_str)
-    assert result == expected_result, f"AnyOfAcceptor should accept input {input_str}."
+    result = parse_input(acceptor, token)
+    assert result == expected_result, f"AnyOfAcceptor should accept input {token}."

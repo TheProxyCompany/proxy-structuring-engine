@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from lexpy import DAWG
 
-from pse.state_machine.state_machine import StateMachine
+from pse.state_machine.state_machine import StateMachine, StateType
 from pse.state_machine.cursor import Cursor
 from pse.state_machine.accepted_state import AcceptedState
 from typing import Iterable, Set
@@ -73,9 +73,16 @@ class TextAcceptor(StateMachine):
             self.consumed_character_count = consumed_character_count
             self._accepts_remaining_input = True
 
+        def start_transition(
+            self,
+            acceptor: TextAcceptor,
+            target_state: StateType
+        ) -> bool:
+            return True
+
         def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
             """
-            Selects exact partial matches of the target text from the current position.
+            Selects prefix matches of the target text from the current position.
 
             Args:
                 dawg (DAWG): The DAWG to select from.
@@ -93,7 +100,6 @@ class TextAcceptor(StateMachine):
             if remaining_text in dawg:
                 results.add(remaining_text)
 
-
             # Check if the exact partial prefixes exist in the DAWG
             max_possible_match_len = min(len(remaining_text), 8)
             for i in range(1, max_possible_match_len):
@@ -103,7 +109,7 @@ class TextAcceptor(StateMachine):
 
             return results
 
-        def advance(self, value: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """
             Advances the cursor if the given value matches the expected text at the current position.
             Args:
@@ -113,23 +119,23 @@ class TextAcceptor(StateMachine):
                 Iterable[Cursor]: A list containing the next cursor if the value matches,
                                   or an empty list otherwise.
             """
-            logger.debug(f"advancing cursor: {self}, value: {value}, self.consumed_character_count: {self.consumed_character_count}")
+            logger.debug(f"advancing cursor: {self}, value: {token}, self.consumed_character_count: {self.consumed_character_count}")
             expected_text = self.acceptor.text
             pos = self.consumed_character_count
 
             max_possible_match_len = len(expected_text) - pos
-            input_len = len(value)
+            input_len = len(token)
             match_len = min(max_possible_match_len, input_len)
 
             # Get the segment to compare
             expected_segment = expected_text[pos:pos + match_len]
-            input_segment = value[:match_len]
+            input_segment = token[:match_len]
 
             logger.debug(f"expected_segment: {expected_segment}, input_segment: {input_segment}")
 
             if expected_segment == input_segment:
                 new_pos = pos + match_len
-                remaining_input = value[match_len:]
+                remaining_input = token[match_len:]
                 if remaining_input:
                     logger.debug(f"remaining_input: {remaining_input}")
 

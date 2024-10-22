@@ -61,11 +61,11 @@ class Cursor(ABC):
         pass
 
     @abstractmethod
-    def advance(self, input_str: str) -> Iterable[Cursor]:
+    def advance(self, token: str) -> Iterable[Cursor]:
         """Advances the cursor with the given input string.
 
         Args:
-            input_str: The input string to process.
+            token: The input string to process.
 
         Yields:
             Updated cursor instances after advancement.
@@ -187,9 +187,7 @@ class Cursor(ABC):
             )
             valid_prefixes.update(dawg.search_with_prefix(substr))  # type: ignore
 
-        logger.debug(
-            f"Found valid prefixes:\n{pformat(valid_prefixes, indent=4)}"
-        )
+        logger.debug(f"Found valid prefixes:\n{pformat(valid_prefixes, indent=4)}")
         return valid_prefixes
 
     def in_accepted_state(self) -> bool:

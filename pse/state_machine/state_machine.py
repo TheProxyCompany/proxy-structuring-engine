@@ -73,12 +73,12 @@ class StateMachine(TokenAcceptor):
         initial_cursor.current_state = self.initial_state
         return self._find_transitions(initial_cursor, [], set())
 
-    def advance_cursor(self, cursor: Cursor, input_str: str) -> Iterable[Cursor]:
+    def advance_cursor(self, cursor: Cursor, token: str) -> Iterable[Cursor]:
         """Advance a cursor with the given input and handle state transitions.
 
         Args:
             cursor: The cursor to advance.
-            input_str: The input string to process.
+            token: The input string to process.
 
         Yields:
             Updated cursors after advancement.
@@ -92,27 +92,38 @@ class StateMachine(TokenAcceptor):
         logger.debug(
             "\nAdvancing cursor:\n"
             f"  Cursor: {pformat(cursor, indent=2)}\n"
-            f"  Input: '{input_str}'"
+            f"  Input: '{token}'"
         )
         successfully_advanced = False
-        for followup_cursor in cursor.transition_cursor.advance(input_str):
+        for followup_cursor in cursor.transition_cursor.advance(token):
             successfully_advanced = True
             advanced_cursor = cursor.clone()
             advanced_cursor.transition_cursor = followup_cursor
             advanced_cursor.remaining_input = followup_cursor.remaining_input
-            advanced_cursor.consumed_character_count += followup_cursor.consumed_character_count
-            advanced_cursor._accepts_remaining_input = followup_cursor.can_handle_remaining_input
+            advanced_cursor.consumed_character_count += (
+                followup_cursor.consumed_character_count
+            )
+            advanced_cursor._accepts_remaining_input = (
+                followup_cursor.can_handle_remaining_input
+            )
 
             if self._should_skip_cursor(advanced_cursor):
                 continue
 
-            if not followup_cursor.in_accepted_state() and not followup_cursor.remaining_input:
+            if (
+                not followup_cursor.in_accepted_state()
+                and not followup_cursor.remaining_input
+            ):
                 yield advanced_cursor
                 continue
 
             for new_cursor in self._cascade_transition(advanced_cursor, [], set()):
-                if advanced_cursor.remaining_input and self.expects_more_input(new_cursor):
-                    yield from self.advance_cursor(new_cursor, advanced_cursor.remaining_input)
+                if advanced_cursor.remaining_input and self.expects_more_input(
+                    new_cursor
+                ):
+                    yield from self.advance_cursor(
+                        new_cursor, advanced_cursor.remaining_input
+                    )
                 else:
                     yield new_cursor
 
@@ -125,13 +136,16 @@ class StateMachine(TokenAcceptor):
 
         if not successfully_advanced and cursor.can_handle_remaining_input:
             cursor._accepts_remaining_input = False
-            if cursor.accept_history and cursor.accept_history[-1].can_handle_remaining_input:
+            if (
+                cursor.accept_history
+                and cursor.accept_history[-1].can_handle_remaining_input
+            ):
                 transition_cursor = cursor.accept_history[-1].clone()
                 cursor.accept_history.pop()
                 cursor.transition_cursor = transition_cursor
                 cursor.target_state = cursor.current_state
 
-            yield from cursor.advance(input_str)
+            yield from cursor.advance(token)
 
     def _find_transitions(
         self,
@@ -157,14 +171,24 @@ class StateMachine(TokenAcceptor):
         for acceptor, target_state in edges:
             if cursor.start_transition(acceptor, target_state):
                 for transition_cursor in acceptor.get_cursors():
-                    new_cursor = self._create_transition_cursor(cursor, transition_cursor, target_state)
-                    if transition_cursor.in_accepted_state() and not acceptor.expects_more_input(transition_cursor):
-                        state_snapshot = (new_cursor.current_state, str(new_cursor.get_value()))
+                    new_cursor = self._create_transition_cursor(
+                        cursor, transition_cursor, target_state
+                    )
+                    if (
+                        transition_cursor.in_accepted_state()
+                        and not acceptor.expects_more_input(transition_cursor)
+                    ):
+                        state_snapshot = (
+                            new_cursor.current_state,
+                            str(new_cursor.get_value()),
+                        )
                         if state_snapshot in visited_states:
                             continue
 
                         new_visited_states = visited_states + [state_snapshot]
-                        yield from self._cascade_transition(new_cursor, new_visited_states, traversed_edges)
+                        yield from self._cascade_transition(
+                            new_cursor, new_visited_states, traversed_edges
+                        )
                     else:
                         yield new_cursor
 
@@ -185,7 +209,9 @@ class StateMachine(TokenAcceptor):
             Cursors after cascading the transition.
         """
         if not cursor.transition_cursor or cursor.target_state is None:
-            raise AssertionError("Cursor must have a transition_cursor and target_state.")
+            raise AssertionError(
+                "Cursor must have a transition_cursor and target_state."
+            )
 
         transition_value = cursor.transition_cursor.get_value()
         target_state = cursor.target_state
@@ -204,7 +230,9 @@ class StateMachine(TokenAcceptor):
                 if is_end_state and not cursor.remaining_input:
                     yield AcceptedState(cursor)
 
-                yield from self._find_transitions(cursor, visited_states, traversed_edges)
+                yield from self._find_transitions(
+                    cursor, visited_states, traversed_edges
+                )
 
     def _create_transition_cursor(
         self, cursor: Cursor, transition_cursor: Cursor, target_state: StateType
@@ -320,7 +348,11 @@ class StateMachine(TokenAcceptor):
 
             edge_cursor_prefixes = set()
             depth_prefix = f"{depth * ' '}{depth}. " if depth > 0 else ""
-            if self.target_state is not None and isinstance(self.acceptor, StateMachine) and self.in_accepted_state():
+            if (
+                self.target_state is not None
+                and isinstance(self.acceptor, StateMachine)
+                and self.in_accepted_state()
+            ):
                 for acceptor, state in self.acceptor.get_edges(self.target_state):
                     # Go through the possible cursors from each edge's acceptor
                     logger.debug(
@@ -329,7 +361,7 @@ class StateMachine(TokenAcceptor):
                         f"  Target state: {state}\n"
                         f"  Acceptor: {acceptor.__class__.__name__}\n"
                         f"  Acceptor details: {pformat(acceptor, indent=2)}",
-                        depth_prefix
+                        depth_prefix,
                     )
                     for possible_next_cursor in acceptor.get_cursors():
                         prefixes = possible_next_cursor.select(dawg, depth + 1)
@@ -346,16 +378,16 @@ class StateMachine(TokenAcceptor):
                 return valid_prefixes
             return valid_prefixes.union(edge_cursor_prefixes)
 
-        def advance(self, input_str: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """Advance the cursor with the given input.
 
             Args:
-                input_str: The input string to process.
+                token: The input string to process.
 
             Yields:
                 Updated cursors after advancement.
             """
-            return self.acceptor.advance_cursor(self, input_str)
+            return self.acceptor.advance_cursor(self, token)
 
         def get_value(self) -> Any:
             """Retrieve the accumulated value from the cursor's history.
@@ -368,9 +400,15 @@ class StateMachine(TokenAcceptor):
                 return self.transition_cursor.get_value()
 
             if self.accept_history:
-                values = [cursor.get_value() for cursor in self.accept_history if cursor.get_value() is not None]
+                values = [
+                    cursor.get_value()
+                    for cursor in self.accept_history
+                    if cursor.get_value() is not None
+                ]
                 if values:
-                    concatenated = ''.join(map(str, values)) if len(values) > 1 else values[0]
+                    concatenated = (
+                        "".join(map(str, values)) if len(values) > 1 else values[0]
+                    )
                     return self._parse_value(concatenated)
 
             return None
@@ -388,7 +426,7 @@ class StateMachine(TokenAcceptor):
                 return value
 
             try:
-                if '.' in value or 'e' in value.lower():
+                if "." in value or "e" in value.lower():
                     return float(value)
                 return int(value)
             except ValueError:
@@ -430,9 +468,11 @@ class StateMachine(TokenAcceptor):
             components = []
 
             if self.accept_history:
-                history = ''.join(str(cursor.get_value())
-                                for cursor in self.accept_history
-                                if cursor.get_value())
+                history = "".join(
+                    str(cursor.get_value())
+                    for cursor in self.accept_history
+                    if cursor.get_value()
+                )
                 if history:
                     components.append(f"history={repr(history)}")
 
@@ -447,8 +487,11 @@ class StateMachine(TokenAcceptor):
             if self.remaining_input:
                 components.append(f"remaining='{self.remaining_input}'")
 
-            return f"{self.acceptor.__class__.__name__}.Cursor(\n  " + \
-                   ",\n  ".join(components) + "\n)"
+            return (
+                f"{self.acceptor.__class__.__name__}.Cursor(\n  "
+                + ",\n  ".join(components)
+                + "\n)"
+            )
 
 
 __all__ = ["StateMachine", "StateMachineGraph", "StateType"]

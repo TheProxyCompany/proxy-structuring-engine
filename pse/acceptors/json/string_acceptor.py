@@ -39,12 +39,9 @@ class StringAcceptor(StateMachine):
                 (TextAcceptor('"'), self.STATE_IN_STRING),  # Start of string
             ],
             self.STATE_IN_STRING: [
-                (TextAcceptor('"'), "$"),  # End of string
-                (TextAcceptor("\\"), self.STATE_ESCAPE),  # Escape character detected
-                (
-                    StringCharacterAcceptor(),
-                    self.STATE_IN_STRING,
-                ),  # Regular string character
+                (StringCharacterAcceptor(), self.STATE_IN_STRING),  # Regular chars first
+                (TextAcceptor('"'), "$"),  # End quote second
+                (TextAcceptor("\\"), self.STATE_ESCAPE),  # Escape last
             ],
             self.STATE_ESCAPE: [
                 (
@@ -72,10 +69,7 @@ class StringAcceptor(StateMachine):
                 ),  # Fourth hex digit, return to state IN_STRING
             ],
         }
-        super().__init__(graph)
-
-    # def expects_more_input(self, cursor: StringAcceptor.Cursor) -> bool:
-    #     return cursor.current_state == self.STATE_IN_STRING or cursor.current_state == self.initial_state
+        super().__init__(graph, self.STATE_START, ["$"])
 
     class Cursor(StateMachine.Cursor):
         """

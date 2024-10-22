@@ -66,12 +66,12 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def advance_cursor(self, cursor: Cursor, input_str: str) -> Iterable[Cursor]:
+    def advance_cursor(self, cursor: Cursor, token: str) -> Iterable[Cursor]:
         """Advances the cursor with the given input.
 
         Args:
             cursor (Cursor): The cursor to advance.
-            input_str (str): The input string to process.
+            token (str): The input string to process.
 
         Returns:
             Iterable[Cursor]: An iterable of updated cursors after advancement.
@@ -91,12 +91,12 @@ class TokenAcceptor(ABC):
         pass
 
     @classmethod
-    def advance_all(cls, cursors: Iterable[Cursor], input_str: str) -> Iterable[Cursor]:
+    def advance_all(cls, cursors: Iterable[Cursor], token: str) -> Iterable[Cursor]:
         """Advances multiple cursors in parallel based on the input.
 
         Args:
             cursors (Iterable[Cursor]): An iterable of cursor instances.
-            input_str (str): The input string to advance the cursors with.
+            token (str): The input string to advance the cursors with.
 
         Returns:
             Iterable[Cursor]: An iterable of new cursor instances after advancement.
@@ -113,7 +113,7 @@ class TokenAcceptor(ABC):
             Returns:
                 Iterable[Cursor]: Updated cursors after advancement.
             """
-            yield from cursor.advance(input_str)
+            yield from cursor.advance(token)
 
         # Using map with executor and yielding results
         for result in cls._EXECUTOR.map(process_cursor, cursors):

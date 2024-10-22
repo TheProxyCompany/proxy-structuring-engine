@@ -95,7 +95,7 @@ class WaitForAcceptor(StateMachine):
             """
             return any(cursor.is_in_value() for cursor in self.cursors)
 
-        def advance(self, input: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """
             Advance all internal cursors with the given input.
 
@@ -106,7 +106,7 @@ class WaitForAcceptor(StateMachine):
                 Iterable[TokenAcceptor.Cursor]: Updated cursors after processing.
             """
             new_cursors = []
-            for cursor in WaitForAcceptor.advance_all(self.cursors, input):
+            for cursor in WaitForAcceptor.advance_all(self.cursors, token):
                 if cursor.in_accepted_state():
                     self.acceptor.triggered = True
                     if self.acceptor.end_hook:

@@ -21,7 +21,9 @@ def test_in_accepted_state_returns_true(mock_cursor: TextAcceptor.Cursor) -> Non
     Test that in_accepted_state returns True for AcceptedState.
     """
     accepted = AcceptedState(mock_cursor)
-    assert accepted.in_accepted_state(), "AcceptedState should indicate it is in an accepted state."
+    assert (
+        accepted.in_accepted_state()
+    ), "AcceptedState should indicate it is in an accepted state."
 
 
 def test_get_value_returns_correct_value(mock_cursor: TextAcceptor.Cursor) -> None:
@@ -34,7 +36,9 @@ def test_get_value_returns_correct_value(mock_cursor: TextAcceptor.Cursor) -> No
     ), "AcceptedState should return the cursor's value."
 
 
-def test_repr_includes_checkmark_and_cursor_repr(mock_cursor: TextAcceptor.Cursor) -> None:
+def test_repr_includes_checkmark_and_cursor_repr(
+    mock_cursor: TextAcceptor.Cursor,
+) -> None:
     """
     Test that the string representation of AcceptedState includes a checkmark and cursor's repr.
     """
@@ -56,8 +60,12 @@ def test_multiple_instances_operate_independently() -> None:
     accepted1 = AcceptedState(cursor1)
     accepted2 = AcceptedState(cursor2)
 
-    assert accepted1.get_value() == "👉first", "First AcceptedState should return '👉first'."
-    assert accepted2.get_value() == "👉second", "Second AcceptedState should return '👉second'."
+    assert (
+        accepted1.get_value() == "👉first"
+    ), "First AcceptedState should return '👉first'."
+    assert (
+        accepted2.get_value() == "👉second"
+    ), "Second AcceptedState should return '👉second'."
     assert repr(accepted1) != repr(
         accepted2
     ), "String representations should differ based on cursor values."
@@ -76,8 +84,12 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
         accepted1 == accepted2
     ), "AcceptedState instances should not be equal even if their values are the same."
 
-    assert not accepted1.is_in_value(), "AcceptedState should indicate it is not in a value state."
-    assert accepted1.in_accepted_state(), "AcceptedState should indicate it is in an accepted state."
+    assert (
+        not accepted1.is_in_value()
+    ), "AcceptedState should indicate it is not in a value state."
+    assert (
+        accepted1.in_accepted_state()
+    ), "AcceptedState should indicate it is in an accepted state."
 
 
 def test_advance_delegates_to_accepted_cursor(mock_cursor: TextAcceptor.Cursor) -> None:
@@ -85,10 +97,12 @@ def test_advance_delegates_to_accepted_cursor(mock_cursor: TextAcceptor.Cursor) 
     Test that the advance method delegates to the accepted cursor's advance method.
     """
     accepted = AcceptedState(mock_cursor)
-    input_str = "input"
-    advances = list(accepted.advance(input_str))
-    expected_advances = list(mock_cursor.advance(input_str))
-    assert advances == expected_advances, "Advance should delegate to the accepted cursor's advance."
+    token = "input"
+    advances = list(accepted.advance(token))
+    expected_advances = list(mock_cursor.advance(token))
+    assert (
+        advances == expected_advances
+    ), "Advance should delegate to the accepted cursor's advance."
 
 
 def test_can_handle_remaining_input_property(mock_cursor: TextAcceptor.Cursor) -> None:
@@ -101,7 +115,9 @@ def test_can_handle_remaining_input_property(mock_cursor: TextAcceptor.Cursor) -
     ), "can_handle_remaining_input should match the accepted cursor's value."
 
 
-def test_get_value_returns_none_when_cursor_value_is_none(test_acceptor: TextAcceptor) -> None:
+def test_get_value_returns_none_when_cursor_value_is_none(
+    test_acceptor: TextAcceptor,
+) -> None:
     """
     Test that get_value returns None when the cursor's value is None.
     """
@@ -118,7 +134,7 @@ def test_get_value_returns_none_when_cursor_value_is_none(test_acceptor: TextAcc
         def in_accepted_state(self):
             return True
 
-        def advance(self, input: str):
+        def advance(self, token: str):
             return iter([])
 
         def is_in_value(self):
@@ -130,4 +146,6 @@ def test_get_value_returns_none_when_cursor_value_is_none(test_acceptor: TextAcc
 
     mock_cursor = MockCursor(test_acceptor)
     accepted = AcceptedState(mock_cursor)
-    assert accepted.get_value() is None, "AcceptedState should return None when cursor's get_value is None."
+    assert (
+        accepted.get_value() is None
+    ), "AcceptedState should return None when cursor's get_value is None."

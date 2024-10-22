@@ -65,7 +65,7 @@ class CharacterAcceptor(StateMachine):
             for char in self.acceptor.charset:
                 yield char
 
-        def advance(self, input: str) -> Iterable[Cursor]:
+        def advance(self, token: str) -> Iterable[Cursor]:
             """
             Advance the cursor with the given input. Accumulates all valid characters.
 
@@ -75,23 +75,23 @@ class CharacterAcceptor(StateMachine):
             Returns:
                 List[Cursor]: A list containing the new cursor state if input is valid.
             """
-            if not input:
+            if not token:
                 logger.debug(f"Cursor {self} does not expect more input, returning")
                 self._accepts_remaining_input = False
                 return
 
             logger.debug(
-                f"Advancing cursor in char acceptor: {self}, with input: '{input}'"
+                f"Advancing cursor in char acceptor: {self}, with input: '{token}'"
             )
 
             # Accumulate all valid characters
             valid_chars = ""
             remaining_input = None
-            for char in input:
+            for char in token:
                 if char in self.acceptor.charset:
                     valid_chars += char
                 else:
-                    remaining_input = input[len(valid_chars) :]
+                    remaining_input = token[len(valid_chars) :]
                     break
 
             if valid_chars:
@@ -109,7 +109,7 @@ class CharacterAcceptor(StateMachine):
                 yield AcceptedState(new_cursor)
             else:
                 logger.debug(
-                    f"Cursor {self} cannot handle input: {input} and cannot accept remaining input"
+                    f"Cursor {self} cannot handle input: {token} and cannot accept remaining input"
                 )
                 self._accepts_remaining_input = False
 
