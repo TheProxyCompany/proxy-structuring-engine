@@ -25,11 +25,11 @@ def parse_input(acceptor: AnySchemaAcceptor, json_string: str) -> Any:
     Raises:
         JSONParsingError: If the JSON input is invalid or does not match any schema.
     """
-    cursors = acceptor.get_cursors()
-    cursors = acceptor.advance_all(cursors, json_string)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            return cursor.get_value()
+    walkers = acceptor.get_walkers()
+    walkers = acceptor.advance_all(walkers, json_string)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            return walker.accumulated_value()
 
     raise JSONParsingError("Invalid JSON input for AnyOfAcceptor", len(json_string))
 
@@ -145,8 +145,8 @@ def test_partial_input(context):
         ("123", 123),  # Matches number schema
     ],
 )
-def test_multiple_accepted_cursors(context, token, expected_result):
-    """Test that AnyOfAcceptor handles multiple accepted cursors correctly."""
+def test_multiple_accepted_walkers(context, token, expected_result):
+    """Test that AnyOfAcceptor handles multiple accepted walkers correctly."""
     schema1 = {"type": "string"}
     schema2 = {"type": "number"}
     acceptor = AnySchemaAcceptor(schemas=[schema1, schema2], context=context)

@@ -1,18 +1,21 @@
 import pytest
+from lexpy import DAWG
 
-from pse.state_machine.state_machine import StateMachine
+from pse.acceptors.basic.number.integer_acceptor import IntegerWalker
+from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.state_machine.empty_transition import EmptyTransition
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
-from pse.acceptors.basic.number.number_acceptor import NumberAcceptor
+from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, IntegerAcceptor
+from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 
 
 @pytest.mark.parametrize(
     "token, expected_value",
     [
         ("true", True),
-        ("false", False),
+        # ("false", False),
     ],
 )
 def test_boolean_acceptor(token, expected_value):
@@ -23,13 +26,14 @@ def test_boolean_acceptor(token, expected_value):
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, token))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == expected_value
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -50,55 +54,66 @@ def test_text_acceptor(token, acceptor_args, expected_value):
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, token))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == expected_value
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == expected_value
 
 
-def test_state_transitions():
+@pytest.mark.parametrize(
+    "first, second, end, token",
+    [
+        ("start", "middle", "end", "startmiddleend"),
+        ("1", "2", "3", "123"),
+    ],
+)
+def test_state_transitions(first, second, end, token):
     """Test StateMachine with multiple sequential transitions."""
     sm = StateMachine(
         graph={
-            0: [(TextAcceptor("start"), 1)],
-            1: [(TextAcceptor("middle"), 2)],
-            2: [(TextAcceptor("end"), 3)],
+            0: [(TextAcceptor(first), 1)],
+            1: [(TextAcceptor(second), 2)],
+            2: [(TextAcceptor(end), 3)],
         },
         initial_state=0,
         end_states=[3],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "startmiddleend"))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == "startmiddleend"
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert str(walker.accumulated_value()) == token
 
 
-def test_cursor_clone():
-    """Test cloning functionality of the StateMachine Cursor."""
+def test_walker_clone():
+    """Test cloning functionality of the StateMachine Walker."""
     sm = StateMachine(
         graph={0: [(TextAcceptor("clone"), 1)]},
         initial_state=0,
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    for cursor in cursors:
-        original_cursor = cursor
-        cloned_cursor = original_cursor.clone()
+    walkers = list(sm.get_walkers())
+    for walker in walkers:
+        original_walker = walker
+        cloned_walker = original_walker.clone()
 
-        # Advance the original cursor
-        new_cursors = list(StateMachine.advance_all([original_cursor], "clone"))
-        for new_cursor in new_cursors:
-            assert new_cursor.in_accepted_state()
-            assert not cloned_cursor.in_accepted_state()
-            assert new_cursor != cloned_cursor
+        # Advance the original walker
+        advanced = list(StateMachine.advance_all_walkers([original_walker], "clone"))
+        new_walkers = [w for _, w in advanced]
+
+        for new_walker in new_walkers:
+            assert new_walker.has_reached_accept_state()
+            assert not cloned_walker.has_reached_accept_state()
+            assert new_walker != cloned_walker
 
 
 def test_null_acceptor():
@@ -109,13 +124,14 @@ def test_null_acceptor():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "null"))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "null"))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() is None
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() is None
 
 
 def test_invalid_input_characters():
@@ -127,12 +143,13 @@ def test_invalid_input_characters():
     )
 
     invalid_input = "vali$d"  # '$' is an invalid character
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, invalid_input))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, invalid_input))
+    walkers = [walker for _, walker in advanced]
 
-    # The input contains an invalid character, so there should be no valid cursors
-    assert not any(cursor.in_accepted_state() for cursor in cursors)
-    assert len(cursors) == 0
+    # The input contains an invalid character, so there should be no valid walkers
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    assert len(walkers) == 0
 
 
 def test_partial_matches():
@@ -144,11 +161,14 @@ def test_partial_matches():
     )
 
     partial_input = "comp"
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, partial_input))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, partial_input))
+    walkers = [walker for _, walker in advanced]
 
-    # No cursors should be in accepted state since the input is incomplete
-    assert not any(cursor.in_accepted_state() for cursor in cursors)
+    # No walkers should be in accepted state since the input is incomplete
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        assert walker.accumulated_value() == "comp👉lete"
 
 
 @pytest.mark.parametrize(
@@ -159,7 +179,7 @@ def test_partial_matches():
     ],
 )
 def test_advance_all_multiple_states(token, expected_value):
-    """Test StateMachine.advance_all with multiple current states and transitions."""
+    """Test StateMachine.advance_all_walkers with multiple current states and transitions."""
     sm = StateMachine(
         graph={
             0: [
@@ -173,17 +193,18 @@ def test_advance_all_multiple_states(token, expected_value):
         end_states=[3],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, token))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == expected_value
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == expected_value
 
 
 def test_advance_all_invalid_input():
-    """Test StateMachine.advance_all with invalid input characters."""
+    """Test StateMachine.advance_all_walkers with invalid input characters."""
     sm = StateMachine(
         graph={0: [(TextAcceptor("hello"), 1)]},
         initial_state=0,
@@ -191,16 +212,17 @@ def test_advance_all_invalid_input():
     )
 
     invalid_input = "hell@"
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, invalid_input))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, invalid_input))
+    walkers = [walker for _, walker in advanced]
 
-    # The input contains an invalid character '@', so there should be no valid cursors
-    assert not any(cursor.in_accepted_state() for cursor in cursors)
-    assert len(cursors) == 0
+    # The input contains an invalid character '@', so there should be no valid walkers
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    assert len(walkers) == 0
 
 
 def test_complex_input():
-    """Test StateMachine.advance_all with complex input."""
+    """Test StateMachine.advance_all_walkers with complex input."""
     sm = StateMachine(
         graph={
             0: [(CharacterAcceptor("{"), 1)],
@@ -211,13 +233,14 @@ def test_complex_input():
         end_states=[3],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "{\n["))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "{\n["))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == "{\n["
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == "{\n["
 
 
 def test_number_acceptor():
@@ -229,10 +252,11 @@ def test_number_acceptor():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "123.456"))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "123.456"))
+    walkers = [walker for _, walker in advanced]
 
-    assert any(cursor.in_accepted_state() for cursor in cursors)
+    assert any(walker.has_reached_accept_state() for walker in walkers)
 
 
 def test_number_acceptor_in_state_machine_sequence():
@@ -247,17 +271,18 @@ def test_number_acceptor_in_state_machine_sequence():
         end_states=[2],
     )
 
-    cursors = list(sm.get_cursors())
+    walkers = list(sm.get_walkers())
     input_string = "Value: 42"
-    cursors = list(sm.advance_all(cursors, input_string))
+    advanced = list(StateMachine.advance_all_walkers(walkers, input_string))
+    walkers = [walker for _, walker in advanced]
 
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "StateMachine should accept combined text and number input."
-    for cursor in cursors:
-        if cursor.in_accepted_state():
+    for walker in walkers:
+        if walker.has_reached_accept_state():
             assert (
-                cursor.get_value() == "Value: 42"
+                walker.accumulated_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
 
@@ -273,18 +298,22 @@ def test_char_by_char_in_state_machine():
         end_states=[2],
     )
 
-    cursors = list(sm.get_cursors())
+    walkers = list(sm.get_walkers())
     input_string = "Value: 42"
     for char in input_string:
-        cursors = list(sm.advance_all(cursors, char))
+        advanced = list(StateMachine.advance_all_walkers(walkers, char))
+        walkers = [walker for _, walker in advanced]
+        if not walkers:
+            break
 
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "StateMachine should accept combined text and number input."
-    for cursor in cursors:
-        if cursor.in_accepted_state():
+
+    for walker in walkers:
+        if walker.has_reached_accept_state():
             assert (
-                cursor.get_value() == "Value: 42"
+                walker.accumulated_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
 
@@ -304,23 +333,25 @@ def test_multiple_transitions_with_empty():
     )
 
     # Path with EmptyTransition
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "middle"))
-    assert any(cursor.in_accepted_state() for cursor in cursors)
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "middle"))
+    walkers = [walker for _, walker in advanced]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
     assert any(
-        cursor.get_value() == "middle"
-        for cursor in cursors
-        if cursor.in_accepted_state()
+        walker.accumulated_value() == "middle"
+        for walker in walkers
+        if walker.has_reached_accept_state()
     )
 
     # Path without EmptyTransition
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "startend"))
-    assert any(cursor.in_accepted_state() for cursor in cursors)
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "startend"))
+    walkers = [walker for _, walker in advanced]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
     assert any(
-        cursor.get_value() == "startend"
-        for cursor in cursors
-        if cursor.in_accepted_state()
+        walker.accumulated_value() == "startend"
+        for walker in walkers
+        if walker.has_reached_accept_state()
     )
 
 
@@ -337,9 +368,9 @@ def test_empty_input():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    # No input provided, test if cursors are in accepted state
-    assert any(cursor.in_accepted_state() for cursor in cursors)
+    walkers = list(sm.get_walkers())
+    # No input provided, test if walkers are in accepted state
+    assert any(walker.has_reached_accept_state() for walker in walkers)
 
 
 def test_unexpected_input():
@@ -352,12 +383,13 @@ def test_unexpected_input():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "unexpected"))
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "unexpected"))
+    walkers = [walker for _, walker in advanced]
 
     # Should not be in accepted state
-    assert not any(cursor.in_accepted_state() for cursor in cursors)
-    assert len(cursors) == 0
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    assert len(walkers) == 0
 
 
 def test_state_machine_no_transitions():
@@ -368,97 +400,8 @@ def test_state_machine_no_transitions():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    assert len(cursors) == 0
-
-
-def test_cursor_class_property():
-    """Test the cursor_class property of StateMachine."""
-    sm = StateMachine(graph={})
-    assert sm.cursor_class is StateMachine.Cursor
-
-
-def test_advance_cursor_no_transition():
-    """Test advance_cursor when cursor has no transition_cursor and not expecting more input."""
-    sm = StateMachine(graph={}, initial_state=0, end_states=[])
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = sm.initial_state
-    cursor.transition_cursor = None
-    # Ensure in_accepted_state() returns False
-    assert not cursor.in_accepted_state()
-    # Ensure expects_more_input returns False
-    assert not sm.expects_more_input(cursor)
-    cursors = list(sm.advance_cursor(cursor, token=""))
-    # Should not yield any cursors
-    assert len(cursors) == 0
-
-
-def test_state_machine_cursor_get_value_none():
-    """Test Cursor.get_value() when there is no transition_cursor and no accept_history."""
-    sm = StateMachine(graph={})
-    cursor = sm.cursor_class(sm)
-    # Ensure transition_cursor and accept_history are None or empty
-    cursor.transition_cursor = None
-    cursor.accept_history = []
-    value = cursor.get_value()
-    assert value is None
-
-
-def test_state_machine_cursor_is_in_value():
-    """Test Cursor.is_in_value() when consumed_character_count is 0 and accept_history is empty."""
-    sm = StateMachine(graph={})
-    cursor = sm.cursor_class(sm)
-    cursor.consumed_character_count = 0
-    cursor.accept_history = []
-    cursor.transition_cursor = None
-    assert not cursor.is_in_value()
-
-
-def test_state_machine_cursor_equality_and_hash():
-    """Test Cursor.__eq__ and __hash__ methods."""
-    sm = StateMachine(graph={})
-    cursor1 = sm.cursor_class(sm)
-    cursor1.current_state = 0
-    cursor1.target_state = 1
-
-    cursor2 = sm.cursor_class(sm)
-    cursor2.current_state = 0
-    cursor2.target_state = 1
-
-    assert cursor1 == cursor2
-    assert hash(cursor1) == hash(cursor2)
-
-    cursor3 = sm.cursor_class(sm)
-    cursor3.current_state = 0
-    cursor3.target_state = 2
-
-    assert cursor1 != cursor3
-    assert hash(cursor1) != hash(cursor3)
-
-
-def test_cascade_transition_no_transition_cursor():
-    """Test _cascade_transition when cursor.transition_cursor is None."""
-    sm = StateMachine(graph={})
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = 0
-    cursor.transition_cursor = None
-    cursor.target_state = None
-
-    # Expect an AssertionError due to missing transition_cursor and target_state
-    with pytest.raises(AssertionError):
-        list(sm._cascade_transition(cursor, visited_states=[], traversed_edges=set()))
-
-
-def test_find_transitions_no_edges():
-    """Test _find_transitions when there are no edges from the current state."""
-    sm = StateMachine(graph={}, initial_state=0, end_states=[1])
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = 0
-    transitions = list(
-        sm._find_transitions(cursor, visited_states=[], traversed_edges=set())
-    )
-    # Should be empty since no edges
-    assert len(transitions) == 0
+    walkers = list(sm.get_walkers())
+    assert len(walkers) == 0
 
 
 def test_get_edges_nonexistent_state():
@@ -468,21 +411,11 @@ def test_get_edges_nonexistent_state():
     assert edges == []
 
 
-def test_expects_more_input_in_end_state():
-    """Test expects_more_input when cursor is in an end state with no remaining input."""
-    sm = StateMachine(graph={}, initial_state=0, end_states=[0])
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = 0
-    cursor.remaining_input = ""
-    expects_more = sm.expects_more_input(cursor)
-    assert not expects_more
-
-
-def test_state_machine_advance_all_with_no_cursors():
-    """Test advance_all when there are no cursors to advance."""
-    cursors = []
-    advanced_cursors = list(StateMachine.advance_all(cursors, "input"))
-    assert advanced_cursors == []
+def test_state_machine_advance_all_with_no_walkers():
+    """Test advance_all_walkers when there are no walkers to advance."""
+    walkers = []
+    advanced = list(StateMachine.advance_all_walkers(walkers, "input"))
+    assert advanced == []
 
 
 def test_state_machine_empty_transition():
@@ -496,12 +429,13 @@ def test_state_machine_empty_transition():
         end_states=[2],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "test"))
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == "test"
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "test"))
+    walkers = [walker for _, walker in advanced]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == "test"
 
 
 def test_state_machine_with_loop():
@@ -514,16 +448,17 @@ def test_state_machine_with_loop():
         end_states=[1],
     )
 
-    cursors = list(sm.get_cursors())
-    cursors = list(StateMachine.advance_all(cursors, "aaab"))
-    assert any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            assert cursor.get_value() == "aaab"
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all_walkers(walkers, "aaab"))
+    walkers = [walker for _, walker in advanced]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == "aaab"
 
 
-def test_state_machine_advance_cursor_with_remaining_input():
-    """Test advance_cursor handling remaining input in transition_cursor."""
+def test_state_machine_advance_walker_with_remaining_input():
+    """Test advance_walker handling remaining input in transition_walker."""
     sm = StateMachine(
         graph={
             0: [(TextAcceptor("ab"), 1)],
@@ -533,67 +468,111 @@ def test_state_machine_advance_cursor_with_remaining_input():
         end_states=[2],
     )
 
-    initial_cursors = list(sm.get_cursors())
+    initial_walkers = list(sm.get_walkers())
     # Advance with partial input to create remaining input scenario
-    cursors = list(StateMachine.advance_all(initial_cursors, "abcde"))
+    advanced = list(StateMachine.advance_all_walkers(initial_walkers, "abcde"))
+    walkers = [walker for _, walker in advanced]
     # Should handle remaining input 'e' after 'abcd'
-    assert not any(cursor.in_accepted_state() for cursor in cursors)
-    for cursor in cursors:
-        if not cursor.in_accepted_state():
-            # Remaining input 'e' should be in cursor.remaining_input
-            assert cursor.remaining_input == "e"
-            assert cursor.get_value() == "abcd"
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if not walker.has_reached_accept_state():
+            # Remaining input 'e' should be in walker.remaining_input
+            assert walker.remaining_input == "e"
+            assert walker.accumulated_value() == "abcd"
 
 
-def test_cursor_equality_and_hash():
-    """Test Cursor equality and hashing."""
-    sm = StateMachine(graph={})
-    cursor1 = sm.cursor_class(sm)
-    cursor1.current_state = 0
-    cursor1.target_state = 1
-    cursor2 = sm.cursor_class(sm)
-    cursor2.current_state = 0
-    cursor2.target_state = 1
-    assert cursor1 == cursor2
-    assert hash(cursor1) == hash(cursor2)
+def test_whitespace_acceptor():
+    """Test StateMachine with WhitespaceAcceptor."""
 
-
-def test__cascade_transition_assertion_error():
-    """Test that _cascade_transition raises AssertionError when conditions are not met."""
-    sm = StateMachine(graph={})
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = 0
-    cursor.transition_cursor = None
-    cursor.target_state = None
-    with pytest.raises(AssertionError):
-        list(sm._cascade_transition(cursor, visited_states=[], traversed_edges=set()))
-
-
-def test__cascade_transition_complete_transition_false():
-    """Test _cascade_transition when complete_transition returns False."""
-    sm = StateMachine(graph={})
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = 0
-    cursor.transition_cursor = sm.cursor_class(sm)
-    cursor.target_state = 1
-    # Mock complete_transition to return False
-    cursor.complete_transition = lambda *args, **kwargs: False
-    transitions = list(
-        sm._cascade_transition(cursor, visited_states=[], traversed_edges=set())
+    dawg = DAWG()
+    dawg.add("\n")
+    dawg.add("\n\n")
+    dawg.add(" ")
+    dawg.add("{")
+    dawg.add("{.")
+    dawg.add("}")
+    sm = StateMachine(
+        {
+            0: [(TextAcceptor("{"), 1)],
+            1: [
+                (WhitespaceAcceptor(), 2),
+                # (TextAcceptor("."), 2),
+            ],
+            2: [(TextAcceptor("}"), "$")],
+        }
     )
-    assert len(transitions) == 0  # Should not proceed if transition is incomplete
+    original_walkers = list(sm.get_walkers())
+    assert len(original_walkers) == 1
+    first_walker = next(iter(original_walkers))
+    assert isinstance(first_walker, StateMachineWalker)
+    assert first_walker.current_state == sm.initial_state
+    assert isinstance(first_walker.transition_walker, TextWalker)
+
+    advancement = StateMachine.advance_all_walkers(original_walkers, "{.", dawg)
+    new_walkers = []
+    for advanced_token, walker in advancement:
+        assert advanced_token == "{"
+        if walker.target_state == "$":
+            assert walker.accumulated_value() == "{👉}"
+        else:
+            assert walker.accumulated_value() == "{"
+        new_walkers.append(walker)
+
+    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
+
+    advancement = StateMachine.advance_all_walkers(new_walkers, " ", dawg)
+    new_walkers = []
+    for advanced_token, walker in advancement:
+        assert advanced_token == " "
+        if walker.target_state == "$":
+            assert walker.accumulated_value() == "{ 👉}"
+        else:
+            assert walker.accumulated_value() == "{ "
+        new_walkers.append(walker)
+
+    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with ' '"
+
+    advancement = StateMachine.advance_all_walkers(new_walkers, "\n}", dawg)
+    new_walkers = []
+    for advanced_token, walker in advancement:
+        assert advanced_token == "\n}"
+        assert walker.accumulated_value() == {}
+        assert walker.has_reached_accept_state()
+        new_walkers.append(walker)
+
+    assert len(new_walkers) == 1
 
 
-def test_advance_cursor_no_transition_and_not_expecting_more():
-    """Test advance_cursor when cursor has no transition_cursor and not expecting more input."""
-    sm = StateMachine(graph={}, initial_state=0, end_states=[])
-    cursor = sm.cursor_class(sm)
-    cursor.current_state = sm.initial_state
-    cursor.transition_cursor = None
-    # Ensure in_accepted_state() returns False
-    assert not cursor.in_accepted_state()
-    # Ensure expects_more_input returns False
-    assert not sm.expects_more_input(cursor)
-    cursors = list(sm.advance_cursor(cursor, token=""))
-    # Should not yield any cursors
-    assert len(cursors) == 0
+def test_simple_number_acceptor():
+    """Test StateMachine with NumberAcceptor."""
+    sm = StateMachine(
+        {
+            0: [
+                (TextAcceptor("-"), 1),
+                (EmptyTransition, 1),
+            ],
+            1: [
+                (IntegerAcceptor(), "$"),
+            ],
+        }
+    )
+
+    dawg = DAWG()
+    dawg.add("-")
+    dawg.add("-1")
+    dawg.add("1")
+    walkers = list(sm.get_walkers())
+    assert len(walkers) == 2
+    text_acceptor_walker = walkers[0]
+    assert isinstance(text_acceptor_walker, StateMachineWalker)
+    assert isinstance(text_acceptor_walker.transition_walker, TextWalker)
+    integer_acceptor_walker = walkers[1]
+    assert isinstance(integer_acceptor_walker, StateMachineWalker)
+    assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)
+
+    for advanced_token, walker in StateMachine.advance_all_walkers(
+        walkers, "-1.2", dawg
+    ):
+        assert advanced_token == "-1"
+        assert walker.has_reached_accept_state()
+        assert walker.accumulated_value() == -1

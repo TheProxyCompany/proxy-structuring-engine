@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-import json
 import logging
 from pprint import pformat
-from typing import Any, Iterable, List, Optional, Set, Tuple, Type
+from typing import Any, Iterable, List, Optional, Set, Tuple
 
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.state_machine.walker import Walker
 from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.cursor import Cursor, MAX_DEPTH
-from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
+from pse.state_machine.types import (
+    StateType,
+    EdgeType,
+    StateMachineGraph,
+    MAX_LOOKAHEAD_DEPTH,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +22,29 @@ logger = logging.getLogger(__name__)
 class StateMachine(TokenAcceptor):
     """A token acceptor that operates based on a state graph defining transitions between states.
 
-    Each state can have multiple edges, defined by a target state and a TokenAcceptor.
-    Upon reaching an accepted state, a transition to the target state is triggered.
-    This process repeats until the state machine reaches a final state.
-    Multiple transition paths are explored in parallel to efficiently handle various input possibilities.
+    The state machine processes input tokens by traversing a directed graph where:
+    - Each node represents a state
+    - Each edge represents a transition defined by a TokenAcceptor
+    - Multiple paths are explored in parallel for efficiency
+
+    1. Start in initial state
+    2. Process input token through outgoing edges
+    3. On acceptance, transition to target state
+    4. Repeat until reaching end state or exhausting input
+
+    Attributes:
+        graph (StateMachineGraph): Maps states to their outgoing transitions
+        initial_state (StateType): Starting state for processing
+        end_states (Iterable[StateType]): Collection of accepting states
+
+    Example:
+        >>> machine = StateMachine(
+        ...     graph={0: [(TextAcceptor("test"), 1)]},
+        ...     initial_state=0,
+        ...     end_states=[1]
+        ... )
+        >>> list(machine.advance("test"))
+        [AcceptedState(...)]
     """
 
     def __init__(
@@ -29,469 +52,443 @@ class StateMachine(TokenAcceptor):
         graph: Optional[StateMachineGraph] = None,
         initial_state: StateType = 0,
         end_states: Optional[Iterable[StateType]] = None,
+        is_optional: bool = False,
+        is_case_sensitive: bool = True,
     ) -> None:
         """Initialize the StateMachine with a state graph.
 
         Args:
-            graph: A dictionary mapping each state to a list of tuples,
-                each containing a TokenAcceptor and the target state.
-                Defaults to an empty dictionary if not provided.
-            initial_state: The starting state of the state machine. Defaults to 0.
-            end_states: A collection of states considered final or accepting.
-                Defaults to ["$"] if not provided.
+            graph: A dictionary mapping states to lists of (TokenAcceptor, target_state) tuples.
+                  Defaults to empty dict if not provided.
+            initial_state: The starting state. Defaults to 0.
+            end_states: Collection of accepting states. Defaults to ["$"].
         """
-        super().__init__(initial_state, end_states or ["$"])
+        super().__init__(
+            initial_state,
+            end_states or ["$"],
+            is_optional,
+            is_case_sensitive
+        )
         self.graph: StateMachineGraph = graph or {}
 
-    @property
-    def cursor_class(self) -> Type[Cursor]:
-        """Return the cursor class associated with this StateMachine.
-
-        Returns:
-            The class of the cursor.
-        """
-        return self.__class__.Cursor
-
-    def get_edges(self, state: StateType) -> List[EdgeType]:
-        """Retrieve outgoing edges (transitions) for a given state.
+    @classmethod
+    def advance_all_walkers(
+        cls,
+        walkers: Iterable[Walker],
+        token: str,
+        dawg: Optional[DAWG] = None,
+    ) -> Iterable[Tuple[str, Walker]]:
+        """Advances walkers with the given input.
 
         Args:
-            state: The state from which to retrieve outgoing edges.
+            walkers (Iterable[Walker]): An iterable of walker instances.
+            token (str): The input string to advance the walkers with.
 
         Returns:
-            A list of edges represented as tuples containing a TokenAcceptor and the target state.
+            AdvanceResult: An AdvanceResult instance containing the advanced token and the updated walkers.
+        """
+        if not walkers:
+            return []
+
+        def process_walker(walker: Walker) -> Iterable[Walker]:
+            """Processes a single walker by advancing it with the given input.
+
+            Args:
+                walker (Walker): The walker to process.
+
+            Returns:
+                Iterable[Walker]: Updated walkers after advancement.
+            """
+            yield from walker.consume_token(token)
+
+        # Using map with executor and yielding results
+        for advanced_walkers in cls._EXECUTOR.map(process_walker, walkers):
+            for walker in advanced_walkers:
+                if not walker.remaining_input:
+                    logger.debug(
+                        f"fully consumed token {repr(token)}, yielding walker:\n{walker}"
+                    )
+                    yield token, walker
+                    continue
+
+                # partial match
+                length_of_remaining_input = len(token) - len(walker.remaining_input)
+                valid_prefix = token[:length_of_remaining_input]
+                if dawg and valid_prefix and valid_prefix in dawg:
+                    logger.debug(f"valid partial match: {repr(valid_prefix)}")
+                    walker.remaining_input = None
+                    yield valid_prefix, walker
+
+    def get_edges(self, state: StateType) -> List[EdgeType]:
+        """Retrieve outgoing transitions for a given state.
+
+        Args:
+            state: Source state to get transitions from.
+
+        Returns:
+            List of (acceptor, target_state) tuples representing possible transitions.
         """
         return self.graph.get(state, [])
 
-    def get_cursors(self) -> Iterable[Cursor]:
-        """Initialize and retrieve cursors starting from the initial state.
+    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
+        """Initialize walkers at the start state.
 
         Returns:
-            An iterable of cursors initialized at the starting state.
+            Iterable of walkers positioned at initial state.
         """
-        initial_cursor = self.cursor_class(self)
-        initial_cursor.current_state = self.initial_state
-        return self._find_transitions(initial_cursor, [], set())
+        initial_walker = StateMachineWalker(self, state)
+        yield from self._branch_walkers(initial_walker)
 
-    def advance_cursor(self, cursor: Cursor, token: str) -> Iterable[Cursor]:
-        """Advance a cursor with the given input and handle state transitions.
+    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
+        """Advance walker state with input token.
+
+        Processes the input token and manages state transitions:
+        1. If no active transition, yield current walker if more input expected
+        2. Otherwise advance transition walker and cascade resulting states
+        3. Handle backtracking if advancement fails
 
         Args:
-            cursor: The cursor to advance.
-            token: The input string to process.
+            walker: Walker to advance
+            token: Input string to process
 
         Yields:
-            Updated cursors after advancement.
+            Updated walkers after processing token
         """
-        if not cursor.transition_cursor:
-            if not self.expects_more_input(cursor):
-                return
-            yield cursor
+
+        if not walker.transition_walker:
+            logger.debug(f"no transition walker, yielding {walker}")
+            yield walker
             return
 
-        logger.debug(
-            "\nAdvancing cursor:\n"
-            f"  Cursor: {pformat(cursor, indent=2)}\n"
-            f"  Input: '{token}'"
-        )
-        successfully_advanced = False
-        for followup_cursor in cursor.transition_cursor.advance(token):
-            successfully_advanced = True
-            advanced_cursor = cursor.clone()
-            advanced_cursor.transition_cursor = followup_cursor
-            advanced_cursor.remaining_input = followup_cursor.remaining_input
-            advanced_cursor.consumed_character_count += (
-                followup_cursor.consumed_character_count
+        if not walker.should_start_transition(token):
+            if walker.remaining_input:
+                logger.debug(
+                    f"walker has remaining input but cannot start transition, yielding upstream: {walker}"
+                )
+                yield walker
+            return
+
+        for advanced_walker in walker.transition_walker.consume_token(token):
+            logger.debug(f"advanced transition walker:\n{advanced_walker}")
+
+            new_walker = walker.clone()
+            new_walker.transition_walker = advanced_walker
+            new_walker.remaining_input = advanced_walker.remaining_input
+            new_walker.consumed_character_count += (
+                advanced_walker.consumed_character_count
             )
-            advanced_cursor._accepts_remaining_input = (
-                followup_cursor.can_handle_remaining_input
-            )
 
-            if self._should_skip_cursor(advanced_cursor):
-                continue
+            for next_walker in self._transition(new_walker):
+                logger.debug(f"transitioned walker:\n{next_walker}")
+                if not next_walker.remaining_input:
+                    logger.debug(f"yielding walker:\n{next_walker}")
+                    yield next_walker
+                    continue
 
-            if (
-                not followup_cursor.in_accepted_state()
-                and not followup_cursor.remaining_input
-            ):
-                yield advanced_cursor
-                continue
-
-            for new_cursor in self._cascade_transition(advanced_cursor, [], set()):
-                if advanced_cursor.remaining_input and self.expects_more_input(
-                    new_cursor
-                ):
-                    yield from self.advance_cursor(
-                        new_cursor, advanced_cursor.remaining_input
+                if next_walker.should_start_transition(next_walker.remaining_input):
+                    logger.debug(
+                        f"walker has remaining input: {repr(next_walker.remaining_input)}, recursively advancing"
                     )
-                else:
-                    yield new_cursor
+                    yield from self.advance_walker(
+                        next_walker, next_walker.remaining_input
+                    )
+                    continue
 
-        logger.debug(
-            "\nAdvancement status:\n"
-            f"  Successfully advanced: {successfully_advanced}\n"
-            f"  Cursor: {pformat(cursor, indent=2)}\n"
-            f"  Can handle remaining input: {cursor.can_handle_remaining_input}"
-        )
+                logger.debug(f"yielding walker:\n{next_walker}")
+                yield next_walker
 
-        if not successfully_advanced and cursor.can_handle_remaining_input:
-            cursor._accepts_remaining_input = False
-            if (
-                cursor.accept_history
-                and cursor.accept_history[-1].can_handle_remaining_input
-            ):
-                transition_cursor = cursor.accept_history[-1].clone()
-                cursor.accept_history.pop()
-                cursor.transition_cursor = transition_cursor
-                cursor.target_state = cursor.current_state
-
-            yield from cursor.advance(token)
-
-    def _find_transitions(
-        self,
-        cursor: Cursor,
-        visited_states: List[Tuple[StateType, Any]],
-        traversed_edges: Set[Tuple[StateType, Any]],
-    ) -> Iterable[Cursor]:
-        """Recursively find and create transitions for the given cursor.
-
-        Args:
-            cursor: The current cursor to process.
-            visited_states: List of states already visited to avoid cycles.
-            traversed_edges: Set of traversed edges to prevent duplication.
-
-        Yields:
-            New cursors after processing transitions.
+    def _get_transitions(
+        self, state: StateType, source_walker: Optional[Walker] = None
+    ) -> Iterable[Tuple[Walker, StateType]]:
         """
-        edges = self.get_edges(cursor.current_state)
+        Get transition walkers for a given state.
 
-        if not edges and not cursor.in_accepted_state() and cursor.remaining_input:
-            yield cursor
-
+        Returns:
+            Iterable of (transition_walker, target_state) tuples.
+        """
+        edges = self.get_edges(state)
+        logger.debug(f"exploring edges from state {state}: {edges}")
         for acceptor, target_state in edges:
-            if cursor.start_transition(acceptor, target_state):
-                for transition_cursor in acceptor.get_cursors():
-                    new_cursor = self._create_transition_cursor(
-                        cursor, transition_cursor, target_state
+            for walker in acceptor.get_walkers():
+                yield walker, target_state
+
+            if acceptor.is_optional() and target_state is not state:
+                if target_state in self.end_states and source_walker:
+                    logger.debug(
+                        f"target state is end state, yielding accepted state: {target_state}"
                     )
-                    if (
-                        transition_cursor.in_accepted_state()
-                        and not acceptor.expects_more_input(transition_cursor)
-                    ):
-                        state_snapshot = (
-                            new_cursor.current_state,
-                            str(new_cursor.get_value()),
-                        )
-                        if state_snapshot in visited_states:
-                            continue
+                    yield AcceptedState(source_walker), target_state
+                else:
+                    logger.debug(
+                        f"state {state} supports pass through, getting transitions for next state {target_state}"
+                    )
+                    yield from self._get_transitions(target_state, source_walker)
 
-                        new_visited_states = visited_states + [state_snapshot]
-                        yield from self._cascade_transition(
-                            new_cursor, new_visited_states, traversed_edges
-                        )
-                    else:
-                        yield new_cursor
+    def _branch_walkers(self, walker: Walker) -> Iterable[Walker]:
+        """Branch the walker into multiple paths for parallel exploration.
 
-    def _cascade_transition(
-        self,
-        cursor: Cursor,
-        visited_states: List[Tuple[StateType, Any]],
-        traversed_edges: Set[Tuple[StateType, Any]],
-    ) -> Iterable[Cursor]:
-        """Handle transitions that reach an accepted state and cascade to the next state.
+        At each non-deterministic decision point, clone the current walker
+        for each possible transition. This allows simultaneous exploration
+        of all valid paths without explicit backtracking.
 
         Args:
-            cursor: The cursor that reached an accepted state.
-            visited_states: List of states already visited to avoid cycles.
-            traversed_edges: Set of traversed edges to prevent duplication.
+            walker: The current walker instance to branch from.
 
         Yields:
-            Cursors after cascading the transition.
+            New walker instances, each representing a different path.
         """
-        if not cursor.transition_cursor or cursor.target_state is None:
-            raise AssertionError(
-                "Cursor must have a transition_cursor and target_state."
-            )
+        for transition, target_state in self._get_transitions(
+            walker.current_state, walker
+        ):
+            if (
+                walker.target_state == target_state
+                and walker.transition_walker
+                and walker.transition_walker.can_accept_more_input()
+            ):
+                logger.debug(f"Walker already exploring state {target_state}")
+                yield walker
+                continue
 
-        transition_value = cursor.transition_cursor.get_value()
-        target_state = cursor.target_state
-        is_end_state = target_state in self.end_states
-
-        if cursor.complete_transition(transition_value, target_state, is_end_state):
-            cursor.accept_history.append(cursor.transition_cursor)
-            cursor.current_state = target_state
-            cursor.target_state = None
-            cursor.transition_cursor = None
-
-            edge = (cursor.current_state, str(cursor.get_value()))
-
-            if edge not in traversed_edges:
-                traversed_edges.add(edge)
-                if is_end_state and not cursor.remaining_input:
-                    yield AcceptedState(cursor)
-
-                yield from self._find_transitions(
-                    cursor, visited_states, traversed_edges
+            if walker.transition_walker:
+                walker.accept_history.append(walker.transition_walker)
+                logger.debug(
+                    f"appended transition walker to accept history: {walker.accept_history}"
                 )
 
-    def _create_transition_cursor(
-        self, cursor: Cursor, transition_cursor: Cursor, target_state: StateType
-    ) -> Cursor:
-        """Create a new cursor for state transitions.
+            if (
+                transition.has_reached_accept_state()
+                and target_state in self.end_states
+            ):
+                logger.debug(
+                    f"transition has reached accept state, yielding accepted state: {target_state}"
+                )
+                yield AcceptedState(walker)
+                continue
+
+            logger.debug(f"Creating walker to explore {walker.current_state} --> {target_state} with {transition}")
+            new_walker = walker.clone()
+            new_walker.transition_walker = transition
+            new_walker.target_state = target_state
+
+            yield new_walker
+
+    def _transition(self, walker: Walker) -> Iterable[Walker]:
+        """Handle transitions reaching accepted states.
+
+        Manages the transition cascade process:
+        1. Complete current transition
+        2. Update walker state and history
+        3. Find new transitions if not in end state
 
         Args:
-            cursor: The current cursor.
-            transition_cursor: The cursor handling the transition.
-            target_state: The state to transition to.
+            walker: Walker that reached accepted state
 
-        Returns:
-            A new cursor set up for the transition.
+        Yields:
+            Walkers after transition
+
+        Raises:
+            AssertionError: If walker lacks required transition state
         """
-        new_cursor = cursor.clone()
-        new_cursor.transition_cursor = transition_cursor
-        new_cursor.target_state = target_state
-        return new_cursor
+        if not walker.transition_walker or walker.target_state is None:
+            logger.error(
+                f"Walker lacks transition_walker or target_state: "
+                f"{pformat(walker, indent=2)}\n"
+            )
+            raise ValueError("Walker must have a transition_walker and target_state.")
 
-    def _should_skip_cursor(self, cursor: Cursor) -> bool:
-        """Determine if the cursor should be skipped based on its ability to handle remaining input.
+        transition_value = walker.transition_walker.accumulated_value()
+        is_end_state = walker.target_state in self.end_states
+
+        if not walker.should_complete_transition(transition_value, is_end_state):
+            logger.debug(f"Did not complete transition:\n{walker}")
+            yield walker
+            return
+
+        for next_walker in walker.transition():
+            if next_walker.has_reached_accept_state():
+                logger.debug(f"walker in accepted state, yielding:\n{next_walker}")
+                yield next_walker
+
+            if self.expects_more_input(next_walker):
+                logger.debug(
+                    f"{self.__class__.__name__} expecting more input, branching walker:\n{next_walker}"
+                )
+                yield from self._branch_walkers(next_walker)
+
+    def expects_more_input(self, walker: Walker) -> bool:
+        """Check if more input is expected.
+
+        Determines if the state machine expects additional input based on:
+        - Current state (accepted/end state)
+        - Remaining input
+        - Available transitions
 
         Args:
-            cursor: The cursor to evaluate.
+            walker: Current walker
 
         Returns:
-            True if the cursor should be skipped, False otherwise.
+            True if more input expected, False otherwise
         """
-        if (
-            not cursor.transition_cursor
-            or not cursor.transition_cursor.remaining_input
-            or cursor.transition_cursor.can_handle_remaining_input
-        ):
+        if walker.has_reached_accept_state() or walker.current_state in self.end_states:
             return False
 
-        return not self.expects_more_input(cursor)
-
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        """Determine if the state machine expects more input based on the current cursor state.
-
-        Args:
-            cursor: The current cursor.
-
-        Returns:
-            True if more input is expected, False otherwise.
-        """
-        if cursor.in_accepted_state() or cursor.current_state in self.end_states:
-            return False
-
-        if cursor.remaining_input:
+        if walker.remaining_input:
             return True
 
-        return bool(self.get_edges(cursor.current_state))
+        return bool(self.get_edges(walker.current_state))
 
-    class Cursor(Cursor):
-        """Cursor for navigating through states in the StateMachine."""
 
-        @property
-        def can_handle_remaining_input(self) -> bool:
-            """Determine if the cursor can handle more input.
+###################################
+# Walker
+###################################
+class StateMachineWalker(Walker):
+    """Walker for navigating through StateMachine states.
 
-            Returns:
-                True if the cursor or its transition cursor can handle more input.
-            """
-            if not self._accepts_remaining_input:
-                return False
+    Manages state traversal and tracks:
+    - Current position
+    - Transition state
+    - Input processing
+    - Value accumulation
+    """
 
-            if self.transition_cursor:
-                return self.transition_cursor.can_handle_remaining_input
+    def can_accept_more_input(self) -> bool:
+        """Check if walker can process more input.
 
-            if self.accept_history:
-                while (
-                    self.accept_history
-                    and isinstance(self.accept_history[-1], AcceptedState)
-                    and self.accept_history[-1].is_empty_transition()
-                ):
-                    self.accept_history.pop()
+        Returns:
+            True if more input can be handled, False otherwise
+        """
+        if self.transition_walker:
+            return self.transition_walker.can_accept_more_input()
 
-                if self.accept_history:
-                    return self.accept_history[-1].can_handle_remaining_input
-
-            if isinstance(self.acceptor, StateMachine):
-                return bool(self.acceptor.get_edges(self.current_state))
-
+        if not self._accepts_remaining_input:
             return False
 
-        def matches_all(self) -> bool:
-            """Check if the current transition cursor matches all possible characters.
+        if self.accept_history:
+            return self.accept_history[-1].can_accept_more_input()
 
-            Returns:
-                True if it matches all, False otherwise.
-            """
-            if self.transition_cursor:
-                return self.transition_cursor.matches_all()
-            return False
+        if isinstance(self.acceptor, StateMachine):
+            return bool(self.acceptor.get_edges(self.current_state))
 
-        def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-            """Select valid characters based on the current transition cursor.
+        return False
 
-            Args:
-                dawg: The DAWG to select from.
-                depth: The current depth of the cursor in the state machine.
+    def accepts_any_token(self) -> bool:
+        """Check if current transition matches all characters.
 
-            Returns:
-                A set of valid characters accepted by the transition cursor.
-            """
-            if depth >= MAX_DEPTH:
-                return set()
+        Returns:
+            True if matches all, False otherwise
+        """
+        if self.transition_walker:
+            return self.transition_walker.accepts_any_token()
+        return False
 
-            valid_prefixes = set()
-            if self.transition_cursor:
-                valid_prefixes = self.transition_cursor.select(dawg, depth + 1)
+    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
+        """Select valid characters based on current state.
 
-            edge_cursor_prefixes = set()
-            depth_prefix = f"{depth * ' '}{depth}. " if depth > 0 else ""
-            if (
-                self.target_state is not None
-                and isinstance(self.acceptor, StateMachine)
-                and self.in_accepted_state()
-            ):
-                for acceptor, state in self.acceptor.get_edges(self.target_state):
-                    # Go through the possible cursors from each edge's acceptor
-                    logger.debug(
-                        "\n%sDownstream edge analysis:\n"
-                        f"  Source state: {self.target_state}\n"
-                        f"  Target state: {state}\n"
-                        f"  Acceptor: {acceptor.__class__.__name__}\n"
-                        f"  Acceptor details: {pformat(acceptor, indent=2)}",
-                        depth_prefix,
-                    )
-                    for possible_next_cursor in acceptor.get_cursors():
-                        prefixes = possible_next_cursor.select(dawg, depth + 1)
-                        edge_cursor_prefixes.update(prefixes)
+        Args:
+            dawg: DAWG to select from
+            depth: Current depth in state machine
 
-            logger.debug(
-                "\nSelecting prefixes at depth %d:\n"
-                f"  Current state: {self.current_state}\n"
-                f"  Target state: {self.target_state}\n"
-                f"  Valid prefixes: {pformat(valid_prefixes, indent=2)}\n"
-                f"  Edge cursor prefixes: {pformat(edge_cursor_prefixes, indent=2)}"
+        Returns:
+            Set of valid characters
+        """
+        if depth >= MAX_LOOKAHEAD_DEPTH:
+            return set()
+
+        valid_prefixes = set()
+        if self.transition_walker:
+            valid_prefixes = self.transition_walker.get_valid_continuations(
+                dawg, depth + 1
             )
-            if not edge_cursor_prefixes:
-                return valid_prefixes
-            return valid_prefixes.union(edge_cursor_prefixes)
 
-        def advance(self, token: str) -> Iterable[Cursor]:
-            """Advance the cursor with the given input.
-
-            Args:
-                token: The input string to process.
-
-            Yields:
-                Updated cursors after advancement.
-            """
-            return self.acceptor.advance_cursor(self, token)
-
-        def get_value(self) -> Any:
-            """Retrieve the accumulated value from the cursor's history.
-
-            Returns:
-                The value from the transition_cursor if present and has a value,
-                otherwise, the accumulated values from accept_history, or None if not available.
-            """
-            if self.transition_cursor:
-                return self.transition_cursor.get_value()
-
-            if self.accept_history:
-                values = [
-                    cursor.get_value()
-                    for cursor in self.accept_history
-                    if cursor.get_value() is not None
-                ]
-                if values:
-                    concatenated = (
-                        "".join(map(str, values)) if len(values) > 1 else values[0]
+        edge_walker_prefixes = set()
+        depth_prefix = f"{depth * ' '}{depth}. " if depth > 0 else ""
+        if (
+            self.target_state is not None
+            and isinstance(self.acceptor, StateMachine)
+            and self.has_reached_accept_state()
+        ):
+            for acceptor, state in self.acceptor.get_edges(self.target_state):
+                logger.debug(
+                    "\n%sDownstream edge analysis:\n"
+                    f"  Source state: {self.target_state}\n"
+                    f"  Target state: {state}\n"
+                    f"  Acceptor: {acceptor.__class__.__name__}\n"
+                    f"  Acceptor details: {pformat(acceptor, indent=2)}",
+                    depth_prefix,
+                )
+                for possible_next_walker in acceptor.get_walkers():
+                    prefixes = possible_next_walker.get_valid_continuations(
+                        dawg, depth + 1
                     )
-                    return self._parse_value(concatenated)
+                    edge_walker_prefixes.update(prefixes)
 
+        logger.debug(
+            "\nSelecting prefixes at depth %d:\n"
+            f"  Current state: {self.current_state}\n"
+            f"  Target state: {self.target_state}\n"
+            f"  Valid prefixes: {pformat(valid_prefixes, indent=2)}\n"
+            f"  Edge walker prefixes: {pformat(edge_walker_prefixes, indent=2)}"
+        )
+        if not edge_walker_prefixes:
+            return valid_prefixes
+        return valid_prefixes.union(edge_walker_prefixes)
+
+    def consume_token(self, token: str) -> Iterable[Walker]:
+        """Advance walker with input token.
+
+        Args:
+            token: Input to process
+
+        Yields:
+            Updated walkers after advancement
+        """
+        yield from self.acceptor.advance_walker(self, token)
+
+    def accumulated_value(self) -> Any:
+        """Retrieve the accumulated walker value.
+
+        Returns:
+            Any: The current value from transition or history, parsed into appropriate type.
+                Returns None if no value is accumulated.
+        """
+        # Get current transition value if exists
+        transition_value = (
+            self.transition_walker.accumulated_value()
+            if self.transition_walker
+            else None
+        )
+
+        # If no history, just return transition value
+        if not self.accept_history:
+            return transition_value
+
+        # Collect non-None values from history
+        values = [
+            walker.accumulated_value()
+            for walker in self.accept_history
+            if walker.accumulated_value() is not None
+        ]
+
+        # Add transition value if exists
+        if transition_value is not None:
+            values.append(transition_value)
+
+        # Return if no values
+        if not values:
             return None
 
-        def _parse_value(self, value: Any) -> Any:
-            """Parse the given value into an appropriate type.
+        # Join multiple values or return single value
+        concatenated = "".join(map(str, values)) if len(values) > 1 else values[0]
+        return self._parse_value(concatenated)
 
-            Args:
-                value: The value to parse.
+    def is_within_value(self) -> bool:
+        """Determine if the walker is currently within a value.
 
-            Returns:
-                The parsed value.
-            """
-            if not isinstance(value, str):
-                return value
-
-            try:
-                if "." in value or "e" in value.lower():
-                    return float(value)
-                return int(value)
-            except ValueError:
-                pass
-
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                pass
-
-            return value
-
-        def is_in_value(self) -> bool:
-            """Determine if the cursor is currently within a value.
-
-            Returns:
-                True if in a value, False otherwise.
-            """
-            if self.consumed_character_count > 0 and self.transition_cursor:
-                return self.transition_cursor.is_in_value()
-            if self.accept_history:
-                return self.accept_history[-1].is_in_value()
-            return False
-
-        def __hash__(self) -> int:
-            """Compute the hash value of the cursor.
-
-            Returns:
-                The hash value.
-            """
-            return hash((self.current_state, self.target_state, str(self.get_value())))
-
-        def __repr__(self) -> str:
-            """Return the string representation of the cursor.
-
-            Returns:
-                The string representation.
-            """
-            components = []
-
-            if self.accept_history:
-                history = "".join(
-                    str(cursor.get_value())
-                    for cursor in self.accept_history
-                    if cursor.get_value()
-                )
-                if history:
-                    components.append(f"history={repr(history)}")
-
-            components.append(f"state={self.current_state}")
-
-            if self.target_state is not None:
-                components.append(f"target={self.target_state}")
-
-            if self.transition_cursor:
-                components.append(f"via={self.transition_cursor}")
-
-            if self.remaining_input:
-                components.append(f"remaining='{self.remaining_input}'")
-
-            return (
-                f"{self.acceptor.__class__.__name__}.Cursor(\n  "
-                + ",\n  ".join(components)
-                + "\n)"
-            )
-
-
-__all__ = ["StateMachine", "StateMachineGraph", "StateType"]
+        Returns:
+            True if in a value, False otherwise.
+        """
+        if self.consumed_character_count > 0 and self.transition_walker:
+            return self.transition_walker.is_within_value()
+        if self.accept_history:
+            return self.accept_history[-1].is_within_value()
+        return False

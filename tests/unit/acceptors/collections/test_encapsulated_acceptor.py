@@ -12,6 +12,7 @@ def content_acceptor():
     """Fixture for the content acceptor."""
     return TextAcceptor("content")
 
+
 @pytest.fixture
 def default_delimiters():
     """Fixture for default delimiters."""
@@ -19,6 +20,7 @@ def default_delimiters():
         "open_delimiter": "```json\n",
         "close_delimiter": "\n```",
     }
+
 
 @pytest.fixture
 def default_encapsulated_acceptor(content_acceptor, default_delimiters):
@@ -28,6 +30,7 @@ def default_encapsulated_acceptor(content_acceptor, default_delimiters):
         open_delimiter=default_delimiters["open_delimiter"],
         close_delimiter=default_delimiters["close_delimiter"],
     )
+
 
 def test_initialization_with_custom_delimiters(content_acceptor):
     """Test initializing EncapsulatedAcceptor with custom delimiters."""
@@ -50,6 +53,7 @@ def test_initialization_with_custom_delimiters(content_acceptor):
     assert isinstance(acceptor_2, TextAcceptor)
     assert acceptor_2.text == custom_close
 
+
 def test_accepting_valid_sequence(default_encapsulated_acceptor, default_delimiters):
     """Test accepting a valid sequence with delimiters and content."""
     input_sequence = (
@@ -57,33 +61,36 @@ def test_accepting_valid_sequence(default_encapsulated_acceptor, default_delimit
         + "content"
         + default_delimiters["close_delimiter"]
     )
-    cursors = list(default_encapsulated_acceptor.get_cursors())
+    walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_rejecting_sequence_missing_open_delimiter(
     default_encapsulated_acceptor, default_delimiters
 ):
     """Test rejecting sequence missing the open delimiter."""
     input_sequence = "content" + default_delimiters["close_delimiter"]
-    cursors = list(default_encapsulated_acceptor.get_cursors())
+    walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert not any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert not any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_rejecting_sequence_missing_close_delimiter(
     default_encapsulated_acceptor, default_delimiters
 ):
     """Test rejecting sequence missing the close delimiter."""
     input_sequence = default_delimiters["open_delimiter"] + "content"
-    cursors = list(default_encapsulated_acceptor.get_cursors())
+    walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert not any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert not any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_rejecting_invalid_content(default_encapsulated_acceptor, default_delimiters):
     """Test rejecting invalid content within the delimiters."""
@@ -92,11 +99,12 @@ def test_rejecting_invalid_content(default_encapsulated_acceptor, default_delimi
         + "invalid_content"
         + default_delimiters["close_delimiter"]
     )
-    cursors = list(default_encapsulated_acceptor.get_cursors())
+    walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert not any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert not any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_accepting_custom_delimiters(content_acceptor):
     """Test handling custom delimiters."""
@@ -108,11 +116,12 @@ def test_accepting_custom_delimiters(content_acceptor):
         close_delimiter=custom_close,
     )
     input_sequence = custom_open + "content" + custom_close
-    cursors = list(encapsulated_acceptor.get_cursors())
+    walkers = list(encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_nested_encapsulated_acceptors():
     """Test nested encapsulated acceptors."""
@@ -125,11 +134,12 @@ def test_nested_encapsulated_acceptors():
         inner_acceptor, open_delimiter="<outer>", close_delimiter="</outer>"
     )
     input_sequence = "<outer><inner>inner_content</inner></outer>"
-    cursors = list(outer_acceptor.get_cursors())
+    walkers = list(outer_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_no_acceptance_on_partial_delimiter(
     default_encapsulated_acceptor, default_delimiters
@@ -137,16 +147,18 @@ def test_no_acceptance_on_partial_delimiter(
     """Test that partial delimiters are not accepted."""
     partial_open = default_delimiters["open_delimiter"][:-1]
     input_sequence = partial_open + "content" + default_delimiters["close_delimiter"]
-    cursors = list(default_encapsulated_acceptor.get_cursors())
+    walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert not any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert not any(isinstance(walker, AcceptedState) for walker in walkers)
+
 
 def test_acceptor_with_empty_content():
     """Test handling of empty content."""
     with pytest.raises(ValueError):
         TextAcceptor("")
+
 
 def test_acceptor_with_whitespace_content(default_delimiters):
     """Test handling content with whitespace."""
@@ -161,8 +173,8 @@ def test_acceptor_with_whitespace_content(default_delimiters):
         + "   "
         + default_delimiters["close_delimiter"]
     )
-    cursors = list(encapsulated_acceptor.get_cursors())
+    walkers = list(encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        cursors = list(StateMachine.advance_all(cursors, char))
+        walkers = list(StateMachine.advance_all(walkers, char))
 
-    assert any(isinstance(cursor, AcceptedState) for cursor in cursors)
+    assert any(isinstance(walker, AcceptedState) for walker in walkers)

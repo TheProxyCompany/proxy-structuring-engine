@@ -1,7 +1,8 @@
-from typing import Iterator
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.cursor import Cursor
+from __future__ import annotations
 
+from pse.state_machine.walker import Walker
+from pse.state_machine.state_machine import StateMachine
+from typing import Iterable
 
 class EmptyTransitionAcceptor(StateMachine):
     """
@@ -10,48 +11,11 @@ class EmptyTransitionAcceptor(StateMachine):
     This facilitates the expression of complex graphs by skipping the current state without consuming input.
     """
 
-    def get_cursors(self) -> Iterator[Cursor]:
-        """
-        Retrieve cursors that represent an empty transition.
+    def get_walkers(self) -> Iterable[Walker]:
+        return []
 
-        Returns:
-            Iterator[Cursor]: An iterator containing a single `AcceptedState` cursor.
-        """
-        from .accepted_state import AcceptedState
-        yield AcceptedState(self.Cursor(self))
-
-    class Cursor(StateMachine.Cursor):
-        """
-        Cursor for handling empty transitions.
-        """
-
-        def get_value(self) -> str:
-            """
-            Retrieve the value associated with the empty transition.
-
-            Returns:
-                str: An empty string indicating no consumption.
-            """
-            return ""
-
-        def __repr__(self) -> str:
-            """
-            Provide a string representation of the cursor for debugging purposes.
-
-            Returns:
-                str: The string representation of the cursor.
-            """
-            return "EmptyTransition"
-
-        def in_accepted_state(self) -> bool:
-            """
-            Indicate that this cursor is in an accepted state.
-
-            Returns:
-                bool: `True`, as this cursor represents an accepted state.
-            """
-            return True
-
+    def is_optional(self) -> bool:
+        return True
 
 EmptyTransition = EmptyTransitionAcceptor({})
 

@@ -3,10 +3,18 @@ import json
 from typing import (
     Optional,
     Any,
+    Type,
 )
 
-from pse.state_machine.state_machine import StateMachine, StateMachineGraph
-from pse.acceptors.basic.character_acceptors import CharacterAcceptor, hex_digit_acceptor
+from pse.state_machine.state_machine import (
+    StateMachine,
+    StateMachineWalker,
+    StateMachineGraph,
+)
+from pse.acceptors.basic.character_acceptors import (
+    CharacterAcceptor,
+    hex_digit_acceptor,
+)
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
@@ -39,7 +47,10 @@ class StringAcceptor(StateMachine):
                 (TextAcceptor('"'), self.STATE_IN_STRING),  # Start of string
             ],
             self.STATE_IN_STRING: [
-                (StringCharacterAcceptor(), self.STATE_IN_STRING),  # Regular chars first
+                (
+                    StringCharacterAcceptor(),
+                    self.STATE_IN_STRING,
+                ),  # Regular chars first
                 (TextAcceptor('"'), "$"),  # End quote second
                 (TextAcceptor("\\"), self.STATE_ESCAPE),  # Escape last
             ],
@@ -71,86 +82,91 @@ class StringAcceptor(StateMachine):
         }
         super().__init__(graph, self.STATE_START, ["$"])
 
-    class Cursor(StateMachine.Cursor):
+    @property
+    def walker_class(self) -> Type[Stringwalker]:
+        return Stringwalker
+
+
+class Stringwalker(StateMachineWalker):
+    """
+    Walker for StringAcceptor.
+
+    Manages the parsing state and accumulates characters for a JSON string.
+    The length attribute tracks the number of characters in the string content,
+    explicitly excluding the opening and closing quotation marks.
+    """
+
+    MAX_LENGTH = 10000  # Define a maximum allowed string length
+
+    def __init__(self, acceptor: StringAcceptor):
         """
-        Cursor for StringAcceptor.
+        Initialize the walker.
 
-        Manages the parsing state and accumulates characters for a JSON string.
-        The length attribute tracks the number of characters in the string content,
-        explicitly excluding the opening and closing quotation marks.
+        Args:
+            acceptor (StringAcceptor): The parent acceptor.
         """
+        super().__init__(acceptor)
+        self.acceptor = acceptor
+        self.text: str = ""
+        self.value: Optional[str] = None
+        self._accepts_remaining_input = True
 
-        MAX_LENGTH = 10000  # Define a maximum allowed string length
+    def should_complete_transition(
+        self, transition_value: str, target_state: Any, is_end_state: bool
+    ) -> bool:
+        """
+        Handle the completion of a transition.
 
-        def __init__(self, acceptor: StringAcceptor):
-            """
-            Initialize the cursor.
+        Args:
+            transition_value (str): The value transitioned with.
+            target_state (Any): The target state after transition.
+            is_end_state (bool): Indicates if the transition leads to an end state.
 
-            Args:
-                acceptor (StringAcceptor): The parent acceptor.
-            """
-            super().__init__(acceptor)
-            self.acceptor = acceptor
-            self.text: str = ""
-            self.value: Optional[str] = None
-            self._accepts_remaining_input = True
-
-        def complete_transition(
-            self, transition_value: str, target_state: Any, is_end_state: bool
-        ) -> bool:
-            """
-            Handle the completion of a transition.
-
-            Args:
-                transition_value (str): The value transitioned with.
-                target_state (Any): The target state after transition.
-                is_end_state (bool): Indicates if the transition leads to an end state.
-
-            Returns:
-                bool: Success of the transition.
-            """
-            self.text += transition_value
-            self.current_state = target_state
-            self._accepts_remaining_input = False
-            if is_end_state:
-                try:
-                    self.value = json.loads(self.text)
-                except json.JSONDecodeError:
-                    self.value = None
-            else:
+        Returns:
+            bool: Success of the transition.
+        """
+        self.text += transition_value
+        self.current_state = target_state
+        self._accepts_remaining_input = False
+        if is_end_state:
+            try:
+                self.value = json.loads(self.text)
+            except json.JSONDecodeError:
                 self.value = None
-            return True
+        else:
+            self.value = None
+        return True
 
-        def get_value(self) -> str:
-            """
-            Get the accumulated string value.
+    def accumulated_value(self) -> str:
+        """
+        Get the accumulated string value.
 
-            Returns:
-                str: The parsed string value without surrounding quotes if fully parsed,
-                     otherwise the current accumulated text.
-            """
-            return self.value if self.value is not None else self.text
+        Returns:
+            str: The parsed string value without surrounding quotes if fully parsed,
+                    otherwise the current accumulated text.
+        """
+        return self.value if self.value is not None else self.text
 
-        def __repr__(self) -> str:
-            """
-            Return an unambiguous string representation of the instance.
+    def __repr__(self) -> str:
+        """
+        Return an unambiguous string representation of the instance.
 
-            Returns:
-                The string representation including value and acceptor.
+        Returns:
+            The string representation including value and acceptor.
 
-            Example:
-                StringAcceptor.Cursor(" | transition_cursor=TextAcceptor.Cursor('👉"') | state[1]->state[$])
-            """
-            components = []
-            if self.get_value():
-                components.append(self.get_value())
-            if self.transition_cursor:
-                components.append(
-                    f"state[{self.current_state}]->state[{self.target_state}] via {self.transition_cursor}"
-                )
-            else:
-                components.append(f"state[{self.current_state}]")
-            if self.remaining_input:
-                components.append(f"remaining_input={self.remaining_input}")
+        Example:
+            StringAcceptor.Walker(" | transition_walker=TextAcceptor.Walker('👉"') | state[1]->state[$])
+        """
+        components = []
+        if self.accumulated_value():
+            components.append(self.accumulated_value())
+        if self.transition_walker:
+            components.append(
+                f"state[{self.current_state}]->state[{self.target_state}] via {self.transition_walker}"
+            )
+        else:
+            components.append(f"state[{self.current_state}]")
+        if self.remaining_input:
+            components.append(f"remaining_input={self.remaining_input}")
 
-            return f"StringAcceptor.Cursor({' | '.join(components)})"
+        return f"StringAcceptor.Walker({' | '.join(components)})"

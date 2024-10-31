@@ -19,7 +19,9 @@ def test_validate_value_minimum(value, expected):
     """
     schema = {"type": "number", "minimum": 10}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} with 'minimum' constraint."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'minimum' constraint."
 
 
 @pytest.mark.parametrize(
@@ -36,7 +38,9 @@ def test_validate_value_exclusive_minimum(value, expected):
     """
     schema = {"type": "number", "exclusiveMinimum": 10}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMinimum' constraint."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMinimum' constraint."
 
 
 @pytest.mark.parametrize(
@@ -53,7 +57,9 @@ def test_validate_value_maximum(value, expected):
     """
     schema = {"type": "number", "maximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} with 'maximum' constraint."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'maximum' constraint."
 
 
 @pytest.mark.parametrize(
@@ -70,7 +76,9 @@ def test_validate_value_exclusive_maximum(value, expected):
     """
     schema = {"type": "number", "exclusiveMaximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMaximum' constraint."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMaximum' constraint."
 
 
 @pytest.mark.parametrize(
@@ -88,7 +96,9 @@ def test_validate_value_multiple_of(value, expected):
     """
     schema = {"type": "number", "multipleOf": 5}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} with 'multipleOf' constraint."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'multipleOf' constraint."
 
 
 @pytest.mark.parametrize(
@@ -106,9 +116,11 @@ def test_complete_transition_with_validation(value_str, expected):
     """
     schema = {"type": "number", "minimum": 10, "maximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
-    cursor = acceptor.Cursor(acceptor)
-    result = cursor.complete_transition(value_str, 5, True)
-    assert result == expected, f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by complete_transition."
+    walker = acceptor.walker_class(acceptor)
+    result = walker.should_complete_transition(value_str, 5, True)
+    assert (
+        result == expected
+    ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by complete_transition."
 
 
 def test_start_transition_integer_constraints():
@@ -117,9 +129,9 @@ def test_start_transition_integer_constraints():
     """
     schema = {"type": "integer"}
     acceptor = NumberSchemaAcceptor(schema)
-    cursor = acceptor.Cursor(acceptor)
-    cursor.current_state = 3
-    result = cursor.start_transition(acceptor, 4)
+    walker = acceptor.walker_class(acceptor)
+    walker.current_state = 3
+    result = walker.should_start_transition(acceptor, 4)
     assert not result, "Transition to state 4 should be blocked for 'integer' type when current_state is 3."
 
 
@@ -129,9 +141,9 @@ def test_start_transition_non_integer():
     """
     schema = {"type": "number"}
     acceptor = NumberSchemaAcceptor(schema)
-    cursor = acceptor.Cursor(acceptor)
-    cursor.current_state = 3
-    result = cursor.start_transition(acceptor, 4)
+    walker = acceptor.walker_class(acceptor)
+    walker.current_state = 3
+    result = walker.should_start_transition(acceptor, 4)
     assert result, "Transition to state 4 should be allowed for 'number' type when current_state is 3."
 
 
@@ -149,7 +161,9 @@ def test_validate_value_integer_type(value, expected):
     """
     schema = {"type": "integer"}
     acceptor = NumberSchemaAcceptor(schema)
-    assert acceptor.validate_value(value) == expected, f"Value {value} should be {'valid' if expected else 'invalid'} for 'integer' type."
+    assert (
+        acceptor.validate_value(value) == expected
+    ), f"Value {value} should be {'valid' if expected else 'invalid'} for 'integer' type."
 
 
 @pytest.mark.parametrize(
@@ -178,14 +192,16 @@ def test_number_with_object_acceptor(json_input, expected):
     }
     acceptor = ObjectSchemaAcceptor(schema, context={})
 
-    cursors = acceptor.get_cursors()
+    walkers = acceptor.get_walkers()
     for char in json_input:
-        cursors = acceptor.advance_all(cursors, char)
-        if not cursors:
+        walkers = acceptor.advance_all(walkers, char)
+        if not walkers:
             break
 
-    is_accepted = any(cursor.in_accepted_state() for cursor in cursors)
-    assert is_accepted == expected, f"JSON input '{json_input}' should be {'accepted' if expected else 'rejected'} by ObjectSchemaAcceptor."
+    is_accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    assert (
+        is_accepted == expected
+    ), f"JSON input '{json_input}' should be {'accepted' if expected else 'rejected'} by ObjectSchemaAcceptor."
 
 
 @pytest.mark.parametrize(
@@ -213,14 +229,16 @@ def test_number_with_text_acceptor(input_string, expected):
         end_states=["$"],
     )
 
-    cursors = state_machine.get_cursors()
+    walkers = state_machine.get_walkers()
     for char in input_string:
-        cursors = state_machine.advance_all(cursors, char)
-        if not cursors:
+        walkers = state_machine.advance_all(walkers, char)
+        if not walkers:
             break
 
-    is_accepted = any(cursor.in_accepted_state() for cursor in cursors)
-    assert is_accepted == expected, f"Input '{input_string}' should be {'accepted' if expected else 'rejected'} by state machine."
+    is_accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    assert (
+        is_accepted == expected
+    ), f"Input '{input_string}' should be {'accepted' if expected else 'rejected'} by state machine."
 
 
 @pytest.mark.parametrize(
@@ -232,13 +250,15 @@ def test_number_with_text_acceptor(input_string, expected):
         ("25", False),
     ],
 )
-def test_number_with_cursor_validation(value_str, expected):
+def test_number_with_walker_validation(value_str, expected):
     """
-    Test NumberSchemaAcceptor's cursor validation in various scenarios.
-    Ensures that cursor correctly validates numbers based on schema constraints.
+    Test NumberSchemaAcceptor's walker validation in various scenarios.
+    Ensures that walker correctly validates numbers based on schema constraints.
     """
     schema = {"type": "number", "minimum": 10, "maximum": 100, "multipleOf": 10}
     acceptor = NumberSchemaAcceptor(schema)
-    cursor = acceptor.Cursor(acceptor)
-    result = cursor.complete_transition(value_str, 5, True)
-    assert result == expected, f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by cursor validation."
+    walker = acceptor.walker_class(acceptor)
+    result = walker.should_complete_transition(value_str, 5, True)
+    assert (
+        result == expected
+    ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by walker validation."

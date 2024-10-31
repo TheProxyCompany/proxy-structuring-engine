@@ -1,13 +1,14 @@
 from __future__ import annotations
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-from pse.state_machine.cursor import Cursor
+from typing import Iterable, Optional
+from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import (
     StateMachine,
-    StateType,
+    StateMachineGraph,
+    StateMachineWalker,
 )
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from lexpy import DAWG
+
 
 class BooleanAcceptor(StateMachine):
     """
@@ -18,61 +19,66 @@ class BooleanAcceptor(StateMachine):
         """
         Initialize the BooleanAcceptor with its state transitions defined as a state graph.
         """
-        # Define the state graph where state 0 transitions to end state "$" on "true" or "false"
-        graph: Dict[StateType, List[Tuple[TokenAcceptor, StateType]]] = {
-            0: [(TextAcceptor("true"), "$"), (TextAcceptor("false"), "$")]
+        graph: StateMachineGraph = {
+            0: [
+                (TextAcceptor("true"), "$"),
+                (TextAcceptor("false"), "$"),
+            ]
         }
-        # Initialize the StateMachineAcceptor with the defined graph, initial state, and end states
-        super().__init__(graph=graph, initial_state=0, end_states={"$"})
+        super().__init__(graph)
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
+    def expects_more_input(self, walker: Walker) -> bool:
         return False
 
-    class Cursor(StateMachine.Cursor):
+    def get_walkers(self) -> Iterable[Walker]:
+        initial_walker = BooleanWalker(self)
+        yield from self._branch_walkers(initial_walker)
+
+
+class BooleanWalker(StateMachineWalker):
+    """
+    Walker for BooleanAcceptor to track parsing state and value.
+    """
+
+    def __init__(self, acceptor: BooleanAcceptor) -> None:
         """
-        Cursor for BooleanAcceptor to track parsing state and value.
+        Initialize the walker.
+
+        Args:
+            acceptor (BooleanAcceptor): The parent acceptor.
         """
+        super().__init__(acceptor)
+        self.value: Optional[bool] = None
 
-        def __init__(self, acceptor: BooleanAcceptor) -> None:
-            """
-            Initialize the cursor.
+    def should_complete_transition(
+        self,
+        transition_value: str,
+        is_end_state: bool,
+    ) -> bool:
+        """
+        Handle the completion of a transition.
 
-            Args:
-                acceptor (BooleanAcceptor): The parent acceptor.
-            """
-            super().__init__(acceptor)
-            self.value: Optional[bool] = None
+        Args:
+            transition_value (str): The value transitioned with.
+            target_state (Any): The target state after transition.
+            is_end_state (bool): Indicates if the transition leads to an end state.
 
-        def complete_transition(
-            self,
-            transition_value: str,
-            target_state: Any,
-            is_end_state: bool,
-        ) -> bool:
-            """
-            Handle the completion of a transition.
+        Returns:
+            bool: Success of the transition.
+        """
+        if is_end_state:
+            # Assign True if transition_value is "true", else False
+            self.value = transition_value == "true"
+        return True
 
-            Args:
-                transition_value (str): The value transitioned with.
-                target_state (Any): The target state after transition.
-                is_end_state (bool): Indicates if the transition leads to an end state.
+    def accumulated_value(self) -> Optional[bool]:
+        """
+        Get the parsed boolean value.
 
-            Returns:
-                bool: Success of the transition.
-            """
-            if is_end_state:
-                # Assign True if transition_value is "true", else False
-                self.value = transition_value == "true"
-            return True
-
-        def get_value(self) -> Optional[bool]:
-            """
-            Get the parsed boolean value.
-
-            Returns:
-                Optional[bool]: The parsed boolean or None if not yet parsed.
-            """
-            return self.value
+        Returns:
+            Optional[bool]: The parsed boolean or None if not yet parsed.
+        """
+        return self.value
 
 
 class NullAcceptor(TextAcceptor):
@@ -89,16 +95,20 @@ class NullAcceptor(TextAcceptor):
     def __repr__(self) -> str:
         return "NullAcceptor()"
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
+    def expects_more_input(self, walker: Walker) -> bool:
         return False
 
-    class Cursor(TextAcceptor.Cursor):
-        """
-        Cursor for NullAcceptor to track parsing state.
-        """
+    def get_walkers(self) -> Iterable[NullWalker]:
+        yield NullWalker(self)
 
-        def select(self, dawg: DAWG) -> Iterable[str]:
-            yield "null"
 
-        def get_value(self) -> str:
-            return "null"
+class NullWalker(TextWalker):
+    """
+    Walker for NullAcceptor to track parsing state.
+    """
+
+    def select(self, dawg: DAWG) -> Iterable[str]:
+        yield "null"
+
+    def accumulated_value(self) -> str:
+        return "null"

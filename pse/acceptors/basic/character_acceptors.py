@@ -4,146 +4,169 @@ from typing import Iterable, Optional, Set
 from lexpy import DAWG
 
 from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.cursor import Cursor, logger
-from pse.state_machine.state_machine import StateMachine
+from pse.state_machine.walker import Walker, logger
+from pse.state_machine.state_machine import StateMachine, StateMachineWalker
+
 
 class CharacterAcceptor(StateMachine):
     """
     Accept multiple characters at once if they are all in the charset.
-    Will also prefix the cursor with the valid characters if it's not in the
+    Will also prefix the walker with the valid characters if it's not in the
     accepted state.
     """
 
-    def __init__(self, charset: Iterable[str]) -> None:
+    def __init__(
+        self,
+        charset: Iterable[str],
+        char_limit: Optional[int] = None,
+        is_optional: bool = False,
+        is_case_sensitive: bool = True,
+    ) -> None:
         """
         Initialize the CharAcceptor with a set of valid characters.
 
         Args:
             charset (Iterable[str]): An iterable of characters to be accepted.
         """
-        super().__init__({}, initial_state=0)
+        super().__init__(
+            graph={},
+            is_optional=is_optional,
+            is_case_sensitive=is_case_sensitive,
+        )
         self.charset: Set[str] = set(charset)
+        self.char_limit = char_limit or 0
 
-    def __repr__(self) -> str:
-        return f"CharAcceptor(charset={self.charset})"
-
-    def get_cursors(self) -> Iterable[Cursor]:
-        return [self.Cursor(self)]
-
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        return cursor._accepts_remaining_input and cursor.remaining_input is not None
-
-    class Cursor(Cursor):
+    def get_walkers(self) -> Iterable[CharacterWalker]:
         """
-        Cursor for navigating through characters in CharAcceptor.
+        Get one or more walkers to traverse the acceptor.
+        Override.
         """
+        yield CharacterWalker(self)
 
-        def __init__(
-            self, acceptor: CharacterAcceptor, value: Optional[str] = None
-        ) -> None:
-            """
-            Initialize the Cursor.
+    def expects_more_input(self, walker: Walker) -> bool:
+        if self.char_limit > 0:
+            return walker.consumed_character_count < self.char_limit
 
-            Args:
-                acceptor (CharAcceptor): The parent CharAcceptor.
-                value (Optional[str]): The current input value. Defaults to None.
-            """
-            super().__init__(acceptor)
-            self.acceptor: CharacterAcceptor = acceptor
-            self.value: Optional[str] = value
+        return super().expects_more_input(walker)
 
-        def select(self, dawg: DAWG) -> Iterable[str]:
-            """
-            Select characters that are valid based on the acceptor's charset.
 
-            Args:
-                candidate_chars (Set[str]): Set of candidate characters (ignored in this implementation).
+class CharacterWalker(StateMachineWalker):
+    """
+    Walker for navigating through characters in CharAcceptor.
+    """
 
-            Returns:
-                Iterable[str]: An iterable of valid characters from the acceptor's charset.
-            """
-            for char in self.acceptor.charset:
-                yield char
+    def __init__(
+        self, acceptor: CharacterAcceptor, value: Optional[str] = None
+    ) -> None:
+        """
+        Initialize the Walker.
 
-        def advance(self, token: str) -> Iterable[Cursor]:
-            """
-            Advance the cursor with the given input. Accumulates all valid characters.
+        Args:
+            acceptor (CharAcceptor): The parent CharAcceptor.
+            value (Optional[str]): The current input value. Defaults to None.
+        """
+        super().__init__(acceptor)
+        self.acceptor: CharacterAcceptor = acceptor
+        self.value: Optional[str] = value
 
-            Args:
-                input (str): The input to advance with.
+    def can_accept_more_input(self) -> bool:
+        return self._accepts_remaining_input
 
-            Returns:
-                List[Cursor]: A list containing the new cursor state if input is valid.
-            """
-            if not token:
-                logger.debug(f"Cursor {self} does not expect more input, returning")
-                self._accepts_remaining_input = False
-                return
+    def select(self, dawg: DAWG) -> Iterable[str]:
+        """
+        Select characters that are valid based on the acceptor's charset.
 
-            logger.debug(
-                f"Advancing cursor in char acceptor: {self}, with input: '{token}'"
-            )
+        Args:
+            candidate_chars (Set[str]): Set of candidate characters (ignored in this implementation).
 
-            # Accumulate all valid characters
-            valid_chars = ""
-            remaining_input = None
-            for char in token:
-                if char in self.acceptor.charset:
-                    valid_chars += char
-                else:
-                    remaining_input = token[len(valid_chars) :]
-                    break
+        Returns:
+            Iterable[str]: An iterable of valid characters from the acceptor's charset.
+        """
+        for char in self.acceptor.charset:
+            yield char
 
-            if valid_chars:
-                if self.can_handle_remaining_input:
-                    valid_chars = (
-                        str(self.value) + valid_chars if self.value else valid_chars
-                    )
+    def should_start_transition(self, token: str) -> bool:
+        """Determines if a transition should start with the given input string.
 
-                new_cursor = self.__class__(self.acceptor, valid_chars)
-                new_cursor.remaining_input = remaining_input
-                new_cursor.consumed_character_count = (
-                    self.consumed_character_count + len(valid_chars)
-                )
-                logger.debug(f"new_cursor: {AcceptedState(new_cursor)}")
-                yield AcceptedState(new_cursor)
-            else:
-                logger.debug(
-                    f"Cursor {self} cannot handle input: {token} and cannot accept remaining input"
-                )
-                self._accepts_remaining_input = False
+        Args:
+            token: The input string to process.
 
-        def get_value(self) -> Optional[str]:
-            """
-            Retrieve the current value of the cursor.
+        Returns:
+            True if the transition should start; False otherwise.
+        """
+        if not token:
+            return False
 
-            Returns:
-                Optional[str]: The current character or None.
-            """
-            return self.value
+        return token[0] in self.acceptor.charset
 
-        def is_in_value(self) -> bool:
-            """
-            Check if the cursor has a value.
+    def consume_token(self, token: str) -> Iterable[Walker]:
+        """
+        Advance the walker with the given input. Accumulates all valid characters.
 
-            Returns:
-                bool: True if the cursor has a value, False otherwise.
-            """
-            return self.value is not None
+        Args:
+            token (str): The input to advance with.
 
-        def __repr__(self) -> str:
-            """
-            Represent the Cursor as a string.
+        Returns:
+            Iterable[Walker]: An iterable containing the new walker state if input is valid.
+        """
+        logger.debug(f"Advancing input: '{token}' with walker: {self}")
 
-            Returns:
-                str: A string representation of the Cursor.
-            """
-            extra_remaining_input = (
-                f" remaining_input={self.remaining_input}"
-                if self.remaining_input
-                else ""
-            )
-            return f"CharAcceptor.Cursor({repr(self.acceptor.charset)}, value={self.value}{extra_remaining_input})"
+        if not token:
+            logger.debug("Walker does not accept empty input, returning.")
+            self._accepts_remaining_input = False
+            return
+
+        valid_length = 0
+        accumulated_length = self.consumed_character_count
+        for character in token:
+            if character not in self.acceptor.charset:
+                break
+            if (
+                self.acceptor.char_limit > 0
+                and accumulated_length >= self.acceptor.char_limit
+            ):
+                break
+            accumulated_length += 1
+            valid_length += 1
+
+        valid_characters = token[:valid_length]
+        remaining_input = token[valid_length:] if valid_length < len(token) else None
+
+        if not valid_characters:
+            logger.debug(f"Walker {self} cannot handle input: {token}")
+            self._accepts_remaining_input = False
+            return
+
+        # Accumulate valid characters with existing value
+        accumulated_value = f"{self.value or ''}{valid_characters}"
+
+        new_walker = self.__class__(self.acceptor, accumulated_value)
+        new_walker.consumed_character_count = accumulated_length
+        new_walker.remaining_input = remaining_input
+        new_walker._accepts_remaining_input = (
+            False if remaining_input else self._accepts_remaining_input
+        )
+
+        logger.debug(f"yielding accepted walker: {AcceptedState(new_walker)}")
+        yield AcceptedState(new_walker)
+
+    def accumulated_value(self) -> Optional[str]:
+        """
+        Retrieve the current value of the walker.
+
+        Returns:
+            Optional[str]: The current character or None.
+        """
+        return self.value
+
+    def is_within_value(self) -> bool:
+        """
+        Check if the walker has a value.
+
+        Returns:
+            bool: True if the walker has a value, False otherwise.
+        """
+        return self.value is not None
 
 
 class DigitAcceptor(CharacterAcceptor):
@@ -157,27 +180,6 @@ class DigitAcceptor(CharacterAcceptor):
         """
         super().__init__("0123456789")
 
-    class Cursor(CharacterAcceptor.Cursor):
-        """
-        Cursor for navigating through digits in DigitAcceptor.
-        """
-
-        def __init__(
-            self, acceptor: DigitAcceptor, value: Optional[str] = None
-        ) -> None:
-            """
-            Initialize the Cursor.
-            """
-            super().__init__(acceptor, value)
-            self._accepts_remaining_input = True
-
-        def __repr__(self) -> str:
-            return (
-                f"DigitAcceptor.Cursor(value={self.value})"
-                if self.value
-                else "DigitAcceptor.Cursor()"
-            )
-
 
 class HexDigitAcceptor(CharacterAcceptor):
     """
@@ -189,6 +191,7 @@ class HexDigitAcceptor(CharacterAcceptor):
         Initialize the HexDigitAcceptor with hexadecimal digits.
         """
         super().__init__("0123456789ABCDEFabcdef")
+
 
 # Initialize global instances
 digit_acceptor: DigitAcceptor = DigitAcceptor()

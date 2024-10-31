@@ -1,8 +1,12 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable
+from typing import Iterable, Optional, Callable, Tuple
+import logging
+
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.cursor import Cursor
+from pse.state_machine.walker import Walker
+
+logger = logging.getLogger(__name__)
 
 
 class WaitForAcceptor(StateMachine):
@@ -33,105 +37,137 @@ class WaitForAcceptor(StateMachine):
         self.end_hook = end_hook
         self.triggered = False
 
-    def get_cursors(self) -> Iterable[Cursor]:
+    def get_walkers(self) -> Iterable[Walker]:
         """
-        Retrieve the initial cursor(s) for the WaitForAcceptor.
+        Retrieve the initial walker(s) for the WaitForAcceptor.
 
         Returns:
-            Iterable[StateMachineAcceptor.Cursor]: A list containing a single Cursor instance.
+            Iterable[StateMachineAcceptor.Walker]: A list containing a single Walker instance.
         """
-        return [WaitForAcceptor.Cursor(self)]
+        yield WaitForWalker(self)
 
-    def advance_cursor(self, cursor: Cursor, input: str) -> Iterable[Cursor]:
-        return self.wait_for_acceptor.advance_cursor(cursor, input)
+    def advance_all_walkers(
+        self, walkers: Iterable[Walker], token: str
+    ) -> Iterable[Tuple[str, Walker]]:
+        if not walkers:
+            return []
+
+        def process_walker(walker: Walker) -> Iterable[Walker]:
+            """Processes a single walker by advancing it with the given input.
+
+            Args:
+                walker (Walker): The walker to process.
+
+            Returns:
+                Iterable[Walker]: Updated walkers after advancement.
+            """
+            yield from walker.consume_token(token)
+
+        # Using map with executor and yielding results
+        for advanced_walkers in self._EXECUTOR.map(process_walker, walkers):
+            for walker in advanced_walkers:
+                if not walker.remaining_input:
+                    logger.debug(f"valid acceptance: {repr(token)}")
+                    yield token, walker
+                    continue
+
+    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
+        return self.wait_for_acceptor.advance_walker(walker, token)
 
     def __repr__(self) -> str:
         return f"WaitForAcceptor(wait_for_acceptor={self.wait_for_acceptor}, triggered={self.triggered})"
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        return cursor.current_state not in self.end_states
+    def expects_more_input(self, walker: Walker) -> bool:
+        return walker.current_state not in self.end_states
 
-    class Cursor(Cursor):
-        """
-        Cursor for handling the WaitForAcceptor.
-        Manages internal cursors that monitor for the triggering acceptor.
-        """
 
-        def __init__(
-            self,
-            acceptor: WaitForAcceptor,
-            cursors: Optional[Iterable[Cursor]] = None,
+class WaitForWalker(Walker):
+    """
+    Walker for handling the WaitForAcceptor.
+    Manages internal walkers that monitor for the triggering acceptor.
+    """
+
+    def __init__(
+        self,
+        acceptor: WaitForAcceptor,
+        walkers: Optional[Iterable[Walker]] = None,
+    ):
+        """
+        Initialize the WaitForAcceptor Walker.
+
+        Args:
+            acceptor (WaitForAcceptor): The parent WaitForAcceptor.
+            walkers (Optional[Iterable[StateMachineAcceptor.Walker]], optional):
+                Existing walkers to manage. Defaults to those from the wait_for_acceptor.
+        """
+        super().__init__(acceptor)
+        self.acceptor = acceptor
+        if walkers:
+            self.walkers = list(walkers)
+        else:
+            self.walkers = list(self.acceptor.wait_for_acceptor.get_walkers())
+
+    def accepts_any_token(self) -> bool:
+        """
+        Indicates that this acceptor matches all characters until a trigger is found.
+
+        Returns:
+            bool: Always True.
+        """
+        return True
+
+    def can_accept_more_input(self) -> bool:
+        return False
+
+    def is_within_value(self) -> bool:
+        """
+        Determine if the walker is currently within a value.
+
+        Returns:
+            bool: True if in a value, False otherwise.
+        """
+        return any(walker.is_within_value() for walker in self.walkers)
+
+    def consume_token(self, token: str) -> Iterable[Walker]:
+        """
+        Advance all internal walkers with the given input.
+
+        Args:
+            input (str): The input to process.
+
+        Returns:
+            Iterable[TokenAcceptor.Walker]: Updated walkers after processing.
+        """
+        new_walkers = []
+
+        for advanced_token, walker in self.acceptor.advance_all_walkers(
+            self.walkers, token
         ):
-            """
-            Initialize the WaitForAcceptor Cursor.
-
-            Args:
-                acceptor (WaitForAcceptor): The parent WaitForAcceptor.
-                cursors (Optional[Iterable[StateMachineAcceptor.Cursor]], optional):
-                    Existing cursors to manage. Defaults to those from the wait_for_acceptor.
-            """
-            super().__init__(acceptor)
-            self.acceptor = acceptor
-            if cursors:
-                self.cursors = list(cursors)
+            if walker.has_reached_accept_state():
+                self.acceptor.triggered = True
+                if self.acceptor.end_hook:
+                    self.acceptor.end_hook()
+                yield walker
+                return
             else:
-                self.cursors = list(self.acceptor.wait_for_acceptor.get_cursors())
+                new_walkers.append(walker)
 
-        def matches_all(self) -> bool:
-            """
-            Indicates that this acceptor matches all characters until a trigger is found.
+        yield WaitForWalker(self.acceptor, new_walkers)
 
-            Returns:
-                bool: Always True.
-            """
-            return True
+    def accumulated_value(self) -> str:
+        """
+        Retrieve the current value indicating the wait state.
 
-        def is_in_value(self) -> bool:
-            """
-            Determine if the cursor is currently within a value.
+        Returns:
+            str: Description of the waiting state.
+        """
+        return repr(self.acceptor.wait_for_acceptor)
 
-            Returns:
-                bool: True if in a value, False otherwise.
-            """
-            return any(cursor.is_in_value() for cursor in self.cursors)
+    def __repr__(self) -> str:
+        """
+        Provide a string representation of the WaitForAcceptor Walker.
 
-        def advance(self, token: str) -> Iterable[Cursor]:
-            """
-            Advance all internal cursors with the given input.
-
-            Args:
-                input (str): The input to process.
-
-            Returns:
-                Iterable[TokenAcceptor.Cursor]: Updated cursors after processing.
-            """
-            new_cursors = []
-            for cursor in WaitForAcceptor.advance_all(self.cursors, token):
-                if cursor.in_accepted_state():
-                    self.acceptor.triggered = True
-                    if self.acceptor.end_hook:
-                        self.acceptor.end_hook()
-                    yield cursor
-                    return
-                else:
-                    new_cursors.append(cursor)
-
-            yield WaitForAcceptor.Cursor(self.acceptor, new_cursors)
-
-        def get_value(self) -> str:
-            """
-            Retrieve the current value indicating the wait state.
-
-            Returns:
-                str: Description of the waiting state.
-            """
-            return repr(self.acceptor.wait_for_acceptor)
-
-        def __repr__(self) -> str:
-            """
-            Provide a string representation of the WaitForAcceptor Cursor.
-
-            Returns:
-                str: The string representation of the cursor.
-            """
-            return f"WaitForAcceptor.Cursor(cursors={self.cursors})"
+        Returns:
+            str: The string representation of the walker.
+        """
+        return f"WaitForAcceptor.Walker(walkers={self.walkers})"

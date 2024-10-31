@@ -1,5 +1,7 @@
 from __future__ import annotations
-from pse.acceptors.basic.number.number_acceptor import NumberAcceptor
+from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, NumberWalker
+from typing import Type
+
 
 class NumberSchemaAcceptor(NumberAcceptor):
     """
@@ -27,11 +29,17 @@ class NumberSchemaAcceptor(NumberAcceptor):
         """
         if "minimum" in self.schema and value < self.schema["minimum"]:
             return False
-        if "exclusiveMinimum" in self.schema and value <= self.schema["exclusiveMinimum"]:
+        if (
+            "exclusiveMinimum" in self.schema
+            and value <= self.schema["exclusiveMinimum"]
+        ):
             return False
         if "maximum" in self.schema and value > self.schema["maximum"]:
             return False
-        if "exclusiveMaximum" in self.schema and value >= self.schema["exclusiveMaximum"]:
+        if (
+            "exclusiveMaximum" in self.schema
+            and value >= self.schema["exclusiveMaximum"]
+        ):
             return False
         if "multipleOf" in self.schema:
             divisor = self.schema["multipleOf"]
@@ -42,24 +50,33 @@ class NumberSchemaAcceptor(NumberAcceptor):
             return False
         return True
 
-    class Cursor(NumberAcceptor.Cursor):
-        """
-        Cursor for NumberAcceptor
-        """
+    @property
+    def walker_class(self) -> Type[NumberSchemawalker]:
+        return NumberSchemawalker
 
-        def __init__(self, acceptor: NumberSchemaAcceptor):
-            super().__init__(acceptor)
-            self.acceptor = acceptor
 
-        def start_transition(self, transition_acceptor, target_state):
-            if self.acceptor.is_integer and self.current_state == 3 and target_state == 4:
-                return False
-            return super().start_transition(transition_acceptor, target_state)
+class NumberSchemawalker(NumberWalker):
+    """
+    Walker for NumberAcceptor
+    """
 
-        def complete_transition(self, transition_value, target_state, is_end_state) -> bool:
-            if not super().complete_transition(transition_value, target_state, is_end_state):
-                return False
-            # Only validate when there is no remaining input
-            if is_end_state and not self.remaining_input:
-                return self.acceptor.validate_value(self.get_value())
-            return True
+    def __init__(self, acceptor: NumberSchemaAcceptor):
+        super().__init__(acceptor)
+        self.acceptor = acceptor
+
+    def should_start_transition(self, transition_acceptor, target_state):
+        if self.acceptor.is_integer and self.current_state == 3 and target_state == 4:
+            return False
+        return super().should_start_transition(transition_acceptor, target_state)
+
+    def should_complete_transition(
+        self, transition_value, target_state, is_end_state
+    ) -> bool:
+        if not super().should_complete_transition(
+            transition_value, target_state, is_end_state
+        ):
+            return False
+        # Only validate when there is no remaining input
+        if is_end_state and not self.remaining_input:
+            return self.acceptor.validate_value(self.accumulated_value())
+        return True

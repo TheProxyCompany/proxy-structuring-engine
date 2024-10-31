@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from pprint import pformat
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from lexpy import DAWG
@@ -13,7 +12,7 @@ from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.util.errors import TokenRejected
 from pse.util.get_acceptor import get_json_acceptor
-from pse.state_machine.cursor import Cursor
+from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import StateMachine
 from pse.util.bias_logits import bias_logits
 from pse.util.handle_logits import handle_logits
@@ -72,7 +71,7 @@ class StructuredOutputDriver(LogitsProcessor):
         self.tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = tokenizer
         self.eos_id: int = tokenizer.eos_token_id or 0
         self.acceptor: Optional[TokenAcceptor] = None
-        self.cursors: List[Cursor] = []
+        self.walkers: List[Walker] = []
         self.within_json_value: bool = False
         self._build_vocabulary()
 
@@ -84,7 +83,7 @@ class StructuredOutputDriver(LogitsProcessor):
         Returns:
             bool: True if the acceptor can accept input, False otherwise.
         """
-        return self.acceptor is not None and not self.in_accepted_state
+        return self.acceptor is not None and not self.has_reached_accept_state
 
     @property
     def in_structured_state(self) -> bool:
@@ -107,8 +106,7 @@ class StructuredOutputDriver(LogitsProcessor):
 
         return not self._waiting_for_trigger() and not self.within_json_value
 
-    @property
-    def in_accepted_state(self) -> bool:
+    def has_reached_accept_state(self) -> bool:
         """
         Checks whether the acceptor has reached a valid final state.
 
@@ -118,13 +116,13 @@ class StructuredOutputDriver(LogitsProcessor):
         if not self.acceptor:
             return False
 
-        return any(cursor.in_accepted_state() for cursor in self.cursors)
+        return any(walker.has_reached_accept_state() for walker in self.walkers)
 
     def reset(self) -> None:
         """
         Resets the driver to its initial state.
         """
-        self.cursors = list(self.acceptor.get_cursors()) if self.acceptor else []
+        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
         self.within_json_value = False
 
     def create_acceptor(
@@ -151,7 +149,7 @@ class StructuredOutputDriver(LogitsProcessor):
         """
         if not schema:
             self.acceptor = None
-            self.cursors = []
+            self.walkers = []
             return
 
         if output_type == OutputType.JSON:
@@ -174,7 +172,7 @@ class StructuredOutputDriver(LogitsProcessor):
             )
 
         self.acceptor = acceptor
-        self.cursors = list(self.acceptor.get_cursors()) if self.acceptor else []
+        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
 
     def mask_invalid_tokens(self, logits):
         """
@@ -187,8 +185,8 @@ class StructuredOutputDriver(LogitsProcessor):
             Modified logits with invalid tokens masked.
         """
         valid_prefixes: Set[str] = set()
-        for cursor in self.cursors:
-            valid_prefixes.update(cursor.get_valid_prefixes(self.dawg))
+        for walker in self.walkers:
+            valid_prefixes.update(walker.find_valid_prefixes(self.dawg))
 
         token_ids: List[int] = [
             token_id
@@ -198,7 +196,7 @@ class StructuredOutputDriver(LogitsProcessor):
 
         return bias_logits(logits, set(token_ids))
 
-    def get_valid_token(self, logits, num_top_tokens: int = 16) -> int:
+    def get_valid_token(self, logits, num_top_tokens: int = 8) -> int:
         """
         Advances the acceptor's state using the provided logits.
 
@@ -214,36 +212,32 @@ class StructuredOutputDriver(LogitsProcessor):
         """
         top_tokens = self._get_top_tokens(logits, num_top_tokens)
 
-        special_token_id: Optional[int] = None
+
         for index, (token_id, token, score) in enumerate(top_tokens):
             logger.debug(
-                f"{index + 1}. most likely token_id: {token_id}, token: {token}, raw score: {score}"
+                f"{index + 1}. token_id: {token_id}, token: {token}, score: {score}"
             )
+            full_match_walkers: List[Walker] = []
+            for valid_token, walker in StateMachine.advance_all_walkers(
+                self.walkers, token, self.dawg
+            ):
+                if valid_token != token:
+                    logger.debug(f"{index + 1}. partial match: {valid_token}")
+                    logger.warning(f"Partial matches not implemented: {valid_token}")
+                    continue
+                else:
+                    logger.debug(f"{index + 1}. valid_token: {valid_token}")
+                    full_match_walkers.append(walker)
 
-            new_cursors = self._advance_cursors(token)
-            if not new_cursors:
-                if token in self.special_tokens_set and not special_token_id:
-                    special_token_id = token_id
-                continue
+                if walker.has_reached_accept_state():
+                    self.walkers = full_match_walkers
+                    return token_id
 
-            self.cursors = new_cursors
-            return token_id
-
-        if special_token_id:
-            return special_token_id
+            if full_match_walkers:
+                self.walkers = full_match_walkers
+                return token_id
 
         raise TokenRejected(f"No valid token found in the top {num_top_tokens} tokens")
-
-    def advance_token(self, token_id: int) -> None:
-        token = self.tokenizer.decode([token_id])
-        try:
-            new_cursors = self._advance_cursors(token)
-            if not new_cursors:
-                raise TokenRejected(f"Token `{token}` rejected by all cursors")
-            self.cursors = new_cursors
-        except TokenRejected:
-            logger.warning(f"Token `{token}` rejected")
-            raise
 
     # -------- Private Methods --------
 
@@ -288,30 +282,6 @@ class StructuredOutputDriver(LogitsProcessor):
         top_tokens = list(zip(token_ids, tokens, [score for _, score in top_logits]))
         return top_tokens
 
-    def _advance_cursors(self, token: str) -> List[Cursor]:
-        """
-        Advances the cursors using the provided token.
-
-        Args:
-            token (str): The token to advance with.
-
-        Returns:
-            List[Cursor]: A list of new cursors after advancing.
-        """
-        logger.debug(f"Advancing cursors with token={token}")
-        cursors = StateMachine.advance_all(self.cursors, token)
-
-        new_cursors: List[Cursor] = []
-        for cursor in cursors:
-            if not cursor.remaining_input:
-                new_cursors.append(cursor)
-
-            if cursor.in_accepted_state():
-                break
-
-        logger.debug(f"New cursors=\n{pformat(new_cursors, indent=2)}")
-        return new_cursors
-
     def _waiting_for_trigger(self) -> bool:
         """
         Determines if the acceptor is waiting for the opening delimiter.
@@ -322,7 +292,7 @@ class StructuredOutputDriver(LogitsProcessor):
         if not self.acceptor or not isinstance(self.acceptor, EncapsulatedAcceptor):
             return False
 
-        return not any(cursor.is_in_value() for cursor in self.cursors)
+        return not any(walker.is_within_value() for walker in self.walkers)
 
     def _start_hook(self) -> None:
         """

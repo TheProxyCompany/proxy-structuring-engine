@@ -1,16 +1,17 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Type, Set
+from typing import Iterable, Optional, Set
 
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.cursor import Cursor, logger
+from pse.state_machine.walker import Walker, logger
 
 # INVALID_CHARS is a set containing characters that are not allowed in JSON strings.
 # It includes control characters (ASCII 0-31) and the double quote (") and backslash (\) characters.
 # These characters need to be escaped or are not permitted in JSON string values.
 INVALID_CHARS: Set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
+
 
 class StringCharacterAcceptor(TokenAcceptor):
     """
@@ -23,9 +24,8 @@ class StringCharacterAcceptor(TokenAcceptor):
         """
         super().__init__(initial_state=0, end_states={1})
 
-    @property
-    def cursor_class(self) -> Type[Cursor]:
-        return StringCharacterAcceptor.Cursor
+    def get_walkers(self) -> Iterable[StringCharacterWalker]:
+        yield StringCharacterWalker(self)
 
     @classmethod
     def prepare_dawg(cls, dawg: DAWG) -> DAWG:
@@ -43,126 +43,128 @@ class StringCharacterAcceptor(TokenAcceptor):
         cls.valid_chars = set(INVALID_CHARS)
         return dawg
 
-    def advance_cursor(self, cursor: Cursor, input: str) -> Iterable[Cursor]:
-        old_value = cursor.get_value()
+    def advance_walker(self, walker: Walker, input: str) -> Iterable[Walker]:
+        old_value = walker.accumulated_value()
         new_value = old_value + input if old_value else input
-        new_cursor: StringCharacterAcceptor.Cursor = StringCharacterAcceptor.Cursor(
-            self, new_value
-        )
-        yield AcceptedState(new_cursor)
+        new_walker: StringCharacterWalker = StringCharacterWalker(self, new_value)
+        yield AcceptedState(new_walker)
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
+    def expects_more_input(self, walker: Walker) -> bool:
         """
         StringCharAcceptor assumes it doesn't expect more input on its own.
         It's controlled by the parent acceptor (StringAcceptor).
 
         Args:
-            cursor (Cursor): The current cursor.
+            walker (Walker): The current walker.
 
         Returns:
             bool: False
         """
         return False
 
-    class Cursor(Cursor):
+
+class StringCharacterWalker(Walker):
+    """
+    Walker for navigating through characters in StringCharAcceptor.
+    """
+
+    def __init__(
+        self, acceptor: StringCharacterAcceptor, value: Optional[str] = None
+    ) -> None:
         """
-        Cursor for navigating through characters in StringCharAcceptor.
+        Initialize the Walker.
+
+        Args:
+            acceptor (StringCharAcceptor): The parent StringCharAcceptor.
+            value (Optional[str]): The accumulated string value. Defaults to None.
         """
+        super().__init__(acceptor)
+        self.acceptor: StringCharacterAcceptor = acceptor
+        self.value: Optional[str] = value
+        self._accepts_remaining_input = True
 
-        def __init__(
-            self, acceptor: StringCharacterAcceptor, value: Optional[str] = None
-        ) -> None:
-            """
-            Initialize the Cursor.
+    def can_accept_more_input(self) -> bool:
+        return self._accepts_remaining_input
 
-            Args:
-                acceptor (StringCharAcceptor): The parent StringCharAcceptor.
-                value (Optional[str]): The accumulated string value. Defaults to None.
-            """
-            super().__init__(acceptor)
-            self.acceptor: StringCharacterAcceptor = acceptor
-            self.value: Optional[str] = value
-            self._accepts_remaining_input = True
+    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
+        """
+        Select valid string characters by excluding invalid ones.
 
-        def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-            """
-            Select valid string characters by excluding invalid ones.
+        Returns:
+            Set[str]: Set of valid string characters.
+        """
+        return self.acceptor.valid_chars
 
-            Returns:
-                Set[str]: Set of valid string characters.
-            """
-            return self.acceptor.valid_chars
+    def consume_token(self, token: str) -> Iterable[Walker]:
+        """
+        Advance the walker with the given input.
 
-        def advance(self, token: str) -> Iterable[Cursor]:
-            """
-            Advance the cursor with the given input.
+        Args:
+            input (str): The input to advance with.
 
-            Args:
-                input (str): The input to advance with.
+        Returns:
+            List[Walker]: List of new walkers after advancement.
+        """
+        logger.debug(
+            f"Advancing walker in string char acceptor: {self}, with input: {token}"
+        )
+        # clean the input of invalid characters
+        valid_prefix = ""
+        remaining_input = token
 
-            Returns:
-                List[Cursor]: List of new cursors after advancement.
-            """
+        for index, char in enumerate(token):
+            if char not in INVALID_CHARS:
+                valid_prefix += char
+            else:
+                remaining_input = token[index:]
+                break
+        else:
+            remaining_input = None
+
+        if valid_prefix:
+            new_walker = self.clone()
+            new_walker.value = (self.value if self.value else "") + valid_prefix
+            new_walker.remaining_input = remaining_input
+            new_walker.consumed_character_count += len(valid_prefix)
             logger.debug(
-                f"Advancing cursor in string char acceptor: {self}, with input: {token}"
+                f"Valid prefix: {valid_prefix}, Remaining input: {remaining_input}"
             )
-            # clean the input of invalid characters
-            valid_prefix = ""
-            remaining_input = token
+            yield AcceptedState(new_walker)
+        else:
+            self._accepts_remaining_input = False
 
-            for index, char in enumerate(token):
-                if char not in INVALID_CHARS:
-                    valid_prefix += char
-                else:
-                    remaining_input = token[index:]
-                    break
-            else:
-                remaining_input = None
+    def accumulated_value(self) -> Optional[str]:
+        """
+        Retrieve the accumulated string value.
 
-            if valid_prefix:
-                new_cursor = self.clone()
-                new_cursor.value = (self.value if self.value else "") + valid_prefix
-                new_cursor.remaining_input = remaining_input
-                new_cursor.consumed_character_count += len(valid_prefix)
-                logger.debug(
-                    f"Valid prefix: {valid_prefix}, Remaining input: {remaining_input}"
-                )
-                yield AcceptedState(new_cursor)
-            else:
-                self._accepts_remaining_input = False
+        Returns:
+            Optional[str]: The accumulated string or None.
+        """
+        return self.value
 
-        def get_value(self) -> Optional[str]:
-            """
-            Retrieve the accumulated string value.
+    def is_within_value(self) -> bool:
+        """
+        Check if the walker has a value.
 
-            Returns:
-                Optional[str]: The accumulated string or None.
-            """
-            return self.value
+        Returns:
+            bool: True if the walker has a value, False otherwise.
+        """
+        return self.value is not None
 
-        def is_in_value(self) -> bool:
-            """
-            Check if the cursor has a value.
+    def __repr__(self) -> str:
+        """
+        Return an unambiguous string representation of the instance.
 
-            Returns:
-                bool: True if the cursor has a value, False otherwise.
-            """
-            return self.value is not None
+        Returns:
+            str: The string representation including value and acceptor.
 
-        def __repr__(self) -> str:
-            """
-            Return an unambiguous string representation of the instance.
+        Example:
+            StringCharacterAcceptor.Walker("valid_value | remaining_input='abc' | state[0]")
+        """
+        components = []
+        if self.accumulated_value():
+            components.append(f"value='{self.accumulated_value()}'")
+        if self.remaining_input:
+            components.append(f"remaining_input='{self.remaining_input}'")
 
-            Returns:
-                str: The string representation including value and acceptor.
-
-            Example:
-                StringCharacterAcceptor.Cursor("valid_value | remaining_input='abc' | state[0]")
-            """
-            components = []
-            if self.get_value():
-                components.append(f"value='{self.get_value()}'")
-            if self.remaining_input:
-                components.append(f"remaining_input='{self.remaining_input}'")
-
-            return f"String.Cursor({' | '.join(components)})"
+        return f"String.Walker({' | '.join(components)})"

@@ -1,43 +1,14 @@
 from __future__ import annotations
-from typing import Any, Dict
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor
+from typing import Any, Dict, Type
+from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.state_machine.state_machine import StateMachineGraph
+from pse.state_machine.walker import Walker
 
 
 class ArraySchemaAcceptor(ArrayAcceptor):
-    """
-    TODO
-    {
-      "type": "array",
-      "items": { "type": "number" },
-      "uniqueItems": true
-    }
-    {
-      "type": "array",
-      "prefixItems": [
-        { "type": "number" },
-        { "type": "string" },
-        { "enum": ["Street", "Avenue", "Boulevard"] },
-        { "enum": ["NW", "NE", "SW", "SE"] }
-      ],
-      "items": { "type": "string" } # Constrain additional items to type string
-      "items": false # Do not allow items beyond the prefixItem
-      "unevaluatedItems": false # All prefixItems are required
-      "unevaluatedItems": { "const": "N/A" } # Default value for prefixItems
-    }
-    {
-      "type": "array",
-      "contains": {
-        "type": "number" # Contains at least one number
-      },
-      "minContains": 2, # Must contain at least two numbers
-      "maxContains": 3 # Must contain at most three numbers
-    }
-    """
-
     def __init__(self, schema: Dict[str, Any], context):
         from pse.util.get_acceptor import (
             get_json_acceptor,
@@ -79,18 +50,23 @@ class ArraySchemaAcceptor(ArrayAcceptor):
         """
         return self.schema.get("maxItems", 2**32)  # Arbitrary default
 
-    class Cursor(ArrayAcceptor.Cursor):
-        """
-        Cursor for ArrayAcceptor
-        """
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return ArraySchemawalker
 
-        def __init__(self, acceptor: ArraySchemaAcceptor):
-            super().__init__(acceptor)
-            self.acceptor = acceptor
 
-        def start_transition(self, transition_acceptor, target_state) -> bool:
-            if self.current_state == 4 and target_state == 2:
-                return len(self.value) < self.acceptor.max_items()
-            if target_state == "$":
-                return len(self.value) >= self.acceptor.min_items()
-            return True
+class ArraySchemawalker(ArrayWalker):
+    """
+    Walker for ArrayAcceptor
+    """
+
+    def __init__(self, acceptor: ArraySchemaAcceptor):
+        super().__init__(acceptor)
+        self.acceptor = acceptor
+
+    def should_start_transition(self, transition_acceptor, target_state) -> bool:
+        if self.current_state == 4 and target_state == 2:
+            return len(self.value) < self.acceptor.max_items()
+        if target_state == "$":
+            return len(self.value) >= self.acceptor.min_items()
+        return True

@@ -1,12 +1,14 @@
 from __future__ import annotations
+from typing import Iterable
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine.cursor import Cursor
+from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
+    StateMachineWalker,
 )
 
 
@@ -46,34 +48,36 @@ class EncapsulatedAcceptor(StateMachine):
         self.wait_for_acceptor: TokenAcceptor = acceptor
         super().__init__(graph)
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        return cursor.current_state not in self.end_states
+    def expects_more_input(self, walker: Walker) -> bool:
+        return walker.current_state not in self.end_states
 
-    # -------- Nested Classes --------
+    def get_walkers(self) -> Iterable[EncapsulatedWalker]:
+        yield EncapsulatedWalker(self)
 
-    class Cursor(StateMachine.Cursor):
+
+class EncapsulatedWalker(StateMachineWalker):
+    """
+    Walker for the EncapsulatedAcceptor.
+    """
+
+    def __init__(self, acceptor: EncapsulatedAcceptor) -> None:
         """
-        Cursor for the EncapsulatedAcceptor.
+        Initialize the Walker for EncapsulatedAcceptor.
+
+        Args:
+            acceptor: The EncapsulatedAcceptor instance this walker belongs to.
         """
+        super().__init__(acceptor)
+        self.acceptor: EncapsulatedAcceptor = acceptor
 
-        def __init__(self, acceptor: EncapsulatedAcceptor) -> None:
-            """
-            Initialize the Cursor for EncapsulatedAcceptor.
+    def is_within_value(self) -> bool:
+        """
+        Determine if the walker is currently within a value.
 
-            Args:
-                acceptor: The EncapsulatedAcceptor instance this cursor belongs to.
-            """
-            super().__init__(acceptor)
-            self.acceptor: EncapsulatedAcceptor = acceptor
-
-        def is_in_value(self) -> bool:
-            """
-            Determine if the cursor is currently within a value.
-
-            Returns:
-                bool: True if in a value, False otherwise.
-            """
-            return (
-                self.current_state != self.acceptor.initial_state
-                or (self.transition_cursor is not None and self.transition_cursor.is_in_value())
-            )
+        Returns:
+            bool: True if in a value, False otherwise.
+        """
+        return self.current_state != self.acceptor.initial_state or (
+            self.transition_walker is not None
+            and self.transition_walker.is_within_value()
+        )

@@ -36,7 +36,7 @@ def test_initialization_valid_schema(base_context: Dict[str, Any]) -> None:
 
 
 def test_initialization_missing_required_property_in_properties(
-    base_context: Dict[str, Any]
+    base_context: Dict[str, Any],
 ) -> None:
     """
     Test initializing ObjectSchemaAcceptor where a required property is not defined in properties.
@@ -93,7 +93,7 @@ def test_get_edges_other_states(base_context: Dict[str, Any]) -> None:
 
 
 def test_property_acceptor_complete_transition_with_hooks(
-    base_context: Dict[str, Any]
+    base_context: Dict[str, Any],
 ) -> None:
     """
     Test the complete_transition method of PropertyAcceptor with hooks.
@@ -138,10 +138,10 @@ def test_property_acceptor_complete_transition_with_hooks(
     assert isinstance(
         property_acceptor, ObjectSchemaAcceptor.PropertyAcceptor
     ), "Should be an instance of PropertyAcceptor."
-    cursor = property_acceptor.Cursor(property_acceptor)
+    walker = property_acceptor.Walker(property_acceptor)
 
     # Complete transition to start value
-    result_start = cursor.complete_transition("JohnDoe", 4, False)
+    result_start = walker.complete_transition("JohnDoe", 4, False)
     assert result_start, "Transition should return True."
     assert flags["value_start_called"], "value_start hook should be called."
     assert (
@@ -149,7 +149,7 @@ def test_property_acceptor_complete_transition_with_hooks(
     ), "value_start should receive correct property name."
 
     # Complete transition to end value
-    result_end = cursor.complete_transition("JohnDoe", 5, True)
+    result_end = walker.complete_transition("JohnDoe", 5, True)
     assert result_end, "Transition should return True."
     assert flags["value_end_called"], "value_end hook should be called."
     assert (
@@ -160,23 +160,23 @@ def test_property_acceptor_complete_transition_with_hooks(
     ), "value_end should receive correct value."
 
 
-def test_cursor_initialization(base_context: Dict[str, Any]) -> None:
+def test_walker_initialization(base_context: Dict[str, Any]) -> None:
     """
-    Test the initialization of ObjectSchemaAcceptor.Cursor.
-    Ensures that the cursor starts with an empty dictionary and correct acceptor reference.
+    Test the initialization of ObjectSchemaAcceptor.Walker.
+    Ensures that the walker starts with an empty dictionary and correct acceptor reference.
     """
     schema = {"type": "object", "properties": {}, "required": []}
     acceptor = ObjectSchemaAcceptor(schema, base_context)
-    cursor = acceptor.Cursor(acceptor)
-    assert cursor.value == {}, "Cursor should initialize with an empty dictionary."
+    walker = acceptor.Walker(acceptor)
+    assert walker.value == {}, "Walker should initialize with an empty dictionary."
     assert (
-        cursor.acceptor is acceptor
-    ), "Cursor's acceptor should reference the ObjectSchemaAcceptor instance."
+        walker.acceptor is acceptor
+    ), "Walker's acceptor should reference the ObjectSchemaAcceptor instance."
 
 
-def test_cursor_start_transition_valid(base_context: Dict[str, Any]) -> None:
+def test_walker_start_transition_valid(base_context: Dict[str, Any]) -> None:
     """
-    Test the start_transition method of ObjectSchemaAcceptor.Cursor with valid transitions.
+    Test the start_transition method of ObjectSchemaAcceptor.Walker with valid transitions.
     Ensures that transitions return True when conditions are met.
     """
     schema = {
@@ -188,26 +188,24 @@ def test_cursor_start_transition_valid(base_context: Dict[str, Any]) -> None:
         "required": ["id"],
     }
     acceptor = ObjectSchemaAcceptor(schema, base_context)
-    cursor = acceptor.Cursor(acceptor)
-    cursor.value = {"id": 123}
+    walker = acceptor.Walker(acceptor)
+    walker.value = {"id": 123}
 
     # Transition to add 'email'
     property_acceptor = ObjectSchemaAcceptor.PropertyAcceptor(
         "email", schema["properties"]["email"], base_context
     )
-    result = cursor.start_transition(property_acceptor, 4)
+    result = walker.start_transition(property_acceptor, 4)
     assert result, "Transition should return True when adding a new property."
 
     # Transition to end state
-    result_end = cursor.start_transition(property_acceptor, "$")
-    assert (
-        result_end
-    ), "Transition to end state should return True when required properties are present."
+    result_end = walker.start_transition(property_acceptor, "$")
+    assert result_end, "Transition to end state should return True when required properties are present."
 
 
-def test_cursor_start_transition_invalid(base_context: Dict[str, Any]) -> None:
+def test_walker_start_transition_invalid(base_context: Dict[str, Any]) -> None:
     """
-    Test the start_transition method of ObjectSchemaAcceptor.Cursor with invalid transitions.
+    Test the start_transition method of ObjectSchemaAcceptor.Walker with invalid transitions.
     Ensures that transitions return False when conditions are not met.
     """
     schema = {
@@ -219,26 +217,24 @@ def test_cursor_start_transition_invalid(base_context: Dict[str, Any]) -> None:
         "required": ["id"],
     }
     acceptor = ObjectSchemaAcceptor(schema, base_context)
-    cursor = acceptor.Cursor(acceptor)
-    cursor.value = {"id": 123, "email": "user@example.com"}
+    walker = acceptor.Walker(acceptor)
+    walker.value = {"id": 123, "email": "user@example.com"}
 
     # Attempt to add 'email' again
     property_acceptor = ObjectSchemaAcceptor.PropertyAcceptor(
         "email", schema["properties"]["email"], base_context
     )
-    cursor.current_state = 2
-    cursor.target_state = 3
-    result = cursor.start_transition(property_acceptor, 3)
+    walker.current_state = 2
+    walker.target_state = 3
+    result = walker.start_transition(property_acceptor, 3)
     assert (
         not result
     ), "Transition should return False when adding an existing property."
 
     # Attempt to transition to end state without required properties
-    cursor.value = {}  # Remove required property
-    result_end = cursor.start_transition(property_acceptor, "$")
-    assert (
-        not result_end
-    ), "Transition to end state should return False when required properties are missing."
+    walker.value = {}  # Remove required property
+    result_end = walker.start_transition(property_acceptor, "$")
+    assert not result_end, "Transition to end state should return False when required properties are missing."
 
 
 def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
@@ -256,18 +252,18 @@ def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
 
     started_hook: MagicMock = MagicMock()
     acceptor = ObjectSchemaAcceptor(schema, base_context, start_hook=started_hook)
-    cursors = list(acceptor.get_cursors())
+    walkers = list(acceptor.get_walkers())
     for char in '{"id':
-        cursors = list(acceptor.advance_all(cursors, char))
+        walkers = list(acceptor.advance_all(walkers, char))
     # The hook should not be called yet
     started_hook.assert_not_called()
 
     # Continue parsing
     for char in '": 123}':
-        cursors = list(acceptor.advance_all(cursors, char))
+        walkers = list(acceptor.advance_all(walkers, char))
 
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "Transition to end state should return True when required properties are present."
     started_hook.assert_not_called()
 
@@ -284,13 +280,13 @@ def test_value_started_hook(base_context: Dict[str, Any]) -> None:
 
     started_hook: MagicMock = MagicMock()
     acceptor = ObjectSchemaAcceptor(schema, base_context, start_hook=started_hook)
-    cursors = list(acceptor.get_cursors())
+    walkers = list(acceptor.get_walkers())
     for char in '{"email": ':
-        cursors = list(acceptor.advance_all(cursors, char))
+        walkers = list(acceptor.advance_all(walkers, char))
 
     started_hook.assert_not_called()
     # Simulate starting a string value
-    cursors = list(acceptor.advance_all(cursors, '"'))
+    walkers = list(acceptor.advance_all(walkers, '"'))
     # The hook should be called now
     started_hook.assert_called_once()
 
@@ -307,21 +303,22 @@ def test_value_ended_hook(base_context: Dict[str, Any]) -> None:
     }
     ended_hook: MagicMock = MagicMock()
     acceptor = ObjectSchemaAcceptor(schema, base_context, end_hook=ended_hook)
-    cursors = list(acceptor.get_cursors())
+    walkers = list(acceptor.get_walkers())
 
     additional_chars = '{"id": "hi'
     for char in additional_chars:
-        cursors = list(acceptor.advance_all(cursors, char))
+        walkers = list(acceptor.advance_all(walkers, char))
     ended_hook.assert_not_called()
 
     # Finish the string and the object
     for char in '"}':
-        cursors = list(acceptor.advance_all(cursors, char))
+        walkers = list(acceptor.advance_all(walkers, char))
 
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "Transition to end state should return True when all properties are present."
     ended_hook.assert_called_once()
+
 
 # def test_object_schema_number(base_context: Dict[str, Any]) -> None:
 #     """
@@ -335,22 +332,22 @@ def test_value_ended_hook(base_context: Dict[str, Any]) -> None:
 #     }
 #     ended_hook: MagicMock = MagicMock()
 #     acceptor = ObjectSchemaAcceptor(schema, base_context, end_hook=ended_hook)
-#     cursors = list(acceptor.get_cursors())
+#     walkers = list(acceptor.get_walkers())
 
 #     additional_chars = '{"id": 1'
 #     for char in additional_chars:
-#         cursors = list(acceptor.advance_all(cursors, char))
+#         walkers = list(acceptor.advance_all(walkers, char))
 #     ended_hook.assert_not_called()
 
-#     assert len(cursors) == 1, f"Should only be one cursor, found {len(cursors)}"
+#     assert len(walkers) == 1, f"Should only be one walker, found {len(walkers)}"
 
 #     # Finish the string and the object
 #     for char in '}':
 
-#         cursors = list(acceptor.advance_all(cursors, char))
+#         walkers = list(acceptor.advance_all(walkers, char))
 
 #     assert any(
-#         cursor.in_accepted_state() for cursor in cursors
+#         walker.in_accepted_state() for walker in walkers
 #     ), "Transition to end state should return True when all properties are present."
 #     ended_hook.assert_not_called()
 
@@ -393,11 +390,11 @@ def test_complex_json_structure(base_context: Dict[str, Any]) -> None:
     ], "Required properties should be set correctly."
 
     # Test parsing valid JSON input
-    cursors = acceptor.get_cursors()
+    walkers = acceptor.get_walkers()
     valid_json = '{"name": "metacognition", "arguments": {"chain_of_thought": ["Thought 1", "Thought 2"]}}'
     for char in valid_json:
-        cursors = acceptor.advance_all(cursors, char)
+        walkers = acceptor.advance_all(walkers, char)
 
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "Transition to end state should return True for valid input."

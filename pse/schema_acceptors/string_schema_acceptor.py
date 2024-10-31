@@ -1,15 +1,17 @@
 from __future__ import annotations
 import re
 import json
-from typing import Callable, Optional
+from typing import Callable, Optional, Type
 
 from pse.util.errors import SchemaNotImplementedError
-from pse.acceptors.json.string_acceptor import StringAcceptor
+from pse.acceptors.json.string_acceptor import StringAcceptor, Stringwalker
+from pse.state_machine.walker import Walker
 
 import logging
 import regex  # Note: This is a third-party module
 
 logger = logging.getLogger(__name__)
+
 
 class StringSchemaAcceptor(StringAcceptor):
     """
@@ -37,7 +39,9 @@ class StringSchemaAcceptor(StringAcceptor):
             self.format = self.schema["format"]
             # support 'email', 'date-time', 'uri' formats
             if self.format not in ["email", "date-time", "uri"]:
-                raise SchemaNotImplementedError(f"Format '{self.format}' not implemented")
+                raise SchemaNotImplementedError(
+                    f"Format '{self.format}' not implemented"
+                )
 
     def min_length(self) -> int:
         """
@@ -70,7 +74,9 @@ class StringSchemaAcceptor(StringAcceptor):
             if format_validator and not format_validator(value):
                 return False
             elif not format_validator:
-                raise SchemaNotImplementedError(f"Format '{self.format}' not implemented")
+                raise SchemaNotImplementedError(
+                    f"Format '{self.format}' not implemented"
+                )
         return True
 
     def validate_email(self, value: str) -> bool:
@@ -101,70 +107,78 @@ class StringSchemaAcceptor(StringAcceptor):
         result = urlparse(value)
         return all([result.scheme, result.netloc])
 
-    class Cursor(StringAcceptor.Cursor):
-        """
-        Cursor for StringSchemaAcceptor.
-        """
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return StringSchemawalker
 
-        def __init__(self, acceptor: StringSchemaAcceptor):
-            super().__init__(acceptor)
-            self.acceptor = acceptor
-            self.partial_value = ""  # Stores the raw string content without quotes
-            self.is_escaping = False
 
-        def complete_transition(
-            self, transition_value, target_state, is_end_state
+class StringSchemawalker(Stringwalker):
+    """
+    Walker for StringSchemaAcceptor.
+    """
+
+    def __init__(self, acceptor: StringSchemaAcceptor):
+        super().__init__(acceptor)
+        self.acceptor = acceptor
+        self.partial_value = ""  # Stores the raw string content without quotes
+        self.is_escaping = False
+
+    def should_complete_transition(self, transition_value, target_state, is_end_state):
+        in_string_content = self.is_in_string_content()
+        if (
+            not in_string_content
+            and target_state == self.acceptor.STATE_IN_STRING
+            and self.acceptor.start_hook
         ):
+            self.acceptor.start_hook()
 
-            in_string_content = self.is_in_string_content()
-            if not in_string_content and target_state == self.acceptor.STATE_IN_STRING and self.acceptor.start_hook:
-                self.acceptor.start_hook()
+        super().should_complete_transition(transition_value, target_state, is_end_state)
+        logger.debug(
+            f"transition_value: {transition_value}, target_state: {target_state}, is_end_state: {is_end_state}"
+        )
 
-            super().complete_transition(transition_value, target_state, is_end_state)
-            logger.debug(f"transition_value: {transition_value}, target_state: {target_state}, is_end_state: {is_end_state}")
+        # Only update partial_value when processing actual string content
+        if in_string_content and not is_end_state:
+            if self.is_escaping:
+                self.partial_value += transition_value
+                self.is_escaping = False
+            elif transition_value == "\\":
+                self.is_escaping = True
+            else:
+                self.partial_value += transition_value
 
-            # Only update partial_value when processing actual string content
-            if in_string_content and not is_end_state:
-                if self.is_escaping:
-                    self.partial_value += transition_value
-                    self.is_escaping = False
-                elif transition_value == "\\":
-                    self.is_escaping = True
-                else:
-                    self.partial_value += transition_value
+            if self.acceptor.pattern and not self.is_pattern_prefix(self.partial_value):
+                return False  # Reject early if pattern can't match
 
-                if self.acceptor.pattern and not self.is_pattern_prefix(self.partial_value):
-                    return False  # Reject early if pattern can't match
+        if is_end_state:
+            if self.acceptor.end_hook:
+                self.acceptor.end_hook()
+            try:
+                # Unescape the JSON string
+                value = json.loads(self.text)
+            except json.JSONDecodeError:
+                return False
+            if self.acceptor.validate_value(value):
+                self.value = value
+                return True
+            else:
+                return False
 
-            if is_end_state:
-                if self.acceptor.end_hook:
-                    self.acceptor.end_hook()
-                try:
-                    # Unescape the JSON string
-                    value = json.loads(self.text)
-                except json.JSONDecodeError:
-                    return False
-                if self.acceptor.validate_value(value):
-                    self.value = value
-                    return True
-                else:
-                    return False
+        return True
 
-            return True
+    def is_in_string_content(self) -> bool:
+        """
+        Determine if the walker is currently inside the string content (i.e., after the opening quote).
+        """
+        return self.current_state == self.acceptor.STATE_IN_STRING
 
-        def is_in_string_content(self) -> bool:
-            """
-            Determine if the cursor is currently inside the string content (i.e., after the opening quote).
-            """
-            return self.current_state == self.acceptor.STATE_IN_STRING
-
-        def is_pattern_prefix(self, s: str) -> bool:
-            """
-            Check whether the string 's' can be a prefix of any string matching the pattern.
-            """
-            if self.acceptor.pattern:
-                pattern_str = self.acceptor.pattern.pattern
-                # Use partial matching
-                match = regex.match(pattern_str, s, partial=True)
-                return match is not None
-            return True  # If no pattern, always return True
+    def is_pattern_prefix(self, s: str) -> bool:
+        """
+        Check whether the string 's' can be a prefix of any string matching the pattern.
+        """
+        if self.acceptor.pattern:
+            pattern_str = self.acceptor.pattern.pattern
+            # Use partial matching
+            match = regex.match(pattern_str, s, partial=True)
+            return match is not None
+        return True  # If no pattern, always return True

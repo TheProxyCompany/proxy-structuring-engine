@@ -3,7 +3,7 @@ Base Token Acceptors Module.
 
 This module defines the foundational classes and methods for token acceptors,
 which constrain the tokens acceptable during parsing or generation of text.
-Token acceptors utilize cursors to manage multiple parsing states efficiently,
+Token acceptors utilize walkers to manage multiple parsing states efficiently,
 minimizing expensive backtracking operations.
 
 Classes:
@@ -16,22 +16,23 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Iterable, Type
+from typing import TYPE_CHECKING, Iterable
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from pse.state_machine.cursor import Cursor
+    from pse.state_machine.walker import Walker
     from pse.state_machine.types import StateType
 
-
 class TokenAcceptor(ABC):
-    """Base class for token acceptors.
+    """
+    Base class for token acceptors.
 
     A token acceptor constrains the acceptable tokens at a specific point
-    during parsing or generation. It manages multiple cursors representing
-    different valid states, enabling efficient traversal and minimizing
-    backtracking.
+    during parsing or generation.
+
+    It manages multiple walkers representing different valid states,
+    enabling efficient traversal and minimizing backtracking.
 
     Attributes:
         initial_state (StateType): The starting state of the acceptor.
@@ -45,6 +46,8 @@ class TokenAcceptor(ABC):
         self,
         initial_state: StateType,
         end_states: Iterable[StateType],
+        is_optional: bool = False,
+        is_case_sensitive: bool = True
     ) -> None:
         """Initializes the TokenAcceptor with the given initial and end states.
 
@@ -54,78 +57,58 @@ class TokenAcceptor(ABC):
         """
         self.initial_state = initial_state
         self.end_states = end_states
+        self._is_optional = is_optional
+        self._is_case_sensitive = is_case_sensitive
 
-    @property
-    @abstractmethod
-    def cursor_class(self) -> Type[Cursor]:
-        """Retrieves the cursor class associated with this acceptor.
+    def is_optional(self) -> bool:
+        """Checks if the acceptor is optional.
 
         Returns:
-            Type[Cursor]: The cursor class.
+            bool: True if the acceptor is optional, False otherwise.
+        """
+        return self._is_optional
+
+    def is_case_sensitive(self) -> bool:
+        """Checks if the acceptor is case sensitive.
+
+        Returns:
+            bool: True if the acceptor is case sensitive, False otherwise.
+        """
+        return self._is_case_sensitive
+
+    @abstractmethod
+    def get_walkers(self) -> Iterable[Walker]:
+        """Retrieves walkers to traverse the acceptor.
+
+        Returns:
+            Iterable[Walker]: An iterable of walker instances.
         """
         pass
 
     @abstractmethod
-    def advance_cursor(self, cursor: Cursor, token: str) -> Iterable[Cursor]:
-        """Advances the cursor with the given input.
+    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
+        """Advances the walker with the given input.
 
         Args:
-            cursor (Cursor): The cursor to advance.
+            walker (Walker): The walker to advance.
             token (str): The input string to process.
 
         Returns:
-            Iterable[Cursor]: An iterable of updated cursors after advancement.
+            Iterable[Walker]: An iterable of updated walkers after advancement.
         """
         pass
 
     @abstractmethod
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        """Checks if the acceptor expects more input after the current cursor position.
+    def expects_more_input(self, walker: Walker) -> bool:
+        """Checks if the acceptor expects more input after the current walker position.
 
         Args:
-            cursor (Cursor): The cursor to check.
+            walker (Walker): The walker to check.
 
         Returns:
             bool: True if more input is expected, False otherwise.
         """
         pass
-
-    @classmethod
-    def advance_all(cls, cursors: Iterable[Cursor], token: str) -> Iterable[Cursor]:
-        """Advances multiple cursors in parallel based on the input.
-
-        Args:
-            cursors (Iterable[Cursor]): An iterable of cursor instances.
-            token (str): The input string to advance the cursors with.
-
-        Returns:
-            Iterable[Cursor]: An iterable of new cursor instances after advancement.
-        """
-        if not cursors:
-            return []
-
-        def process_cursor(cursor: Cursor) -> Iterable[Cursor]:
-            """Processes a single cursor by advancing it with the given input.
-
-            Args:
-                cursor (Cursor): The cursor to process.
-
-            Returns:
-                Iterable[Cursor]: Updated cursors after advancement.
-            """
-            yield from cursor.advance(token)
-
-        # Using map with executor and yielding results
-        for result in cls._EXECUTOR.map(process_cursor, cursors):
-            yield from result
-
-    def get_cursors(self) -> Iterable[Cursor]:
-        """Retrieves cursors to traverse the acceptor.
-
-        Returns:
-            Iterable[Cursor]: An iterable of cursor instances.
-        """
-        yield self.cursor_class(self)
 
     def __repr__(self) -> str:
         """Returns an unambiguous string representation of the instance.

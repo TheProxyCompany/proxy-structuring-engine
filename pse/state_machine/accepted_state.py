@@ -1,107 +1,94 @@
 import logging
-from typing import Any, Iterable, Optional
-from pse.state_machine.cursor import Cursor
+from typing import Any, Iterable
+from pse.state_machine.walker import Walker
 
 logger = logging.getLogger(__name__)
 
 
-class AcceptedState(Cursor):
-    """Represents a cursor that has reached an accepted state.
+class AcceptedState(Walker):
+    """Represents a walker that has reached an accepted state.
 
-    This class wraps another cursor (`accepted_cursor`) that has successfully
+    This class wraps another walker (`accepted_walker`) that has successfully
     reached an accepted state in the state machine. It acts as a marker for
-    accepted states and provides methods to retrieve values and advance the cursor.
+    accepted states and provides methods to retrieve values and advance the walker.
     """
 
-    def __init__(self, cursor: Cursor) -> None:
-        """Initialize the AcceptedState with the given cursor.
+    def __init__(self, walker: Walker) -> None:
+        """Initialize the AcceptedState with the given walker.
 
         Args:
-            cursor: The cursor that has reached an accepted state.
+            walker: The walker that has reached an accepted state.
         """
-        super().__init__(cursor.acceptor)
-        self.accepted_cursor = cursor
-        self.current_state = cursor.current_state
-        self.remaining_input = cursor.remaining_input
-        self.consumed_character_count = cursor.consumed_character_count
-        self.accept_history = cursor.accept_history
-        self._accepts_remaining_input = cursor._accepts_remaining_input
+        super().__init__(walker.acceptor)
+        self.accepted_walker = walker
+        self.current_state = walker.current_state
+        self.remaining_input = walker.remaining_input
+        self.consumed_character_count = walker.consumed_character_count
+        self.accept_history = walker.accept_history
+        self._accepts_remaining_input = walker._accepts_remaining_input
 
-    @property
-    def can_handle_remaining_input(self) -> bool:
-        """Determine whether this cursor can handle more input.
+    def can_accept_more_input(self) -> bool:
+        """Check if the accepted walker can accept more input.
 
         Returns:
-            True if the cursor can handle remaining input; False otherwise.
+            True if the accepted walker can accept more input; False otherwise.
         """
-        return self.accepted_cursor.can_handle_remaining_input
+        return self.accepted_walker.can_accept_more_input()
 
-    def in_accepted_state(self) -> bool:
-        """Check if this cursor is in an accepted state.
+    def has_reached_accept_state(self) -> bool:
+        """Check if this walker is in an accepted state.
 
         Returns:
             Always `True` for `AcceptedState` instances.
         """
         return True
 
-    def is_in_value(self) -> bool:
-        """Determine if this cursor is currently within a value.
+    def is_within_value(self) -> bool:
+        """Determine if this walker is currently within a value.
 
         Returns:
             `False`, as accepted states are not considered to be within a value.
         """
         return False
 
-    def get_value(self) -> Any:
-        """Retrieve the value from the accepted cursor.
+    def accumulated_value(self) -> Any:
+        """Retrieve the value from the accepted walker.
 
         Returns:
-            The value obtained from the accepted cursor.
+            The value obtained from the accepted walker.
         """
-        return self.accepted_cursor.get_value()
+        return self.accepted_walker.accumulated_value()
 
-    def advance(self, token: str) -> Iterable[Cursor]:
-        """Advance the accepted cursor with the given input.
+    def should_start_transition(self, token: str) -> bool:
+        """Determines if a transition should start with the given input string.
+
+        Args:
+            token: The input string to process.
+
+        Returns:
+            True if the transition should start; False otherwise.
+        """
+        if not self.can_accept_more_input():
+            logger.debug("Accepted state cannot handle remaining input")
+            return False
+        return self.accepted_walker.should_start_transition(token)
+
+    def consume_token(self, token: str) -> Iterable[Walker]:
+        """Advance the accepted walker with the given input.
 
         Args:
             token: The input string to process.
 
         Yields:
-            Updated cursors after advancement.
+            Updated walkers after advancement.
         """
-        logger.debug(
-            "Advance accepted state %s, can_handle_remaining_input: %s",
-            self,
-            self.can_handle_remaining_input,
-        )
+        logger.debug(f"Advancing walker in accepted state {self}")
 
-        if not self.can_handle_remaining_input:
+        if not self.can_accept_more_input():
+            logger.debug("Accepted state cannot handle remaining input")
             return
 
-        transition_cursor: Optional[Cursor] = None
-
-        if (
-            self.accepted_cursor.accept_history
-            and self.accepted_cursor.accept_history[-1].can_handle_remaining_input
-        ):
-            transition_cursor = self.accepted_cursor.accept_history.pop()
-            self.accepted_cursor.transition_cursor = transition_cursor
-            self.accepted_cursor.target_state = self.accepted_cursor.current_state
-
-        yield from self.accepted_cursor.advance(token)
-
-        if transition_cursor:
-            self.accepted_cursor.accept_history.append(transition_cursor)
-
-    def is_empty_transition(self) -> bool:
-        """Determine if this cursor represents an empty transition.
-
-        Returns:
-            `True` if the accepted cursor is an `EmptyTransitionAcceptor.Cursor`; otherwise `False`.
-        """
-        from .empty_transition import EmptyTransitionAcceptor
-
-        return isinstance(self.accepted_cursor, EmptyTransitionAcceptor.Cursor)
+        yield from self.accepted_walker.consume_token(token)
 
     def __repr__(self) -> str:
         """Return a string representation of the accepted state.
@@ -109,4 +96,4 @@ class AcceptedState(Cursor):
         Returns:
             A string representing the accepted state.
         """
-        return f"✅{repr(self.accepted_cursor)}"
+        return f"✅{repr(self.accepted_walker)}"

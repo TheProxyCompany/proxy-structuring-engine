@@ -1,6 +1,7 @@
 import unittest
 from pse.schema_acceptors.enum_schema_acceptor import EnumSchemaAcceptor
 
+
 class TestEnumSchemaAcceptor(unittest.TestCase):
     """
     Unit tests for the EnumSchemaAcceptor class to ensure full coverage of its functionalities.
@@ -11,32 +12,34 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Set up the default schema acceptor before each test.
         """
         self.default_schema: dict = {"enum": ["value1", "value2", "value3"]}
-        self.acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=self.default_schema)
+        self.acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(
+            schema=self.default_schema
+        )
 
     def test_accept_valid_enum_value(self) -> None:
         """
         Test that the acceptor correctly accepts a value present in the enum.
         """
         valid_value = "value1"
-        cursors = self.acceptor.get_cursors()
+        walkers = self.acceptor.get_walkers()
         for char in valid_value:
-            cursors = EnumSchemaAcceptor.advance_all(cursors, char)
-        for cursor in cursors:
-            self.assertTrue(cursor.in_accepted_state())
-            self.assertEqual(cursor.get_value(), valid_value)
+            walkers = EnumSchemaAcceptor.advance_all(walkers, char)
+        for walker in walkers:
+            self.assertTrue(walker.has_reached_accept_state())
+            self.assertEqual(walker.accumulated_value(), valid_value)
 
     def test_reject_invalid_enum_value(self) -> None:
         """
         Test that the acceptor correctly rejects a value not present in the enum.
         """
         invalid_value = "invalid_value"
-        cursors = list(self.acceptor.get_cursors())
+        walkers = list(self.acceptor.get_walkers())
         for char in invalid_value:
-            cursors = EnumSchemaAcceptor.advance_all(cursors, char)
+            walkers = EnumSchemaAcceptor.advance_all(walkers, char)
         # Final state should not be an accepted state
         self.assertFalse(
-            any(cursor.in_accepted_state() for cursor in cursors),
-            f"'{invalid_value}' should be rejected by the EnumSchemaAcceptor."
+            any(walker.has_reached_accept_state() for walker in walkers),
+            f"'{invalid_value}' should be rejected by the EnumSchemaAcceptor.",
         )
 
     def test_accept_multiple_enum_values(self) -> None:
@@ -46,23 +49,23 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         valid_values = ["value1", "value2", "value3"]
         for valid_value in valid_values:
             with self.subTest(valid_value=valid_value):
-                cursors = self.acceptor.get_cursors()
-                cursors = EnumSchemaAcceptor.advance_all(cursors, valid_value)
-                for cursor in cursors:
-                    self.assertTrue(cursor.in_accepted_state())
-                    self.assertEqual(cursor.get_value(), valid_value)
+                walkers = self.acceptor.get_walkers()
+                walkers = EnumSchemaAcceptor.advance_all(walkers, valid_value)
+                for walker in walkers:
+                    self.assertTrue(walker.has_reached_accept_state())
+                    self.assertEqual(walker.accumulated_value(), valid_value)
 
     def test_partial_enum_value_rejection(self) -> None:
         """
         Test that the acceptor does not accept prefixes of valid enum values.
         """
         partial_value = "val"
-        cursors = list(self.acceptor.get_cursors())
+        walkers = list(self.acceptor.get_walkers())
         for char in partial_value:
-            cursors = EnumSchemaAcceptor.advance_all(cursors, char)
+            walkers = EnumSchemaAcceptor.advance_all(walkers, char)
         self.assertFalse(
-            any(cursor.in_accepted_state() for cursor in cursors),
-            f"Partial value '{partial_value}' should not be accepted by the EnumSchemaAcceptor."
+            any(walker.has_reached_accept_state() for walker in walkers),
+            f"Partial value '{partial_value}' should not be accepted by the EnumSchemaAcceptor.",
         )
 
     def test_init_without_enum_key(self) -> None:
@@ -89,10 +92,10 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         """
         schema: dict = {"enum": []}
         acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
-        cursors = list(acceptor.get_cursors())
+        walkers = list(acceptor.get_walkers())
         self.assertFalse(
-            any(cursor.in_accepted_state() for cursor in cursors),
-            "Empty string should be rejected when enum is empty."
+            any(walker.has_reached_accept_state() for walker in walkers),
+            "Empty string should be rejected when enum is empty.",
         )
 
     def test_accept_enum_with_special_characters(self) -> None:
@@ -103,8 +106,10 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
         for special_value in schema["enum"]:
             with self.subTest(special_value=special_value):
-                cursors = acceptor.get_cursors()
-                cursors = EnumSchemaAcceptor.advance_all(cursors, special_value)
-                for cursor in cursors:
-                    self.assertTrue(cursor.in_accepted_state())
-                    self.assertEqual(cursor.get_value(), special_value.strip('"'))
+                walkers = acceptor.get_walkers()
+                walkers = EnumSchemaAcceptor.advance_all(walkers, special_value)
+                for walker in walkers:
+                    self.assertTrue(walker.has_reached_accept_state())
+                    self.assertEqual(
+                        walker.accumulated_value(), special_value.strip('"')
+                    )

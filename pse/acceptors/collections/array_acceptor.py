@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Iterable
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateType,
+    StateMachineWalker,
 )
+from pse.state_machine.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -46,61 +48,65 @@ class ArrayAcceptor(StateMachine):
             }
         super().__init__(graph)
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        return cursor.current_state not in self.end_states
+    def expects_more_input(self, walker: Walker) -> bool:
+        return walker.current_state not in self.end_states
 
-    class Cursor(StateMachine.Cursor):
+    def get_walkers(self) -> Iterable[ArrayWalker]:
+        yield ArrayWalker(self)
+
+
+class ArrayWalker(StateMachineWalker):
+    """
+    Walker for ArrayAcceptor that maintains the current state and accumulated values.
+    """
+
+    def __init__(self, acceptor: ArrayAcceptor):
         """
-        Cursor for ArrayAcceptor that maintains the current state and accumulated values.
+        Initialize the ArrayAcceptor.Walker with the parent acceptor and an empty list.
+
+        Args:
+            acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
+        super().__init__(acceptor)
+        self.value: List[Any] = []
 
-        def __init__(self, acceptor: ArrayAcceptor):
-            """
-            Initialize the ArrayAcceptor.Cursor with the parent acceptor and an empty list.
+    def clone(self) -> ArrayWalker:
+        """
+        Clone the current walker, duplicating its state and accumulated values.
 
-            Args:
-                acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
-            """
-            super().__init__(acceptor)
-            self.value: List[Any] = []
+        Returns:
+            ArrayAcceptor.Walker: A new instance of the cloned walker.
+        """
+        cloned_walker = super().clone()
+        cloned_walker.value = self.value[:]
+        return cloned_walker
 
-        def clone(self) -> ArrayAcceptor.Cursor:
-            """
-            Clone the current cursor, duplicating its state and accumulated values.
+    def should_complete_transition(
+        self,
+        transition_value: Any,
+        target_state: StateType,
+        is_end_state: bool,
+    ) -> bool:
+        """
+        Handle the completion of a transition by updating the accumulated values.
 
-            Returns:
-                ArrayAcceptor.Cursor: A new instance of the cloned cursor.
-            """
-            cloned_cursor = super().clone()
-            cloned_cursor.value = self.value[:]
-            return cloned_cursor
+        Args:
+            transition_value (Any): The value transitioned with.
+            target_state (StateMachineAcceptor.StateType): The target state after the transition.
+            is_end_state (bool): Indicates if the transition leads to an end state.
 
-        def complete_transition(
-            self,
-            transition_value: Any,
-            target_state: StateType,
-            is_end_state: bool,
-        ) -> bool:
-            """
-            Handle the completion of a transition by updating the accumulated values.
+        Returns:
+            bool: True if the transition was successful, False otherwise.
+        """
+        if target_state == 3 and transition_value is not None:
+            self.value.append(transition_value)
+        return True
 
-            Args:
-                transition_value (Any): The value transitioned with.
-                target_state (StateMachineAcceptor.StateType): The target state after the transition.
-                is_end_state (bool): Indicates if the transition leads to an end state.
+    def accumulated_value(self) -> Any:
+        """
+        Retrieve the accumulated value from the walker's history.
 
-            Returns:
-                bool: True if the transition was successful, False otherwise.
-            """
-            if target_state == 3 and transition_value is not None:
-                self.value.append(transition_value)
-            return True
-
-        def get_value(self) -> Any:
-            """
-            Retrieve the accumulated value from the cursor's history.
-
-            Returns:
-                Any: The concatenated values from the accept history and current transition.
-            """
-            return self.value
+        Returns:
+            Any: The concatenated values from the accept history and current transition.
+        """
+        return self.value

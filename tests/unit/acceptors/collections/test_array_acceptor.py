@@ -2,10 +2,12 @@ import pytest
 from typing import Any
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 
+
 @pytest.fixture
 def acceptor():
     """Fixture that provides an ArrayAcceptor instance."""
     return ArrayAcceptor()
+
 
 def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     """
@@ -21,16 +23,17 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     Raises:
         JSONParsingError: If the JSON array is invalid.
     """
-    cursors = list(acceptor.get_cursors())
+    walkers = list(acceptor.get_walkers())
     for char in json_string:
-        cursors = list(acceptor.advance_all(cursors, char))
-    if not any(cursor.in_accepted_state() for cursor in cursors):
-        raise AssertionError("No cursor in accepted state")
-    # Assuming the first accepted cursor contains the parsed value
-    for cursor in cursors:
-        if cursor.in_accepted_state():
-            return cursor.get_value()
+        walkers = list(acceptor.advance_all(walkers, char))
+    if not any(walker.has_reached_accept_state() for walker in walkers):
+        raise AssertionError("No walker in accepted state")
+    # Assuming the first accepted walker contains the parsed value
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            return walker.accumulated_value()
     return []
+
 
 # Parameterized tests for valid arrays
 @pytest.mark.parametrize(
@@ -46,27 +49,30 @@ def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[
     """Test parsing of valid JSON arrays."""
     assert parse_array(acceptor, json_string) == expected
 
-# Tests for cursor behavior
-def test_cursor_initialization(acceptor: ArrayAcceptor):
-    """Test that the cursor initializes with an empty value list."""
-    cursor = acceptor.Cursor(acceptor)
-    assert cursor.value == []
 
-def test_cursor_clone(acceptor: ArrayAcceptor):
-    """Test that cloning a cursor duplicates its state correctly."""
-    cursor = acceptor.Cursor(acceptor)
-    cursor.value.append(123)
-    cloned_cursor = cursor.clone()
-    assert cloned_cursor.value == [123]
-    cloned_cursor.value.append(456)
-    assert cursor.value != cloned_cursor.value
+# Tests for walker behavior
+def test_walker_initialization(acceptor: ArrayAcceptor):
+    """Test that the walker initializes with an empty value list."""
+    walker = acceptor.walker_class(acceptor)
+    assert walker.value == []
+
+
+def test_walker_clone(acceptor: ArrayAcceptor):
+    """Test that cloning a walker duplicates its state correctly."""
+    walker = acceptor.walker_class(acceptor)
+    walker.value.append(123)
+    cloned_walker = walker.clone()
+    assert cloned_walker.value == [123]
+    cloned_walker.value.append(456)
+    assert walker.value != cloned_walker.value
+
 
 # Parameterized tests for invalid arrays
 @pytest.mark.parametrize(
     "json_string",
     [
-        "[123, 456",    # Missing closing bracket
-        "[123, 456, ]", # Trailing comma
+        "[123, 456",  # Missing closing bracket
+        "[123, 456, ]",  # Trailing comma
     ],
 )
 def test_invalid_arrays(acceptor: ArrayAcceptor, json_string: str):

@@ -167,10 +167,10 @@ def test_advance_token_with_encapsulated_acceptor(
     driver.create_acceptor({"type": "string"})
     code = '```json\n"test string"\n```'
     for token_id in tokenizer.encode(code, add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         driver.advance_token(token_id)
 
-    assert driver.in_accepted_state
+    assert driver.has_reached_accept_state
 
 
 def test_advance_token_with_encapsulated_acceptor_partial_trigger(
@@ -181,17 +181,17 @@ def test_advance_token_with_encapsulated_acceptor_partial_trigger(
 
     assert driver._waiting_for_trigger()
     for token_id in tokenizer.encode("```", add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         driver.advance_token(token_id)
 
     assert not driver._waiting_for_trigger()
     for token_id in tokenizer.encode("python", add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         driver.advance_token(token_id)
 
     assert driver._waiting_for_trigger()
     for token_id in tokenizer.encode("```", add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         driver.advance_token(token_id)
 
     assert not driver._waiting_for_trigger()
@@ -206,12 +206,12 @@ def test_advance_token_with_acceptor_invalid(
 
     assert not driver._waiting_for_trigger()
     for token_id in tokenizer.encode("```", add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         with pytest.raises(TokenRejected):
             driver.advance_token(token_id)
 
     assert not driver._waiting_for_trigger()
-    assert not driver.in_accepted_state
+    assert not driver.has_reached_accept_state
     assert driver.in_structured_state
 
 
@@ -241,7 +241,7 @@ def test_create_acceptor_with_complex_schema(
     }
     driver.create_acceptor(schema=complex_schema)
     assert driver.acceptor is not None
-    assert driver.cursors is not None
+    assert driver.walkers is not None
 
 
 def test_create_acceptor_with_pattern_schema(
@@ -256,15 +256,15 @@ def test_create_acceptor_with_pattern_schema(
     }
     driver.create_acceptor(schema=pattern_schema, encapsulated=False)
     assert driver.acceptor is not None
-    assert driver.cursors is not None
+    assert driver.walkers is not None
 
     # Test valid input that matches the pattern
     valid_input = '"test"'
     for token_id in tokenizer.encode(valid_input, add_special_tokens=False):
-        print(f"advancing {tokenizer.decode([token_id])} with cursor {driver.cursors}")
+        print(f"advancing {tokenizer.decode([token_id])} with walker {driver.walkers}")
         driver.advance_token(token_id)
     assert (
-        driver.in_accepted_state
+        driver.has_reached_accept_state
     ), "Driver should be in accepted state after consuming valid input."
 
     # Reset driver for invalid input test
@@ -273,14 +273,14 @@ def test_create_acceptor_with_pattern_schema(
         with pytest.raises(TokenRejected):
             driver.advance_token(token_id)
 
-    assert driver.in_accepted_state
+    assert driver.has_reached_accept_state
 
 
-def test_in_accepted_state_with_no_cursors(driver: StructuredOutputDriver) -> None:
-    """Test in_accepted_state when cursors are empty."""
+def test_in_accepted_state_with_no_walkers(driver: StructuredOutputDriver) -> None:
+    """Test in_accepted_state when walkers are empty."""
     driver.create_acceptor(schema={"type": "string"})
-    driver.cursors = []
-    assert not driver.in_accepted_state
+    driver.walkers = []
+    assert not driver.has_reached_accept_state
 
 
 # def test_mask_invalid_tokens(mock_tokenizer: MockTokenizer) -> None:
