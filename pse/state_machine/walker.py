@@ -177,16 +177,19 @@ class Walker(ABC):
         self.explored_edges.add(self.current_edge)
         logger.debug("Explored edges: %s", self.explored_edges)
 
+        self.accept_history.append(self.transition_walker)
+        self.current_state = self.target_state
+
         if not self.can_accept_more_input():
-            self.accept_history.append(self.transition_walker)
-            self.current_state = self.target_state
             self.transition_walker = None
-            logger.debug("Advanced to next state %s", self.target_state)
+            self.target_state = None
+
+        logger.debug(
+            f"Advanced {self.__class__.__name__} to next state: {self.current_state}"
+        )
 
         if self.current_state in self.acceptor.end_states:
             from pse.state_machine.accepted_state import AcceptedState
-
-            logger.debug("Yielding accepted walker:\n%s", AcceptedState(self))
             yield AcceptedState(self)
         else:
             yield self
@@ -327,12 +330,19 @@ class Walker(ABC):
             A formatted string showing state transitions, accumulated values,
             and other relevant walker details.
         """
-        parts = [
-            f"{'🔋' if self.can_accept_more_input() else ''}{self.__class__.__name__}{{"
-        ]
-        indent = "    "
+        prefix = f"{'✅' if self.has_reached_accept_state() else ''}"
+        prefix += f"{'🔋' if self.can_accept_more_input() else ''}"
+        class_name = self.__class__.__name__
 
-        # Acceptance history
+        # Basic info
+        state_info = ""
+        if self.current_state != self.acceptor.initial_state or self.target_state:
+            state_info = f"State: {self.current_state}"
+            if self.target_state:
+                state_info += f" ➔ {self.target_state}"
+
+        # History
+        history_info = ""
         if self.accept_history:
             history_values = [
                 repr(w.accumulated_value())
@@ -340,33 +350,55 @@ class Walker(ABC):
                 if w.accumulated_value() is not None
             ]
             if history_values:
-                history_str = ", ".join(history_values)
-                parts.append(f"History: {history_str}")
+                history_info = f"History: {', '.join(history_values)}"
 
         # Remaining input
+        remaining_input_info = ""
         if self.remaining_input:
-            parts.append(f"Remaining input: `{self.remaining_input}`")
+            remaining_input_info = f"Remaining input: `{self.remaining_input}`"
 
-        # Explored edges
+        # Explored edges or current edge
+        edge_info = ""
         if self.explored_edges:
             explored_edges = []
             for from_state, to_state, edge_value in self.explored_edges:
                 to_state_display = to_state if to_state != "$" else "End"
-                edge_line = (
-                    f"({from_state}) --[{edge_value}]--> ({to_state_display})"
-                )
+                edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
                 explored_edges.append(edge_line)
-            parts.append(f"Explored edges: {', '.join(explored_edges)}")
+            edge_info = f"Explored edges: {', '.join(explored_edges)}"
+        else:
+            to_state_display = self.target_state if self.target_state != "$" else "End"
+            accumulated_value = repr(self.accumulated_value() or "").strip()
+            edge_line = f"({self.current_state}) --[{accumulated_value}]"
+            if self.target_state:
+                edge_line += f"--> ({to_state_display})"
+            edge_info = f"Current edge: {edge_line}"
 
-        # Transition walker details
+        # Transition walker
+        transition_info = ""
         if self.transition_walker is not None:
-            parts.append("Transition walker:")
-            walker_repr = repr(self.transition_walker)
-            walker_lines = walker_repr.split("\n")
-            if len(walker_lines) > 1:
-                indented_walker_lines = [f"{indent}{line}" for line in walker_lines]
-                parts.extend(indented_walker_lines)
+            transition_repr = repr(self.transition_walker)
+            # Compress if possible
+            if '\n' not in transition_repr and len(transition_repr) < 40:
+                transition_info = f"Transition: {transition_repr}"
             else:
-                parts.append(f"{indent}{walker_repr}")
+                transition_info = f"Transition:\n  {transition_repr.replace('\n', '\n  ')}"
 
-        return f"\n{indent}".join(parts) + "\n}"
+        # Assemble all parts
+        info_parts = [part for part in [state_info, history_info, remaining_input_info, edge_info, transition_info] if part]
+        single_line = f"{prefix}{class_name} {{{' | '.join(info_parts)}}}"
+
+        if len(single_line) <= 80:  # Adjust the length as needed
+            return single_line
+        else:
+            # Multiline representation
+            indent = '  '
+            multiline_parts = [f"{prefix}{class_name} {{"]
+            for part in info_parts:
+                if '\n' in part:
+                    part_lines = part.split('\n')
+                    multiline_parts.extend([indent + line for line in part_lines])
+                else:
+                    multiline_parts.append(indent + part)
+            multiline_parts.append('}')
+            return '\n'.join(multiline_parts)

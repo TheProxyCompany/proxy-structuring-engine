@@ -54,7 +54,7 @@ class TextAcceptor(StateMachine):
         Returns:
             str: A string representation of the TextAcceptor.
         """
-        return f"TextAcceptor({repr(self.text)})"
+        return f"TextAcceptor(matching={repr(self.text)})"
 
 
 class TextWalker(StateMachineWalker):
@@ -155,9 +155,6 @@ class TextWalker(StateMachineWalker):
             Iterable[TextAcceptorwalker]: A list containing the next walker if the value matches,
                                 or an empty list otherwise.
         """
-        logger.debug(
-            f"advancing walker: {self}, value: {token}, self.consumed_character_count: {self.consumed_character_count}"
-        )
         expected_text = self.acceptor.text
         pos = self.consumed_character_count
 
@@ -167,20 +164,19 @@ class TextWalker(StateMachineWalker):
 
         # Get the segment to compare
         expected_segment = expected_text[pos : pos + match_len]
-        input_segment = token[:match_len]
+        valid_prefix = token[:match_len]
 
-        logger.debug(
-            f"expected_segment: {expected_segment}, input_segment: {input_segment}"
-        )
+        logger.debug(f"{self.__class__.__name__} trying to find `{expected_segment}` in `{token}`")
 
-        if expected_segment == input_segment:
+        if expected_segment == valid_prefix:
             new_pos = pos + match_len
             remaining_input = token[match_len:]
-            if remaining_input:
-                logger.debug(f"remaining_input: {remaining_input}")
 
             next_walker = self.__class__(self.acceptor, new_pos)
-            next_walker.remaining_input = remaining_input if remaining_input else None
+            if remaining_input:
+                logger.debug(f"match found, remaining input: {remaining_input}")
+                next_walker.remaining_input = remaining_input
+
             if new_pos == len(expected_text):
                 yield AcceptedState(next_walker)
             else:

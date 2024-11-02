@@ -285,6 +285,13 @@ def test_number_acceptor_in_state_machine_sequence():
                 walker.accumulated_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
+    new_advanced = list(StateMachine.advance_all_walkers(walkers, ".0"))
+    walkers = [walker for _, walker in new_advanced]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.accumulated_value() == "Value: 42.0"
+
 
 def test_char_by_char_in_state_machine():
     """Test NumberAcceptor within a StateMachine sequence along with other acceptors."""
@@ -496,7 +503,6 @@ def test_whitespace_acceptor():
             0: [(TextAcceptor("{"), 1)],
             1: [
                 (WhitespaceAcceptor(), 2),
-                # (TextAcceptor("."), 2),
             ],
             2: [(TextAcceptor("}"), "$")],
         }
@@ -518,7 +524,7 @@ def test_whitespace_acceptor():
             assert walker.accumulated_value() == "{"
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
+    assert len(new_walkers) == 1, "Expected 1 walker after advancing with '{.'"
 
     advancement = StateMachine.advance_all_walkers(new_walkers, " ", dawg)
     new_walkers = []
@@ -530,7 +536,7 @@ def test_whitespace_acceptor():
             assert walker.accumulated_value() == "{ "
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with ' '"
+    assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
 
     advancement = StateMachine.advance_all_walkers(new_walkers, "\n}", dawg)
     new_walkers = []

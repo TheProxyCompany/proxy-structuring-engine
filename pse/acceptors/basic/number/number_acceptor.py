@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 import json
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional, Union
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
-from pse.state_machine.types import StateMachineGraph
+from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor, digit_acceptor
 from pse.acceptors.basic.number.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.empty_transition import EmptyTransition
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 import logging
 
 from pse.state_machine.walker import Walker
@@ -26,47 +25,47 @@ class NumberAcceptor(StateMachine):
 
     _cached_tries = {}
 
-    # State constants
-    STATE_START = 0
-    STATE_SIGN = 1
-    STATE_INTEGER = 2
-    STATE_FLOAT = 3
-    STATE_DECIMAL = 4
-    STATE_EXPONENT = 5
-    STATE_EXPONENT_SIGN = 6
-    STATE_EXPONENT_NUMBER = 7
-    STATE_END = "$"
+    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
+        """
+        Get the edges for a given state.
+        """
+        if state == 0:
+            yield from super().get_edges(state)
+            yield from super().get_edges(1)
+        elif state == 4:
+            yield from super().get_edges(state)
+            yield from super().get_edges(5)
+        else:
+            yield from super().get_edges(state)
 
     def __init__(self):
         """
         Initialize the NumberAcceptor with its state transitions.
         """
         graph: StateMachineGraph = {
-            self.STATE_START: [
-                (TextAcceptor("-", is_optional=True), self.STATE_INTEGER),
+            0: [
+                (TextAcceptor("-"), 1),
             ],
-            self.STATE_INTEGER: [
-                (IntegerAcceptor(), self.STATE_FLOAT),
+            1: [
+                (IntegerAcceptor(), 2),
             ],
-            self.STATE_FLOAT: [
-                (TextAcceptor("."), self.STATE_DECIMAL),
-                (EmptyTransition, self.STATE_EXPONENT),
+            2: [
+                (
+                    SequenceAcceptor([TextAcceptor("."), digit_acceptor]),
+                    3,
+                ),
             ],
-            self.STATE_DECIMAL: [
-                (digit_acceptor, self.STATE_EXPONENT),
+            3: [
+                (CharacterAcceptor("eE"), 4),
             ],
-            self.STATE_EXPONENT: [
-                (CharacterAcceptor("eE"), self.STATE_EXPONENT_SIGN),
-                (EmptyTransition, self.STATE_END),
+            4: [
+                (CharacterAcceptor("+-"), 5),
             ],
-            self.STATE_EXPONENT_SIGN: [
-                (CharacterAcceptor("+-", is_optional=True), self.STATE_EXPONENT_NUMBER),
-            ],
-            self.STATE_EXPONENT_NUMBER: [
-                (IntegerAcceptor(), self.STATE_END),
+            5: [
+                (IntegerAcceptor(), "$"),
             ],
         }
-        super().__init__(graph)
+        super().__init__(graph, end_states=[1, 2, "$"])
 
     def get_walkers(self) -> Iterable[Walker]:
         initial_walker = NumberWalker(acceptor=self)
