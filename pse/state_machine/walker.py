@@ -113,7 +113,7 @@ class Walker(ABC):
         """
         return (
             self.current_state,
-            self.target_state or "$",
+            self.target_state if self.target_state is not None else "$",
             str(self.accumulated_value()),
         )
 
@@ -163,7 +163,7 @@ class Walker(ABC):
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
-    def transition(self) -> Iterable[Walker]:
+    def transition(self) -> Walker:
         """Advance the walker to the next state.
 
         Yields:
@@ -171,28 +171,25 @@ class Walker(ABC):
         """
         if not self.transition_walker or self.target_state is None:
             logger.debug("No transition to complete: %s", self)
-            yield self
-            return
+            return self
 
+        self.accept_history.append(self.transition_walker)
         self.explored_edges.add(self.current_edge)
         logger.debug("Explored edges: %s", self.explored_edges)
 
-        self.accept_history.append(self.transition_walker)
         self.current_state = self.target_state
+        logger.debug(f"{self} transitioned to state {self.current_state}")
 
         if not self.can_accept_more_input():
             self.transition_walker = None
             self.target_state = None
 
-        logger.debug(
-            f"Advanced {self.__class__.__name__} to next state: {self.current_state}"
-        )
-
         if self.current_state in self.acceptor.end_states:
             from pse.state_machine.accepted_state import AcceptedState
-            yield AcceptedState(self)
-        else:
-            yield self
+            logger.debug("Walker in accepted state")
+            return AcceptedState(self)
+
+        return self
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).
@@ -330,9 +327,9 @@ class Walker(ABC):
             A formatted string showing state transitions, accumulated values,
             and other relevant walker details.
         """
-        prefix = f"{'✅' if self.has_reached_accept_state() else ''}"
-        prefix += f"{'🔋' if self.can_accept_more_input() else ''}"
+        prefix = f"{'✅ ' if self.has_reached_accept_state() else ''}"
         class_name = self.__class__.__name__
+        suffix = f"{' 🔄' if self.can_accept_more_input() else ''}"
 
         # Basic info
         state_info = ""
@@ -368,7 +365,7 @@ class Walker(ABC):
             edge_info = f"Explored edges: {', '.join(explored_edges)}"
         else:
             to_state_display = self.target_state if self.target_state != "$" else "End"
-            accumulated_value = repr(self.accumulated_value() or "").strip()
+            accumulated_value = repr(self.accumulated_value() or "").rstrip("'")
             edge_line = f"({self.current_state}) --[{accumulated_value}]"
             if self.target_state:
                 edge_line += f"--> ({to_state_display})"
@@ -386,14 +383,14 @@ class Walker(ABC):
 
         # Assemble all parts
         info_parts = [part for part in [state_info, history_info, remaining_input_info, edge_info, transition_info] if part]
-        single_line = f"{prefix}{class_name} {{{' | '.join(info_parts)}}}"
+        single_line = f"{prefix}{class_name}{suffix} {{{' | '.join(info_parts)}}}"
 
-        if len(single_line) <= 80:  # Adjust the length as needed
+        if len(single_line) <= 80:
             return single_line
         else:
             # Multiline representation
             indent = '  '
-            multiline_parts = [f"{prefix}{class_name} {{"]
+            multiline_parts = [f"{prefix}{class_name}{suffix} {{"]
             for part in info_parts:
                 if '\n' in part:
                     part_lines = part.split('\n')

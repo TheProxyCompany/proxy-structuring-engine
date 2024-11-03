@@ -3,7 +3,6 @@ from lexpy import DAWG
 
 from pse.acceptors.basic.number.integer_acceptor import IntegerWalker
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
-from pse.state_machine.empty_transition import EmptyTransition
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
@@ -15,7 +14,7 @@ from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
     "token, expected_value",
     [
         ("true", True),
-        # ("false", False),
+        ("false", False),
     ],
 )
 def test_boolean_acceptor(token, expected_value):
@@ -287,10 +286,14 @@ def test_number_acceptor_in_state_machine_sequence():
 
     new_advanced = list(StateMachine.advance_all_walkers(walkers, ".0"))
     walkers = [walker for _, walker in new_advanced]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    assert any(
+        walker.has_reached_accept_state() for walker in walkers
+    ), "Parsed value should be the combined string 'Value: 42.0'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.accumulated_value() == "Value: 42.0"
+            assert (
+                walker.accumulated_value() == "Value: 42.0"
+            ), "Parsed value should be the combined string 'Value: 42.0'."
 
 
 def test_char_by_char_in_state_machine():
@@ -324,61 +327,8 @@ def test_char_by_char_in_state_machine():
             ), "Parsed value should be the combined string 'Value: 42'."
 
 
-def test_multiple_transitions_with_empty():
-    """Test StateMachine with EmptyTransition."""
-    sm = StateMachine(
-        graph={
-            0: [
-                (TextAcceptor("start"), 1),
-                (EmptyTransition, 2),
-            ],
-            1: [(TextAcceptor("end"), 3)],
-            2: [(TextAcceptor("middle"), 3)],
-        },
-        initial_state=0,
-        end_states=[3],
-    )
-
-    # Path with EmptyTransition
-    walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "middle"))
-    walkers = [walker for _, walker in advanced]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    assert any(
-        walker.accumulated_value() == "middle"
-        for walker in walkers
-        if walker.has_reached_accept_state()
-    )
-
-    # Path without EmptyTransition
-    walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "startend"))
-    walkers = [walker for _, walker in advanced]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    assert any(
-        walker.accumulated_value() == "startend"
-        for walker in walkers
-        if walker.has_reached_accept_state()
-    )
-
 
 # Edge case tests
-
-
-def test_empty_input():
-    """Test StateMachine with empty input."""
-    sm = StateMachine(
-        graph={
-            0: [(EmptyTransition, 1)],
-        },
-        initial_state=0,
-        end_states=[1],
-    )
-
-    walkers = list(sm.get_walkers())
-    # No input provided, test if walkers are in accepted state
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-
 
 def test_unexpected_input():
     """Test StateMachine with unexpected input."""
@@ -429,7 +379,7 @@ def test_state_machine_empty_transition():
     """Test StateMachine with an EmptyTransition."""
     sm = StateMachine(
         graph={
-            0: [(EmptyTransition, 1)],
+            0: [(TextAcceptor("ignored", is_optional=True), 1)],
             1: [(TextAcceptor("test"), 2)],
         },
         initial_state=0,
@@ -449,7 +399,10 @@ def test_state_machine_with_loop():
     """Test StateMachine handling loop transitions."""
     sm = StateMachine(
         graph={
-            0: [(TextAcceptor("a"), 0), (TextAcceptor("b"), 1)],
+            0: [
+                (TextAcceptor("a"), 0),
+                (TextAcceptor("b"), 1),
+            ],
         },
         initial_state=0,
         end_states=[1],
@@ -554,8 +507,7 @@ def test_simple_number_acceptor():
     sm = StateMachine(
         {
             0: [
-                (TextAcceptor("-"), 1),
-                (EmptyTransition, 1),
+                (TextAcceptor("-", is_optional=True), 1),
             ],
             1: [
                 (IntegerAcceptor(), "$"),

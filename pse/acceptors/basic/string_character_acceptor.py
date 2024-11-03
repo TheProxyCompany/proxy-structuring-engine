@@ -22,10 +22,12 @@ class StringCharacterAcceptor(TokenAcceptor):
         """
         Initialize the StringCharAcceptor with its state transitions.
         """
-        super().__init__(initial_state=0, end_states={1})
+        super().__init__(
+            initial_state=0, end_states={1}, walker_type=StringCharacterWalker
+        )
 
-    def get_walkers(self) -> Iterable[StringCharacterWalker]:
-        yield StringCharacterWalker(self)
+    def get_walkers(self) -> Iterable[Walker]:
+        yield self._walker(self)
 
     @classmethod
     def prepare_dawg(cls, dawg: DAWG) -> DAWG:

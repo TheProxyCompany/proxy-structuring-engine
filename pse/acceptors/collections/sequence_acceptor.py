@@ -73,6 +73,3 @@ class SequenceWalker(StateMachineWalker):
             Any: The accumulated value from the current acceptor.
         """
         return "".join([walker.accumulated_value() for walker in self.accept_history])
-
-    def __repr__(self) -> str:
-        return f"SequenceAcceptor.Walker(acceptor={self.acceptor}, value={self.accumulated_value()})"

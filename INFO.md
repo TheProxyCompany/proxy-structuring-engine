@@ -158,3 +158,65 @@ Model: {
 In the second example, the output is structured and ready to be used in any system that requires a JSON format.
 
 ---
+
+🧵 The Proxy Structuring Engine (PSE)
+Introducing a novel sampling approach for structured outputs in LLMs: the Proxy Structuring Engine. A technical thread for AI/ML engineers, researchers, and the architecturally curious.
+
+What is the Proxy Structuring Engine? 🤖
+PSE is a schema-guided sampling engine that enforces constraints during text generation while maintaining model creativity and speed. It ensures outputs from large language models adhere to predefined structures.
+
+How does PSE enforce schema constraints differently from traditional methods? 🔧
+Traditional temperature-based sampling is done randomly over a probability distribution, often leading to undesirable outputs.
+
+The PSE works directly with the model before sampling, blending probabilistic and deterministic approaches to generate structured and probable text. It steers the model to favor schema-compliant tokens.
+
+What advantages does a state machine-based approach offer over regex or grammar-based constraints? 🔧
+State machines provide:
+
+Parallel exploration of multiple valid paths without backtracking
+Efficient tracking of partial matches
+Natural extension to different schema types (JSON, SQL, etc.)
+Better handling of mixed-format outputs (e.g., text and structured data)
+Regexes can be rigid and difficult to scale, whereas state machines offer flexibility and efficiency.
+
+How is PSE different from constrained decoding?
+Traditional constrained decoding often uses hard filters, limiting creativity. PSE's state machines and walkers allow tokens leading to valid continuations, even those with just valid prefixes. This balances structure with fluent, creative text.
+
+What is a "walker" in the PSE? 🚶🏻
+Think of walkers as smart navigators. They explore possible generation paths through a state machine representing your schema, evaluating which tokens can advance them. Walkers can be customized and use heuristics to efficiently prune invalid paths early, optimizing the traversal process.
+
+How does the engine handle partial matches or incomplete tokens? 🧩
+PSE uses a method we call Best Effort Matching. It tracks partial matches and, if a full match isn't in the top predictions, advances the longest valid one. For example, if expecting "hello world," even if the model predicts "hello" then "World!", PSE will correctly advance "world," ensuring schema adherence. This lets the model naturally complete complex schema elements over multiple steps, even if it makes mistakes.
+
+How does PSE handle token alignment issues and structural requirements?
+PSE uses a DAWG (Directed Acyclic Word Graph)—an efficient structure representing the model's vocabulary—for prefix-based matching. This, combined with Best Effort Matching, ensures structural validity even with partial tokens, leveraging the model's predictions as guidance.
+
+How does PSE balance structure and reasoning abilities? 🤖
+PSE enforces constraints only where necessary, letting the model be creative within boundaries. It ensures required structures are followed while letting the model generate expressive content.
+
+Hooks can be set during structured generation to layer additional sampling. For example, when generating a JSON string, you can enable other samplers (like top_p or min_p) to improve the content of the string. The PSE does not implement these additional samplers by default.
+
+What are the trade-offs between immediate constraints and using a trigger in PSE? ⚡️
+Immediate constraints guarantee structure but might hinder reasoning on complex tasks. PSE can delay constraints using trigger tokens or phrases (like <|tool_call|> or ```json), allowing free-form reasoning and planning before enforcing structure.
+
+What's the overhead introduced by PSE? ⚡️
+Overhead is O(top_tokens × time_to_advance_token), but remains minimal due to efficient token evaluation (lazy evaluation and early exit optimizations). PSE checks N top tokens one by one, resuming generation once a valid continuation is found. If no schema-compliant token exists within N top tokens, it selects the longest valid prefix that exists as its own token (Best Effort Matching).
+
+Does PSE support different machine learning backends? 🤖
+Yes! PSE (written in Python with optimized Cython data structures via lexpy) supports PyTorch, JAX, and MLX, seamlessly integrating with existing models.
+
+What are the limitations of PSE? 🪫
+PSE's effectiveness depends on the underlying LLM's quality. Complex schemas may require more capable models.
+
+What are the future directions for PSE? 🧪
+We're expanding schema support (YAML, SQL, Cypher), optimizing performance, and developing benchmarks.
+
+Is PSE open-source? 🤖
+Yes! Find it on GitHub under the Apache 2.0 license: https://github.com/TheProxyCompany/proxy-structuring-engine
+
+🔥 Ready to try PSE?
+Find us on GitHub: https://github.com/TheProxyCompany/proxy-structuring-engine
+
+Follow @whatisproxy for updates
+
+⭐️ Star the repo to show support!

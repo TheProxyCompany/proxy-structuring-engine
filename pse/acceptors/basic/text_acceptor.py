@@ -33,7 +33,7 @@ class TextAcceptor(StateMachine):
             ValueError: If the provided text is empty.
         """
         super().__init__(
-            graph={},
+            walker_type=TextWalker,
             is_optional=is_optional,
             is_case_sensitive=is_case_sensitive,
         )

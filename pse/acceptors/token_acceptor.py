@@ -16,13 +16,14 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Optional, Type
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pse.state_machine.walker import Walker
     from pse.state_machine.types import StateType
+
 
 class TokenAcceptor(ABC):
     """
@@ -46,8 +47,9 @@ class TokenAcceptor(ABC):
         self,
         initial_state: StateType,
         end_states: Iterable[StateType],
+        walker_type: Type[Walker],
         is_optional: bool = False,
-        is_case_sensitive: bool = True
+        is_case_sensitive: bool = True,
     ) -> None:
         """Initializes the TokenAcceptor with the given initial and end states.
 
@@ -57,6 +59,7 @@ class TokenAcceptor(ABC):
         """
         self.initial_state = initial_state
         self.end_states = end_states
+        self._walker = walker_type
         self._is_optional = is_optional
         self._is_case_sensitive = is_case_sensitive
 
@@ -77,7 +80,7 @@ class TokenAcceptor(ABC):
         return self._is_case_sensitive
 
     @abstractmethod
-    def get_walkers(self) -> Iterable[Walker]:
+    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
         """Retrieves walkers to traverse the acceptor.
 
         Returns:

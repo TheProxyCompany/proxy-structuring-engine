@@ -90,7 +90,18 @@ class NumberWalker(StateMachineWalker):
         self.acceptor = acceptor
         self.text: str = ""
         self.value: Optional[Union[int, float]] = None
-        self._accepts_remaining_input = True
+
+    def should_start_transition(self, token: str) -> bool:
+        if self.transition_walker and not self.transition_walker.should_start_transition(token):
+            transition_reached_accept_state = self.transition_walker.has_reached_accept_state()
+            logger.debug(f"Walker cannot start transition with {repr(token)}")
+            self.transition_walker = None
+            self.target_state = None
+            if transition_reached_accept_state:
+                logger.debug(f"branching walkers with {repr(token)} from\n{self}")
+            return transition_reached_accept_state
+
+        return True
 
     def should_complete_transition(
         self, transition_value: Any, is_end_state: bool
@@ -116,6 +127,8 @@ class NumberWalker(StateMachineWalker):
 
         if not self.text:
             return True
+
+        self._accepts_remaining_input = True
 
         try:
             self.value = int(self.text)

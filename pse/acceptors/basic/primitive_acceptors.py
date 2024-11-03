@@ -25,14 +25,13 @@ class BooleanAcceptor(StateMachine):
                 (TextAcceptor("false"), "$"),
             ]
         }
-        super().__init__(graph)
+        super().__init__(graph, walker_type=BooleanWalker)
 
     def expects_more_input(self, walker: Walker) -> bool:
         return False
 
     def get_walkers(self) -> Iterable[Walker]:
-        initial_walker = BooleanWalker(self)
-        yield from self._branch_walkers(initial_walker)
+        yield self._walker(self)
 
 
 class BooleanWalker(StateMachineWalker):
@@ -41,12 +40,6 @@ class BooleanWalker(StateMachineWalker):
     """
 
     def __init__(self, acceptor: BooleanAcceptor) -> None:
-        """
-        Initialize the walker.
-
-        Args:
-            acceptor (BooleanAcceptor): The parent acceptor.
-        """
         super().__init__(acceptor)
         self.value: Optional[bool] = None
 

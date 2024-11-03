@@ -71,6 +71,7 @@ class AcceptedState(Walker):
         if not self.can_accept_more_input():
             logger.debug("Accepted state cannot handle remaining input")
             return False
+
         return self.accepted_walker.should_start_transition(token)
 
     def consume_token(self, token: str) -> Iterable[Walker]:
@@ -82,7 +83,7 @@ class AcceptedState(Walker):
         Yields:
             Updated walkers after advancement.
         """
-        logger.debug(f"Advancing walker in accepted state {self}")
+        logger.debug(f"Advancing walker in accepted state:\n{self}")
 
         if not self.can_accept_more_input():
             logger.debug("Accepted state cannot handle remaining input")
@@ -96,4 +97,4 @@ class AcceptedState(Walker):
         Returns:
             A string representing the accepted state.
         """
-        return f"✅{repr(self.accepted_walker)}"
+        return f"✅ {repr(self.accepted_walker)}"

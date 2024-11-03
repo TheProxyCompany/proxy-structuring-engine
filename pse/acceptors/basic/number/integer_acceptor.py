@@ -26,7 +26,6 @@ class IntegerWalker(CharacterWalker):
         self.acceptor = acceptor
         self.text: str = value or ""
         self.value: Optional[int] = None
-        self._accepts_remaining_input = True
 
     def can_accept_more_input(self) -> bool:
         return self._accepts_remaining_input
@@ -35,7 +34,11 @@ class IntegerWalker(CharacterWalker):
         if not token:
             return False
 
-        return token[0].isdigit()
+        if not token[0].isdigit():
+            self._accepts_remaining_input = False
+            return False
+
+        return True
 
     def should_complete_transition(
         self, transition_value: str, target_state: Any, is_end_state: bool
@@ -80,7 +83,3 @@ class IntegerWalker(CharacterWalker):
             return self.value
         except ValueError:
             return self.text
-
-    def __repr__(self) -> str:
-        value_string = f"value={self.accumulated_value()}"
-        return f"Integer.Walker({value_string if self.accumulated_value() else ''})"

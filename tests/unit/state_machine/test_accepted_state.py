@@ -11,9 +11,9 @@ def test_acceptor() -> TextAcceptor:
 
 
 @pytest.fixture
-def mock_walker(test_acceptor: TextAcceptor) -> TextWalker:
+def mock_walker(test_acceptor: TextAcceptor) -> Walker:
     """Fixture to create a mock walker from the test_acceptor."""
-    return test_acceptor.walker_class(test_acceptor)
+    return test_acceptor._walker(test_acceptor)
 
 
 def test_in_accepted_state_returns_true(mock_walker: TextWalker) -> None:
@@ -43,7 +43,7 @@ def test_repr_includes_checkmark_and_walker_repr(
     Test that the string representation of AcceptedState includes a checkmark and walker's repr.
     """
     accepted = AcceptedState(mock_walker)
-    expected_repr = f"✅{repr(mock_walker)}"
+    expected_repr = f"✅ {repr(mock_walker)}"
     assert (
         repr(accepted) == expected_repr
     ), "String representation should include a checkmark and walker's repr."
@@ -54,9 +54,9 @@ def test_multiple_instances_operate_independently() -> None:
     Test that multiple instances of AcceptedState operate independently.
     """
     acceptor1 = TextAcceptor("first")
-    walker1 = acceptor1.walker_class(acceptor1)
+    walker1 = acceptor1._walker(acceptor1)
     acceptor2 = TextAcceptor("second")
-    walker2 = acceptor2.walker_class(acceptor2)
+    walker2 = acceptor2._walker(acceptor2)
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 
@@ -75,8 +75,8 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
     """
     Test that different AcceptedState instances with identical walker values are not equal.
     """
-    walker1 = test_acceptor.walker_class(test_acceptor)
-    walker2 = test_acceptor.walker_class(test_acceptor)
+    walker1 = test_acceptor._walker(test_acceptor)
+    walker2 = test_acceptor._walker(test_acceptor)
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 
@@ -111,41 +111,5 @@ def test_can_handle_remaining_input_property(mock_walker: TextWalker) -> None:
     """
     accepted = AcceptedState(mock_walker)
     assert (
-        accepted.can_handle_remaining_input == mock_walker.can_handle_remaining_input
+        accepted.can_accept_more_input() == mock_walker.can_accept_more_input()
     ), "can_handle_remaining_input should match the accepted walker's value."
-
-
-def test_get_value_returns_none_when_walker_value_is_none(
-    test_acceptor: TextAcceptor,
-) -> None:
-    """
-    Test that get_value returns None when the walker's value is None.
-    """
-
-    class Mockwalker(Walker):
-        """Mock walker with get_value returning None."""
-
-        remaining_input = ""
-        consumed_character_count = 0
-
-        def accumulated_value(self):
-            return None
-
-        def has_reached_accept_state(self):
-            return True
-
-        def consume_token(self, token: str):
-            return iter([])
-
-        def is_within_value(self):
-            return False
-
-        @property
-        def can_handle_remaining_input(self):
-            return False
-
-    mock_walker = Mockwalker(test_acceptor)
-    accepted = AcceptedState(mock_walker)
-    assert (
-        accepted.accumulated_value() is None
-    ), "AcceptedState should return None when walker's get_value is None."

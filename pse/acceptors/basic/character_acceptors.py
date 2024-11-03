@@ -136,6 +136,8 @@ class CharacterWalker(StateMachineWalker):
             logger.debug(f"Walker {self} cannot handle input: {token}")
             self._accepts_remaining_input = False
             return
+        else:
+            self._accepts_remaining_input = True
 
         # Accumulate valid characters with existing value
         accumulated_value = f"{self.value or ''}{valid_characters}"
@@ -147,7 +149,6 @@ class CharacterWalker(StateMachineWalker):
             False if remaining_input else self._accepts_remaining_input
         )
 
-        logger.debug(f"yielding accepted walker: {AcceptedState(new_walker)}")
         yield AcceptedState(new_walker)
 
     def accumulated_value(self) -> Optional[str]:

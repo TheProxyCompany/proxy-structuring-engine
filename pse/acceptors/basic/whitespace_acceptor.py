@@ -25,7 +25,7 @@ class WhitespaceAcceptor(StateMachine):
             max_whitespace (int, optional): Maximum allowable whitespace characters.
                                             Defaults to 40.
         """
-        super().__init__({})
+        super().__init__({}, walker_type=WhitespaceWalker)
         self.min_whitespace: int = min_whitespace
         self.max_whitespace: int = max_whitespace
 
@@ -35,7 +35,7 @@ class WhitespaceAcceptor(StateMachine):
         Returns:
             Iterable of walkers positioned at initial state.
         """
-        yield WhitespaceWalker(self)
+        yield self._walker(self)
 
     def expects_more_input(self, walker: Walker) -> bool:
         return (
