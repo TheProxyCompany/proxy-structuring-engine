@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Iterable, List
+from typing import Any, List
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.state_machine.walker import Walker
@@ -25,7 +25,12 @@ class SequenceAcceptor(StateMachine):
         for i, acceptor in enumerate(self.acceptors):
             # Each state points **only** to the next acceptor
             graph[i] = [(acceptor, i + 1)]
-        super().__init__(graph, initial_state=0, end_states=[len(acceptors)])
+        super().__init__(
+            graph,
+            initial_state=0,
+            end_states=[len(acceptors)],
+            walker_type=SequenceWalker,
+        )
 
     def __repr__(self) -> str:
         """
@@ -38,12 +43,6 @@ class SequenceAcceptor(StateMachine):
         Check if the SequenceAcceptor expects more input.
         """
         return walker.current_state not in self.end_states
-
-    def get_walkers(self) -> Iterable[SequenceWalker]:
-        """
-        Get the walkers for the SequenceAcceptor.
-        """
-        yield SequenceWalker(self)
 
 
 class SequenceWalker(StateMachineWalker):

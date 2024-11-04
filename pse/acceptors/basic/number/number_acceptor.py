@@ -98,7 +98,7 @@ class NumberWalker(StateMachineWalker):
             self.transition_walker = None
             self.target_state = None
             if transition_reached_accept_state:
-                logger.debug(f"branching walkers with {repr(token)} from\n{self}")
+                logger.debug(f"starting transition with {repr(token)} from\n{self}")
             return transition_reached_accept_state
 
         return True

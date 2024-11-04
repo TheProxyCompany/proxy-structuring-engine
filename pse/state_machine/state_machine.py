@@ -50,7 +50,7 @@ class StateMachine(TokenAcceptor):
         )
         self.graph: StateMachineGraph = graph or {}
 
-    def _branch_walkers(self, walker: Walker) -> Iterable[Walker]:
+    def _branch_walkers(self, walker: Walker, token: Optional[str] = None) -> Iterable[Walker]:
         """Branch the walker into multiple paths for parallel exploration.
 
         At each non-deterministic decision point, clone the current walker
@@ -66,6 +66,12 @@ class StateMachine(TokenAcceptor):
         for transition, target_state in self._get_transitions(
             walker.current_state, walker
         ):
+            if token and not transition.should_start_transition(token):
+                logger.debug(
+                    f"Transition {transition} cannot start with {token}, skipping."
+                )
+                continue
+
             if walker.remaining_input and not transition.should_start_transition(
                 walker.remaining_input
             ):
@@ -174,6 +180,15 @@ class StateMachine(TokenAcceptor):
         yield walker.transition()
 
     @classmethod
+    def advance_all(
+        cls,
+        walkers: Iterable[Walker],
+        token: str,
+    ) -> Iterable[Tuple[str, Walker]]:
+        logger.warning("advance_all is deprecated, use advance_all_walkers instead")
+        yield from cls.advance_all_walkers(walkers, token)
+
+    @classmethod
     def advance_all_walkers(
         cls,
         walkers: Iterable[Walker],
@@ -246,8 +261,6 @@ class StateMachine(TokenAcceptor):
             logger.debug(
                 f"{walker.acceptor} cannot start transition with {token}"
             )
-            for next_walker in self._branch_walkers(walker):
-                logger.debug(f"branched walker:\n{next_walker}")
             return
 
         if not walker.transition_walker:
@@ -265,6 +278,16 @@ class StateMachine(TokenAcceptor):
                 logger.debug("Yielding walker upstream for partial matching")
                 yield walker
             return
+
+        if (
+            walker.transition_walker
+            and walker.accept_history
+            and walker.transition_walker == walker.accept_history[-1]
+        ):
+            logger.debug(
+                f"Popping accepted walker from history: {walker.accept_history[-1]}"
+            )
+            walker.accept_history.pop()
 
         for advanced_walker in walker.transition_walker.consume_token(token):
             logger.debug(f"Advanced transition walker: {advanced_walker}")

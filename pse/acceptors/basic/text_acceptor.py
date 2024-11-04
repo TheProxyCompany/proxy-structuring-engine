@@ -166,8 +166,6 @@ class TextWalker(StateMachineWalker):
         expected_segment = expected_text[pos : pos + match_len]
         valid_prefix = token[:match_len]
 
-        logger.debug(f"{self.__class__.__name__} trying to find `{expected_segment}` in `{token}`")
-
         if expected_segment == valid_prefix:
             new_pos = pos + match_len
             remaining_input = token[match_len:]

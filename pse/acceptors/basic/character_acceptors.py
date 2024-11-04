@@ -30,18 +30,19 @@ class CharacterAcceptor(StateMachine):
         """
         super().__init__(
             graph={},
+            walker_type=CharacterWalker,
             is_optional=is_optional,
             is_case_sensitive=is_case_sensitive,
         )
         self.charset: Set[str] = set(charset)
         self.char_limit = char_limit or 0
 
-    def get_walkers(self) -> Iterable[CharacterWalker]:
+    def get_walkers(self) -> Iterable[Walker]:
         """
         Get one or more walkers to traverse the acceptor.
         Override.
         """
-        yield CharacterWalker(self)
+        yield self._walker(self)
 
     def expects_more_input(self, walker: Walker) -> bool:
         if self.char_limit > 0:

@@ -327,75 +327,87 @@ class Walker(ABC):
             A formatted string showing state transitions, accumulated values,
             and other relevant walker details.
         """
-        prefix = f"{'✅ ' if self.has_reached_accept_state() else ''}"
-        class_name = self.__class__.__name__
-        suffix = f"{' 🔄' if self.can_accept_more_input() else ''}"
-
-        # Basic info
-        state_info = ""
-        if self.current_state != self.acceptor.initial_state or self.target_state:
+        def _format_state_info() -> str:
+            if self.current_state == self.acceptor.initial_state and not self.target_state:
+                return ""
             state_info = f"State: {self.current_state}"
-            if self.target_state:
-                state_info += f" ➔ {self.target_state}"
+            return f"{state_info} ➔ {self.target_state}" if self.target_state else state_info
 
-        # History
-        history_info = ""
-        if self.accept_history:
+        def _format_history_info() -> str:
+            if not self.accept_history:
+                return ""
             history_values = [
                 repr(w.accumulated_value())
                 for w in self.accept_history
                 if w.accumulated_value() is not None
             ]
-            if history_values:
-                history_info = f"History: {', '.join(history_values)}"
+            return f"History: {', '.join(history_values)}" if history_values else ""
 
-        # Remaining input
-        remaining_input_info = ""
-        if self.remaining_input:
-            remaining_input_info = f"Remaining input: `{self.remaining_input}`"
+        def _format_remaining_input() -> str:
+            return f"Remaining input: `{self.remaining_input}`" if self.remaining_input else ""
 
-        # Explored edges or current edge
-        edge_info = ""
-        if self.explored_edges:
-            explored_edges = []
-            for from_state, to_state, edge_value in self.explored_edges:
-                to_state_display = to_state if to_state != "$" else "End"
-                edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
-                explored_edges.append(edge_line)
-            edge_info = f"Explored edges: {', '.join(explored_edges)}"
-        else:
-            to_state_display = self.target_state if self.target_state != "$" else "End"
-            accumulated_value = repr(self.accumulated_value() or "").rstrip("'")
-            edge_line = f"({self.current_state}) --[{accumulated_value}]"
+        def _format_edge_info() -> str:
+            if self.explored_edges:
+                return _format_explored_edges()
             if self.target_state:
-                edge_line += f"--> ({to_state_display})"
-            edge_info = f"Current edge: {edge_line}"
+                return _format_current_edge()
+            return ""
 
-        # Transition walker
-        transition_info = ""
-        if self.transition_walker is not None:
+        def _format_explored_edges() -> str:
+            edge_lines = []
+            for from_state, to_state, edge_value in self.explored_edges:
+                to_state_display = "End" if to_state == "$" else to_state
+                edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
+                edge_lines.append(edge_line)
+            return f"Explored edges: {', '.join(edge_lines)}"
+
+        def _format_current_edge() -> str:
+            to_state_display = "End" if self.target_state == "$" else self.target_state
+            accumulated_value = repr(self.accumulated_value() or "")
+            return f"Current edge: ({self.current_state}) --[{accumulated_value}]--> ({to_state_display})"
+
+        def _format_transition_info() -> str:
+            if not self.transition_walker:
+                return ""
             transition_repr = repr(self.transition_walker)
-            # Compress if possible
             if '\n' not in transition_repr and len(transition_repr) < 40:
-                transition_info = f"Transition: {transition_repr}"
-            else:
-                transition_info = f"Transition:\n  {transition_repr.replace('\n', '\n  ')}"
+                return f"Transition: {transition_repr}"
+            return f"Transition:\n  {transition_repr.replace('\n', '\n  ')}"
 
-        # Assemble all parts
-        info_parts = [part for part in [state_info, history_info, remaining_input_info, edge_info, transition_info] if part]
-        single_line = f"{prefix}{class_name}{suffix} {{{' | '.join(info_parts)}}}"
+        # Build header with status indicators
+        prefix = "✅ " if self.has_reached_accept_state() else ""
+        suffix = " 🔄" if self.can_accept_more_input() else ""
+        header = f"{prefix}{self.__class__.__name__}{suffix}"
 
+        # Collect all information parts
+        info_parts = [
+            part for part in [
+                _format_state_info(),
+                _format_history_info(),
+                _format_remaining_input(),
+                _format_edge_info(),
+                _format_transition_info()
+            ] if part
+        ]
+
+        # Format final output
+        # Format single line output if it fits within 80 chars
+        single_line = (
+            f"{header} {{{' | '.join(info_parts)}}}"
+            if info_parts
+            else f"{header} ({self.accumulated_value() or ''})"
+        )
         if len(single_line) <= 80:
             return single_line
-        else:
-            # Multiline representation
-            indent = '  '
-            multiline_parts = [f"{prefix}{class_name}{suffix} {{"]
-            for part in info_parts:
-                if '\n' in part:
-                    part_lines = part.split('\n')
-                    multiline_parts.extend([indent + line for line in part_lines])
-                else:
-                    multiline_parts.append(indent + part)
-            multiline_parts.append('}')
-            return '\n'.join(multiline_parts)
+
+        # Format multiline output
+        indent = '  '
+        multiline_parts = [f"{header} {{"]
+        for part in info_parts:
+            if '\n' in part:
+                part_lines = part.split('\n')
+                multiline_parts.extend([indent + line for line in part_lines])
+            else:
+                multiline_parts.append(indent + part)
+        multiline_parts.append('}')
+        return '\n'.join(multiline_parts)

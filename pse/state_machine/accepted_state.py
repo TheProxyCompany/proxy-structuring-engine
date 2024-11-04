@@ -22,6 +22,7 @@ class AcceptedState(Walker):
         super().__init__(walker.acceptor)
         self.accepted_walker = walker
         self.current_state = walker.current_state
+        self.target_state = walker.target_state
         self.remaining_input = walker.remaining_input
         self.consumed_character_count = walker.consumed_character_count
         self.accept_history = walker.accept_history
@@ -89,7 +90,23 @@ class AcceptedState(Walker):
             logger.debug("Accepted state cannot handle remaining input")
             return
 
+        if (
+            self.accepted_walker.transition_walker
+            and self.accepted_walker.accept_history
+            and self.accepted_walker.transition_walker == self.accepted_walker.accept_history[-1]
+        ):
+            logger.debug(
+                f"Popping accepted walker from history: {self.accepted_walker.accept_history[-1]}"
+            )
+            self.accepted_walker.accept_history.pop()
+
         yield from self.accepted_walker.consume_token(token)
+
+    def __eq__(self, other: Any) -> bool:
+        return self.accepted_walker.__eq__(other)
+
+    def __hash__(self) -> int:
+        return self.accepted_walker.__hash__()
 
     def __repr__(self) -> str:
         """Return a string representation of the accepted state.
