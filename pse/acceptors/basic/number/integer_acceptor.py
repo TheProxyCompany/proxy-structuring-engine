@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Union
-from pse.acceptors.basic.character_acceptors import DigitAcceptor, CharacterWalker
+from typing import Any, Iterable, Optional
+from pse.acceptors.basic.character_acceptors import CharacterAcceptor,  CharacterWalker
 
-
-class IntegerAcceptor(DigitAcceptor):
+class IntegerAcceptor(CharacterAcceptor):
     """
     Accepts an integer as per JSON specification.
     """
 
-    def __repr__(self) -> str:
-        return "IntegerAcceptor()"
+    def __init__(self, drop_leading_zeros: bool = True) -> None:
+        super().__init__("0123456789")
+        self.drop_leading_zeros = drop_leading_zeros
 
     def get_walkers(self) -> Iterable[IntegerWalker]:
         yield IntegerWalker(self)
@@ -23,9 +23,8 @@ class IntegerWalker(CharacterWalker):
 
     def __init__(self, acceptor: IntegerAcceptor, value: Optional[str] = None) -> None:
         super().__init__(acceptor, value)
-        self.acceptor = acceptor
-        self.text: str = value or ""
-        self.value: Optional[int] = None
+        self.acceptor: IntegerAcceptor = acceptor
+        self._raw_value = value or ""
 
     def can_accept_more_input(self) -> bool:
         return self._accepts_remaining_input
@@ -41,7 +40,7 @@ class IntegerWalker(CharacterWalker):
         return True
 
     def should_complete_transition(
-        self, transition_value: str, target_state: Any, is_end_state: bool
+        self, transition_value: str, is_end_state: bool
     ) -> bool:
         """
         Complete the transition to the next state.
@@ -58,28 +57,14 @@ class IntegerWalker(CharacterWalker):
             self._accepts_remaining_input = False
             return False
 
-        self.text += transition_value
-        self.current_state = target_state
-
-        try:
-            self.value = int(self.text)
-        except ValueError:
-            self.value = None
+        self._raw_value = (self._raw_value or "") + transition_value
 
         if self._accepts_remaining_input and not is_end_state:
             return False
 
-        return self.value is not None
+        return True
 
-    def accumulated_value(self) -> Union[str, int]:
-        """
-        Retrieve the accumulated integer value.
-
-        Returns:
-            Union[str, int]: The integer value if parsed successfully; otherwise, the text.
-        """
-        try:
-            self.value = int(self.text)
-            return self.value
-        except ValueError:
-            return self.text
+    def _parse_value(self, value: Any) -> Any:
+        if self.acceptor.drop_leading_zeros:
+            return super()._parse_value(value)
+        return self._raw_value

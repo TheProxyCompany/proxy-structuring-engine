@@ -20,7 +20,10 @@ class TextAcceptor(StateMachine):
     """
 
     def __init__(
-        self, text: str, is_optional: bool = False, is_case_sensitive: bool = True
+        self,
+        text: str,
+        is_optional: bool = False,
+        is_case_sensitive: bool = True,
     ):
         """
         Initialize a new TextAcceptor instance with the specified text.
@@ -37,6 +40,9 @@ class TextAcceptor(StateMachine):
             is_optional=is_optional,
             is_case_sensitive=is_case_sensitive,
         )
+
+        if not text:
+            raise ValueError("Text must be a non-empty string.")
 
         self.text = text
 
@@ -109,7 +115,9 @@ class TextWalker(StateMachineWalker):
         return should_start_transition
 
     def should_complete_transition(
-        self, transition_value: str, is_end_state: bool
+        self,
+        transition_value: str,
+        is_end_state: bool
     ) -> bool:
         """
         Complete the transition if the transition value matches the remaining text.
@@ -180,7 +188,7 @@ class TextWalker(StateMachineWalker):
             else:
                 yield next_walker
 
-    def accumulated_value(self) -> str:
+    def current_value(self) -> str:
         """
         Retrieves the current state of the text being accepted, highlighting the remaining portion.
 
@@ -188,6 +196,10 @@ class TextWalker(StateMachineWalker):
             str: The accepted portion of the text followed by a marker and the remaining text,
                     e.g., 'hel👉lo' if consumed_character_count is 3.
         """
+        return self.raw_value
+
+    @property
+    def raw_value(self) -> str:
         return (
             f"{self.acceptor.text[:self.consumed_character_count]}👉{self.acceptor.text[self.consumed_character_count:]}"
             if self.consumed_character_count < len(self.acceptor.text)

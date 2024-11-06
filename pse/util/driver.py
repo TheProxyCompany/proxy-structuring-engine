@@ -239,6 +239,21 @@ class StructuredOutputDriver(LogitsProcessor):
 
         raise TokenRejected(f"No valid token found in the top {num_top_tokens} tokens")
 
+    def advance_token(self, token_id: int) -> None:
+        token = self.tokenizer.decode([token_id])
+        try:
+            new_walkers = [
+                walker
+                for _, walker in
+                StateMachine.advance_all_walkers(self.walkers, token, self.dawg)
+            ]
+            if not new_walkers:
+                raise TokenRejected(f"Token `{token}` rejected by all walkers")
+            self.walkers = new_walkers
+        except TokenRejected:
+            raise TokenRejected(f"Token `{token}` rejected by all walkers")
+
+
     # -------- Private Methods --------
 
     def _build_vocabulary(self) -> None:

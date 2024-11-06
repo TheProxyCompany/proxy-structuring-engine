@@ -88,7 +88,7 @@ class Propertywalker(SequenceWalker):
             self.prop_value = transition_value
         return True
 
-    def accumulated_value(self) -> Tuple[str, Any]:
+    def current_value(self) -> Tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 
@@ -121,7 +121,7 @@ class Propertywalker(SequenceWalker):
             str: A string representation of the Walker.
         """
         value = self.transition_walker or "".join(
-            [str(walker.accumulated_value()) for walker in self.accept_history]
+            [str(walker.current_value()) for walker in self.accepted_history]
         )
 
         return f"PropertyAcceptor.Walker({value})"

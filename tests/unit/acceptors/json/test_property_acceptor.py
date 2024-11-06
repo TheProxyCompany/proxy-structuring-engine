@@ -47,7 +47,7 @@ def test_property_parsing(
     assert accepted_walkers, f"No walker reached an accepted state for: {input_string}"
 
     for walker in accepted_walkers:
-        name, value = walker.accumulated_value()
+        name, value = walker.current_value()
         assert name == expected_name
         assert value == expected_value
 
@@ -84,7 +84,7 @@ def test_walker_state_transitions(property_acceptor: PropertyAcceptor):
     assert walker.prop_value == "test_value"
 
     # Verify final value
-    name, value = walker.accumulated_value()
+    name, value = walker.current_value()
     assert name == "test_key"
     assert value == "test_value"
 

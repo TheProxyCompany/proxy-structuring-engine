@@ -1,10 +1,7 @@
 from __future__ import annotations
 import json
-from typing import (
-    Optional,
-    Any,
-    Type,
-)
+from typing import Any, Type
+
 
 from pse.state_machine.state_machine import (
     StateMachine,
@@ -83,11 +80,11 @@ class StringAcceptor(StateMachine):
         super().__init__(graph, self.STATE_START, ["$"])
 
     @property
-    def walker_class(self) -> Type[Stringwalker]:
-        return Stringwalker
+    def walker_class(self) -> Type[StringWalker]:
+        return StringWalker
 
 
-class Stringwalker(StateMachineWalker):
+class StringWalker(StateMachineWalker):
     """
     Walker for StringAcceptor.
 
@@ -107,9 +104,6 @@ class Stringwalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.acceptor = acceptor
-        self.text: str = ""
-        self.value: Optional[str] = None
-        self._accepts_remaining_input = True
 
     def should_complete_transition(
         self, transition_value: str, target_state: Any, is_end_state: bool
@@ -125,48 +119,12 @@ class Stringwalker(StateMachineWalker):
         Returns:
             bool: Success of the transition.
         """
-        self.text += transition_value
         self.current_state = target_state
-        self._accepts_remaining_input = False
-        if is_end_state:
+        if is_end_state and self.raw_value:
             try:
-                self.value = json.loads(self.text)
+                self.value = json.loads(self.raw_value)
             except json.JSONDecodeError:
-                self.value = None
-        else:
-            self.value = None
+                self._accepts_remaining_input = False
+                return False
+        
         return True
-
-    def accumulated_value(self) -> str:
-        """
-        Get the accumulated string value.
-
-        Returns:
-            str: The parsed string value without surrounding quotes if fully parsed,
-                    otherwise the current accumulated text.
-        """
-        return self.value if self.value is not None else self.text
-
-    def __repr__(self) -> str:
-        """
-        Return an unambiguous string representation of the instance.
-
-        Returns:
-            The string representation including value and acceptor.
-
-        Example:
-            StringAcceptor.Walker(" | transition_walker=TextAcceptor.Walker('👉"') | state[1]->state[$])
-        """
-        components = []
-        if self.accumulated_value():
-            components.append(self.accumulated_value())
-        if self.transition_walker:
-            components.append(
-                f"state[{self.current_state}]->state[{self.target_state}] via {self.transition_walker}"
-            )
-        else:
-            components.append(f"state[{self.current_state}]")
-        if self.remaining_input:
-            components.append(f"remaining_input={self.remaining_input}")
-
-        return f"StringAcceptor.Walker({' | '.join(components)})"

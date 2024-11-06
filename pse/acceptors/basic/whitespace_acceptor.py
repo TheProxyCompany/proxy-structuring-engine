@@ -62,9 +62,10 @@ class WhitespaceWalker(Walker):
         """
         super().__init__(acceptor)
         self.acceptor: WhitespaceAcceptor = acceptor
-        self.text: str = text
+        self._raw_value = text
+        self.consumed_character_count = len(text)
         self.length_exceeded: bool = len(text) > self.acceptor.max_whitespace
-        self._accepts_remaining_input: bool = True
+        self._accepts_remaining_input: bool = len(text) < self.acceptor.max_whitespace
 
     def should_start_transition(self, token: str) -> bool:
         if not token:
@@ -131,8 +132,8 @@ class WhitespaceWalker(Walker):
         if not valid_input:
             self._accepts_remaining_input = False
             logger.debug("no valid whitespace prefix, returning no walkers")
-            if remaining_input and len(self.text) >= self.acceptor.min_whitespace:
-                copy = WhitespaceWalker(self.acceptor, self.text)
+            if remaining_input and self.consumed_character_count >= self.acceptor.min_whitespace:
+                copy = self.clone()
                 copy.remaining_input = remaining_input
                 copy._accepts_remaining_input = False
                 yield AcceptedState(copy)
@@ -140,36 +141,28 @@ class WhitespaceWalker(Walker):
 
         logger.debug(f"valid_input: {repr(valid_input)}")
 
-        # Check if the length exceeds the maximum allowed whitespace
-        if len(self.text + valid_input) > self.acceptor.max_whitespace:
-            self.length_exceeded = True
-            self._accepts_remaining_input = False
-            return []
-
-        next_walker = WhitespaceWalker(self.acceptor, self.text + valid_input)
-        # whitespace acceptor shouldn't accept non-whitespace remaining input
-        # if any is found, return it but set self to
-        # not accept remaining input
+        next_walker = self.clone()
+        next_walker._raw_value = (next_walker._raw_value or "") + valid_input
+        next_walker.remaining_input = remaining_input
         next_walker._accepts_remaining_input = remaining_input is None
         next_walker.consumed_character_count += valid_length
 
-        if (
-            len(next_walker.text) >= self.acceptor.min_whitespace
-            and remaining_input is None
-        ):
+        if next_walker.consumed_character_count > self.acceptor.max_whitespace:
+            return []
+
+        if next_walker.consumed_character_count >= self.acceptor.min_whitespace:
             yield AcceptedState(next_walker)
-        elif remaining_input:
-            next_walker.remaining_input = remaining_input
+        else:
             yield next_walker
 
-    def accumulated_value(self) -> str:
+    def current_value(self) -> str:
         """
         Get the accumulated whitespace value.
 
         Returns:
             str: The whitespace string.
         """
-        return self.text
+        return self.raw_value or ""
 
     def is_within_value(self) -> bool:
-        return len(self.text) > 0
+        return self.consumed_character_count > 0

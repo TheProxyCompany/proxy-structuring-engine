@@ -4,7 +4,7 @@ import json
 from typing import Callable, Optional, Type
 
 from pse.util.errors import SchemaNotImplementedError
-from pse.acceptors.json.string_acceptor import StringAcceptor, Stringwalker
+from pse.acceptors.json.string_acceptor import StringAcceptor, StringWalker
 from pse.state_machine.walker import Walker
 
 import logging
@@ -112,7 +112,7 @@ class StringSchemaAcceptor(StringAcceptor):
         return StringSchemawalker
 
 
-class StringSchemawalker(Stringwalker):
+class StringSchemawalker(StringWalker):
     """
     Walker for StringSchemaAcceptor.
     """

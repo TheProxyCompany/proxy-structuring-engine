@@ -8,7 +8,7 @@ from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
-    StateMachineWalker,
+    StateMachineWalker
 )
 
 

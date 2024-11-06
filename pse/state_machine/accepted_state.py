@@ -23,9 +23,10 @@ class AcceptedState(Walker):
         self.accepted_walker = walker
         self.current_state = walker.current_state
         self.target_state = walker.target_state
+        self._raw_value = walker.raw_value
         self.remaining_input = walker.remaining_input
         self.consumed_character_count = walker.consumed_character_count
-        self.accept_history = walker.accept_history
+        self.accepted_history = walker.accepted_history
         self._accepts_remaining_input = walker._accepts_remaining_input
 
     def can_accept_more_input(self) -> bool:
@@ -52,13 +53,13 @@ class AcceptedState(Walker):
         """
         return False
 
-    def accumulated_value(self) -> Any:
+    def current_value(self) -> Any:
         """Retrieve the value from the accepted walker.
 
         Returns:
             The value obtained from the accepted walker.
         """
-        return self.accepted_walker.accumulated_value()
+        return self.accepted_walker.current_value()
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string.
@@ -89,16 +90,6 @@ class AcceptedState(Walker):
         if not self.can_accept_more_input():
             logger.debug("Accepted state cannot handle remaining input")
             return
-
-        if (
-            self.accepted_walker.transition_walker
-            and self.accepted_walker.accept_history
-            and self.accepted_walker.transition_walker == self.accepted_walker.accept_history[-1]
-        ):
-            logger.debug(
-                f"Popping accepted walker from history: {self.accepted_walker.accept_history[-1]}"
-            )
-            self.accepted_walker.accept_history.pop()
 
         yield from self.accepted_walker.consume_token(token)
 

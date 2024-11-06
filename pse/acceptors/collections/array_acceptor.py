@@ -3,7 +3,6 @@ from typing import List, Any, Optional, Iterable
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
-    StateType,
     StateMachineWalker,
 )
 from pse.state_machine.walker import Walker
@@ -84,7 +83,6 @@ class ArrayWalker(StateMachineWalker):
     def should_complete_transition(
         self,
         transition_value: Any,
-        target_state: StateType,
         is_end_state: bool,
     ) -> bool:
         """
@@ -98,11 +96,15 @@ class ArrayWalker(StateMachineWalker):
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
-        if target_state == 3 and transition_value is not None:
+        if (
+            self.transition_walker
+            and self.transition_walker.target_state == 3
+            and transition_value is not None
+        ):
             self.value.append(transition_value)
         return True
 
-    def accumulated_value(self) -> Any:
+    def current_value(self) -> Any:
         """
         Retrieve the accumulated value from the walker's history.
 

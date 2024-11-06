@@ -93,7 +93,7 @@ class Objectwalker(StateMachineWalker):
             self.value[prop_name] = prop_value
         return True
 
-    def accumulated_value(self) -> Dict[str, Any]:
+    def current_value(self) -> Dict[str, Any]:
         """
         Get the current parsed JSON object.
 

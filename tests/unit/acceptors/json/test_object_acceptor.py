@@ -49,13 +49,13 @@ def test_walker_complete_transition_valid(object_acceptor: ObjectAcceptor):
 
 def test_walker_get_value_empty(object_acceptor: ObjectAcceptor):
     walker = object_acceptor.walker_class(object_acceptor)
-    assert walker.accumulated_value() == {}
+    assert walker.current_value() == {}
 
 
 def test_walker_get_value_with_data(object_acceptor: ObjectAcceptor):
     walker = object_acceptor.walker_class(object_acceptor)
     walker.value = {"key1": "value1", "key2": "value2"}
-    assert walker.accumulated_value() == {"key1": "value1", "key2": "value2"}
+    assert walker.current_value() == {"key1": "value1", "key2": "value2"}
 
 
 def test_property_acceptor_initialization():
@@ -84,7 +84,7 @@ def test_property_acceptor_walker_get_value_valid():
     walker.prop_name = "key"
     walker.prop_value = "value"
 
-    assert walker.accumulated_value() == ("key", "value")
+    assert walker.current_value() == ("key", "value")
 
 
 @pytest.mark.parametrize(
@@ -120,7 +120,7 @@ def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expect
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.accumulated_value() == expected
+        assert walker.current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -153,7 +153,7 @@ def test_valid_json_objects_all_at_once(
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.accumulated_value() == expected
+        assert walker.current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -205,7 +205,7 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.accumulated_value() == expected
+        assert walker.current_value() == expected
 
 
 @pytest.mark.parametrize(

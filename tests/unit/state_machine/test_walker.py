@@ -12,7 +12,7 @@ class Concretewalker(Walker):
         super().__init__(acceptor)
         self.value = "test_value"
 
-    def accumulated_value(self) -> Any:
+    def current_value(self) -> Any:
         """Concrete implementation of get_value."""
         return self.value
 
@@ -67,14 +67,14 @@ def test_walker_initialization(walker: Concretewalker, acceptor: MockTokenAccept
     assert walker.current_state == acceptor.initial_state
     assert walker.target_state is None
     assert walker.transition_walker is None
-    assert walker.accept_history == []
+    assert walker.accepted_history == []
     assert walker.consumed_character_count == 0
     assert walker.remaining_input is None
 
 
 def test_walker_get_value(walker: Concretewalker):
     """Test the get_value method of Walker."""
-    assert walker.accumulated_value() == "test_value"
+    assert walker.current_value() == "test_value"
 
 
 def test_walker_advance(walker: Concretewalker):

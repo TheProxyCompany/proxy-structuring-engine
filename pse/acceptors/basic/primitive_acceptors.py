@@ -41,7 +41,6 @@ class BooleanWalker(StateMachineWalker):
 
     def __init__(self, acceptor: BooleanAcceptor) -> None:
         super().__init__(acceptor)
-        self.value: Optional[bool] = None
 
     def should_complete_transition(
         self,
@@ -61,17 +60,17 @@ class BooleanWalker(StateMachineWalker):
         """
         if is_end_state:
             # Assign True if transition_value is "true", else False
-            self.value = transition_value == "true"
+            self._raw_value = transition_value
         return True
 
-    def accumulated_value(self) -> Optional[bool]:
+    def current_value(self) -> Optional[bool]:
         """
         Get the parsed boolean value.
 
         Returns:
             Optional[bool]: The parsed boolean or None if not yet parsed.
         """
-        return self.value
+        return self._raw_value == "true" if self._raw_value is not None else None
 
 
 class NullAcceptor(TextAcceptor):
@@ -103,5 +102,5 @@ class NullWalker(TextWalker):
     def select(self, dawg: DAWG) -> Iterable[str]:
         yield "null"
 
-    def accumulated_value(self) -> str:
+    def current_value(self) -> str:
         return "null"

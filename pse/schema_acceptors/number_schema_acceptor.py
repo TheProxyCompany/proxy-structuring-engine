@@ -64,19 +64,19 @@ class NumberSchemawalker(NumberWalker):
         super().__init__(acceptor)
         self.acceptor = acceptor
 
-    def should_start_transition(self, transition_acceptor, target_state):
-        if self.acceptor.is_integer and self.current_state == 3 and target_state == 4:
-            return False
-        return super().should_start_transition(transition_acceptor, target_state)
-
-    def should_complete_transition(
-        self, transition_value, target_state, is_end_state
-    ) -> bool:
-        if not super().should_complete_transition(
-            transition_value, target_state, is_end_state
+    def should_start_transition(self, transition_acceptor):
+        if (
+            self.acceptor.is_integer
+            and self.current_state == 3
+            and self.target_state == 4
         ):
+            return False
+        return super().should_start_transition(transition_acceptor)
+
+    def should_complete_transition(self, transition_value, is_end_state) -> bool:
+        if not super().should_complete_transition(transition_value, is_end_state):
             return False
         # Only validate when there is no remaining input
         if is_end_state and not self.remaining_input:
-            return self.acceptor.validate_value(self.accumulated_value())
+            return self.acceptor.validate_value(self.current_value())
         return True

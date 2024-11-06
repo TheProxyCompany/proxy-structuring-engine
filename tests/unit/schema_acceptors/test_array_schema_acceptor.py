@@ -34,7 +34,7 @@ def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> List[Any]:
             "Invalid JSON array or schema constraints not met.", len(json_string)
         )
     parsed_value = next(
-        walker.accumulated_value()
+        walker.current_value()
         for walker in walkers
         if walker.has_reached_accept_state()
     )

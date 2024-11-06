@@ -3,7 +3,7 @@ from typing import Iterable, Optional, Set
 
 from lexpy import DAWG
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.state_machine.state_machine import StateMachine
 from pse.state_machine.accepted_state import AcceptedState
 from pse.state_machine.walker import Walker, logger
 
@@ -13,7 +13,7 @@ from pse.state_machine.walker import Walker, logger
 INVALID_CHARS: Set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
 
 
-class StringCharacterAcceptor(TokenAcceptor):
+class StringCharacterAcceptor(StateMachine):
     """
     Accepts one or more valid JSON unescaped string characters.
     """
@@ -45,11 +45,11 @@ class StringCharacterAcceptor(TokenAcceptor):
         cls.valid_chars = set(INVALID_CHARS)
         return dawg
 
-    def advance_walker(self, walker: Walker, input: str) -> Iterable[Walker]:
-        old_value = walker.accumulated_value()
-        new_value = old_value + input if old_value else input
-        new_walker: StringCharacterWalker = StringCharacterWalker(self, new_value)
-        yield AcceptedState(new_walker)
+    # def advance_walker(self, walker: Walker, input: str) -> Iterable[Walker]:
+    #     old_value = walker.current_value()
+    #     new_value = old_value + input if old_value else input
+    #     new_walker: StringCharacterWalker = StringCharacterWalker(self, new_value)
+    #     yield AcceptedState(new_walker)
 
     def expects_more_input(self, walker: Walker) -> bool:
         """
@@ -82,7 +82,6 @@ class StringCharacterWalker(Walker):
         """
         super().__init__(acceptor)
         self.acceptor: StringCharacterAcceptor = acceptor
-        self.value: Optional[str] = value
         self._accepts_remaining_input = True
 
     def can_accept_more_input(self) -> bool:
@@ -96,6 +95,11 @@ class StringCharacterWalker(Walker):
             Set[str]: Set of valid string characters.
         """
         return self.acceptor.valid_chars
+
+    def should_start_transition(self, token: str) -> bool:
+        if not token:
+            return False
+        return token[0] not in INVALID_CHARS
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -125,24 +129,15 @@ class StringCharacterWalker(Walker):
 
         if valid_prefix:
             new_walker = self.clone()
-            new_walker.value = (self.value if self.value else "") + valid_prefix
+            new_walker._raw_value = (self._raw_value or "") + valid_prefix
             new_walker.remaining_input = remaining_input
             new_walker.consumed_character_count += len(valid_prefix)
-            logger.debug(
-                f"Valid prefix: {valid_prefix}, Remaining input: {remaining_input}"
-            )
             yield AcceptedState(new_walker)
         else:
             self._accepts_remaining_input = False
-
-    def accumulated_value(self) -> Optional[str]:
-        """
-        Retrieve the accumulated string value.
-
-        Returns:
-            Optional[str]: The accumulated string or None.
-        """
-        return self.value
+            logger.debug(
+                f"{self} cannot accept more input: {token}"
+            )
 
     def is_within_value(self) -> bool:
         """
@@ -151,7 +146,7 @@ class StringCharacterWalker(Walker):
         Returns:
             bool: True if the walker has a value, False otherwise.
         """
-        return self.value is not None
+        return self._raw_value is not None
 
     def __repr__(self) -> str:
         """
@@ -164,8 +159,8 @@ class StringCharacterWalker(Walker):
             StringCharacterAcceptor.Walker("valid_value | remaining_input='abc' | state[0]")
         """
         components = []
-        if self.accumulated_value():
-            components.append(f"value='{self.accumulated_value()}'")
+        if self.current_value():
+            components.append(f"value='{self.current_value()}'")
         if self.remaining_input:
             components.append(f"remaining_input='{self.remaining_input}'")
 

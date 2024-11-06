@@ -68,7 +68,7 @@ class CharacterWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.acceptor: CharacterAcceptor = acceptor
-        self.value: Optional[str] = value
+        self._raw_value = value
 
     def can_accept_more_input(self) -> bool:
         return self._accepts_remaining_input
@@ -141,7 +141,7 @@ class CharacterWalker(StateMachineWalker):
             self._accepts_remaining_input = True
 
         # Accumulate valid characters with existing value
-        accumulated_value = f"{self.value or ''}{valid_characters}"
+        accumulated_value = f"{self._raw_value or ''}{valid_characters}"
 
         new_walker = self.__class__(self.acceptor, accumulated_value)
         new_walker.consumed_character_count = accumulated_length
@@ -152,14 +152,18 @@ class CharacterWalker(StateMachineWalker):
 
         yield AcceptedState(new_walker)
 
-    def accumulated_value(self) -> Optional[str]:
+    @property
+    def raw_value(self) -> str:
+        return self._raw_value or ""
+
+    def current_value(self) -> Optional[str]:
         """
         Retrieve the current value of the walker.
 
         Returns:
             Optional[str]: The current character or None.
         """
-        return self.value
+        return self._raw_value
 
     def is_within_value(self) -> bool:
         """
@@ -168,19 +172,7 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             bool: True if the walker has a value, False otherwise.
         """
-        return self.value is not None
-
-
-class DigitAcceptor(CharacterAcceptor):
-    """
-    Accepts one or more digit characters.
-    """
-
-    def __init__(self) -> None:
-        """
-        Initialize the DigitAcceptor with digits 0-9.
-        """
-        super().__init__("0123456789")
+        return self.consumed_character_count > 0
 
 
 class HexDigitAcceptor(CharacterAcceptor):
@@ -196,5 +188,4 @@ class HexDigitAcceptor(CharacterAcceptor):
 
 
 # Initialize global instances
-digit_acceptor: DigitAcceptor = DigitAcceptor()
 hex_digit_acceptor: HexDigitAcceptor = HexDigitAcceptor()

@@ -154,7 +154,7 @@ class WaitForWalker(Walker):
 
         yield WaitForWalker(self.acceptor, new_walkers)
 
-    def accumulated_value(self) -> str:
+    def current_value(self) -> str:
         """
         Retrieve the current value indicating the wait state.
 

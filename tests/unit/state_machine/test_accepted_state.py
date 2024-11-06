@@ -32,7 +32,7 @@ def test_get_value_returns_correct_value(mock_walker: TextWalker) -> None:
     """
     accepted = AcceptedState(mock_walker)
     assert (
-        accepted.accumulated_value() == mock_walker.accumulated_value()
+        accepted.current_value() == mock_walker.current_value()
     ), "AcceptedState should return the walker's value."
 
 
@@ -61,10 +61,10 @@ def test_multiple_instances_operate_independently() -> None:
     accepted2 = AcceptedState(walker2)
 
     assert (
-        accepted1.accumulated_value() == "👉first"
+        accepted1.current_value() == "👉first"
     ), "First AcceptedState should return '👉first'."
     assert (
-        accepted2.accumulated_value() == "👉second"
+        accepted2.current_value() == "👉second"
     ), "Second AcceptedState should return '👉second'."
     assert repr(accepted1) != repr(
         accepted2

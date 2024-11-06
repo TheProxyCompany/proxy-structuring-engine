@@ -54,13 +54,17 @@ class Walker(ABC):
             current_state: The current state in the state machine.
         """
         self.acceptor = acceptor
+        self.accepted_history: List[Walker] = []
+        self.explored_edges: Set[VisitedEdgeType] = set()
+
         self.current_state: StateType = current_state or acceptor.initial_state
         self.target_state: Optional[StateType] = None
         self.transition_walker: Optional[Walker] = None
-        self.accept_history: List[Walker] = []
-        self.explored_edges: Set[VisitedEdgeType] = set()
+
         self.consumed_character_count: int = 0
         self.remaining_input: Optional[str] = None
+
+        self._raw_value: Optional[str] = None
         self._accepts_remaining_input: bool = False
 
     # -------- Abstract Methods --------
@@ -87,15 +91,6 @@ class Walker(ABC):
         pass
 
     @abstractmethod
-    def accumulated_value(self) -> Any:
-        """Retrieve the current value accumulated by the walker.
-
-        Returns:
-            The current accumulated value.
-        """
-        pass
-
-    @abstractmethod
     def is_within_value(self) -> bool:
         """Determine if the walker is currently within a value.
 
@@ -103,6 +98,30 @@ class Walker(ABC):
             True if in a value; False otherwise.
         """
         pass
+
+    def current_value(self) -> Any:
+        """Retrieve the accumulated walker value.
+
+        Returns:
+            The current value from transition or history, parsed into appropriate type.
+            Returns None if no value is accumulated.
+        """
+
+        return self._parse_value(self.raw_value) if self.raw_value else None
+
+    @property
+    def raw_value(self) -> Optional[str]:
+        if self._raw_value is not None:
+            return self._raw_value
+
+        if not self.accepted_history and not self.transition_walker:
+            return None
+
+        history = [walker.raw_value for walker in self.accepted_history]
+        if self.transition_walker:
+            history.append(self.transition_walker.raw_value)
+
+        return "".join([value for value in history if value is not None])
 
     @property
     def current_edge(self) -> VisitedEdgeType:
@@ -114,7 +133,7 @@ class Walker(ABC):
         return (
             self.current_state,
             self.target_state if self.target_state is not None else "$",
-            str(self.accumulated_value()),
+            self.raw_value or "",
         )
 
     def should_start_transition(self, token: str) -> bool:
@@ -159,7 +178,7 @@ class Walker(ABC):
             A new Walker instance that is a clone of the current one.
         """
         cloned_walker = shallow_copy(self)
-        cloned_walker.accept_history = self.accept_history.copy()
+        cloned_walker.accepted_history = self.accepted_history.copy()
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
@@ -170,23 +189,24 @@ class Walker(ABC):
             The walker instances after the transition.
         """
         if not self.transition_walker or self.target_state is None:
-            logger.debug("No transition to complete: %s", self)
+            logger.debug("no transition to complete: %s", self)
             return self
 
-        self.accept_history.append(self.transition_walker)
         self.explored_edges.add(self.current_edge)
-        logger.debug("Explored edges: %s", self.explored_edges)
+        logger.debug("seen edges: %s", self._format_explored_edges())
 
-        self.current_state = self.target_state
-        logger.debug(f"{self} transitioned to state {self.current_state}")
+        if self.transition_walker.has_reached_accept_state():
+            self.current_state = self.target_state
+            logger.debug(f"{self} transitioned to state {self.current_state}")
 
-        if not self.can_accept_more_input():
-            self.transition_walker = None
-            self.target_state = None
+            if not self.can_accept_more_input():
+                self.accepted_history.append(self.transition_walker)
+                self.transition_walker = None
+                self.target_state = None
 
         if self.current_state in self.acceptor.end_states:
             from pse.state_machine.accepted_state import AcceptedState
-            logger.debug("Walker in accepted state")
+            logger.debug("walker in accepted state")
             return AcceptedState(self)
 
         return self
@@ -270,7 +290,7 @@ class Walker(ABC):
             float_value = float(value)
             # Check if the float is actually an integer
             if float_value.is_integer():
-                return int(float_value)
+                return int(value)
             return float_value
         except ValueError:
             pass
@@ -286,6 +306,19 @@ class Walker(ABC):
 
     # -------- Magic Methods --------
 
+    def _format_explored_edges(self) -> str:
+        edge_lines = []
+        for from_state, to_state, edge_value in sorted(
+            self.explored_edges,
+            key=lambda x: (float('inf') if x[0] == "$" else x[0],
+                         float('inf') if x[1] == "$" else x[1],
+                         x[2])
+        ):
+            to_state_display = "End" if to_state == "$" else to_state
+            edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
+            edge_lines.append(edge_line)
+        return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
+
     def __hash__(self) -> int:
         """Generate a hash based on the walker's state and value.
 
@@ -296,7 +329,7 @@ class Walker(ABC):
             (
                 self.current_state,
                 self.target_state,
-                str(self.accumulated_value()),
+                self.raw_value,
             )
         )
 
@@ -314,7 +347,7 @@ class Walker(ABC):
         return (
             self.current_state == other.current_state
             and self.target_state == other.target_state
-            and self.accumulated_value() == other.accumulated_value()
+            and self.current_value() == other.current_value()
         )
 
     def __repr__(self) -> str:
@@ -327,67 +360,73 @@ class Walker(ABC):
             A formatted string showing state transitions, accumulated values,
             and other relevant walker details.
         """
+
         def _format_state_info() -> str:
-            if self.current_state == self.acceptor.initial_state and not self.target_state:
+            if (
+                self.current_state == self.acceptor.initial_state
+                and not self.target_state
+            ):
                 return ""
             state_info = f"State: {self.current_state}"
-            return f"{state_info} ➔ {self.target_state}" if self.target_state else state_info
+            return (
+                f"{state_info} ➔ {self.target_state}"
+                if self.target_state
+                else state_info
+            )
 
         def _format_history_info() -> str:
-            if not self.accept_history:
+            if not self.accepted_history:
                 return ""
             history_values = [
-                repr(w.accumulated_value())
-                for w in self.accept_history
-                if w.accumulated_value() is not None
+                repr(w.current_value())
+                for w in self.accepted_history
+                if w.current_value() is not None
             ]
             return f"History: {', '.join(history_values)}" if history_values else ""
 
         def _format_remaining_input() -> str:
-            return f"Remaining input: `{self.remaining_input}`" if self.remaining_input else ""
+            return (
+                f"Remaining input: `{self.remaining_input}`"
+                if self.remaining_input
+                else ""
+            )
 
         def _format_edge_info() -> str:
             if self.explored_edges:
-                return _format_explored_edges()
+                return self._format_explored_edges()
             if self.target_state:
                 return _format_current_edge()
             return ""
 
-        def _format_explored_edges() -> str:
-            edge_lines = []
-            for from_state, to_state, edge_value in self.explored_edges:
-                to_state_display = "End" if to_state == "$" else to_state
-                edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
-                edge_lines.append(edge_line)
-            return f"Explored edges: {', '.join(edge_lines)}"
-
         def _format_current_edge() -> str:
             to_state_display = "End" if self.target_state == "$" else self.target_state
-            accumulated_value = repr(self.accumulated_value() or "")
-            return f"Current edge: ({self.current_state}) --[{accumulated_value}]--> ({to_state_display})"
+            accumulated_value = self.raw_value or self.current_value() or ""
+            return f"Current edge: ({self.current_state}) --[{str(accumulated_value)}]--> ({to_state_display})"
 
         def _format_transition_info() -> str:
             if not self.transition_walker:
                 return ""
             transition_repr = repr(self.transition_walker)
-            if '\n' not in transition_repr and len(transition_repr) < 40:
+            if "\n" not in transition_repr and len(transition_repr) < 40:
                 return f"Transition: {transition_repr}"
             return f"Transition:\n  {transition_repr.replace('\n', '\n  ')}"
 
         # Build header with status indicators
         prefix = "✅ " if self.has_reached_accept_state() else ""
         suffix = " 🔄" if self.can_accept_more_input() else ""
-        header = f"{prefix}{self.__class__.__name__}{suffix}"
+        header = f"{prefix}{self.acceptor.__class__.__name__}.Walker{suffix}"
 
         # Collect all information parts
         info_parts = [
-            part for part in [
+            part
+            for part in [
                 _format_state_info(),
                 _format_history_info(),
                 _format_remaining_input(),
                 _format_edge_info(),
-                _format_transition_info()
-            ] if part
+                _format_transition_info(),
+            ]
+            if part
         ]
 
         # Format final output
@@ -395,19 +434,19 @@ class Walker(ABC):
         single_line = (
             f"{header} {{{' | '.join(info_parts)}}}"
             if info_parts
-            else f"{header} ({self.accumulated_value() or ''})"
+            else f"{header} ({self.current_value() or ''})"
         )
         if len(single_line) <= 80:
             return single_line
 
         # Format multiline output
-        indent = '  '
+        indent = "  "
         multiline_parts = [f"{header} {{"]
         for part in info_parts:
-            if '\n' in part:
-                part_lines = part.split('\n')
+            if "\n" in part:
+                part_lines = part.split("\n")
                 multiline_parts.extend([indent + line for line in part_lines])
             else:
                 multiline_parts.append(indent + part)
-        multiline_parts.append('}')
-        return '\n'.join(multiline_parts)
+        multiline_parts.append("}")
+        return "\n".join(multiline_parts)

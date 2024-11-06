@@ -81,5 +81,5 @@ class PropertySchemawalker(Propertywalker):
                 hooks["value_end"](prop_name, transition_value)
         return True
 
-    def accumulated_value(self):
+    def current_value(self):
         return (self.acceptor.prop_name, self.prop_value)

@@ -29,14 +29,14 @@ def process_input(acceptor, token: str) -> Iterable[Walker]:
 def test_accept_true(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "true")
     assert any(
-        walker.accumulated_value() is True for walker in accepted_walkers
+        walker.current_value() is True for walker in accepted_walkers
     ), "Should have a walker with value True"
 
 
 def test_accept_false(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "false")
     assert any(
-        walker.accumulated_value() is False for walker in accepted_walkers
+        walker.current_value() is False for walker in accepted_walkers
     ), "Should have a walker with value False"
 
 
@@ -69,7 +69,7 @@ def test_accept_null(null_acceptor):
     accepted_walkers = process_input(null_acceptor, "null")
     for walker in accepted_walkers:
         assert (
-            walker.accumulated_value() == "null"
+            walker.current_value() == "null"
         ), "Should have a walker with value 'null'"
         return
     pytest.fail("Should have a walker with value 'null'")

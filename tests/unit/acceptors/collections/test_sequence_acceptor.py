@@ -106,7 +106,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.accumulated_value() == input_sequence
+        assert walker.current_value() == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):

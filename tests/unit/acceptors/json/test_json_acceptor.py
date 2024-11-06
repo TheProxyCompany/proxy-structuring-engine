@@ -17,7 +17,7 @@ def parse_json(json_acceptor: JsonAcceptor):
             if not walkers:
                 raise AssertionError("No walkers after parsing")
         accepted_values = [
-            walker.accumulated_value()
+            walker.current_value()
             for walker in walkers
             if walker.has_reached_accept_state()
         ]
