@@ -101,18 +101,6 @@ class TokenAcceptor(ABC):
         """
         pass
 
-    @abstractmethod
-    def expects_more_input(self, walker: Walker) -> bool:
-        """Checks if the acceptor expects more input after the current walker position.
-
-        Args:
-            walker (Walker): The walker to check.
-
-        Returns:
-            bool: True if more input is expected, False otherwise.
-        """
-        pass
-
     def __repr__(self) -> str:
         """Returns an unambiguous string representation of the instance.
 

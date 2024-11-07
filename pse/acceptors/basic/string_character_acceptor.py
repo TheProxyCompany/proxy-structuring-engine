@@ -45,26 +45,6 @@ class StringCharacterAcceptor(StateMachine):
         cls.valid_chars = set(INVALID_CHARS)
         return dawg
 
-    # def advance_walker(self, walker: Walker, input: str) -> Iterable[Walker]:
-    #     old_value = walker.current_value()
-    #     new_value = old_value + input if old_value else input
-    #     new_walker: StringCharacterWalker = StringCharacterWalker(self, new_value)
-    #     yield AcceptedState(new_walker)
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        """
-        StringCharAcceptor assumes it doesn't expect more input on its own.
-        It's controlled by the parent acceptor (StringAcceptor).
-
-        Args:
-            walker (Walker): The current walker.
-
-        Returns:
-            bool: False
-        """
-        return False
-
-
 class StringCharacterWalker(Walker):
     """
     Walker for navigating through characters in StringCharAcceptor.
@@ -83,6 +63,7 @@ class StringCharacterWalker(Walker):
         super().__init__(acceptor)
         self.acceptor: StringCharacterAcceptor = acceptor
         self._accepts_remaining_input = True
+        self._raw_value = value
 
     def can_accept_more_input(self) -> bool:
         return self._accepts_remaining_input

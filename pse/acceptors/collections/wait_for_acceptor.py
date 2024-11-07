@@ -75,11 +75,7 @@ class WaitForAcceptor(StateMachine):
         return self.wait_for_acceptor.advance_walker(walker, token)
 
     def __repr__(self) -> str:
-        return f"WaitForAcceptor(wait_for_acceptor={self.wait_for_acceptor}, triggered={self.triggered})"
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        return walker.current_state not in self.end_states
-
+        return f"WaitForAcceptor({repr(self.wait_for_acceptor)})"
 
 class WaitForWalker(Walker):
     """

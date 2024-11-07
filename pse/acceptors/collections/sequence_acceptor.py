@@ -2,8 +2,6 @@ from __future__ import annotations
 from typing import List
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.walker import Walker
-
 
 class SequenceAcceptor(StateMachine):
     """
@@ -32,13 +30,6 @@ class SequenceAcceptor(StateMachine):
             walker_type=SequenceWalker,
         )
 
-    def expects_more_input(self, walker: Walker) -> bool:
-        """
-        Check if the SequenceAcceptor expects more input.
-        """
-        return walker.current_state not in self.end_states
-
-
 class SequenceWalker(StateMachineWalker):
     """
     Walker for navigating through the SequenceAcceptor.
@@ -59,4 +50,4 @@ class SequenceWalker(StateMachineWalker):
         self.acceptor = acceptor
 
     def can_accept_more_input(self) -> bool:
-        return self.acceptor.expects_more_input(self)
+        return self.current_state not in self.acceptor.end_states

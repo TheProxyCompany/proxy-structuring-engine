@@ -27,9 +27,6 @@ class BooleanAcceptor(StateMachine):
         }
         super().__init__(graph, walker_type=BooleanWalker)
 
-    def expects_more_input(self, walker: Walker) -> bool:
-        return False
-
     def get_walkers(self) -> Iterable[Walker]:
         yield self._walker(self)
 
@@ -86,9 +83,6 @@ class NullAcceptor(TextAcceptor):
 
     def __repr__(self) -> str:
         return "NullAcceptor()"
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        return False
 
     def get_walkers(self) -> Iterable[NullWalker]:
         yield NullWalker(self)

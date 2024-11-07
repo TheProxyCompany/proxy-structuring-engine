@@ -1,5 +1,5 @@
 import pytest
-from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
+from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor, StringCharacterWalker
 
 
 @pytest.fixture
@@ -18,12 +18,12 @@ def test_walker_advance_with_valid_character(
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
     initial_value = "he"
-    walker = string_char_acceptor.walker_class(string_char_acceptor, initial_value)
+    walker = StringCharacterWalker(string_char_acceptor, initial_value)
     advance_char = "l"
     advanced_walkers = list(walker.consume_token(advance_char))
     assert len(advanced_walkers) == 1, "Should yield one advanced walker"
     assert (
-        advanced_walkers[0].accumulated_value() == "hel"
+        advanced_walkers[0].current_value() == "hel"
     ), "Accumulated value should be 'hel'"
 
 
@@ -37,7 +37,7 @@ def test_walker_advance_with_invalid_character(
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
     initial_value = "he"
-    walker = string_char_acceptor.walker_class(string_char_acceptor, initial_value)
+    walker = StringCharacterWalker(string_char_acceptor, initial_value)
     advance_char = '"'
     advanced_walkers = list(walker.consume_token(advance_char))
     assert (
@@ -53,9 +53,9 @@ def test_string_char_acceptor_get_value(string_char_acceptor: StringCharacterAcc
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
     initial_value = "json"
-    walker = string_char_acceptor.walker_class(string_char_acceptor, initial_value)
+    walker = StringCharacterWalker(string_char_acceptor, initial_value)
     assert (
-        walker.accumulated_value() == initial_value
+        walker.current_value() == initial_value
     ), "get_value should return the correct accumulated string"
 
 
@@ -68,10 +68,10 @@ def test_string_char_acceptor_walker_clone(
     Args:
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
-    walker = string_char_acceptor.walker_class(string_char_acceptor, "clone")
+    walker = StringCharacterWalker(string_char_acceptor, "clone")
     cloned_walker = walker.clone()
     assert (
-        cloned_walker.accumulated_value() == walker.accumulated_value()
+        cloned_walker.current_value() == walker.current_value()
     ), "Cloned walker should have the same value"
     assert cloned_walker is not walker, "Cloned walker should be a different instance"
 
@@ -85,8 +85,8 @@ def test_string_char_acceptor_empty_walker_value(
     Args:
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
-    walker = string_char_acceptor.walker_class(string_char_acceptor)
-    assert walker.accumulated_value() is None, "Walker with no value should return None"
+    walker = StringCharacterWalker(string_char_acceptor)
+    assert walker.current_value() is None, "Walker with no value should return None"
 
 
 def test_string_char_acceptor_walker_is_in_value(
@@ -98,12 +98,12 @@ def test_string_char_acceptor_walker_is_in_value(
     Args:
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
-    walker_with_value = string_char_acceptor.walker_class(string_char_acceptor, "value")
+    walker_with_value = StringCharacterWalker(string_char_acceptor, "value")
     assert (
         walker_with_value.is_within_value()
     ), "Walker with value should return True for is_in_value"
 
-    walker_without_value = string_char_acceptor.walker_class(string_char_acceptor)
+    walker_without_value = StringCharacterWalker(string_char_acceptor)
     assert (
         not walker_without_value.is_within_value()
     ), "Walker without value should return False for is_in_value"

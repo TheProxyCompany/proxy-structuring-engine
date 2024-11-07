@@ -4,7 +4,6 @@ from typing import Iterable
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
@@ -47,9 +46,6 @@ class EncapsulatedAcceptor(StateMachine):
         self.closing_delimiter: str = close_delimiter
         self.wait_for_acceptor: TokenAcceptor = acceptor
         super().__init__(graph)
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        return walker.current_state not in self.end_states
 
     def get_walkers(self) -> Iterable[EncapsulatedWalker]:
         yield EncapsulatedWalker(self)

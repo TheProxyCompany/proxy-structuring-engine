@@ -241,8 +241,9 @@ class StateMachine(TokenAcceptor):
                 # Partial match
                 length_of_remaining_input = len(token) - len(walker.remaining_input)
                 valid_prefix = token[:length_of_remaining_input]
+                logger.debug(f"potential partial match: {repr(valid_prefix)}")
                 if dawg and valid_prefix and valid_prefix in dawg:
-                    logger.debug(f"Valid partial match: {repr(valid_prefix)}")
+                    logger.debug(f"Valid partial match: {repr(valid_prefix)}, token found in dawg")
                     walker.remaining_input = None
                     yield valid_prefix, walker
 
@@ -284,10 +285,10 @@ class StateMachine(TokenAcceptor):
                 did_branch_walker = True
                 yield from self.advance_walker(next_walker, token)
 
-            if not did_branch_walker and walker.remaining_input:
-                logger.debug(f"Walker could not find valid branches:\n{walker}")
-                logger.debug("Yielding walker upstream for partial matching")
-                yield walker
+            # if not did_branch_walker and walker.remaining_input:
+            #     logger.debug(f"Walker could not find valid branches:\n{walker}")
+            #     logger.debug("Yielding walker upstream for partial matching")
+            #     yield walker
 
             return
 
@@ -323,28 +324,6 @@ class StateMachine(TokenAcceptor):
                     f"{walker.__class__.__name__}.Walker has remaining input, recursively advancing"
                 )
                 yield from self.advance_walker(next_walker, next_walker.remaining_input)
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        """Check if more input is expected.
-
-        Determines if the state machine expects additional input based on:
-        - Current state (accepted/end state)
-        - Remaining input
-        - Available transitions
-
-        Args:
-            walker: Current walker.
-
-        Returns:
-            True if more input expected, False otherwise.
-        """
-        if walker.has_reached_accept_state() or walker.current_state in self.end_states:
-            return False
-
-        if walker.remaining_input:
-            return True
-
-        return bool(self.graph.get(walker.current_state))
 
     def get_edges(self, state: StateType) -> Iterable[EdgeType]:
         """Retrieve outgoing transitions for a given state.

@@ -29,6 +29,9 @@ class AcceptedState(Walker):
         self.accepted_history = walker.accepted_history
         self._accepts_remaining_input = walker._accepts_remaining_input
 
+    def clone(self) -> Walker:
+        return self.accepted_walker.clone()
+
     def can_accept_more_input(self) -> bool:
         """Check if the accepted walker can accept more input.
 

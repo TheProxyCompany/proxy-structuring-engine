@@ -35,7 +35,7 @@ class Walker(ABC):
         current_state: Current position in the state machine.
         target_state: Target state for transitions in progress.
         transition_walker: Walker handling current transition.
-        accept_history: History of accepted states.
+        accepted_history: History of accepted states.
         explored_edges: Set of visited state transitions.
         consumed_character_count: Number of characters processed.
         remaining_input: Unprocessed input string.
@@ -99,6 +99,8 @@ class Walker(ABC):
         """
         pass
 
+    # -------- Public Methods --------
+
     def current_value(self) -> Any:
         """Retrieve the accumulated walker value.
 
@@ -106,35 +108,7 @@ class Walker(ABC):
             The current value from transition or history, parsed into appropriate type.
             Returns None if no value is accumulated.
         """
-
         return self._parse_value(self.raw_value) if self.raw_value else None
-
-    @property
-    def raw_value(self) -> Optional[str]:
-        if self._raw_value is not None:
-            return self._raw_value
-
-        if not self.accepted_history and not self.transition_walker:
-            return None
-
-        history = [walker.raw_value for walker in self.accepted_history]
-        if self.transition_walker:
-            history.append(self.transition_walker.raw_value)
-
-        return "".join([value for value in history if value is not None])
-
-    @property
-    def current_edge(self) -> VisitedEdgeType:
-        """Return the current edge as a tuple.
-
-        Returns:
-            A tuple representing the current edge.
-        """
-        return (
-            self.current_state,
-            self.target_state if self.target_state is not None else "$",
-            self.raw_value or "",
-        )
 
     def should_start_transition(self, token: str) -> bool:
         """Determine if a transition should start with the given input token.
@@ -146,9 +120,16 @@ class Walker(ABC):
             True if the transition should start; False otherwise.
         """
         if self.transition_walker:
-            return self.transition_walker.should_start_transition(token)
-        # By default, we can start a transition unless we've already explored this edge.
-        return self.current_edge not in self.explored_edges
+            if self.transition_walker.should_start_transition(token):
+                return True
+
+            return False
+
+
+        if self.current_edge in self.explored_edges:
+            return False
+
+        return True
 
     def should_complete_transition(
         self,
@@ -185,28 +166,29 @@ class Walker(ABC):
     def transition(self) -> Walker:
         """Advance the walker to the next state.
 
-        Yields:
-            The walker instances after the transition.
+        Returns:
+            The walker instance after the transition.
         """
         if not self.transition_walker or self.target_state is None:
-            logger.debug("no transition to complete: %s", self)
+            logger.debug("No transition to complete: %s", self)
             return self
 
         self.explored_edges.add(self.current_edge)
-        logger.debug("seen edges: %s", self._format_explored_edges())
+        logger.debug("Seen edges: %s", self._format_explored_edges())
 
         if self.transition_walker.has_reached_accept_state():
             self.current_state = self.target_state
-            logger.debug(f"{self} transitioned to state {self.current_state}")
+            logger.debug("%s transitioned to state %s", self, self.current_state)
 
-            if not self.can_accept_more_input():
+            if not self.transition_walker.can_accept_more_input():
                 self.accepted_history.append(self.transition_walker)
                 self.transition_walker = None
                 self.target_state = None
 
         if self.current_state in self.acceptor.end_states:
             from pse.state_machine.accepted_state import AcceptedState
-            logger.debug("walker in accepted state")
+
+            logger.debug("Walker in accepted state")
             return AcceptedState(self)
 
         return self
@@ -252,7 +234,7 @@ class Walker(ABC):
         Returns:
             A set of valid prefixes that can be used to advance the walker.
         """
-        valid_prefixes = set()
+        valid_prefixes: Set[str] = set()
 
         for continuation in self.get_valid_continuations(dawg):
             logger.debug("Getting tokens with prefix: %r", continuation)
@@ -269,6 +251,8 @@ class Walker(ABC):
             True if in an accepted state; False otherwise.
         """
         return False
+
+    # -------- Helper Methods --------
 
     def _parse_value(self, value: Any) -> Any:
         """Parse the given value into an appropriate Python data type.
@@ -304,20 +288,61 @@ class Walker(ABC):
         # Return the original string if all parsing attempts fail
         return value
 
-    # -------- Magic Methods --------
-
     def _format_explored_edges(self) -> str:
+        """Format the explored edges for logging purposes.
+
+        Returns:
+            A string representation of the explored edges.
+        """
         edge_lines = []
         for from_state, to_state, edge_value in sorted(
             self.explored_edges,
-            key=lambda x: (float('inf') if x[0] == "$" else x[0],
-                         float('inf') if x[1] == "$" else x[1],
-                         x[2])
+            key=lambda x: (
+                float('inf') if x[0] == "$" else x[0],
+                float('inf') if x[1] == "$" else x[1],
+                x[2],
+            ),
         ):
             to_state_display = "End" if to_state == "$" else to_state
             edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
             edge_lines.append(edge_line)
         return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
+
+    # -------- Properties --------
+
+    @property
+    def raw_value(self) -> Optional[str]:
+        """Retrieve the raw accumulated value as a string.
+
+        Returns:
+            The concatenated raw values from history and transitions.
+        """
+        if self._raw_value is not None:
+            return self._raw_value
+
+        if not self.accepted_history and not self.transition_walker:
+            return None
+
+        history = [walker.raw_value for walker in self.accepted_history]
+        if self.transition_walker:
+            history.append(self.transition_walker.raw_value)
+
+        return "".join(value for value in history if value is not None)
+
+    @property
+    def current_edge(self) -> VisitedEdgeType:
+        """Return the current edge as a tuple.
+
+        Returns:
+            A tuple representing the current edge.
+        """
+        return (
+            self.current_state,
+            self.target_state if self.target_state is not None else "$",
+            self.raw_value or "",
+        )
+
+    # -------- Dunder Methods --------
 
     def __hash__(self) -> int:
         """Generate a hash based on the walker's state and value.
@@ -401,7 +426,10 @@ class Walker(ABC):
         def _format_current_edge() -> str:
             to_state_display = "End" if self.target_state == "$" else self.target_state
             accumulated_value = self.raw_value or self.current_value() or ""
-            return f"Current edge: ({self.current_state}) --[{str(accumulated_value)}]--> ({to_state_display})"
+            return (
+                f"Current edge: ({self.current_state}) "
+                f"--[{str(accumulated_value)}]--> ({to_state_display})"
+            )
 
         def _format_transition_info() -> str:
             if not self.transition_walker:

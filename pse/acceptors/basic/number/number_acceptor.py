@@ -64,7 +64,7 @@ class NumberAcceptor(StateMachine):
                 (IntegerAcceptor(), "$"),
             ],
         }
-        super().__init__(graph, end_states=[1, 2, "$"])
+        super().__init__(graph, end_states=[1, 2, 3, "$"])
 
     def get_walkers(self) -> Iterable[Walker]:
         initial_walker = NumberWalker(acceptor=self)

@@ -46,9 +46,6 @@ class MockTokenAcceptor(TokenAcceptor):
     def get_walkers(self) -> Iterable[Walker]:
         yield Concretewalker(self)
 
-    def expects_more_input(self, walker: Walker) -> bool:
-        return False
-
 
 @pytest.fixture
 def acceptor() -> MockTokenAcceptor:

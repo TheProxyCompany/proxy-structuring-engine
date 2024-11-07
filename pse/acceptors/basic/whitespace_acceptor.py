@@ -37,12 +37,6 @@ class WhitespaceAcceptor(StateMachine):
         """
         yield self._walker(self)
 
-    def expects_more_input(self, walker: Walker) -> bool:
-        return (
-            walker._accepts_remaining_input
-            and walker.consumed_character_count < self.max_whitespace
-        )
-
     def is_optional(self) -> bool:
         return self.min_whitespace == 0
 

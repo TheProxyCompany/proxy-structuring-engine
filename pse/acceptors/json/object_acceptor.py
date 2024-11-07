@@ -11,7 +11,6 @@ from pse.state_machine.state_machine import (
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
-from pse.state_machine.walker import Walker
 
 logger = logging.getLogger()
 
@@ -50,9 +49,6 @@ class ObjectAcceptor(StateMachine):
             ],
         }
         super().__init__(graph)
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        return walker.current_state not in self.end_states
 
     @property
     def walker_class(self) -> Type[Objectwalker]:

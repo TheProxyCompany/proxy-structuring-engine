@@ -130,14 +130,6 @@ def test_whitespace_acceptor_walker_is_in_value():
     walker = WhitespaceWalker(acceptor, text=" ")
     assert walker.is_within_value()
 
-
-def test_whitespace_acceptor_expects_more_input():
-    """Test that WhitespaceAcceptor does not expect more input."""
-    acceptor = WhitespaceAcceptor()
-    walker = WhitespaceWalker(acceptor)
-    assert acceptor.expects_more_input(walker)
-
-
 def test_whitespace_acceptor_integration_with_text_acceptor():
     """Test integration of WhitespaceAcceptor with TextAcceptor."""
 

@@ -5,7 +5,6 @@ from pse.state_machine.state_machine import (
     StateMachineGraph,
     StateMachineWalker,
 )
-from pse.state_machine.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -46,9 +45,6 @@ class ArrayAcceptor(StateMachine):
                 ],
             }
         super().__init__(graph)
-
-    def expects_more_input(self, walker: Walker) -> bool:
-        return walker.current_state not in self.end_states
 
     def get_walkers(self) -> Iterable[ArrayWalker]:
         yield ArrayWalker(self)

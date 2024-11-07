@@ -44,13 +44,6 @@ class CharacterAcceptor(StateMachine):
         """
         yield self._walker(self)
 
-    def expects_more_input(self, walker: Walker) -> bool:
-        if self.char_limit > 0:
-            return walker.consumed_character_count < self.char_limit
-
-        return super().expects_more_input(walker)
-
-
 class CharacterWalker(StateMachineWalker):
     """
     Walker for navigating through characters in CharAcceptor.
