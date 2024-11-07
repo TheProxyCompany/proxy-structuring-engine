@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Union, Type
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
@@ -29,15 +29,15 @@ class NumberAcceptor(StateMachine):
         Get the edges for a given state.
         """
         if state == 0:
-            yield from super().get_edges(state)
             yield from super().get_edges(1)
-        elif state == 4:
             yield from super().get_edges(state)
+        elif state == 4:
             yield from super().get_edges(5)
+            yield from super().get_edges(state)
         else:
             yield from super().get_edges(state)
 
-    def __init__(self):
+    def __init__(self, walker_type: Optional[Type[Walker]] = None):
         """
         Initialize the NumberAcceptor with its state transitions.
         """
@@ -64,11 +64,11 @@ class NumberAcceptor(StateMachine):
                 (IntegerAcceptor(), "$"),
             ],
         }
-        super().__init__(graph, end_states=[1, 2, 3, "$"])
-
-    def get_walkers(self) -> Iterable[Walker]:
-        initial_walker = NumberWalker(acceptor=self)
-        yield from self._branch_walkers(initial_walker)
+        super().__init__(
+            graph,
+            end_states=[1, 2, 3, "$"],
+            walker_type=walker_type or NumberWalker
+        )
 
 
 class NumberWalker(StateMachineWalker):
@@ -78,14 +78,14 @@ class NumberWalker(StateMachineWalker):
     Manages the current state and accumulated value during JSON number parsing.
     """
 
-    def __init__(self, acceptor: NumberAcceptor):
+    def __init__(self, acceptor: NumberAcceptor, current_state: int = 0):
         """
         Initialize the walker.
 
         Args:
             acceptor (NumberAcceptor): The parent acceptor.
         """
-        super().__init__(acceptor)
+        super().__init__(acceptor, current_state)
         self.acceptor = acceptor
         self.value: Optional[Union[int, float]] = None
 

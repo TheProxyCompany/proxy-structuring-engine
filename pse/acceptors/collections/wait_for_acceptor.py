@@ -77,6 +77,7 @@ class WaitForAcceptor(StateMachine):
     def __repr__(self) -> str:
         return f"WaitForAcceptor({repr(self.wait_for_acceptor)})"
 
+
 class WaitForWalker(Walker):
     """
     Walker for handling the WaitForAcceptor.
@@ -150,7 +151,7 @@ class WaitForWalker(Walker):
 
         yield WaitForWalker(self.acceptor, new_walkers)
 
-    def current_value(self) -> str:
+    def get_current_value(self) -> str:
         """
         Retrieve the current value indicating the wait state.
 

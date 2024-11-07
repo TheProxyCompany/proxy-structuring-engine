@@ -89,7 +89,7 @@ def test_get_value_before_trigger(
         if not walker.has_reached_accept_state():
             expected_value = str(trigger_acceptor)
             assert (
-                walker.current_value() == expected_value
+                walker.get_current_value() == expected_value
             ), "get_value should return the correct waiting state description."
 
 
@@ -107,7 +107,7 @@ def test_get_value_after_trigger(setup_acceptors: Tuple[WaitForAcceptor, TextAcc
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value() == "END"
+                walker.get_current_value() == "END"
             ), "get_value should return 'END' after trigger."
 
 
@@ -129,11 +129,11 @@ def test_multiple_triggers(
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value() == "END"
+                walker.get_current_value() == "END"
             ), "get_value should return 'END' after trigger."
         else:
             assert (
-                walker.current_value() == "TextAcceptor('END')"
+                walker.get_current_value() == "TextAcceptor('END')"
             ), "get_value should return the waiting state description."
 
     assert (

@@ -110,9 +110,6 @@ class StateMachine(TokenAcceptor):
                 yield AcceptedState(walker)
                 continue
 
-            logger.debug(
-                f"Cloning {walker} to explore {walker.current_state} --> {target_state} with {transition}"
-            )
             new_walker = walker.clone()
             new_walker.transition_walker = transition
             new_walker.target_state = target_state
@@ -285,10 +282,10 @@ class StateMachine(TokenAcceptor):
                 did_branch_walker = True
                 yield from self.advance_walker(next_walker, token)
 
-            # if not did_branch_walker and walker.remaining_input:
-            #     logger.debug(f"Walker could not find valid branches:\n{walker}")
-            #     logger.debug("Yielding walker upstream for partial matching")
-            #     yield walker
+            if not did_branch_walker and walker.remaining_input:
+                logger.debug(f"Walker could not find valid branches:\n{walker}")
+                logger.debug("Yielding walker upstream for partial matching")
+                yield walker
 
             return
 
@@ -306,8 +303,9 @@ class StateMachine(TokenAcceptor):
             logger.debug(f"Advanced transition walker: {advanced_walker}")
 
             new_walker = walker.clone()
-            new_walker.transition_walker = advanced_walker
             new_walker.remaining_input = advanced_walker.remaining_input
+            new_walker.transition_walker = advanced_walker
+            new_walker.transition_walker.remaining_input = None
             new_walker.consumed_character_count += (
                 advanced_walker.consumed_character_count
             )

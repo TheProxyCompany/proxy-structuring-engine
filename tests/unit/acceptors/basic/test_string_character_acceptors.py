@@ -1,5 +1,8 @@
 import pytest
-from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor, StringCharacterWalker
+from pse.acceptors.basic.string_character_acceptor import (
+    StringCharacterAcceptor,
+    StringCharacterWalker,
+)
 
 
 @pytest.fixture
@@ -23,7 +26,7 @@ def test_walker_advance_with_valid_character(
     advanced_walkers = list(walker.consume_token(advance_char))
     assert len(advanced_walkers) == 1, "Should yield one advanced walker"
     assert (
-        advanced_walkers[0].current_value() == "hel"
+        advanced_walkers[0].get_current_value() == "hel"
     ), "Accumulated value should be 'hel'"
 
 
@@ -55,7 +58,7 @@ def test_string_char_acceptor_get_value(string_char_acceptor: StringCharacterAcc
     initial_value = "json"
     walker = StringCharacterWalker(string_char_acceptor, initial_value)
     assert (
-        walker.current_value() == initial_value
+        walker.get_current_value() == initial_value
     ), "get_value should return the correct accumulated string"
 
 
@@ -71,7 +74,7 @@ def test_string_char_acceptor_walker_clone(
     walker = StringCharacterWalker(string_char_acceptor, "clone")
     cloned_walker = walker.clone()
     assert (
-        cloned_walker.current_value() == walker.current_value()
+        cloned_walker.get_current_value() == walker.get_current_value()
     ), "Cloned walker should have the same value"
     assert cloned_walker is not walker, "Cloned walker should be a different instance"
 
@@ -86,7 +89,7 @@ def test_string_char_acceptor_empty_walker_value(
         string_char_acceptor (StringCharacterAcceptor): The acceptor instance.
     """
     walker = StringCharacterWalker(string_char_acceptor)
-    assert walker.current_value() is None, "Walker with no value should return None"
+    assert walker.get_current_value() is None, "Walker with no value should return None"
 
 
 def test_string_char_acceptor_walker_is_in_value(

@@ -115,9 +115,7 @@ class TextWalker(StateMachineWalker):
         return should_start_transition
 
     def should_complete_transition(
-        self,
-        transition_value: str,
-        is_end_state: bool
+        self, transition_value: str, is_end_state: bool
     ) -> bool:
         """
         Complete the transition if the transition value matches the remaining text.
@@ -188,7 +186,7 @@ class TextWalker(StateMachineWalker):
             else:
                 yield next_walker
 
-    def current_value(self) -> str:
+    def get_current_value(self) -> str:
         """
         Retrieves the current state of the text being accepted, highlighting the remaining portion.
 

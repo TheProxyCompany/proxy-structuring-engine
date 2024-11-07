@@ -2,7 +2,7 @@ import pytest
 from typing import Iterable, List
 
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.state_machine.state_machine import StateMachine
@@ -70,7 +70,7 @@ def test_get_walkers(sequence_acceptor: SequenceAcceptor):
     """Test that the SequenceAcceptor initializes with the correct initial walkers."""
     walkers: Iterable[Walker] = sequence_acceptor.get_walkers()
     for walker in walkers:
-        assert isinstance(walker, sequence_acceptor.walker_class)
+        assert isinstance(walker, SequenceWalker)
 
 
 def test_walker_advance(sequence_acceptor: SequenceAcceptor):
@@ -106,7 +106,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.current_value() == input_sequence
+        assert walker.get_current_value() == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):

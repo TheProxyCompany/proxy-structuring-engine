@@ -44,6 +44,7 @@ class CharacterAcceptor(StateMachine):
         """
         yield self._walker(self)
 
+
 class CharacterWalker(StateMachineWalker):
     """
     Walker for navigating through characters in CharAcceptor.
@@ -149,7 +150,7 @@ class CharacterWalker(StateMachineWalker):
     def raw_value(self) -> str:
         return self._raw_value or ""
 
-    def current_value(self) -> Optional[str]:
+    def get_current_value(self) -> Optional[str]:
         """
         Retrieve the current value of the walker.
 

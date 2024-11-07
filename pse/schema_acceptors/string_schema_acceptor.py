@@ -1,11 +1,10 @@
 from __future__ import annotations
 import re
 import json
-from typing import Callable, Optional, Type
+from typing import Callable, Optional
 
 from pse.util.errors import SchemaNotImplementedError
 from pse.acceptors.json.string_acceptor import StringAcceptor, StringWalker
-from pse.state_machine.walker import Walker
 
 import logging
 import regex  # Note: This is a third-party module
@@ -24,7 +23,7 @@ class StringSchemaAcceptor(StringAcceptor):
         start_hook: Optional[Callable] = None,
         end_hook: Optional[Callable] = None,
     ):
-        super().__init__()
+        super().__init__(StringSchemaWalker)
         self.schema = schema or {}
         self.start_hook = start_hook
         self.end_hook = end_hook
@@ -107,47 +106,46 @@ class StringSchemaAcceptor(StringAcceptor):
         result = urlparse(value)
         return all([result.scheme, result.netloc])
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return StringSchemawalker
 
-
-class StringSchemawalker(StringWalker):
+class StringSchemaWalker(StringWalker):
     """
     Walker for StringSchemaAcceptor.
     """
 
-    def __init__(self, acceptor: StringSchemaAcceptor):
-        super().__init__(acceptor)
+    def __init__(self, acceptor: StringSchemaAcceptor, current_state: int = 0):
+        super().__init__(acceptor, current_state)
         self.acceptor = acceptor
-        self.partial_value = ""  # Stores the raw string content without quotes
         self.is_escaping = False
 
-    def should_complete_transition(self, transition_value, target_state, is_end_state):
+    def should_complete_transition(self, transition_value: str, is_end_state: bool) -> bool:
         in_string_content = self.is_in_string_content()
         if (
             not in_string_content
-            and target_state == self.acceptor.STATE_IN_STRING
+            and self.target_state == self.acceptor.STATE_IN_STRING
             and self.acceptor.start_hook
         ):
             self.acceptor.start_hook()
 
-        super().should_complete_transition(transition_value, target_state, is_end_state)
+        super().should_complete_transition(transition_value, is_end_state)
         logger.debug(
-            f"transition_value: {transition_value}, target_state: {target_state}, is_end_state: {is_end_state}"
+            f"transition_value: {transition_value}, target_state: {self.target_state}, is_end_state: {is_end_state}"
         )
 
         # Only update partial_value when processing actual string content
         if in_string_content and not is_end_state:
             if self.is_escaping:
-                self.partial_value += transition_value
+                self._raw_value = (self._raw_value or "") + transition_value
                 self.is_escaping = False
             elif transition_value == "\\":
                 self.is_escaping = True
             else:
-                self.partial_value += transition_value
+                self._raw_value = (self._raw_value or "") + transition_value
 
-            if self.acceptor.pattern and not self.is_pattern_prefix(self.partial_value):
+            if (
+                self.acceptor.pattern
+                and self._raw_value
+                and not self.is_pattern_prefix(self._raw_value)
+            ):
                 return False  # Reject early if pattern can't match
 
         if is_end_state:
@@ -155,7 +153,7 @@ class StringSchemawalker(StringWalker):
                 self.acceptor.end_hook()
             try:
                 # Unescape the JSON string
-                value = json.loads(self.text)
+                value = self.get_current_value()
             except json.JSONDecodeError:
                 return False
             if self.acceptor.validate_value(value):

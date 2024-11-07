@@ -1,5 +1,5 @@
 import pytest
-from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor
+from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor, NumberSchemaWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
 from pse.state_machine.state_machine import StateMachine
@@ -116,8 +116,8 @@ def test_complete_transition_with_validation(value_str, expected):
     """
     schema = {"type": "number", "minimum": 10, "maximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
-    walker = acceptor.walker_class(acceptor)
-    result = walker.should_complete_transition(value_str, 5, True)
+    walker = NumberSchemaWalker(acceptor)
+    result = walker.should_complete_transition(value_str, True)
     assert (
         result == expected
     ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by complete_transition."
@@ -129,9 +129,9 @@ def test_start_transition_integer_constraints():
     """
     schema = {"type": "integer"}
     acceptor = NumberSchemaAcceptor(schema)
-    walker = acceptor.walker_class(acceptor)
+    walker = NumberSchemaWalker(acceptor)
     walker.current_state = 3
-    result = walker.should_start_transition(acceptor, 4)
+    result = walker.should_start_transition(acceptor)
     assert not result, "Transition to state 4 should be blocked for 'integer' type when current_state is 3."
 
 
@@ -141,9 +141,9 @@ def test_start_transition_non_integer():
     """
     schema = {"type": "number"}
     acceptor = NumberSchemaAcceptor(schema)
-    walker = acceptor.walker_class(acceptor)
+    walker = NumberSchemaWalker(acceptor)
     walker.current_state = 3
-    result = walker.should_start_transition(acceptor, 4)
+    result = walker.should_start_transition(acceptor)
     assert result, "Transition to state 4 should be allowed for 'number' type when current_state is 3."
 
 
@@ -257,8 +257,8 @@ def test_number_with_walker_validation(value_str, expected):
     """
     schema = {"type": "number", "minimum": 10, "maximum": 100, "multipleOf": 10}
     acceptor = NumberSchemaAcceptor(schema)
-    walker = acceptor.walker_class(acceptor)
-    result = walker.should_complete_transition(value_str, 5, True)
+    walker = NumberSchemaWalker(acceptor)
+    result = walker.should_complete_transition(value_str, True)
     assert (
         result == expected
     ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by walker validation."

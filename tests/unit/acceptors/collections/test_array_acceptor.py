@@ -1,6 +1,6 @@
 import pytest
 from typing import Any
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor
+from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     # Assuming the first accepted walker contains the parsed value
     for walker in walkers:
         if walker.has_reached_accept_state():
-            return walker.current_value()
+            return walker.get_current_value()
     return []
 
 
@@ -53,13 +53,13 @@ def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[
 # Tests for walker behavior
 def test_walker_initialization(acceptor: ArrayAcceptor):
     """Test that the walker initializes with an empty value list."""
-    walker = acceptor.walker_class(acceptor)
+    walker = ArrayWalker(acceptor)
     assert walker.value == []
 
 
 def test_walker_clone(acceptor: ArrayAcceptor):
     """Test that cloning a walker duplicates its state correctly."""
-    walker = acceptor.walker_class(acceptor)
+    walker = ArrayWalker(acceptor)
     walker.value.append(123)
     cloned_walker = walker.clone()
     assert cloned_walker.value == [123]

@@ -37,7 +37,7 @@ def parse_number(acceptor: NumberAcceptor):
         for walker in walkers:
             print(f"post advance walker: {walker}")
             if walker.has_reached_accept_state():
-                return walker.current_value()
+                return walker.get_current_value()
 
         assert (
             False
@@ -227,7 +227,7 @@ def test_number_acceptor_with_state_machine_float():
     walkers = sm.advance_all(walkers, number_string)
     for walker in walkers:
         assert (
-            walker.current_value() == -123.456
+            walker.get_current_value() == -123.456
         ), "Parsed value should be the float -123.456."
         break
 
@@ -255,7 +255,7 @@ def test_number_acceptor_with_state_machine_float_complex():
     walkers = sm.advance_all(walkers, number_string)
     for walker in walkers:
         assert (
-            walker.current_value() == -123.456
+            walker.get_current_value() == -123.456
         ), "Parsed value should be the float -123.456."
         break
     remaining_string = " I'll never be free."
@@ -287,7 +287,7 @@ def test_number_acceptor_with_state_machine_exponential():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value() == 6.022e23
+                walker.get_current_value() == 6.022e23
             ), "Parsed value should be the float 6.022e23."
 
 
@@ -358,7 +358,7 @@ def test_number_acceptor_in_state_machine_sequence():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value() == "Value: 42"
+                walker.get_current_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
 
@@ -382,7 +382,7 @@ def test_number_acceptor_with_large_number():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value() == 12345678901234567890
+                walker.get_current_value() == 12345678901234567890
             ), "Parsed value should be the large integer 12345678901234567890."
 
 
@@ -405,7 +405,9 @@ def test_number_acceptor_with_leading_zeros():
     ), "StateMachine should accept numbers with leading zeros."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value() == 7, "Parsed value should be the integer 7."
+            assert (
+                walker.get_current_value() == 7
+            ), "Parsed value should be the integer 7."
 
 
 def test_number_acceptor_with_zero():
@@ -427,7 +429,7 @@ def test_number_acceptor_with_zero():
     ), "StateMachine should accept zero."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value() == 0, "Parsed value should be zero."
+            assert walker.get_current_value() == 0, "Parsed value should be zero."
 
 
 def test_number_acceptor_with_multiple_decimal_points():
@@ -505,7 +507,7 @@ def test_number_acceptor_multi_char_advancement(input_string, expected_value):
     ), f"NumberAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value()
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"
@@ -543,7 +545,7 @@ def test_float_acceptor_single_char_advancement(input_string, expected_value):
     ), f"NumberAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value()
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"
@@ -648,7 +650,7 @@ def test_float_acceptor_in_state_machine_sequence():
     ), "Combined text and float input should be accepted."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value()
+            value = walker.get_current_value()
             expected_value = "Number: 3.14159"
             assert (
                 value == expected_value
@@ -679,7 +681,7 @@ def test_float_acceptor_char_by_char_in_state_machine():
     ), "Combined text and float input should be accepted when advancing char by char."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value()
+            value = walker.get_current_value()
             expected_value = "Value: 0.0001"
             assert (
                 value == expected_value
@@ -708,7 +710,7 @@ def test_float_acceptor_zero():
         ), f"Input '{input_string}' should be accepted."
         for walker in walkers:
             if walker.has_reached_accept_state():
-                value = walker.current_value()
+                value = walker.get_current_value()
                 assert value == pytest.approx(
                     expected_value
                 ), f"Expected {expected_value}, got {value}"
@@ -735,7 +737,7 @@ def test_float_acceptor_large_number():
     ), "Large floating-point numbers should be accepted."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value()
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"

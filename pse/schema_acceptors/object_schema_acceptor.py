@@ -1,8 +1,7 @@
 from __future__ import annotations
-from typing import Dict, Any, Callable, Type
-from pse.acceptors.json.object_acceptor import ObjectAcceptor, Objectwalker
+from typing import Dict, Any, Callable
+from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.util.errors import InvalidSchemaError
-from pse.state_machine.state_machine import Walker
 from pse.schema_acceptors.property_schema_acceptor import PropertySchemaAcceptor
 
 
@@ -37,7 +36,7 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                 )
 
         assert self.properties is not None
-        super().__init__()
+        super().__init__(ObjectSchemaWalker)
 
     def get_edges(self, state):
         if state == 2:
@@ -57,34 +56,29 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
         else:
             return super().get_edges(state)
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return ObjectSchemawalker
 
-
-class ObjectSchemawalker(Objectwalker):
+class ObjectSchemaWalker(ObjectWalker):
     """
     Walker for ObjectAcceptor
     """
 
-    def __init__(self, acceptor: ObjectSchemaAcceptor):
-        super().__init__(acceptor)
+    def __init__(self, acceptor: ObjectSchemaAcceptor, current_state: int = 0):
+        super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
     def should_start_transition(
         self,
         transition_acceptor: PropertySchemaAcceptor,
-        target_state,
     ) -> bool:
-        if target_state == "$":
+        if self.target_state == "$":
             return all(
                 prop_name in self.value
                 for prop_name in self.acceptor.required_property_names
             )
-        if self.current_state == 2 and target_state == 3:
+        if self.current_state == 2 and self.target_state == 3:
             # Check if the property name is already in the object
             return transition_acceptor.prop_name not in self.value
-        if self.current_state == 4 and target_state == 1:
+        if self.current_state == 4 and self.target_state == 1:
             # Are all allowed properties already set?
             return len(self.value.keys()) < len(self.acceptor.properties)
         return True

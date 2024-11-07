@@ -1,13 +1,14 @@
 from __future__ import annotations
-from typing import Any, Dict, Type
+import json
+from typing import Any, Dict, Optional, Type
 import logging
 
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
-    StateType,
     StateMachineWalker,
 )
+from pse.state_machine.walker import Walker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
@@ -23,7 +24,10 @@ class ObjectAcceptor(StateMachine):
     and maintaining the current object properties being parsed.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        walker_type: Optional[Type[Walker]] = None,
+    ) -> None:
         """
         Initialize the ObjectAcceptor with a predefined state transition graph.
 
@@ -48,30 +52,26 @@ class ObjectAcceptor(StateMachine):
                 (TextAcceptor("}"), "$"),  # End of object
             ],
         }
-        super().__init__(graph)
-
-    @property
-    def walker_class(self) -> Type[Objectwalker]:
-        return Objectwalker
+        super().__init__(graph, walker_type=walker_type or ObjectWalker)
 
 
-class Objectwalker(StateMachineWalker):
+class ObjectWalker(StateMachineWalker):
     """
     Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
     """
 
-    def __init__(self, acceptor: ObjectAcceptor) -> None:
+    def __init__(self, acceptor: ObjectAcceptor, current_state: int = 0) -> None:
         """
         Initialize the ObjectAcceptor.Walker with the parent acceptor and an empty dictionary.
 
         Args:
             acceptor (ObjectAcceptor): The parent ObjectAcceptor instance.
         """
-        super().__init__(acceptor)
+        super().__init__(acceptor, current_state)
         self.value: Dict[str, Any] = {}
 
     def should_complete_transition(
-        self, transition_value: Any, target_state: StateType, is_end_state: bool
+        self, transition_value: Any, is_end_state: bool
     ) -> bool:
         """
         Handle the completion of a transition by updating the accumulated key-value pairs.
@@ -89,7 +89,7 @@ class Objectwalker(StateMachineWalker):
             self.value[prop_name] = prop_value
         return True
 
-    def current_value(self) -> Dict[str, Any]:
+    def get_current_value(self) -> Dict[str, Any]:
         """
         Get the current parsed JSON object.
 
@@ -97,3 +97,7 @@ class Objectwalker(StateMachineWalker):
             Dict[str, Any]: The accumulated key-value pairs representing the JSON object.
         """
         return self.value
+
+    @property
+    def raw_value(self) -> Optional[str]:
+        return json.dumps(self.value)

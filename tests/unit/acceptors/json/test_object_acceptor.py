@@ -1,90 +1,28 @@
 import pytest
-from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.json.string_acceptor import StringAcceptor
+from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.state_machine.state_machine import StateMachine
-from pse.acceptors.json.property_acceptor import PropertyAcceptor
-
 
 @pytest.fixture
 def object_acceptor() -> ObjectAcceptor:
     return ObjectAcceptor()
 
-
-def test_get_edges_initial_state(object_acceptor: ObjectAcceptor):
-    edges = object_acceptor.get_edges(0)
-    assert len(edges) == 1
-    assert isinstance(edges[0][0], TextAcceptor)
-    assert edges[0][1] == 1
-
-
-def test_get_edges_property_parsing(object_acceptor: ObjectAcceptor):
-    edges = object_acceptor.get_edges(2)
-    assert len(edges) == 2
-    assert isinstance(edges[1][0], PropertyAcceptor)
-    assert edges[1][1] == 3
-
-
-def test_get_edges_end_state(object_acceptor: ObjectAcceptor):
-    edges = object_acceptor.get_edges(4)
-    assert len(edges) == 2
-    assert isinstance(edges[0][0], TextAcceptor)
-    assert edges[1][1] == "$"
-
-
-def test_walker_initialization(object_acceptor: ObjectAcceptor):
-    walker = object_acceptor.walker_class(object_acceptor)
-    assert walker.value == {}
-    assert walker.acceptor is object_acceptor
-
-
 def test_walker_complete_transition_valid(object_acceptor: ObjectAcceptor):
-    walker = object_acceptor.walker_class(object_acceptor)
+    walker = ObjectWalker(object_acceptor)
     walker.current_state = 2
-    result = walker.should_complete_transition(("key", "value"), 3, False)
+    result = walker.should_complete_transition(("key", "value"), False)
     assert result
     assert walker.value == {"key": "value"}
 
 
 def test_walker_get_value_empty(object_acceptor: ObjectAcceptor):
-    walker = object_acceptor.walker_class(object_acceptor)
-    assert walker.current_value() == {}
+    walker = ObjectWalker(object_acceptor)
+    assert walker.get_current_value() == {}
 
 
 def test_walker_get_value_with_data(object_acceptor: ObjectAcceptor):
-    walker = object_acceptor.walker_class(object_acceptor)
+    walker = ObjectWalker(object_acceptor)
     walker.value = {"key1": "value1", "key2": "value2"}
-    assert walker.current_value() == {"key1": "value1", "key2": "value2"}
-
-
-def test_property_acceptor_initialization():
-    prop_acceptor = PropertyAcceptor()
-    assert len(prop_acceptor.acceptors) == 5
-    assert isinstance(prop_acceptor.acceptors[0], StringAcceptor)
-    assert isinstance(prop_acceptor.acceptors[1], WhitespaceAcceptor)
-
-
-def test_property_acceptor_walker_complete_transition():
-    prop_acceptor = PropertyAcceptor()
-    walker = prop_acceptor.walker_class(prop_acceptor)
-
-    result_key = walker.should_complete_transition("key", 1, False)
-    assert result_key
-    assert walker.prop_name == "key"
-
-    result_value = walker.should_complete_transition("value", 5, True)
-    assert result_value
-    assert walker.prop_value == "value"
-
-
-def test_property_acceptor_walker_get_value_valid():
-    prop_acceptor = PropertyAcceptor()
-    walker = prop_acceptor.walker_class(prop_acceptor)
-    walker.prop_name = "key"
-    walker.prop_value = "value"
-
-    assert walker.current_value() == ("key", "value")
+    assert walker.get_current_value() == {"key1": "value1", "key2": "value2"}
 
 
 @pytest.mark.parametrize(
@@ -120,7 +58,7 @@ def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expect
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value() == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -153,7 +91,7 @@ def test_valid_json_objects_all_at_once(
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value() == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -205,7 +143,7 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value() == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(

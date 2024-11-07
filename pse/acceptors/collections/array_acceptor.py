@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import List, Any, Optional, Iterable
+from typing import List, Any, Optional, Iterable, Type
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateMachineWalker,
 )
+from pse.state_machine.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -22,6 +23,7 @@ class ArrayAcceptor(StateMachine):
     def __init__(
         self,
         graph: Optional[StateMachineGraph] = None,
+        walker_type: Optional[Type[Walker]] = None,
     ) -> None:
         """
         Initialize the ArrayAcceptor with a state transition graph.
@@ -44,7 +46,7 @@ class ArrayAcceptor(StateMachine):
                     (TextAcceptor("]"), "$"),
                 ],
             }
-        super().__init__(graph)
+        super().__init__(graph, walker_type=walker_type or ArrayWalker)
 
     def get_walkers(self) -> Iterable[ArrayWalker]:
         yield ArrayWalker(self)
@@ -55,14 +57,14 @@ class ArrayWalker(StateMachineWalker):
     Walker for ArrayAcceptor that maintains the current state and accumulated values.
     """
 
-    def __init__(self, acceptor: ArrayAcceptor):
+    def __init__(self, acceptor: ArrayAcceptor, current_state: int = 0):
         """
         Initialize the ArrayAcceptor.Walker with the parent acceptor and an empty list.
 
         Args:
             acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
-        super().__init__(acceptor)
+        super().__init__(acceptor, current_state)
         self.value: List[Any] = []
 
     def clone(self) -> ArrayWalker:
@@ -100,7 +102,7 @@ class ArrayWalker(StateMachineWalker):
             self.value.append(transition_value)
         return True
 
-    def current_value(self) -> Any:
+    def get_current_value(self) -> Any:
         """
         Retrieve the accumulated value from the walker's history.
 

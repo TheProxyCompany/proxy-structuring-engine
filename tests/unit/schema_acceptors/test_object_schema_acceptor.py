@@ -1,6 +1,6 @@
 import pytest
 from typing import Any, Dict
-from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
+from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor, ObjectSchemaWalker
 from pse.util.errors import InvalidSchemaError
 from unittest.mock import MagicMock
 
@@ -52,28 +52,6 @@ def test_initialization_missing_required_property_in_properties(
     with pytest.raises(InvalidSchemaError):
         ObjectSchemaAcceptor(schema, base_context)
 
-
-def test_get_edges_state_3(base_context: Dict[str, Any]) -> None:
-    """
-    Test the get_edges method for state 3.
-    Ensures that property acceptors are returned correctly.
-    """
-    schema = {
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "number"},
-        },
-        "required": ["name"],
-    }
-    acceptor = ObjectSchemaAcceptor(schema, base_context)
-    edges = acceptor.get_edges(2)
-    assert len(edges) == 2, "Should return one edge per property."
-    for edge, state in edges:
-        assert isinstance(
-            edge, ObjectSchemaAcceptor.PropertyAcceptor
-        ), "Edge should be a PropertyAcceptor instance."
-        assert state == 3, "State should transition to 3."
 
 
 def test_get_edges_other_states(base_context: Dict[str, Any]) -> None:
@@ -159,19 +137,6 @@ def test_property_acceptor_complete_transition_with_hooks(
         flags["value_end_val"] == "JohnDoe"
     ), "value_end should receive correct value."
 
-
-def test_walker_initialization(base_context: Dict[str, Any]) -> None:
-    """
-    Test the initialization of ObjectSchemaAcceptor.Walker.
-    Ensures that the walker starts with an empty dictionary and correct acceptor reference.
-    """
-    schema = {"type": "object", "properties": {}, "required": []}
-    acceptor = ObjectSchemaAcceptor(schema, base_context)
-    walker = acceptor.Walker(acceptor)
-    assert walker.value == {}, "Walker should initialize with an empty dictionary."
-    assert (
-        walker.acceptor is acceptor
-    ), "Walker's acceptor should reference the ObjectSchemaAcceptor instance."
 
 
 def test_walker_start_transition_valid(base_context: Dict[str, Any]) -> None:

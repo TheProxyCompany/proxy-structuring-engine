@@ -126,7 +126,10 @@ class WhitespaceWalker(Walker):
         if not valid_input:
             self._accepts_remaining_input = False
             logger.debug("no valid whitespace prefix, returning no walkers")
-            if remaining_input and self.consumed_character_count >= self.acceptor.min_whitespace:
+            if (
+                remaining_input
+                and self.consumed_character_count >= self.acceptor.min_whitespace
+            ):
                 copy = self.clone()
                 copy.remaining_input = remaining_input
                 copy._accepts_remaining_input = False
@@ -149,7 +152,7 @@ class WhitespaceWalker(Walker):
         else:
             yield next_walker
 
-    def current_value(self) -> str:
+    def get_current_value(self) -> str:
         """
         Get the accumulated whitespace value.
 

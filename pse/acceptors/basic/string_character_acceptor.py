@@ -45,6 +45,7 @@ class StringCharacterAcceptor(StateMachine):
         cls.valid_chars = set(INVALID_CHARS)
         return dawg
 
+
 class StringCharacterWalker(Walker):
     """
     Walker for navigating through characters in StringCharAcceptor.
@@ -116,9 +117,7 @@ class StringCharacterWalker(Walker):
             yield AcceptedState(new_walker)
         else:
             self._accepts_remaining_input = False
-            logger.debug(
-                f"{self} cannot accept more input: {token}"
-            )
+            logger.debug(f"{self} cannot accept more input: {token}")
 
     def is_within_value(self) -> bool:
         """
@@ -140,8 +139,8 @@ class StringCharacterWalker(Walker):
             StringCharacterAcceptor.Walker("valid_value | remaining_input='abc' | state[0]")
         """
         components = []
-        if self.current_value():
-            components.append(f"value='{self.current_value()}'")
+        if self.get_current_value():
+            components.append(f"value='{self.get_current_value()}'")
         if self.remaining_input:
             components.append(f"remaining_input='{self.remaining_input}'")
 

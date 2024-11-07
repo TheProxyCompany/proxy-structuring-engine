@@ -40,11 +40,11 @@ class JsonAcceptor(StateMachine):
             from ..basic.number.number_acceptor import NumberAcceptor
 
             return [
-                (BooleanAcceptor(), "$"),
-                (NumberAcceptor(), "$"),
-                (StringAcceptor(), "$"),
-                (NullAcceptor(), "$"),
                 (ObjectAcceptor(), "$"),
                 (ArrayAcceptor(), "$"),
+                (StringAcceptor(), "$"),
+                (NullAcceptor(), "$"),
+                (BooleanAcceptor(), "$"),
+                (NumberAcceptor(), "$"),
             ]
         return []

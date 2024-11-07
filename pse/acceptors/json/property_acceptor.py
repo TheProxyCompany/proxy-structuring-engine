@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from typing import Tuple, Optional, Any, List, Type
 import logging
 
@@ -8,6 +9,7 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.string_acceptor import StringAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.state_machine.walker import Walker
 
 logger = logging.getLogger()
 
@@ -20,7 +22,11 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: Optional[List[TokenAcceptor]] = None) -> None:
+    def __init__(
+        self,
+        sequence: Optional[List[TokenAcceptor]] = None,
+        walker_type: Optional[Type[Walker]] = None,
+    ) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
 
@@ -37,39 +43,34 @@ class PropertyAcceptor(SequenceAcceptor):
                 WhitespaceAcceptor(),
                 JsonAcceptor({}),
             ]
-        super().__init__(sequence)
-
-    def __repr__(self) -> str:
-        return f"PropertyAcceptor({self.acceptors})"
-
-    @property
-    def walker_class(self) -> Type[Propertywalker]:
-        return Propertywalker
+        super().__init__(
+            sequence,
+            walker_type=walker_type or PropertyWalker,
+        )
 
 
-class Propertywalker(SequenceWalker):
+class PropertyWalker(SequenceWalker):
     """
     Walker for PropertyAcceptor that maintains the parsed property name and value.
     """
 
-    def __init__(self, acceptor: PropertyAcceptor) -> None:
+    def __init__(
+        self,
+        acceptor: PropertyAcceptor,
+        current_acceptor_index: int = 0,
+    ) -> None:
         """
         Initialize the PropertyAcceptor
 
         Args:
             acceptor (PropertyAcceptor): The parent PropertyAcceptor
         """
-        super().__init__(acceptor)
-        self.prop_name: Optional[str] = None
+        super().__init__(acceptor, current_acceptor_index)
+        self.prop_name = ""
         self.prop_value: Optional[Any] = None
-        self._accepts_remaining_input = True
-
-    @property
-    def can_handle_remaining_input(self) -> bool:
-        return self._accepts_remaining_input
 
     def should_complete_transition(
-        self, transition_value: Any, target_state: Any, is_end_state: bool
+        self, transition_value: Any, is_end_state: bool
     ) -> bool:
         """
         Handle the completion of a transition by setting the property name and value.
@@ -82,13 +83,24 @@ class Propertywalker(SequenceWalker):
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
-        if target_state == 1:
+        if self.target_state == 1:
             self.prop_name = transition_value
         elif is_end_state:
             self.prop_value = transition_value
         return True
 
-    def current_value(self) -> Tuple[str, Any]:
+    def is_within_value(self) -> bool:
+        """
+        Indicates whether the walker is currently parsing a property value.
+
+        Returns:
+            bool: True if parsing the property value, False otherwise.
+        """
+        if self.current_state == 4:
+            return super().is_within_value()
+        return False
+
+    def get_current_value(self) -> Tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 
@@ -102,26 +114,9 @@ class Propertywalker(SequenceWalker):
             return ("", None)
         return (self.prop_name, self.prop_value)
 
-    def is_within_value(self) -> bool:
-        """
-        Indicates whether the walker is currently parsing a property value.
+    @property
+    def raw_value(self) -> Optional[str]:
+        if not self.prop_name:
+            return None
 
-        Returns:
-            bool: True if parsing the property value, False otherwise.
-        """
-        if self.current_state == 4:
-            return super().is_within_value()
-        return False
-
-    def __repr__(self) -> str:
-        """
-        Provide a string representation of the Walker.
-
-        Returns:
-            str: A string representation of the Walker.
-        """
-        value = self.transition_walker or "".join(
-            [str(walker.current_value()) for walker in self.accepted_history]
-        )
-
-        return f"PropertyAcceptor.Walker({value})"
+        return json.dumps(self.get_current_value())

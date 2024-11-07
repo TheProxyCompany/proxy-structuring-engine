@@ -1,11 +1,10 @@
 from __future__ import annotations
-from typing import Any, Dict, Type
+from typing import Any, Dict
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.state_machine.state_machine import StateMachineGraph
-from pse.state_machine.walker import Walker
 
 
 class ArraySchemaAcceptor(ArrayAcceptor):
@@ -36,7 +35,7 @@ class ArraySchemaAcceptor(ArrayAcceptor):
                 (TextAcceptor("]"), "$"),
             ],
         }
-        super().__init__(graph)
+        super().__init__(graph, walker_type=ArraySchemaWalker)
 
     def min_items(self) -> int:
         """
@@ -50,18 +49,14 @@ class ArraySchemaAcceptor(ArrayAcceptor):
         """
         return self.schema.get("maxItems", 2**32)  # Arbitrary default
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return ArraySchemawalker
 
-
-class ArraySchemawalker(ArrayWalker):
+class ArraySchemaWalker(ArrayWalker):
     """
     Walker for ArrayAcceptor
     """
 
-    def __init__(self, acceptor: ArraySchemaAcceptor):
-        super().__init__(acceptor)
+    def __init__(self, acceptor: ArraySchemaAcceptor, current_state: int = 0):
+        super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
     def should_start_transition(self, transition_acceptor, target_state) -> bool:

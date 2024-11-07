@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Optional, Type
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.state_machine.walker import Walker
 
 class SequenceAcceptor(StateMachine):
     """
@@ -11,7 +12,7 @@ class SequenceAcceptor(StateMachine):
     sequence of acceptors provided during initialization.
     """
 
-    def __init__(self, acceptors: List[TokenAcceptor]):
+    def __init__(self, acceptors: List[TokenAcceptor], walker_type: Optional[Type[Walker]] = None):
         """
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
@@ -27,7 +28,7 @@ class SequenceAcceptor(StateMachine):
             graph,
             initial_state=0,
             end_states=[len(acceptors)],
-            walker_type=SequenceWalker,
+            walker_type=walker_type or SequenceWalker,
         )
 
 class SequenceWalker(StateMachineWalker):

@@ -1,8 +1,6 @@
 from __future__ import annotations
 import json
-from typing import Any, Type
-
-
+from typing import Optional, Type
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineWalker,
@@ -12,6 +10,7 @@ from pse.acceptors.basic.character_acceptors import (
     CharacterAcceptor,
     hex_digit_acceptor,
 )
+from pse.state_machine.walker import Walker
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
@@ -32,7 +31,7 @@ class StringAcceptor(StateMachine):
     STATE_UNICODE_HEX_3 = 5
     STATE_UNICODE_HEX_4 = 6
 
-    def __init__(self):
+    def __init__(self, walker_type: Optional[Type[Walker]] = None):
         """
         Initialize the StringAcceptor with its state transitions.
 
@@ -77,11 +76,12 @@ class StringAcceptor(StateMachine):
                 ),  # Fourth hex digit, return to state IN_STRING
             ],
         }
-        super().__init__(graph, self.STATE_START, ["$"])
-
-    @property
-    def walker_class(self) -> Type[StringWalker]:
-        return StringWalker
+        super().__init__(
+            graph,
+            self.STATE_START,
+            ["$"],
+            walker_type=walker_type or StringWalker,
+        )
 
 
 class StringWalker(StateMachineWalker):
@@ -95,18 +95,18 @@ class StringWalker(StateMachineWalker):
 
     MAX_LENGTH = 10000  # Define a maximum allowed string length
 
-    def __init__(self, acceptor: StringAcceptor):
+    def __init__(self, acceptor: StringAcceptor, current_state: int = 0):
         """
         Initialize the walker.
 
         Args:
             acceptor (StringAcceptor): The parent acceptor.
         """
-        super().__init__(acceptor)
+        super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
     def should_complete_transition(
-        self, transition_value: str, target_state: Any, is_end_state: bool
+        self, transition_value: str, is_end_state: bool
     ) -> bool:
         """
         Handle the completion of a transition.
@@ -119,12 +119,11 @@ class StringWalker(StateMachineWalker):
         Returns:
             bool: Success of the transition.
         """
-        self.current_state = target_state
         if is_end_state and self.raw_value:
             try:
                 self.value = json.loads(self.raw_value)
             except json.JSONDecodeError:
                 self._accepts_remaining_input = False
                 return False
-        
+
         return True

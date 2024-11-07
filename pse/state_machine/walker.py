@@ -101,7 +101,7 @@ class Walker(ABC):
 
     # -------- Public Methods --------
 
-    def current_value(self) -> Any:
+    def get_current_value(self) -> Any:
         """Retrieve the accumulated walker value.
 
         Returns:
@@ -120,11 +120,7 @@ class Walker(ABC):
             True if the transition should start; False otherwise.
         """
         if self.transition_walker:
-            if self.transition_walker.should_start_transition(token):
-                return True
-
-            return False
-
+            return self.transition_walker.should_start_transition(token)
 
         if self.current_edge in self.explored_edges:
             return False
@@ -298,8 +294,8 @@ class Walker(ABC):
         for from_state, to_state, edge_value in sorted(
             self.explored_edges,
             key=lambda x: (
-                float('inf') if x[0] == "$" else x[0],
-                float('inf') if x[1] == "$" else x[1],
+                float("inf") if x[0] == "$" else x[0],
+                float("inf") if x[1] == "$" else x[1],
                 x[2],
             ),
         ):
@@ -372,7 +368,7 @@ class Walker(ABC):
         return (
             self.current_state == other.current_state
             and self.target_state == other.target_state
-            and self.current_value() == other.current_value()
+            and self.get_current_value() == other.get_current_value()
         )
 
     def __repr__(self) -> str:
@@ -403,9 +399,9 @@ class Walker(ABC):
             if not self.accepted_history:
                 return ""
             history_values = [
-                repr(w.current_value())
+                repr(w.get_current_value())
                 for w in self.accepted_history
-                if w.current_value() is not None
+                if w.get_current_value() is not None
             ]
             return f"History: {', '.join(history_values)}" if history_values else ""
 
@@ -425,7 +421,7 @@ class Walker(ABC):
 
         def _format_current_edge() -> str:
             to_state_display = "End" if self.target_state == "$" else self.target_state
-            accumulated_value = self.raw_value or self.current_value() or ""
+            accumulated_value = self.raw_value or self.get_current_value() or ""
             return (
                 f"Current edge: ({self.current_state}) "
                 f"--[{str(accumulated_value)}]--> ({to_state_display})"
@@ -462,7 +458,7 @@ class Walker(ABC):
         single_line = (
             f"{header} {{{' | '.join(info_parts)}}}"
             if info_parts
-            else f"{header} ({self.current_value() or ''})"
+            else f"{header} ({self.get_current_value() or ''})"
         )
         if len(single_line) <= 80:
             return single_line

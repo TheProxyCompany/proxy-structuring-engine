@@ -56,13 +56,13 @@ class AcceptedState(Walker):
         """
         return False
 
-    def current_value(self) -> Any:
+    def get_current_value(self) -> Any:
         """Retrieve the value from the accepted walker.
 
         Returns:
             The value obtained from the accepted walker.
         """
-        return self.accepted_walker.current_value()
+        return self.accepted_walker.get_current_value()
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string.

@@ -13,7 +13,7 @@ def test_advance_incomplete(text_acceptor: TextAcceptor):
     """Test advancing the walker with an incomplete match."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("h"):
-        assert walker.current_value() == "h👉ello"
+        assert walker.get_current_value() == "h👉ello"
         assert isinstance(walker, text_acceptor._walker)
         assert walker.consumed_character_count == 1
 
@@ -25,7 +25,7 @@ def test_advance_complete(text_acceptor: TextAcceptor):
     assert len(advanced) == 1
     accepted = advanced[0]
     assert isinstance(accepted, AcceptedState)
-    assert accepted.current_value() == "hello"
+    assert accepted.get_current_value() == "hello"
 
 
 def test_advance_invalid_character(text_acceptor: TextAcceptor):
@@ -38,19 +38,19 @@ def test_advance_invalid_character(text_acceptor: TextAcceptor):
 def test_get_value_at_start(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value at the start."""
     walker = TextWalker(text_acceptor, 0)
-    assert walker.current_value() == "👉hello"
+    assert walker.get_current_value() == "👉hello"
 
 
 def test_get_value_middle(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value in the middle."""
     walker = TextWalker(text_acceptor, 2)
-    assert walker.current_value() == "he👉llo"
+    assert walker.get_current_value() == "he👉llo"
 
 
 def test_get_value_end(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value at the end."""
     walker = TextWalker(text_acceptor, 5)
-    assert walker.current_value() == "hello"
+    assert walker.get_current_value() == "hello"
 
 
 def test_full_acceptance(text_acceptor: TextAcceptor):
@@ -61,14 +61,14 @@ def test_full_acceptance(text_acceptor: TextAcceptor):
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value() == "hello"
+    assert walker.get_current_value() == "hello"
 
 
 def test_partial_acceptance(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor correctly handles partial acceptance."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("he"):
-        assert walker.current_value() == "he👉llo"
+        assert walker.get_current_value() == "he👉llo"
 
 
 def test_repeated_characters():
@@ -81,7 +81,7 @@ def test_repeated_characters():
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value() == repeated_text
+    assert walker.get_current_value() == repeated_text
 
 
 def test_unicode_characters():
@@ -94,7 +94,7 @@ def test_unicode_characters():
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value() == unicode_text
+    assert walker.get_current_value() == unicode_text
 
 
 def test_empty_text_acceptor():
@@ -114,10 +114,10 @@ def test_case_sensitivity(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor is case-sensitive."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("H"):
-        assert walker.current_value() == "👉hello"
+        assert walker.get_current_value() == "👉hello"
 
     for walker in walker.consume_token("h"):
-        assert walker.current_value() == "h👉ello"
+        assert walker.get_current_value() == "h👉ello"
 
 
 def test_multiple_advance_steps(text_acceptor: TextAcceptor):
@@ -132,8 +132,8 @@ def test_multiple_advance_steps(text_acceptor: TextAcceptor):
     ]
     for char, expected_pos, expected_value in steps:
         for walker in walker.consume_token(char):
-            assert walker.current_value() == expected_value
+            assert walker.get_current_value() == expected_value
             assert walker.consumed_character_count == expected_pos
 
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value() == "hello"
+    assert walker.get_current_value() == "hello"
