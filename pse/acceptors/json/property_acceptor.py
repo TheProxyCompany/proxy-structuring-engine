@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from typing import Tuple, Optional, Any, List, Type
 import logging
 
@@ -75,15 +76,21 @@ class PropertyWalker(SequenceWalker):
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
-        if not self.transition_walker or self.target_state is None:
+        if (
+            not self.transition_walker
+            or self.target_state is None
+            or not self.transition_walker.raw_value
+        ):
             return False
 
-        transition_value = self.transition_walker.raw_value
+        try:
+            if self.target_state == 1:
+                self.prop_name = json.loads(self.transition_walker.raw_value)
+            elif self.target_state in self.acceptor.end_states:
+                self.prop_value = json.loads(self.transition_walker.raw_value)
+        except Exception:
+            return False
 
-        if self.target_state == 1:
-            self.prop_name = transition_value
-        elif self.target_state in self.acceptor.end_states:
-            self.prop_value = transition_value
         return True
 
     def is_within_value(self) -> bool:

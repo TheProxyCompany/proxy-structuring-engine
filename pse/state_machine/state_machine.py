@@ -129,7 +129,8 @@ class StateMachine(TokenAcceptor):
         """
         for transition, target_state in self.get_transitions(walker.current_state, walker):
 
-            # Skip if transition can't start with either token or remaining input
+            # Skip if transition can't start with either token or walker's remaining input
+            # saves time by skipping transitions that can't be completed
             if (token and not transition.should_start_transition(token)) or (
                 walker.remaining_input
                 and not transition.should_start_transition(walker.remaining_input)
@@ -191,9 +192,15 @@ class StateMachine(TokenAcceptor):
         """
         if not walker.transition_walker:
             logger.debug(f"Walker {walker} has no transition walker. Branching to next states")
+            has_valid_transition = False
             for next_walker in self.branch_walkers(walker):
                 if next_walker.should_start_transition(token):
+                    has_valid_transition = True
                     yield from self.advance_walker(next_walker, token)
+
+            if not has_valid_transition and walker.remaining_input:
+                logger.debug(f"Walker {walker} has remaining input, yielding walker")
+                yield walker
             return
 
         if walker.should_start_transition(token):
@@ -225,10 +232,6 @@ class StateMachine(TokenAcceptor):
                 if next_walker.should_start_transition(token):
                     yield from self.advance_walker(next_walker, token)
             return
-
-        if walker.remaining_input:
-            logger.debug("Yielding walker upstream for partial matching")
-            yield walker
 
     @classmethod
     def advance_all_walkers(

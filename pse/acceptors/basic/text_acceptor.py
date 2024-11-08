@@ -108,9 +108,6 @@ class TextWalker(StateMachineWalker):
         should_start_transition = remaining_text.startswith(token) or token.startswith(
             remaining_text
         )
-        logger.debug(
-            f"{self} should {'' if should_start_transition else 'not '}start transition {repr(token)}"
-        )
 
         return should_start_transition
 

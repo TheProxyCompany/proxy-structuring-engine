@@ -342,6 +342,6 @@ def test_max_whitespace_exceeded():
     ]  # five spaces
     assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
     advanced_walkers = [
-        walker for _, walker in StateMachine.advance_all_walkers(walkers, " ")
+        walker for _, walker in StateMachine.advance_all_walkers(advanced_walkers, " ")
     ]  # one more space
     assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
