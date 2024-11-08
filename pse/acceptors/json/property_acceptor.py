@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 from typing import Tuple, Optional, Any, List, Type
 import logging
 
@@ -69,23 +68,21 @@ class PropertyWalker(SequenceWalker):
         self.prop_name = ""
         self.prop_value: Optional[Any] = None
 
-    def should_complete_transition(
-        self, transition_value: Any, is_end_state: bool
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition by setting the property name and value.
-
-        Args:
-            transition_value (Any): The value transitioned with.
-            target_state (Any): The target state after transition.
-            is_end_state (bool): Indicates if the transition leads to an end state.
 
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
+        if not self.transition_walker or self.target_state is None:
+            return False
+
+        transition_value = self.transition_walker.raw_value
+
         if self.target_state == 1:
             self.prop_name = transition_value
-        elif is_end_state:
+        elif self.target_state in self.acceptor.end_states:
             self.prop_value = transition_value
         return True
 
@@ -119,4 +116,6 @@ class PropertyWalker(SequenceWalker):
         if not self.prop_name:
             return None
 
-        return json.dumps(self.get_current_value())
+        if not self.prop_value:
+            return f"{self.prop_name}:"
+        return f"{self.prop_name}: {self.prop_value}"

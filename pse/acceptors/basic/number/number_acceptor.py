@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Union, Type
+from typing import Iterable, Optional, Union, Type
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
@@ -108,11 +108,7 @@ class NumberWalker(StateMachineWalker):
 
         return reached_accept_state
 
-    def should_complete_transition(
-        self,
-        transition_value: Any,
-        is_end_state: bool
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition.
 
@@ -124,7 +120,6 @@ class NumberWalker(StateMachineWalker):
         Returns:
             bool: Success of the transition.
         """
-        logger.debug(f"{self} transitioning with {repr(transition_value)}")
         self._accepts_remaining_input = True
 
-        return True
+        return super().should_complete_transition()

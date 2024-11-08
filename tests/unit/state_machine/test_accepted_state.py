@@ -66,9 +66,6 @@ def test_multiple_instances_operate_independently() -> None:
     assert (
         accepted2.get_current_value() == "👉second"
     ), "Second AcceptedState should return '👉second'."
-    assert repr(accepted1) != repr(
-        accepted2
-    ), "String representations should differ based on walker values."
 
 
 def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> None:

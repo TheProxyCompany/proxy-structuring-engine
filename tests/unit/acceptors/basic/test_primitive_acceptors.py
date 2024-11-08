@@ -3,6 +3,7 @@ from pse.acceptors.basic.primitive_acceptors import (
     BooleanAcceptor,
     NullAcceptor,
 )
+from pse.state_machine.state_machine import StateMachine
 from pse.state_machine.walker import Walker
 from typing import Iterable
 
@@ -20,9 +21,9 @@ def null_acceptor():
 
 
 # Helper function to process input for BooleanAcceptor
-def process_input(acceptor, token: str) -> Iterable[Walker]:
+def process_input(acceptor: StateMachine, token: str) -> Iterable[Walker]:
     walkers = acceptor.get_walkers()
-    return acceptor.advance_all(walkers, token)
+    return [walker for _, walker in acceptor.advance_all_walkers(walkers, token)]
 
 
 # Test for BooleanAcceptor

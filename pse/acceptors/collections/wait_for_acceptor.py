@@ -159,12 +159,3 @@ class WaitForWalker(Walker):
             str: Description of the waiting state.
         """
         return repr(self.acceptor.wait_for_acceptor)
-
-    def __repr__(self) -> str:
-        """
-        Provide a string representation of the WaitForAcceptor Walker.
-
-        Returns:
-            str: The string representation of the walker.
-        """
-        return f"WaitForAcceptor.Walker(walkers={self.walkers})"

@@ -25,7 +25,7 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     """
     walkers = list(acceptor.get_walkers())
     for char in json_string:
-        walkers = list(acceptor.advance_all(walkers, char))
+        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
         raise AssertionError("No walker in accepted state")
     # Assuming the first accepted walker contains the parsed value

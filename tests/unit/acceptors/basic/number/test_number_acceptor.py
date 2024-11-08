@@ -28,7 +28,9 @@ def parse_number(acceptor: NumberAcceptor):
         walkers = list(acceptor.get_walkers())
         for char in json_string:
             print(f"char: {char} and walkers: {walkers}")
-            walkers = list(acceptor.advance_all(walkers, char))
+            walkers = [
+                walker for _, walker in acceptor.advance_all_walkers(walkers, char)
+            ]
 
         assert (
             len(walkers) > 0
@@ -224,7 +226,9 @@ def test_number_acceptor_with_state_machine_float():
 
     walkers = sm.get_walkers()
     number_string = "-123.456"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
     for walker in walkers:
         assert (
             walker.get_current_value() == -123.456
@@ -252,7 +256,9 @@ def test_number_acceptor_with_state_machine_float_complex():
 
     walkers = sm.get_walkers()
     number_string = "-123.456"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
     for walker in walkers:
         assert (
             walker.get_current_value() == -123.456
@@ -260,7 +266,9 @@ def test_number_acceptor_with_state_machine_float_complex():
         break
     remaining_string = " I'll never be free."
     for char in remaining_string:
-        walkers = list(sm.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in sm.advance_all_walkers(walkers, char)
+        ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -279,7 +287,9 @@ def test_number_acceptor_with_state_machine_exponential():
 
     walkers = sm.get_walkers()
     number_string = "6.022e23"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -303,7 +313,9 @@ def test_number_acceptor_with_state_machine_incomplete():
 
     walkers = sm.get_walkers()
     number_string = "123.45e"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -325,7 +337,9 @@ def test_number_acceptor_with_state_machine_invalid():
 
     walkers = sm.get_walkers()
     number_string = "12abc34"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -350,7 +364,9 @@ def test_number_acceptor_in_state_machine_sequence():
 
     walkers = sm.get_walkers()
     input_string = "Value: 42"
-    walkers = sm.advance_all(walkers, input_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -374,7 +390,9 @@ def test_number_acceptor_with_large_number():
 
     walkers = sm.get_walkers()
     number_string = "12345678901234567890"
-    walkers = list(sm.advance_all(walkers, number_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -398,7 +416,9 @@ def test_number_acceptor_with_leading_zeros():
 
     walkers = sm.get_walkers()
     number_string = "007"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -422,7 +442,9 @@ def test_number_acceptor_with_zero():
 
     walkers = list(sm.get_walkers())
     number_string = "0"
-    walkers = list(sm.advance_all(walkers, number_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -444,7 +466,9 @@ def test_number_acceptor_with_multiple_decimal_points():
 
     walkers = sm.get_walkers()
     number_string = "1.2.3"
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -466,7 +490,9 @@ def test_number_acceptor_with_empty_input():
 
     walkers = sm.get_walkers()
     number_string = ""
-    walkers = sm.advance_all(walkers, number_string)
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, number_string)
+    ]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -499,7 +525,9 @@ def test_number_acceptor_multi_char_advancement(input_string, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    walkers = list(sm.advance_all(walkers, input_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
     print(f"Walkers after advancing: {walkers}")
 
     assert any(
@@ -537,7 +565,9 @@ def test_float_acceptor_single_char_advancement(input_string, expected_value):
     walkers = list(sm.get_walkers())
 
     for char in input_string:
-        walkers = list(sm.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in sm.advance_all_walkers(walkers, char)
+        ]
         print(f"Walkers after advancing '{char}': {walkers}")
 
     assert any(
@@ -577,7 +607,9 @@ def test_float_acceptor_invalid_input():
 
     for input_string in invalid_inputs:
         walkers = list(sm.get_walkers())
-        walkers = list(sm.advance_all(walkers, input_string))
+        walkers = [
+            walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+        ]
         print(f"Testing invalid input '{input_string}': Walkers: {walkers}")
         assert not any(
             walker.has_reached_accept_state() for walker in walkers
@@ -597,7 +629,9 @@ def test_number_acceptor_empty_input():
     input_string = ""
 
     walkers = list(sm.get_walkers())
-    walkers = list(sm.advance_all(walkers, input_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
     print(f"Walkers after empty input: {walkers}")
 
     assert not any(
@@ -618,7 +652,9 @@ def test_float_acceptor_partial_input():
     input_string = "12.3a4"
 
     walkers = list(sm.get_walkers())
-    walkers = list(sm.advance_all(walkers, input_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
     print(f"Walkers after partial invalid input '{input_string}': {walkers}")
 
     assert not any(
@@ -642,7 +678,9 @@ def test_float_acceptor_in_state_machine_sequence():
     input_string = "Number: 3.14159"
 
     walkers = list(sm.get_walkers())
-    walkers = list(sm.advance_all(walkers, input_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
     print(f"Walkers after advancing with input '{input_string}': {walkers}")
 
     assert any(
@@ -673,7 +711,9 @@ def test_float_acceptor_char_by_char_in_state_machine():
     input_string = "Value: 0.0001"
     walkers = list(sm.get_walkers())
     for char in input_string:
-        walkers = list(sm.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in sm.advance_all_walkers(walkers, char)
+        ]
         print(f"Walkers after advancing '{char}': {walkers}")
 
     assert any(
@@ -702,7 +742,9 @@ def test_float_acceptor_zero():
 
     for input_string, expected_value in zip(inputs, expected_values):
         walkers = list(sm.get_walkers())
-        walkers = list(sm.advance_all(walkers, input_string))
+        walkers = [
+            walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+        ]
         print(f"Walkers after advancing with '{input_string}': {walkers}")
 
         assert any(
@@ -729,7 +771,9 @@ def test_float_acceptor_large_number():
     expected_value = 1.2345678901234568e19  # Adjusted for float precision
 
     walkers = list(sm.get_walkers())
-    walkers = list(sm.advance_all(walkers, input_string))
+    walkers = [
+        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+    ]
     print(f"Walkers after advancing large number '{input_string}': {walkers}")
 
     assert any(

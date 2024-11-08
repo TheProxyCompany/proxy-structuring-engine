@@ -127,11 +127,7 @@ class Walker(ABC):
 
         return True
 
-    def should_complete_transition(
-        self,
-        transition_value: Any,
-        is_end_state: bool,
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """Determine if the transition should complete with the given parameters.
 
         Args:
@@ -142,9 +138,8 @@ class Walker(ABC):
             True if the transition should complete; False otherwise.
         """
         if self.transition_walker:
-            return self.transition_walker.should_complete_transition(
-                transition_value, is_end_state
-            )
+            return self.transition_walker.should_complete_transition()
+
         # By default, we can complete the transition.
         return True
 
@@ -159,35 +154,35 @@ class Walker(ABC):
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
-    def transition(self) -> Walker:
+    def transition(self, transition_walker: Walker) -> Walker:
         """Advance the walker to the next state.
 
+        Args:
+            transition_walker: The walker handling the current transition.
+
         Returns:
-            The walker instance after the transition.
+            A new Walker instance after the transition.
         """
-        if not self.transition_walker or self.target_state is None:
-            logger.debug("No transition to complete: %s", self)
-            return self
+        clone = self.clone()
+        clone.transition_walker = transition_walker
+        clone.remaining_input = transition_walker.remaining_input
+        clone.consumed_character_count += transition_walker.consumed_character_count
+        clone.explored_edges.add(clone.current_edge)
 
-        self.explored_edges.add(self.current_edge)
-        logger.debug("Seen edges: %s", self._format_explored_edges())
+        if clone.should_complete_transition():
+            if transition_walker.has_reached_accept_state() and self.target_state:
+                clone.current_state = self.target_state
+                logger.debug("new walker: %s", clone)
+                if not transition_walker.can_accept_more_input():
+                    clone.accepted_history.append(transition_walker)
+                    clone.transition_walker = None
+                    clone.target_state = None
 
-        if self.transition_walker.has_reached_accept_state():
-            self.current_state = self.target_state
-            logger.debug("%s transitioned to state %s", self, self.current_state)
+            if clone.current_state in clone.acceptor.end_states:
+                from pse.state_machine.accepted_state import AcceptedState
+                return AcceptedState(clone)
 
-            if not self.transition_walker.can_accept_more_input():
-                self.accepted_history.append(self.transition_walker)
-                self.transition_walker = None
-                self.target_state = None
-
-        if self.current_state in self.acceptor.end_states:
-            from pse.state_machine.accepted_state import AcceptedState
-
-            logger.debug("Walker in accepted state")
-            return AcceptedState(self)
-
-        return self
+        return clone
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).
@@ -294,13 +289,13 @@ class Walker(ABC):
         for from_state, to_state, edge_value in sorted(
             self.explored_edges,
             key=lambda x: (
-                float("inf") if x[0] == "$" else x[0],
-                float("inf") if x[1] == "$" else x[1],
                 x[2],
+                str(x[0]) if x[0] != "$" else "End",
+                str(x[1]) if x[1] != "$" else "End",
             ),
         ):
-            to_state_display = "End" if to_state == "$" else to_state
-            edge_line = f"({from_state}) --[{repr(edge_value)}]--> ({to_state_display})"
+            to_state_display = "End" if to_state == "End" else to_state
+            edge_line = f"({from_state}) --{repr(edge_value)}--> ({to_state_display})"
             edge_lines.append(edge_line)
         return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
 
@@ -383,15 +378,10 @@ class Walker(ABC):
         """
 
         def _format_state_info() -> str:
-            if (
-                self.current_state == self.acceptor.initial_state
-                and not self.target_state
-            ):
-                return ""
             state_info = f"State: {self.current_state}"
             return (
                 f"{state_info} ➔ {self.target_state}"
-                if self.target_state
+                if self.target_state and self.current_state != self.target_state
                 else state_info
             )
 
@@ -424,7 +414,7 @@ class Walker(ABC):
             accumulated_value = self.raw_value or self.get_current_value() or ""
             return (
                 f"Current edge: ({self.current_state}) "
-                f"--[{str(accumulated_value)}]--> ({to_state_display})"
+                f"--{repr(accumulated_value)}--> ({to_state_display})"
             )
 
         def _format_transition_info() -> str:
@@ -472,5 +462,6 @@ class Walker(ABC):
                 multiline_parts.extend([indent + line for line in part_lines])
             else:
                 multiline_parts.append(indent + part)
+
         multiline_parts.append("}")
         return "\n".join(multiline_parts)

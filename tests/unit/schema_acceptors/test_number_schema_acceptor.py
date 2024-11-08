@@ -1,4 +1,6 @@
 import pytest
+from typing import Any, Dict
+
 from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor, NumberSchemaWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
@@ -13,11 +15,11 @@ from pse.state_machine.state_machine import StateMachine
         (5, False),
     ],
 )
-def test_validate_value_minimum(value, expected):
+def test_validate_value_minimum(value: float, expected: bool) -> None:
     """
     Test that 'minimum' constraint is enforced correctly.
     """
-    schema = {"type": "number", "minimum": 10}
+    schema: Dict[str, Any] = {"type": "number", "minimum": 10}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -32,11 +34,11 @@ def test_validate_value_minimum(value, expected):
         (5, False),
     ],
 )
-def test_validate_value_exclusive_minimum(value, expected):
+def test_validate_value_exclusive_minimum(value: float, expected: bool) -> None:
     """
     Test that 'exclusiveMinimum' constraint is enforced correctly.
     """
-    schema = {"type": "number", "exclusiveMinimum": 10}
+    schema: Dict[str, Any] = {"type": "number", "exclusiveMinimum": 10}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -51,11 +53,11 @@ def test_validate_value_exclusive_minimum(value, expected):
         (25, False),
     ],
 )
-def test_validate_value_maximum(value, expected):
+def test_validate_value_maximum(value: float, expected: bool) -> None:
     """
     Test that 'maximum' constraint is enforced correctly.
     """
-    schema = {"type": "number", "maximum": 20}
+    schema: Dict[str, Any] = {"type": "number", "maximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -70,11 +72,11 @@ def test_validate_value_maximum(value, expected):
         (25, False),
     ],
 )
-def test_validate_value_exclusive_maximum(value, expected):
+def test_validate_value_exclusive_maximum(value: float, expected: bool) -> None:
     """
     Test that 'exclusiveMaximum' constraint is enforced correctly.
     """
-    schema = {"type": "number", "exclusiveMaximum": 20}
+    schema: Dict[str, Any] = {"type": "number", "exclusiveMaximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -90,11 +92,11 @@ def test_validate_value_exclusive_maximum(value, expected):
         (17.5, False),
     ],
 )
-def test_validate_value_multiple_of(value, expected):
+def test_validate_value_multiple_of(value: float, expected: bool) -> None:
     """
     Test that 'multipleOf' constraint is enforced correctly.
     """
-    schema = {"type": "number", "multipleOf": 5}
+    schema: Dict[str, Any] = {"type": "number", "multipleOf": 5}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -109,25 +111,25 @@ def test_validate_value_multiple_of(value, expected):
         ("5", False),
     ],
 )
-def test_complete_transition_with_validation(value_str, expected):
+def test_complete_transition_with_validation(value_str: str, expected: bool) -> None:
     """
     Test complete_transition method with validation.
     Ensures that valid values are accepted and invalid values are rejected.
     """
-    schema = {"type": "number", "minimum": 10, "maximum": 20}
+    schema: Dict[str, Any] = {"type": "number", "minimum": 10, "maximum": 20}
     acceptor = NumberSchemaAcceptor(schema)
     walker = NumberSchemaWalker(acceptor)
-    result = walker.should_complete_transition(value_str, True)
+    result = walker.should_complete_transition()
     assert (
         result == expected
     ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by complete_transition."
 
 
-def test_start_transition_integer_constraints():
+def test_start_transition_integer_constraints() -> None:
     """
     Test that transitions to state 4 are blocked when type is 'integer' and current state is 3.
     """
-    schema = {"type": "integer"}
+    schema: Dict[str, Any] = {"type": "integer"}
     acceptor = NumberSchemaAcceptor(schema)
     walker = NumberSchemaWalker(acceptor)
     walker.current_state = 3
@@ -135,11 +137,11 @@ def test_start_transition_integer_constraints():
     assert not result, "Transition to state 4 should be blocked for 'integer' type when current_state is 3."
 
 
-def test_start_transition_non_integer():
+def test_start_transition_non_integer() -> None:
     """
     Test that transitions to state 4 are allowed when type is 'number' and current state is 3.
     """
-    schema = {"type": "number"}
+    schema: Dict[str, Any] = {"type": "number"}
     acceptor = NumberSchemaAcceptor(schema)
     walker = NumberSchemaWalker(acceptor)
     walker.current_state = 3
@@ -155,11 +157,11 @@ def test_start_transition_non_integer():
         ("10", False),
     ],
 )
-def test_validate_value_integer_type(value, expected):
+def test_validate_value_integer_type(value: Any, expected: bool) -> None:
     """
     Test that only integer values are considered valid when type is 'integer'.
     """
-    schema = {"type": "integer"}
+    schema: Dict[str, Any] = {"type": "integer"}
     acceptor = NumberSchemaAcceptor(schema)
     assert (
         acceptor.validate_value(value) == expected
@@ -173,12 +175,12 @@ def test_validate_value_integer_type(value, expected):
         ('{"value": 25}', False),
     ],
 )
-def test_number_with_object_acceptor(json_input, expected):
+def test_number_with_object_acceptor(json_input: str, expected: bool) -> None:
     """
     Test NumberSchemaAcceptor within an ObjectSchemaAcceptor.
     Ensures that numeric values in objects adhere to schema constraints.
     """
-    schema = {
+    schema: Dict[str, Any] = {
         "type": "object",
         "properties": {
             "value": {
@@ -194,11 +196,11 @@ def test_number_with_object_acceptor(json_input, expected):
 
     walkers = acceptor.get_walkers()
     for char in json_input:
-        walkers = acceptor.advance_all(walkers, char)
+        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
         if not walkers:
             break
 
-    is_accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    is_accepted: bool = any(walker.has_reached_accept_state() for walker in walkers)
     assert (
         is_accepted == expected
     ), f"JSON input '{json_input}' should be {'accepted' if expected else 'rejected'} by ObjectSchemaAcceptor."
@@ -211,12 +213,12 @@ def test_number_with_object_acceptor(json_input, expected):
         ("The number is 5", False),
     ],
 )
-def test_number_with_text_acceptor(input_string, expected):
+def test_number_with_text_acceptor(input_string: str, expected: bool) -> None:
     """
     Test NumberSchemaAcceptor in combination with TextAcceptor.
     Ensures that numeric values within text are correctly validated.
     """
-    schema = {"type": "number", "minimum": 10, "maximum": 50}
+    schema: Dict[str, Any] = {"type": "number", "minimum": 10, "maximum": 50}
     number_acceptor = NumberSchemaAcceptor(schema)
     text_acceptor = TextAcceptor("The number is ")
 
@@ -231,11 +233,11 @@ def test_number_with_text_acceptor(input_string, expected):
 
     walkers = state_machine.get_walkers()
     for char in input_string:
-        walkers = state_machine.advance_all(walkers, char)
+        walkers = [walker for _, walker in state_machine.advance_all_walkers(walkers, char)]
         if not walkers:
             break
 
-    is_accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    is_accepted: bool = any(walker.has_reached_accept_state() for walker in walkers)
     assert (
         is_accepted == expected
     ), f"Input '{input_string}' should be {'accepted' if expected else 'rejected'} by state machine."
@@ -250,15 +252,15 @@ def test_number_with_text_acceptor(input_string, expected):
         ("25", False),
     ],
 )
-def test_number_with_walker_validation(value_str, expected):
+def test_number_with_walker_validation(value_str: str, expected: bool) -> None:
     """
     Test NumberSchemaAcceptor's walker validation in various scenarios.
     Ensures that walker correctly validates numbers based on schema constraints.
     """
-    schema = {"type": "number", "minimum": 10, "maximum": 100, "multipleOf": 10}
+    schema: Dict[str, Any] = {"type": "number", "minimum": 10, "maximum": 100, "multipleOf": 10}
     acceptor = NumberSchemaAcceptor(schema)
     walker = NumberSchemaWalker(acceptor)
-    result = walker.should_complete_transition(value_str, True)
+    result = walker.should_complete_transition()
     assert (
         result == expected
     ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by walker validation."

@@ -60,7 +60,7 @@ class TextAcceptor(StateMachine):
         Returns:
             str: A string representation of the TextAcceptor.
         """
-        return f"TextAcceptor(matching={repr(self.text)})"
+        return f"TextAcceptor(👉{repr(self.text)})"
 
 
 class TextWalker(StateMachineWalker):
@@ -114,13 +114,14 @@ class TextWalker(StateMachineWalker):
 
         return should_start_transition
 
-    def should_complete_transition(
-        self, transition_value: str, is_end_state: bool
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """
         Complete the transition if the transition value matches the remaining text.
         """
-        return transition_value == self.acceptor.text[self.consumed_character_count :]
+        if not self.transition_walker:
+            return False
+
+        return self.transition_walker.raw_value == self.acceptor.text[self.consumed_character_count :]
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         """
@@ -215,20 +216,3 @@ class TextWalker(StateMachineWalker):
             self.consumed_character_count > 0
             and self.consumed_character_count < len(self.acceptor.text)
         )
-
-    def __repr__(self) -> str:
-        """
-        Provide a string representation of the Walker.
-
-        Returns:
-            str: A string representation of the Walker.
-        """
-        value = (
-            f"{self.acceptor.text[:self.consumed_character_count]}👉{self.acceptor.text[self.consumed_character_count:]}"
-            if self.consumed_character_count < len(self.acceptor.text)
-            else self.acceptor.text
-        )
-        if self.consumed_character_count == len(self.acceptor.text):
-            return f"{self.acceptor}"
-        else:
-            return f"Text.Walker(value=`{value}`)"

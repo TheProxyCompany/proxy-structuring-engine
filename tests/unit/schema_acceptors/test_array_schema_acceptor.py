@@ -28,7 +28,7 @@ def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> List[Any]:
     """
     walkers = list(acceptor.get_walkers())
     for char in json_string:
-        walkers = list(acceptor.advance_all(walkers, char))
+        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
         raise JSONParsingError(
             "Invalid JSON array or schema constraints not met.", len(json_string)

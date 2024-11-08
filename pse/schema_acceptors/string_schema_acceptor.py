@@ -1,7 +1,7 @@
 from __future__ import annotations
-import re
 import json
-from typing import Callable, Optional
+import re
+from typing import Callable, Optional, Any
 
 from pse.util.errors import SchemaNotImplementedError
 from pse.acceptors.json.string_acceptor import StringAcceptor, StringWalker
@@ -117,7 +117,7 @@ class StringSchemaWalker(StringWalker):
         self.acceptor = acceptor
         self.is_escaping = False
 
-    def should_complete_transition(self, transition_value: str, is_end_state: bool) -> bool:
+    def should_complete_transition(self) -> bool:
         in_string_content = self.is_in_string_content()
         if (
             not in_string_content
@@ -126,20 +126,12 @@ class StringSchemaWalker(StringWalker):
         ):
             self.acceptor.start_hook()
 
-        super().should_complete_transition(transition_value, is_end_state)
-        logger.debug(
-            f"transition_value: {transition_value}, target_state: {self.target_state}, is_end_state: {is_end_state}"
-        )
-
         # Only update partial_value when processing actual string content
-        if in_string_content and not is_end_state:
+        if in_string_content and self.target_state and self.target_state not in self.acceptor.end_states:
             if self.is_escaping:
-                self._raw_value = (self._raw_value or "") + transition_value
                 self.is_escaping = False
-            elif transition_value == "\\":
+            elif self.transition_walker and self.transition_walker.raw_value == "\\":
                 self.is_escaping = True
-            else:
-                self._raw_value = (self._raw_value or "") + transition_value
 
             if (
                 self.acceptor.pattern
@@ -148,16 +140,11 @@ class StringSchemaWalker(StringWalker):
             ):
                 return False  # Reject early if pattern can't match
 
-        if is_end_state:
+        if self.target_state and self.target_state in self.acceptor.end_states:
             if self.acceptor.end_hook:
                 self.acceptor.end_hook()
-            try:
-                # Unescape the JSON string
-                value = self.get_current_value()
-            except json.JSONDecodeError:
-                return False
-            if self.acceptor.validate_value(value):
-                self.value = value
+
+            if self.acceptor.validate_value(self.get_current_value()):
                 return True
             else:
                 return False
@@ -180,3 +167,6 @@ class StringSchemaWalker(StringWalker):
             match = regex.match(pattern_str, s, partial=True)
             return match is not None
         return True  # If no pattern, always return True
+
+    def get_current_value(self) -> Any:
+        return json.loads(self.raw_value) if self.raw_value else None

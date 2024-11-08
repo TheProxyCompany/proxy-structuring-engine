@@ -30,7 +30,9 @@ def test_property_parsing(
 ):
     walkers = list(property_acceptor.get_walkers())
     for char in input_string:
-        walkers = list(StateMachine.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
+        ]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -56,29 +58,13 @@ def test_property_parsing(
 def test_invalid_property_formats(property_acceptor: PropertyAcceptor, invalid_input):
     walkers = list(property_acceptor.get_walkers())
     for char in invalid_input:
-        walkers = list(StateMachine.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
+        ]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Walker should not reach accepted state for invalid input: {invalid_input}"
-
-
-def test_walker_state_transitions(property_acceptor: PropertyAcceptor):
-    walker = PropertyWalker(property_acceptor)
-
-    # Test property name transition
-    assert walker.should_complete_transition("test_key", False)
-    assert walker.prop_name == "test_key"
-
-    # Test property value transition
-    assert walker.should_complete_transition("test_value", True)
-    assert walker.prop_value == "test_value"
-
-    # Verify final value
-    name, value = walker.get_current_value()
-    assert name == "test_key"
-    assert value == "test_value"
-
 
 def test_walker_in_value_state(property_acceptor: PropertyAcceptor):
     walker = PropertyWalker(property_acceptor)

@@ -78,18 +78,9 @@ class ArrayWalker(StateMachineWalker):
         cloned_walker.value = self.value[:]
         return cloned_walker
 
-    def should_complete_transition(
-        self,
-        transition_value: Any,
-        is_end_state: bool,
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition by updating the accumulated values.
-
-        Args:
-            transition_value (Any): The value transitioned with.
-            target_state (StateMachineAcceptor.StateType): The target state after the transition.
-            is_end_state (bool): Indicates if the transition leads to an end state.
 
         Returns:
             bool: True if the transition was successful, False otherwise.
@@ -97,9 +88,9 @@ class ArrayWalker(StateMachineWalker):
         if (
             self.transition_walker
             and self.transition_walker.target_state == 3
-            and transition_value is not None
+            and self.transition_walker.raw_value is not None
         ):
-            self.value.append(transition_value)
+            self.value.append(self.transition_walker.raw_value)
         return True
 
     def get_current_value(self) -> Any:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Iterable, Optional
-from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
@@ -27,23 +26,13 @@ class BooleanAcceptor(StateMachine):
         }
         super().__init__(graph, walker_type=BooleanWalker)
 
-    def get_walkers(self) -> Iterable[Walker]:
-        yield self._walker(self)
-
 
 class BooleanWalker(StateMachineWalker):
     """
     Walker for BooleanAcceptor to track parsing state and value.
     """
 
-    def __init__(self, acceptor: BooleanAcceptor) -> None:
-        super().__init__(acceptor)
-
-    def should_complete_transition(
-        self,
-        transition_value: str,
-        is_end_state: bool,
-    ) -> bool:
+    def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition.
 
@@ -55,10 +44,13 @@ class BooleanWalker(StateMachineWalker):
         Returns:
             bool: Success of the transition.
         """
-        if is_end_state:
-            # Assign True if transition_value is "true", else False
-            self._raw_value = transition_value
-        return True
+        if (
+            self.target_state
+            and self.target_state in self.acceptor.end_states
+            and self.transition_walker
+        ):
+            self._raw_value = self.transition_walker.raw_value
+        return self._raw_value == "true" or self._raw_value == "false"
 
     def get_current_value(self) -> Optional[bool]:
         """
@@ -80,9 +72,6 @@ class NullAcceptor(TextAcceptor):
         Initialize the NullAcceptor with the text 'null'.
         """
         super().__init__("null")
-
-    def __repr__(self) -> str:
-        return "NullAcceptor()"
 
     def get_walkers(self) -> Iterable[NullWalker]:
         yield NullWalker(self)

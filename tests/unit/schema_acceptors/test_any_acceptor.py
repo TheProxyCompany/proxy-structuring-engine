@@ -26,8 +26,8 @@ def parse_input(acceptor: AnySchemaAcceptor, json_string: str) -> Any:
         JSONParsingError: If the JSON input is invalid or does not match any schema.
     """
     walkers = acceptor.get_walkers()
-    walkers = acceptor.advance_all(walkers, json_string)
-    for walker in walkers:
+    walkers = acceptor.advance_all_walkers(walkers, json_string)
+    for _, walker in walkers:
         if walker.has_reached_accept_state():
             return walker.get_current_value()
 

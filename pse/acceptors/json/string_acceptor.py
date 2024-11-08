@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 from typing import Optional, Type
 from pse.state_machine.state_machine import (
     StateMachine,
@@ -105,25 +104,21 @@ class StringWalker(StateMachineWalker):
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
-    def should_complete_transition(
-        self, transition_value: str, is_end_state: bool
-    ) -> bool:
-        """
-        Handle the completion of a transition.
+    # def should_complete_transition(self) -> bool:
+    #     """
+    #     Handle the completion of a transition.
 
-        Args:
-            transition_value (str): The value transitioned with.
-            target_state (Any): The target state after transition.
-            is_end_state (bool): Indicates if the transition leads to an end state.
+    #     Returns:
+    #         bool: Success of the transition.
+    #     """
+    #     if not self.transition_walker or self.target_state is None:
+    #         return False
 
-        Returns:
-            bool: Success of the transition.
-        """
-        if is_end_state and self.raw_value:
-            try:
-                self.value = json.loads(self.raw_value)
-            except json.JSONDecodeError:
-                self._accepts_remaining_input = False
-                return False
+    #     if self.target_state in self.acceptor.end_states and self.transition_walker.raw_value:
+    #         try:
+    #             self.value = json.loads(self.transition_walker.raw_value)
+    #         except json.JSONDecodeError:
+    #             self._accepts_remaining_input = False
+    #             return False
 
-        return True
+    #     return True

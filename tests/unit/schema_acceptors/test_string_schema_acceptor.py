@@ -166,7 +166,9 @@ def test_walker_rejects_on_pattern_mismatch_during_parsing():
     input_string = '"abx'
 
     for idx, char in enumerate(input_string):
-        walkers = list(acceptor.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in acceptor.advance_all_walkers(walkers, char)
+        ]
         if idx == len(input_string) - 1:
             assert (
                 len(walkers) == 0
@@ -180,67 +182,89 @@ def test_walker_rejects_on_pattern_mismatch_during_parsing():
     assert not accepted, "Walker should have rejected input due to pattern mismatch"
 
 
-def test_walker_accepts_on_pattern_match_during_parsing():
+def test_walker_accepts_on_pattern_match_during_parsing() -> None:
     """
     Test that the walker accepts input when pattern matches during parsing.
+
+    Ensures that the acceptor correctly accepts input that matches the pattern.
     """
-    schema = {"pattern": r"abc.*"}
+
+    schema: dict = {"pattern": r"abc.*"}
     acceptor = StringSchemaAcceptor(schema=schema)
     walkers = acceptor.get_walkers()
-    input_string = '"abcd"'
+    input_string: str = '"abcd"'
 
     for idx, char in enumerate(input_string):
-        walkers = list(acceptor.advance_all(walkers, char))
+        walkers = [
+            walker for _, walker in acceptor.advance_all_walkers(walkers, char)
+        ]
         assert (
             len(walkers) > 0
         ), f"Walkers should not be empty after input '{input_string[:idx+1]}'"
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
-    assert accepted, "Walker should accept input as it matches pattern during parsing"
+    accepted: bool = any(walker.has_reached_accept_state() for walker in walkers)
+    assert accepted, "Walker should accept input as it matches pattern during parsing."
 
 
-def test_walker_start_transition_min_length_met():
+def test_walker_start_transition_min_length_met() -> None:
     """
-    Test that the acceptor accepts a string when min_length is met.
+    Test that the acceptor accepts a string when `min_length` is met.
+
+    Verifies that the acceptor correctly accepts strings that meet the minimum length requirement.
     """
-    schema = {"minLength": 3}
+
+    schema: dict = {"minLength": 3}
     acceptor = StringSchemaAcceptor(schema=schema)
-    input_string = '"abc"'  # length 3
+    input_string: str = '"abc"'  # length 3
 
     walkers = acceptor.get_walkers()
-    walkers = list(acceptor.advance_all(walkers, input_string))
+    advanced_walkers = [
+        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+    ]
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    accepted: bool = any(walker.has_reached_accept_state() for walker in advanced_walkers)
     assert accepted, "Walker should accept input when min_length is met."
 
 
-def test_walker_start_transition_min_length_not_met():
+def test_walker_start_transition_min_length_not_met() -> None:
     """
-    Test that the acceptor rejects a string when min_length is not met.
+    Test that the acceptor rejects a string when `min_length` is not met.
+
+    Ensures that the acceptor correctly rejects strings shorter than the minimum length.
     """
-    schema = {"minLength": 4}
+
+    schema: dict = {"minLength": 4}
     acceptor = StringSchemaAcceptor(schema=schema)
-    input_string = '"abc"'  # length 3, less than minLength 4
+    input_string: str = '"abc"'  # length 3, less than minLength 4
 
     walkers = acceptor.get_walkers()
-    walkers = list(acceptor.advance_all(walkers, input_string))
+    advanced_walkers = [
+        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+    ]
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    accepted: bool = any(
+        walker.has_reached_accept_state() for walker in advanced_walkers
+    )
     assert not accepted, "Walker should reject input when min_length is not met."
 
 
-def test_walker_start_transition_max_length_met():
+def test_walker_start_transition_max_length_met() -> None:
     """
-    Test that the acceptor accepts a string when max_length is met.
+    Test that the acceptor accepts a string when `max_length` is met.
+
+    Checks that the acceptor correctly accepts strings that meet the maximum length requirement.
     """
-    schema = {"maxLength": 5}
+
+    schema: dict = {"maxLength": 5}
     acceptor = StringSchemaAcceptor(schema=schema)
-    input_string = '"abcde"'  # length 5
+    input_string: str = '"abcde"'  # length 5
 
     walkers = acceptor.get_walkers()
-    walkers = list(acceptor.advance_all(walkers, input_string))
+    advanced_walkers = [
+        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+    ]
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    accepted: bool = any(walker.has_reached_accept_state() for walker in advanced_walkers)
     assert accepted, "Walker should accept input when max_length is met."
 
 
@@ -253,7 +277,9 @@ def test_walker_start_transition_max_length_exceeded():
     input_string = '"abcdef"'  # length 6, exceeds maxLength
 
     walkers = acceptor.get_walkers()
-    walkers = list(acceptor.advance_all(walkers, input_string))
+    advanced_walkers = [
+        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+    ]
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
+    accepted = any(walker.has_reached_accept_state() for walker in advanced_walkers)
     assert not accepted, "Walker should reject input when max_length is exceeded."

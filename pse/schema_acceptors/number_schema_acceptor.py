@@ -67,10 +67,10 @@ class NumberSchemaWalker(NumberWalker):
             return False
         return super().should_start_transition(transition_acceptor)
 
-    def should_complete_transition(self, transition_value, is_end_state) -> bool:
-        if not super().should_complete_transition(transition_value, is_end_state):
+    def should_complete_transition(self) -> bool:
+        if not super().should_complete_transition():
             return False
         # Only validate when there is no remaining input
-        if is_end_state and not self.remaining_input:
+        if self.target_state and self.target_state in self.acceptor.end_states and not self.remaining_input:
             return self.acceptor.validate_value(self.get_current_value())
         return True

@@ -13,9 +13,11 @@ def test_whitespace_acceptor_default():
     """Test WhitespaceAcceptor with default settings."""
     acceptor = WhitespaceAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "   "))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "   ")
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    for walker in advanced_walkers:
         if walker.has_reached_accept_state():
             assert walker.get_current_value() == "   "
 
@@ -26,14 +28,18 @@ def test_whitespace_acceptor_custom_min_whitespace():
     walkers = list(acceptor.get_walkers())
 
     # Input with one whitespace character, should not be accepted
-    walkers = list(StateMachine.advance_all(walkers, " "))
-    print(f"walkers: {walkers}")
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, " ")
+    ]
+    print(f"walkers: {advanced_walkers}")
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
     # Input with two whitespace characters, should be accepted
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "  "))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "  ")
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_custom_max_whitespace():
@@ -42,13 +48,17 @@ def test_whitespace_acceptor_custom_max_whitespace():
     walkers = list(acceptor.get_walkers())
 
     # Input exceeding max_whitespace, should not be accepted
-    walkers = list(StateMachine.advance_all(walkers, "    "))
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "    ")
+    ]
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
     # Input within max_whitespace, should be accepted
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "   "))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "   ")
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 @pytest.mark.parametrize(
@@ -65,9 +75,11 @@ def test_whitespace_acceptor_various_whitespace_characters(token, expected_value
     """Test WhitespaceAcceptor with different whitespace characters."""
     acceptor = WhitespaceAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, token))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, token)
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    for walker in advanced_walkers:
         if walker.has_reached_accept_state():
             assert walker.get_current_value() == expected_value
 
@@ -76,35 +88,45 @@ def test_whitespace_acceptor_non_whitespace_input():
     """Test WhitespaceAcceptor with non-whitespace input."""
     acceptor = WhitespaceAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "abc"))
-    assert len(walkers) == 0
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "abc")
+    ]
+    assert len(advanced_walkers) == 0
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
     acceptor = WhitespaceAcceptor(min_whitespace=1)
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "abc"))
-    assert len(walkers) == 0
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "abc")
+    ]
+    assert len(advanced_walkers) == 0
 
 
 def test_whitespace_acceptor_mixed_input():
     """Test WhitespaceAcceptor with mixed whitespace and non-whitespace input."""
     acceptor = WhitespaceAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "  abc"))
-    print(f"walkers: {walkers}")
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "  abc")
+    ]
+    print(f"walkers: {advanced_walkers}")
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
     # Should accept the whitespace part before the non-whitespace character
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "  "))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "  ")
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_exceeds_max_whitespace():
     """Test that WhitespaceAcceptor does not accept input exceeding max_whitespace."""
     acceptor = WhitespaceAcceptor(max_whitespace=5)
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "      "))  # Six spaces
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "      ")
+    ]  # Six spaces
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_long_whitespace_within_max():
@@ -112,8 +134,10 @@ def test_whitespace_acceptor_long_whitespace_within_max():
     acceptor = WhitespaceAcceptor(max_whitespace=10)
     token = " " * 10
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, token))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, token)
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_walker_get_value():
@@ -148,8 +172,10 @@ def test_whitespace_acceptor_integration_with_text_acceptor():
 
     acceptor = CombinedAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "   hello"))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "   hello")
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_integration_with_object_acceptor():
@@ -157,10 +183,12 @@ def test_whitespace_acceptor_integration_with_object_acceptor():
     token = '{ "key": "value", "number": 42 }'
     acceptor = ObjectAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, token))
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, token)
+    ]
 
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    for walker in advanced_walkers:
         if walker.has_reached_accept_state():
             obj = walker.get_current_value()
             assert obj == {"key": "value", "number": 42}
@@ -170,9 +198,11 @@ def test_whitespace_acceptor_with_no_whitespace():
     """Test WhitespaceAcceptor when there's no whitespace between tokens."""
     acceptor = WhitespaceAcceptor()
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, ""))
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "")
+    ]
     # Should not be accepted when min_whitespace > 0
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_partial_whitespace_input():
@@ -204,10 +234,12 @@ def test_whitespace_acceptor_advance_after_acceptance():
     """Test advancing walker after it has already been accepted."""
     acceptor = WhitespaceAcceptor()
     walkers = acceptor.get_walkers()
-    walkers = list(StateMachine.advance_all(walkers, "  "))
-    assert len(walkers) == 1
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "  ")
+    ]
+    assert len(advanced_walkers) == 1
     accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+        walker for walker in advanced_walkers if walker.has_reached_accept_state()
     ]
     assert len(accepted_walkers) == 1
     # Try advancing accepted walker
@@ -217,7 +249,7 @@ def test_whitespace_acceptor_advance_after_acceptance():
     assert len(next_walkers) == 1
 
     next_walkers: list[Walker] = []
-    for walker in walkers:
+    for walker in advanced_walkers:
         next_walkers.extend(walker.consume_token("    "))
     assert len(next_walkers) == 1
 
@@ -227,8 +259,7 @@ def test_whitespace_acceptor_no_remaining_input():
     acceptor = WhitespaceAcceptor()
     walker = WhitespaceWalker(acceptor)
     assert walker.remaining_input is None
-    walkers = list(walker.consume_token("   "))
-    for c in walkers:
+    for c in walker.consume_token("   "):
         if c.has_reached_accept_state():
             assert c.remaining_input is None
 
@@ -268,14 +299,18 @@ def test_whitespace_acceptor_state_machine():
     walkers = list(sm.get_walkers())
     assert len(walkers) == 2
     # we expect 2 walker, one for the whitespace and one for the next acceptor (since min_whitespace=0)
-    walkers = list(StateMachine.advance_all(walkers, "   hello"))
-    for walker in walkers:
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "   hello")
+    ]
+    for walker in advanced_walkers:
         if walker.has_reached_accept_state():
             assert walker.get_current_value() == "   hello"
     for char in "  world    ":
-        walkers = list(StateMachine.advance_all(walkers, char))
-    assert len(walkers) == 1
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        advanced_walkers = [
+            walker for _, walker in StateMachine.advance_all_walkers(advanced_walkers, char)
+        ]
+    assert len(advanced_walkers) == 1
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
 def test_whitespace_acceptor_sequence_acceptor():
@@ -289,9 +324,11 @@ def test_whitespace_acceptor_sequence_acceptor():
     ]
     sequence_acceptor = SequenceAcceptor(acceptors)
     walkers = list(sequence_acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, token))
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, token)
+    ]
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    for walker in advanced_walkers:
         if walker.has_reached_accept_state():
             assert walker.get_current_value() == '"test"   :   '
 
@@ -300,7 +337,11 @@ def test_max_whitespace_exceeded():
     """Test that WhitespaceAcceptor does not accept input exceeding max_whitespace."""
     acceptor = WhitespaceAcceptor(max_whitespace=5)
     walkers = list(acceptor.get_walkers())
-    walkers = list(StateMachine.advance_all(walkers, "     "))  # five spaces
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    walkers = list(StateMachine.advance_all(walkers, " "))  # one more space
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, "     ")
+    ]  # five spaces
+    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    advanced_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, " ")
+    ]  # one more space
+    assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)

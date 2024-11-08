@@ -59,10 +59,8 @@ class PropertySchemaWalker(PropertyWalker):
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
-    def should_complete_transition(
-        self, transition_value: str, is_end_state: bool
-    ) -> bool:
-        if not super().should_complete_transition(transition_value, is_end_state):
+    def should_complete_transition(self) -> bool:
+        if not super().should_complete_transition():
             return False
 
         hooks: Dict[str, Callable] = self.acceptor.prop_schema.get("__hooks", {})
@@ -70,9 +68,9 @@ class PropertySchemaWalker(PropertyWalker):
         if self.target_state == 4:
             if "value_start" in hooks:
                 hooks["value_start"](prop_name)
-        elif is_end_state:
+        elif self.target_state and self.target_state in self.acceptor.end_states:
             if "value_end" in hooks:
-                hooks["value_end"](prop_name, transition_value)
+                hooks["value_end"](prop_name, self.prop_value)
         return True
 
     def get_current_value(self):
