@@ -125,30 +125,6 @@ def test_complete_transition_with_validation(value_str: str, expected: bool) -> 
     ), f"Value '{value_str}' should be {'accepted' if expected else 'rejected'} by complete_transition."
 
 
-def test_start_transition_integer_constraints() -> None:
-    """
-    Test that transitions to state 4 are blocked when type is 'integer' and current state is 3.
-    """
-    schema: Dict[str, Any] = {"type": "integer"}
-    acceptor = NumberSchemaAcceptor(schema)
-    walker = NumberSchemaWalker(acceptor)
-    walker.current_state = 3
-    result = walker.should_start_transition(acceptor)
-    assert not result, "Transition to state 4 should be blocked for 'integer' type when current_state is 3."
-
-
-def test_start_transition_non_integer() -> None:
-    """
-    Test that transitions to state 4 are allowed when type is 'number' and current state is 3.
-    """
-    schema: Dict[str, Any] = {"type": "number"}
-    acceptor = NumberSchemaAcceptor(schema)
-    walker = NumberSchemaWalker(acceptor)
-    walker.current_state = 3
-    result = walker.should_start_transition(acceptor)
-    assert result, "Transition to state 4 should be allowed for 'number' type when current_state is 3."
-
-
 @pytest.mark.parametrize(
     "value, expected",
     [

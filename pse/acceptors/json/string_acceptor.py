@@ -103,22 +103,3 @@ class StringWalker(StateMachineWalker):
         """
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
-
-    # def should_complete_transition(self) -> bool:
-    #     """
-    #     Handle the completion of a transition.
-
-    #     Returns:
-    #         bool: Success of the transition.
-    #     """
-    #     if not self.transition_walker or self.target_state is None:
-    #         return False
-
-    #     if self.target_state in self.acceptor.end_states and self.transition_walker.raw_value:
-    #         try:
-    #             self.value = json.loads(self.transition_walker.raw_value)
-    #         except json.JSONDecodeError:
-    #             self._accepts_remaining_input = False
-    #             return False
-
-    #     return True

@@ -15,7 +15,6 @@ class IntegerAcceptor(CharacterAcceptor):
     def get_walkers(self) -> Iterable[IntegerWalker]:
         yield IntegerWalker(self)
 
-
 class IntegerWalker(CharacterWalker):
     """
     Walker for IntegerAcceptor.
@@ -24,20 +23,6 @@ class IntegerWalker(CharacterWalker):
     def __init__(self, acceptor: IntegerAcceptor, value: Optional[str] = None) -> None:
         super().__init__(acceptor, value)
         self.acceptor: IntegerAcceptor = acceptor
-        self._raw_value = value or ""
-
-    def can_accept_more_input(self) -> bool:
-        return self._accepts_remaining_input
-
-    def should_start_transition(self, token: str) -> bool:
-        if not token:
-            return False
-
-        if not token[0].isdigit():
-            self._accepts_remaining_input = False
-            return False
-
-        return True
 
     def should_complete_transition(self) -> bool:
         """
@@ -64,6 +49,9 @@ class IntegerWalker(CharacterWalker):
             return False
 
         return True
+
+    def get_current_value(self) -> str | None:
+        return self._parse_value(self._raw_value)
 
     def _parse_value(self, value: Any) -> Any:
         if self.acceptor.drop_leading_zeros:

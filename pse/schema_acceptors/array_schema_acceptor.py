@@ -59,9 +59,9 @@ class ArraySchemaWalker(ArrayWalker):
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
-    def should_start_transition(self, transition_acceptor, target_state) -> bool:
-        if self.current_state == 4 and target_state == 2:
+    def should_start_transition(self, token: str) -> bool:
+        if self.current_state == 4 and self.target_state == 2:
             return len(self.value) < self.acceptor.max_items()
-        if target_state == "$":
+        if self.target_state == "$":
             return len(self.value) >= self.acceptor.min_items()
         return True

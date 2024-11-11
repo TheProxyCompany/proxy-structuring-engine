@@ -19,7 +19,3 @@ target state, and a string representing the value traversed."""
 StateMachineGraph = Dict[StateType, List[EdgeType]]
 """The graph representation of the StateMachine, mapping each state to a list of its
 outgoing edges."""
-
-# Maximum lookahead depth for the StateMachine.
-MAX_LOOKAHEAD_DEPTH = 3
-"""The maximum lookahead depth for the StateMachine."""

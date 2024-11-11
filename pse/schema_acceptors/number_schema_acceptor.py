@@ -58,14 +58,14 @@ class NumberSchemaWalker(NumberWalker):
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
-    def should_start_transition(self, transition_acceptor):
+    def should_start_transition(self, token: str) -> bool:
         if (
             self.acceptor.is_integer
             and self.current_state == 3
             and self.target_state == 4
         ):
             return False
-        return super().should_start_transition(transition_acceptor)
+        return super().should_start_transition(token)
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():

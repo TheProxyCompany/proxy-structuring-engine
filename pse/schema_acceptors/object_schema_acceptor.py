@@ -66,10 +66,7 @@ class ObjectSchemaWalker(ObjectWalker):
         super().__init__(acceptor, current_state)
         self.acceptor = acceptor
 
-    def should_start_transition(
-        self,
-        transition_acceptor: PropertySchemaAcceptor,
-    ) -> bool:
+    def should_start_transition(self, token: str) -> bool:
         if self.target_state == "$":
             return all(
                 prop_name in self.value
@@ -77,7 +74,7 @@ class ObjectSchemaWalker(ObjectWalker):
             )
         if self.current_state == 2 and self.target_state == 3:
             # Check if the property name is already in the object
-            return transition_acceptor.prop_name not in self.value
+            return token not in self.value
         if self.current_state == 4 and self.target_state == 1:
             # Are all allowed properties already set?
             return len(self.value.keys()) < len(self.acceptor.properties)

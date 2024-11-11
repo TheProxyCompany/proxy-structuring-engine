@@ -127,21 +127,3 @@ class StringCharacterWalker(Walker):
             bool: True if the walker has a value, False otherwise.
         """
         return self._raw_value is not None
-
-    def __repr__(self) -> str:
-        """
-        Return an unambiguous string representation of the instance.
-
-        Returns:
-            str: The string representation including value and acceptor.
-
-        Example:
-            StringCharacterAcceptor.Walker("valid_value | remaining_input='abc' | state[0]")
-        """
-        components = []
-        if self.get_current_value():
-            components.append(f"value='{self.get_current_value()}'")
-        if self.remaining_input:
-            components.append(f"remaining_input='{self.remaining_input}'")
-
-        return f"String.Walker({' | '.join(components)})"

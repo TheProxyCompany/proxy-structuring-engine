@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Union, Type
+from typing import Iterable, Optional, Type
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.acceptors.basic.character_acceptors import CharacterAcceptor
@@ -66,7 +66,7 @@ class NumberAcceptor(StateMachine):
         }
         super().__init__(
             graph,
-            end_states=[1, 2, 3, "$"],
+            end_states=[2, 3, "$"],
             walker_type=walker_type or NumberWalker
         )
 
@@ -78,48 +78,44 @@ class NumberWalker(StateMachineWalker):
     Manages the current state and accumulated value during JSON number parsing.
     """
 
-    def __init__(self, acceptor: NumberAcceptor, current_state: int = 0):
-        """
-        Initialize the walker.
+    def can_accept_more_input(self) -> bool:
+        return super().can_accept_more_input() or self.current_state not in self.acceptor.end_states
 
-        Args:
-            acceptor (NumberAcceptor): The parent acceptor.
-        """
-        super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
-        self.value: Optional[Union[int, float]] = None
+    # def should_start_transition(self, token: str) -> bool:
+    #     """
+    #     Determine if a transition should start with the given input token.
 
-    def should_start_transition(self, token: str) -> bool:
-        if not self.transition_walker or self.transition_walker.should_start_transition(
-            token
-        ):
-            return True
+    #     Args:
+    #         token: The token to process.
 
-        reached_accept_state = self.transition_walker.has_reached_accept_state()
+    #     Returns:
+    #         True if the transition should start; False otherwise.
+    #     """
+    #     if self.transition_walker:
+    #         if not self.transition_walker.should_start_transition(token):
+    #             self._accepts_remaining_input = False
+    #             return False
 
-        if reached_accept_state:
-            self.accepted_history.append(self.transition_walker)
-            logger.debug(f"Appended walker to accept history: {self.accepted_history}")
-        else:
-            logger.debug(f"Walker cannot start transition with {repr(token)}")
+    #     if self.current_edge in self.explored_edges:
+    #         self._accepts_remaining_input = False
+    #         return False
 
-        self.transition_walker = None
-        self.target_state = None
+    #     return True
 
-        return reached_accept_state
+    # def should_complete_transition(self) -> bool:
+    #     """
+    #     Handle the completion of a transition.
 
-    def should_complete_transition(self) -> bool:
-        """
-        Handle the completion of a transition.
+    #     Args:
+    #         transition_value (str): The value transitioned with.
+    #         target_state (Any): The target state after transition.
+    #         is_end_state (bool): Indicates if the transition leads to an end state.
 
-        Args:
-            transition_value (str): The value transitioned with.
-            target_state (Any): The target state after transition.
-            is_end_state (bool): Indicates if the transition leads to an end state.
+    #     Returns:
+    #         bool: Success of the transition.
+    #     """
+    #     if super().should_complete_transition():
+    #         self._accepts_remaining_input = True
+    #         return True
 
-        Returns:
-            bool: Success of the transition.
-        """
-        self._accepts_remaining_input = True
-
-        return super().should_complete_transition()
+    #     return False

@@ -62,15 +62,13 @@ def test_integer_acceptor(input_string, expected_value):
     walkers = list(sm.get_walkers())
     for char in input_string:
         print(f"Advancing with {char}, walkers: {walkers}")
-        advanced_walkers = [
-            walker for _, walker in sm.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
 
-    print(f"walkers after advancing: {advanced_walkers}")
+    print(f"walkers after advancing: {walkers}")
     assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        walker.has_reached_accept_state() for walker in walkers
     ), f"IntegerAcceptor should accept input '{input_string}'."
-    for walker in advanced_walkers:
+    for walker in walkers:
         if walker.has_reached_accept_state():
             value = walker.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
@@ -190,14 +188,12 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     input_string = "Value: 9876"
     walkers = list(sm.get_walkers())
     for char in input_string:
-        advanced_walkers = [
-            walker for _, walker in sm.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
 
     assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        walker.has_reached_accept_state() for walker in walkers
     ), "Combined text and integer input should be accepted when advancing char by char."
-    for walker in advanced_walkers:
+    for walker in walkers:
         if walker.has_reached_accept_state():
             value = walker.get_current_value()
             expected_value = "Value: 9876"

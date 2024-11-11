@@ -54,6 +54,8 @@ def get_json_acceptor(
     if context is None:
         context = {"defs": defaultdict(dict), "path": ""}
 
+    context["defs"]["#"] = schema
+
     if schema.get("nullable"):
         non_nullable_schema: Dict[str, Any] = schema.copy()
         del non_nullable_schema["nullable"]
@@ -98,12 +100,12 @@ def get_json_acceptor(
         acceptor = NullAcceptor()
     elif schema_type in ["number", "integer"]:
         acceptor = NumberSchemaAcceptor(schema)
+    elif "enum" in schema:
+        acceptor = EnumSchemaAcceptor(schema)
     elif schema_type == "string":
         acceptor = StringSchemaAcceptor(schema, start_hook, end_hook)
     elif "const" in schema:
         acceptor = TextAcceptor(json.dumps(schema["const"]))
-    elif "enum" in schema:
-        acceptor = EnumSchemaAcceptor(schema)
     elif schema_type == "object":
         if "properties" in schema:
             # Only allows named properties in the object.

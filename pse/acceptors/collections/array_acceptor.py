@@ -90,14 +90,6 @@ class ArrayWalker(StateMachineWalker):
             and self.transition_walker.target_state == 3
             and self.transition_walker.raw_value is not None
         ):
+            self.accepted_history.append(self.transition_walker)
             self.value.append(self.transition_walker.raw_value)
         return True
-
-    def get_current_value(self) -> Any:
-        """
-        Retrieve the accumulated value from the walker's history.
-
-        Returns:
-            Any: The concatenated values from the accept history and current transition.
-        """
-        return self.value

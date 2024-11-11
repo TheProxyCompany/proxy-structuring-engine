@@ -44,6 +44,10 @@ class CharacterAcceptor(StateMachine):
         """
         yield self._walker(self)
 
+    def __repr__(self) -> str:
+        sorted_character_set = ", ".join(sorted(self.charset))
+        return f'{self.__class__.__name__}(charset=[{sorted_character_set}])'
+
 
 class CharacterWalker(StateMachineWalker):
     """
@@ -92,7 +96,11 @@ class CharacterWalker(StateMachineWalker):
         if not token:
             return False
 
-        return token[0] in self.acceptor.charset
+        if token[0] not in self.acceptor.charset:
+            self._accepts_remaining_input = False
+            return False
+
+        return True
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -140,9 +148,7 @@ class CharacterWalker(StateMachineWalker):
         new_walker = self.__class__(self.acceptor, accumulated_value)
         new_walker.consumed_character_count = accumulated_length
         new_walker.remaining_input = remaining_input
-        new_walker._accepts_remaining_input = (
-            False if remaining_input else self._accepts_remaining_input
-        )
+        new_walker._accepts_remaining_input = not remaining_input
 
         yield AcceptedState(new_walker)
 
@@ -167,7 +173,6 @@ class CharacterWalker(StateMachineWalker):
             bool: True if the walker has a value, False otherwise.
         """
         return self.consumed_character_count > 0
-
 
 class HexDigitAcceptor(CharacterAcceptor):
     """

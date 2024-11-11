@@ -19,7 +19,6 @@ from pse.state_machine.types import StateType, VisitedEdgeType
 
 logger = logging.getLogger(__name__)
 
-
 class Walker(ABC):
     """Base class for state machine walkers.
 
@@ -154,7 +153,7 @@ class Walker(ABC):
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
-    def transition(self, transition_walker: Walker) -> Walker:
+    def transition_with_walker(self, transition_walker: Walker) -> Walker:
         """Advance the walker to the next state.
 
         Args:
@@ -165,7 +164,10 @@ class Walker(ABC):
         """
         clone = self.clone()
         clone.transition_walker = transition_walker
+
         clone.remaining_input = transition_walker.remaining_input
+        clone.transition_walker.remaining_input = None
+
         clone.consumed_character_count += transition_walker.consumed_character_count
         clone.explored_edges.add(clone.current_edge)
 
@@ -181,6 +183,17 @@ class Walker(ABC):
             if clone.current_state in clone.acceptor.end_states:
                 from pse.state_machine.accepted_state import AcceptedState
                 return AcceptedState(clone)
+
+        return clone
+
+    def branch(self, new_transition_walker: Walker, target_state: StateType) -> Walker:
+        clone = self.clone()
+
+        if clone.transition_walker and clone.transition_walker.has_reached_accept_state():
+            clone.accepted_history.append(clone.transition_walker)
+
+        clone.transition_walker = new_transition_walker
+        clone.target_state = target_state
 
         return clone
 
@@ -407,7 +420,11 @@ class Walker(ABC):
                 return self._format_explored_edges()
             if self.target_state:
                 return _format_current_edge()
-            return ""
+            return (
+                f"value: {repr(self.get_current_value() or self.raw_value)}"
+                if self.raw_value or self.get_current_value()
+                else ""
+            )
 
         def _format_current_edge() -> str:
             to_state_display = "End" if self.target_state == "$" else self.target_state
@@ -436,8 +453,8 @@ class Walker(ABC):
             for part in [
                 _format_state_info(),
                 _format_history_info(),
-                _format_remaining_input(),
                 _format_edge_info(),
+                _format_remaining_input(),
                 _format_transition_info(),
             ]
             if part
@@ -446,9 +463,9 @@ class Walker(ABC):
         # Format final output
         # Format single line output if it fits within 80 chars
         single_line = (
-            f"{header} {{{' | '.join(info_parts)}}}"
+            f"{header} ({', '.join(info_parts)})"
             if info_parts
-            else f"{header} ({self.get_current_value() or ''})"
+            else f"{header}()"
         )
         if len(single_line) <= 80:
             return single_line
