@@ -4,14 +4,15 @@ Thread-safe implementations with caching, error handling, and performance optimi
 """
 
 from typing import (
-    Tuple,
-    List,
+    Iterable,
+    Optional,
 )
 from pse.state_machine.state_machine import (
     StateMachine,
     StateType,
+    EdgeType
 )
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.state_machine.walker import Walker
 
 
 class JsonAcceptor(StateMachine):
@@ -19,7 +20,7 @@ class JsonAcceptor(StateMachine):
     Acceptor for parsing any JSON value, delegating to specific acceptors based on the value type.
     """
 
-    def get_edges(self, state: StateType) -> List[Tuple[TokenAcceptor, StateType]]:
+    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
         """
         Retrieve the graph edges for transitions out of the current state.
 
@@ -48,3 +49,7 @@ class JsonAcceptor(StateMachine):
                 (NumberAcceptor(), "$"),
             ]
         return []
+
+    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
+        for walker, _ in self.get_transitions(state or 0):
+            yield walker

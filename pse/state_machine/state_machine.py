@@ -147,7 +147,9 @@ class StateMachine(TokenAcceptor):
                 and walker.transition_walker
                 and walker.transition_walker.can_accept_more_input()
             ):
-                logger.debug(f"🟡 Walker already exploring state {target_state}")
+                logger.debug(
+                    f"🟡 {walker.acceptor}.Walker already exploring state {target_state}, skipping {transition.acceptor}"
+                )
                 continue
 
             yield walker.set_target(transition, target_state)
@@ -218,14 +220,15 @@ class StateMachine(TokenAcceptor):
             )
 
             if current_walker.transition_walker.can_accept_more_input():
-                logger.debug(
-                    f"🟢 {current_walker.transition_walker.acceptor} can accept more input"
-                )
+                has_valid_transition = False
                 for next_transition_walker in current_walker.transition_walker.branch():
-                    if next_transition_walker.should_start_transition(current_token):  
+                    if next_transition_walker.should_start_transition(current_token):
+                        has_valid_transition = True
                         current_walker.transition_walker = next_transition_walker
                         queue.append((current_walker, current_token))
-                continue
+
+                if has_valid_transition:
+                    continue
 
             if current_walker.transition_walker.has_reached_accept_state():
                 logger.debug(
@@ -283,8 +286,10 @@ class StateMachine(TokenAcceptor):
                 # Partial match
                 length_of_remaining_input = len(token) - len(walker.remaining_input)
                 valid_prefix = token[:length_of_remaining_input]
+
                 logger.debug(f"🟡 Potential partial match: {repr(valid_prefix)}")
-                if dawg and valid_prefix and valid_prefix in dawg:
+
+                if dawg is not None and valid_prefix and valid_prefix in dawg:
                     logger.debug(
                         f"🟢 Valid partial match: {repr(valid_prefix)}, token found in DAWG"
                     )
@@ -355,6 +360,9 @@ class StateMachineWalker(Walker):
         """
         if self.transition_walker:
             if self.transition_walker.can_accept_more_input():
+                logger.debug(
+                    f"🟢 {self.transition_walker.acceptor} can accept more input"
+                )
                 return True
 
             logger.debug(

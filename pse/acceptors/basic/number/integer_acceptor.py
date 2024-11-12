@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional
-from pse.acceptors.basic.character_acceptors import CharacterAcceptor, CharacterWalker
+from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
 
 
 class IntegerAcceptor(CharacterAcceptor):

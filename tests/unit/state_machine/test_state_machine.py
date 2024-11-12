@@ -5,7 +5,7 @@ from pse.acceptors.basic.number.integer_acceptor import IntegerWalker
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
-from pse.acceptors.basic.character_acceptors import CharacterAcceptor
+from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, IntegerAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 

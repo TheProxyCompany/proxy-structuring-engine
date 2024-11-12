@@ -20,7 +20,7 @@ class CharacterAcceptor(StateMachine):
         charset: Iterable[str],
         char_limit: Optional[int] = None,
         is_optional: bool = False,
-        is_case_sensitive: bool = True,
+        case_sensitive: bool = True,
     ) -> None:
         """
         Initialize the CharAcceptor with a set of valid characters.
@@ -32,9 +32,11 @@ class CharacterAcceptor(StateMachine):
             graph={},
             walker_type=CharacterWalker,
             is_optional=is_optional,
-            is_case_sensitive=is_case_sensitive,
+            is_case_sensitive=case_sensitive,
         )
-        self.charset: Set[str] = set(charset)
+        self.charset: Set[str] = (
+            set(charset) if case_sensitive else set(char.lower() for char in charset)
+        )
         self.char_limit = char_limit or 0
 
     def get_walkers(self) -> Iterable[Walker]:
@@ -93,6 +95,9 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             True if the transition should start; False otherwise.
         """
+        if not self.acceptor.is_case_sensitive():
+            token = token.lower()
+
         if not token or token[0] not in self.acceptor.charset:
             self._accepts_more_input = False
             return False
@@ -116,9 +121,13 @@ class CharacterWalker(StateMachineWalker):
             self._accepts_more_input = False
             return
 
+        if not self.acceptor.is_case_sensitive():
+            token = token.lower()
+
         valid_length = 0
         accumulated_length = self.consumed_character_count
         for character in token:
+
             if character not in self.acceptor.charset:
                 break
             if (
@@ -133,11 +142,9 @@ class CharacterWalker(StateMachineWalker):
         remaining_input = token[valid_length:] if valid_length < len(token) else None
 
         if not valid_characters:
-            logger.debug(f"Walker {self} cannot handle input: {token}")
+            logger.debug(f"🔴 {self} cannot handle input: {token}")
             self._accepts_more_input = False
             return
-        else:
-            self._accepts_more_input = True
 
         # Accumulate valid characters with existing value
         accumulated_value = f"{self._raw_value or ''}{valid_characters}"
@@ -145,7 +152,13 @@ class CharacterWalker(StateMachineWalker):
         new_walker = self.__class__(self.acceptor, accumulated_value)
         new_walker.consumed_character_count = accumulated_length
         new_walker.remaining_input = remaining_input
-        new_walker._accepts_more_input = not remaining_input
+
+        if self.acceptor.char_limit > 0:
+            new_walker._accepts_more_input = (
+                not remaining_input and valid_length < self.acceptor.char_limit
+            )
+        else:
+            new_walker._accepts_more_input = not remaining_input
 
         yield AcceptedState(new_walker)
 
@@ -170,19 +183,3 @@ class CharacterWalker(StateMachineWalker):
             bool: True if the walker has a value, False otherwise.
         """
         return self.consumed_character_count > 0
-
-
-class HexDigitAcceptor(CharacterAcceptor):
-    """
-    Accepts one or more hexadecimal digit characters.
-    """
-
-    def __init__(self) -> None:
-        """
-        Initialize the HexDigitAcceptor with hexadecimal digits.
-        """
-        super().__init__("0123456789ABCDEFabcdef")
-
-
-# Initialize global instances
-hex_digit_acceptor: HexDigitAcceptor = HexDigitAcceptor()

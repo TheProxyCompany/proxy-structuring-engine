@@ -5,9 +5,8 @@ from pse.state_machine.state_machine import (
     StateMachineWalker,
     StateMachineGraph,
 )
-from pse.acceptors.basic.character_acceptors import (
+from pse.acceptors.basic.character_acceptor import (
     CharacterAcceptor,
-    hex_digit_acceptor,
 )
 from pse.state_machine.walker import Walker
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
@@ -25,10 +24,7 @@ class StringAcceptor(StateMachine):
     STATE_START = 0
     STATE_IN_STRING = 1
     STATE_ESCAPE = 2
-    STATE_UNICODE_HEX_1 = 3
-    STATE_UNICODE_HEX_2 = 4
-    STATE_UNICODE_HEX_3 = 5
-    STATE_UNICODE_HEX_4 = 6
+    STATE_UNICODE_HEX = 3
 
     def __init__(self, walker_type: Optional[Type[Walker]] = None):
         """
@@ -51,28 +47,19 @@ class StringAcceptor(StateMachine):
             ],
             self.STATE_ESCAPE: [
                 (
-                    CharacterAcceptor('"\\/bfnrt'),
+                    CharacterAcceptor('"\\/bfnrt', char_limit=1),
                     self.STATE_IN_STRING,
                 ),  # Escaped characters
                 (
                     TextAcceptor("u"),
-                    self.STATE_UNICODE_HEX_1,
+                    self.STATE_UNICODE_HEX,
                 ),  # Unicode escape sequence
             ],
-            self.STATE_UNICODE_HEX_1: [
-                (hex_digit_acceptor, self.STATE_UNICODE_HEX_2),  # First hex digit
-            ],
-            self.STATE_UNICODE_HEX_2: [
-                (hex_digit_acceptor, self.STATE_UNICODE_HEX_3),  # Second hex digit
-            ],
-            self.STATE_UNICODE_HEX_3: [
-                (hex_digit_acceptor, self.STATE_UNICODE_HEX_4),  # Third hex digit
-            ],
-            self.STATE_UNICODE_HEX_4: [
+            self.STATE_UNICODE_HEX: [
                 (
-                    hex_digit_acceptor,
+                    CharacterAcceptor("0123456789ABCDEFabcdef", char_limit=4),
                     self.STATE_IN_STRING,
-                ),  # Fourth hex digit, return to state IN_STRING
+                ),  # First hex digit
             ],
         }
         super().__init__(
