@@ -27,7 +27,8 @@ class AcceptedState(Walker):
         self.remaining_input = walker.remaining_input
         self.consumed_character_count = walker.consumed_character_count
         self.accepted_history = walker.accepted_history
-        self._accepts_remaining_input = walker._accepts_remaining_input
+        self.explored_edges = walker.explored_edges
+        self._accepts_more_input = walker._accepts_more_input
 
     def clone(self) -> Walker:
         return self.accepted_walker.clone()

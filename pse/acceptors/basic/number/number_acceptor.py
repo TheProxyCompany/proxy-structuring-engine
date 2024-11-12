@@ -78,44 +78,21 @@ class NumberWalker(StateMachineWalker):
     Manages the current state and accumulated value during JSON number parsing.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._accepts_more_input = True
+
     def can_accept_more_input(self) -> bool:
-        return super().can_accept_more_input() or self.current_state not in self.acceptor.end_states
+        if self.transition_walker:
+            if self.transition_walker.can_accept_more_input():
+                return True
 
-    # def should_start_transition(self, token: str) -> bool:
-    #     """
-    #     Determine if a transition should start with the given input token.
+            logger.debug(
+                f"🔴 {self.transition_walker.acceptor} cannot accept more input"
+            )
 
-    #     Args:
-    #         token: The token to process.
-
-    #     Returns:
-    #         True if the transition should start; False otherwise.
-    #     """
-    #     if self.transition_walker:
-    #         if not self.transition_walker.should_start_transition(token):
-    #             self._accepts_remaining_input = False
-    #             return False
-
-    #     if self.current_edge in self.explored_edges:
-    #         self._accepts_remaining_input = False
-    #         return False
-
-    #     return True
-
-    # def should_complete_transition(self) -> bool:
-    #     """
-    #     Handle the completion of a transition.
-
-    #     Args:
-    #         transition_value (str): The value transitioned with.
-    #         target_state (Any): The target state after transition.
-    #         is_end_state (bool): Indicates if the transition leads to an end state.
-
-    #     Returns:
-    #         bool: Success of the transition.
-    #     """
-    #     if super().should_complete_transition():
-    #         self._accepts_remaining_input = True
-    #         return True
-
-    #     return False
+        return (
+            bool(self.acceptor.graph.get(self.current_state))
+            and self._accepts_more_input
+            and not self.remaining_input
+        )

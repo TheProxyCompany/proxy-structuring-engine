@@ -63,11 +63,11 @@ class StringCharacterWalker(Walker):
         """
         super().__init__(acceptor)
         self.acceptor: StringCharacterAcceptor = acceptor
-        self._accepts_remaining_input = True
+        self._accepts_more_input = True
         self._raw_value = value
 
     def can_accept_more_input(self) -> bool:
-        return self._accepts_remaining_input
+        return self._accepts_more_input
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         """
@@ -79,9 +79,11 @@ class StringCharacterWalker(Walker):
         return self.acceptor.valid_chars
 
     def should_start_transition(self, token: str) -> bool:
-        if not token:
+        if not token or token[0] in INVALID_CHARS:
+            self._accepts_more_input = False
             return False
-        return token[0] not in INVALID_CHARS
+
+        return True
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -116,7 +118,7 @@ class StringCharacterWalker(Walker):
             new_walker.consumed_character_count += len(valid_prefix)
             yield AcceptedState(new_walker)
         else:
-            self._accepts_remaining_input = False
+            self._accepts_more_input = False
             logger.debug(f"{self} cannot accept more input: {token}")
 
     def is_within_value(self) -> bool:

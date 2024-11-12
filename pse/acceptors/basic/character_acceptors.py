@@ -46,7 +46,7 @@ class CharacterAcceptor(StateMachine):
 
     def __repr__(self) -> str:
         sorted_character_set = ", ".join(sorted(self.charset))
-        return f'{self.__class__.__name__}(charset=[{sorted_character_set}])'
+        return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
 
 
 class CharacterWalker(StateMachineWalker):
@@ -69,7 +69,7 @@ class CharacterWalker(StateMachineWalker):
         self._raw_value = value
 
     def can_accept_more_input(self) -> bool:
-        return self._accepts_remaining_input
+        return self._accepts_more_input
 
     def select(self, dawg: DAWG) -> Iterable[str]:
         """
@@ -93,11 +93,8 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             True if the transition should start; False otherwise.
         """
-        if not token:
-            return False
-
-        if token[0] not in self.acceptor.charset:
-            self._accepts_remaining_input = False
+        if not token or token[0] not in self.acceptor.charset:
+            self._accepts_more_input = False
             return False
 
         return True
@@ -116,7 +113,7 @@ class CharacterWalker(StateMachineWalker):
 
         if not token:
             logger.debug("Walker does not accept empty input, returning.")
-            self._accepts_remaining_input = False
+            self._accepts_more_input = False
             return
 
         valid_length = 0
@@ -137,10 +134,10 @@ class CharacterWalker(StateMachineWalker):
 
         if not valid_characters:
             logger.debug(f"Walker {self} cannot handle input: {token}")
-            self._accepts_remaining_input = False
+            self._accepts_more_input = False
             return
         else:
-            self._accepts_remaining_input = True
+            self._accepts_more_input = True
 
         # Accumulate valid characters with existing value
         accumulated_value = f"{self._raw_value or ''}{valid_characters}"
@@ -148,7 +145,7 @@ class CharacterWalker(StateMachineWalker):
         new_walker = self.__class__(self.acceptor, accumulated_value)
         new_walker.consumed_character_count = accumulated_length
         new_walker.remaining_input = remaining_input
-        new_walker._accepts_remaining_input = not remaining_input
+        new_walker._accepts_more_input = not remaining_input
 
         yield AcceptedState(new_walker)
 
@@ -173,6 +170,7 @@ class CharacterWalker(StateMachineWalker):
             bool: True if the walker has a value, False otherwise.
         """
         return self.consumed_character_count > 0
+
 
 class HexDigitAcceptor(CharacterAcceptor):
     """

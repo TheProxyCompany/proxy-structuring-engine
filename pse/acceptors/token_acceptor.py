@@ -16,13 +16,13 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Iterable, Optional, Type
+from typing import TYPE_CHECKING, Iterable, Optional, Tuple, Type
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pse.state_machine.walker import Walker
-    from pse.state_machine.types import StateType
+    from pse.state_machine.types import StateType, StateMachineGraph
 
 
 class TokenAcceptor(ABC):
@@ -45,6 +45,7 @@ class TokenAcceptor(ABC):
 
     def __init__(
         self,
+        graph: StateMachineGraph,
         initial_state: StateType,
         end_states: Iterable[StateType],
         walker_type: Type[Walker],
@@ -57,6 +58,7 @@ class TokenAcceptor(ABC):
             initial_state (StateType): The starting state of the acceptor.
             end_states (Iterable[StateType]): A collection of acceptable end states.
         """
+        self.graph = graph
         self.initial_state = initial_state
         self.end_states = end_states
         self._walker = walker_type
@@ -89,7 +91,31 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
+    def get_transitions(
+        self,
+        state: StateType,
+        source_walker: Optional[Walker] = None,
+    ) -> Iterable[Tuple[Walker, StateType]]:
+        """Retrieves transitions from the given state.
+        """
+        pass
+
+    @abstractmethod
+    def branch_walkers(
+        self,
+        walker: Walker,
+        token: Optional[str] = None,
+    ) -> Iterable[Walker]:
+        """Branch the walker into multiple paths for parallel exploration.
+        """
+        pass
+
+    @abstractmethod
+    def advance_walker(
+        self,
+        walker: Walker,
+        token: str,
+    ) -> Iterable[Walker]:
         """Advances the walker with the given input.
 
         Args:
@@ -100,19 +126,3 @@ class TokenAcceptor(ABC):
             Iterable[Walker]: An iterable of updated walkers after advancement.
         """
         pass
-
-    def __repr__(self) -> str:
-        """Returns an unambiguous string representation of the instance.
-
-        Returns:
-            str: The string representation.
-        """
-        return f"{self.__class__.__name__}()"
-
-    def __str__(self) -> str:
-        """Returns a readable string representation of the instance.
-
-        Returns:
-            str: The string representation.
-        """
-        return repr(self)

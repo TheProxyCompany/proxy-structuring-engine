@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional
-from pse.acceptors.basic.character_acceptors import CharacterAcceptor,  CharacterWalker
+from pse.acceptors.basic.character_acceptors import CharacterAcceptor, CharacterWalker
+
 
 class IntegerAcceptor(CharacterAcceptor):
     """
@@ -14,6 +15,7 @@ class IntegerAcceptor(CharacterAcceptor):
 
     def get_walkers(self) -> Iterable[IntegerWalker]:
         yield IntegerWalker(self)
+
 
 class IntegerWalker(CharacterWalker):
     """
@@ -40,12 +42,16 @@ class IntegerWalker(CharacterWalker):
             return False
 
         if not self.transition_walker.raw_value[0].isdigit():
-            self._accepts_remaining_input = False
+            self._accepts_more_input = False
             return False
 
         self._raw_value = (self._raw_value or "") + self.transition_walker.raw_value
 
-        if self._accepts_remaining_input and self.target_state and self.target_state not in self.acceptor.end_states:
+        if (
+            self._accepts_more_input
+            and self.target_state
+            and self.target_state not in self.acceptor.end_states
+        ):
             return False
 
         return True

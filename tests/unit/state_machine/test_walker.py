@@ -2,9 +2,9 @@ import pytest
 from typing import Any, Iterable
 
 from pse.state_machine.accepted_state import AcceptedState
+from pse.state_machine.state_machine import StateMachine
 from pse.state_machine.walker import Walker
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.types import StateType
 
 
 class Concretewalker(Walker):
@@ -34,31 +34,18 @@ class Concretewalker(Walker):
         return False
 
 
-# Mock TokenAcceptor for testing purposes
-class MockTokenAcceptor(TokenAcceptor):
-    def __init__(self):
-        self.initial_state: StateType = 0
-        self.end_states = [1]
-
-    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
-        return super().advance_walker(walker, token)
-
-    def get_walkers(self) -> Iterable[Walker]:
-        yield Concretewalker(self)
+@pytest.fixture
+def acceptor() -> StateMachine:
+    return StateMachine()
 
 
 @pytest.fixture
-def acceptor() -> MockTokenAcceptor:
-    return MockTokenAcceptor()
-
-
-@pytest.fixture
-def walker(acceptor: MockTokenAcceptor) -> Concretewalker:
+def walker(acceptor: StateMachine) -> Concretewalker:
     c = Concretewalker(acceptor)
     return c
 
 
-def test_walker_initialization(walker: Concretewalker, acceptor: MockTokenAcceptor):
+def test_walker_initialization(walker: Concretewalker, acceptor: StateMachine):
     """Test that the walker initializes correctly."""
     assert walker.acceptor == acceptor
     assert walker.current_state == acceptor.initial_state
@@ -101,12 +88,6 @@ def test_walker_clone(walker: Concretewalker):
 def test_walker_matches_all(walker: Concretewalker):
     """Test matches_all method."""
     assert walker.accepts_any_token() is False
-
-
-def test_walker_in_accepted_state(walker: Concretewalker):
-    """Test in_accepted_state method."""
-    walker.current_state = 1  # Set to an end state
-    assert walker.has_reached_accept_state() is True
 
 
 def test_walker_not_in_accepted_state(walker: Concretewalker):

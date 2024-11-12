@@ -19,6 +19,7 @@ from pse.state_machine.types import StateType, VisitedEdgeType
 
 logger = logging.getLogger(__name__)
 
+
 class Walker(ABC):
     """Base class for state machine walkers.
 
@@ -38,7 +39,7 @@ class Walker(ABC):
         explored_edges: Set of visited state transitions.
         consumed_character_count: Number of characters processed.
         remaining_input: Unprocessed input string.
-        _accepts_remaining_input: Whether walker can accept more input.
+        _accepts_input: Whether walker can accept more input.
     """
 
     def __init__(
@@ -64,7 +65,7 @@ class Walker(ABC):
         self.remaining_input: Optional[str] = None
 
         self._raw_value: Optional[str] = None
-        self._accepts_remaining_input: bool = False
+        self._accepts_more_input: bool = False
 
     # -------- Abstract Methods --------
 
@@ -122,6 +123,10 @@ class Walker(ABC):
             return self.transition_walker.should_start_transition(token)
 
         if self.current_edge in self.explored_edges:
+            logger.debug(
+                f"🔴 {self.acceptor} already explored edge: {self.current_edge}"
+            )
+            self._accepts_more_input = False
             return False
 
         return True
@@ -174,28 +179,51 @@ class Walker(ABC):
         if clone.should_complete_transition():
             if transition_walker.has_reached_accept_state() and self.target_state:
                 clone.current_state = self.target_state
-                # logger.debug("new walker: %s", clone)
+
                 if not transition_walker.can_accept_more_input():
                     clone.accepted_history.append(transition_walker)
                     clone.transition_walker = None
                     clone.target_state = None
+                else:
+                    logger.debug(
+                        f"🟡 {transition_walker.acceptor} can accept more input"
+                    )
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.state_machine.accepted_state import AcceptedState
+
                 return AcceptedState(clone)
 
+        logger.debug(f"🟢 clone: {clone}")
         return clone
 
-    def branch(self, new_transition_walker: Walker, target_state: StateType) -> Walker:
+    def set_target(
+        self,
+        new_transition_walker: Walker,
+        target_state: StateType,
+    ) -> Walker:
         clone = self.clone()
 
-        if clone.transition_walker and clone.transition_walker.has_reached_accept_state():
+        if (
+            clone.transition_walker
+            and clone.transition_walker.has_reached_accept_state()
+        ):
             clone.accepted_history.append(clone.transition_walker)
 
         clone.transition_walker = new_transition_walker
         clone.target_state = target_state
 
         return clone
+
+    def branch(self) -> Iterable[Walker]:
+        """Branch the walker to explore all possible transitions from the current state.
+
+        Yields:
+            New walker instances representing different paths.
+        """
+        for new_transition_walker in self.acceptor.branch_walkers(self):
+            logger.debug(f"🟢 Branching {self} to {new_transition_walker}")
+            yield new_transition_walker
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).
@@ -444,7 +472,7 @@ class Walker(ABC):
 
         # Build header with status indicators
         prefix = "✅ " if self.has_reached_accept_state() else ""
-        suffix = " 🔄" if self.can_accept_more_input() else ""
+        suffix = " 🔄" if self._accepts_more_input else ""
         header = f"{prefix}{self.acceptor.__class__.__name__}.Walker{suffix}"
 
         # Collect all information parts
@@ -463,9 +491,7 @@ class Walker(ABC):
         # Format final output
         # Format single line output if it fits within 80 chars
         single_line = (
-            f"{header} ({', '.join(info_parts)})"
-            if info_parts
-            else f"{header}()"
+            f"{header} ({', '.join(info_parts)})" if info_parts else f"{header}()"
         )
         if len(single_line) <= 80:
             return single_line

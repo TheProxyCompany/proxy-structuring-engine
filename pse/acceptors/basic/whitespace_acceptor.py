@@ -59,13 +59,14 @@ class WhitespaceWalker(Walker):
         self._raw_value = text
         self.consumed_character_count = len(text)
         self.length_exceeded: bool = len(text) > self.acceptor.max_whitespace
-        self._accepts_remaining_input: bool = len(text) < self.acceptor.max_whitespace
+        self._accepts_input: bool = len(text) <= self.acceptor.max_whitespace
 
     def should_start_transition(self, token: str) -> bool:
-        if not token:
+        if not token or not token[0].isspace():
+            self._accepts_input = False
             return False
 
-        return token.isspace() or token[0].isspace()
+        return True
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         """
@@ -89,7 +90,7 @@ class WhitespaceWalker(Walker):
 
     def can_accept_more_input(self) -> bool:
         return (
-            self._accepts_remaining_input
+            self._accepts_input
             and self.consumed_character_count < self.acceptor.max_whitespace
         )
 
@@ -124,7 +125,7 @@ class WhitespaceWalker(Walker):
             logger.debug(f"remaining_input: {repr(remaining_input)}")
 
         if not valid_input:
-            self._accepts_remaining_input = False
+            self._accepts_input = False
             logger.debug("no valid whitespace prefix, returning no walkers")
             if (
                 remaining_input
@@ -132,7 +133,7 @@ class WhitespaceWalker(Walker):
             ):
                 copy = self.clone()
                 copy.remaining_input = remaining_input
-                copy._accepts_remaining_input = False
+                copy._accepts_input = False
                 yield AcceptedState(copy)
             return
 
@@ -141,7 +142,7 @@ class WhitespaceWalker(Walker):
         next_walker = self.clone()
         next_walker._raw_value = (next_walker._raw_value or "") + valid_input
         next_walker.remaining_input = remaining_input
-        next_walker._accepts_remaining_input = remaining_input is None
+        next_walker._accepts_input = remaining_input is None
         next_walker.consumed_character_count += valid_length
 
         if next_walker.consumed_character_count > self.acceptor.max_whitespace:

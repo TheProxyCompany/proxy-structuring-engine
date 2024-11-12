@@ -43,13 +43,13 @@ class StateMachine(TokenAcceptor):
             is_case_sensitive: Whether the acceptor is case sensitive. Defaults to True.
         """
         super().__init__(
+            graph or {},
             initial_state,
             end_states or ["$"],
             walker_type or StateMachineWalker,
             is_optional,
             is_case_sensitive,
         )
-        self.graph: StateMachineGraph = graph or {}
 
     def get_edges(self, state: StateType) -> Iterable[EdgeType]:
         """Retrieve outgoing transitions for a given state.
@@ -126,7 +126,9 @@ class StateMachine(TokenAcceptor):
         Yields:
             New walker instances, each representing a different path.
         """
-        for transition, target_state in self.get_transitions(walker.current_state, walker):
+        for transition, target_state in self.get_transitions(
+            walker.current_state, walker
+        ):
             # Skip if transition can't start with either token or walker's remaining input
             # saves time by skipping transitions that can't be completed
             if (token and not transition.should_start_transition(token)) or (
@@ -148,7 +150,7 @@ class StateMachine(TokenAcceptor):
                 logger.debug(f"🟡 Walker already exploring state {target_state}")
                 continue
 
-            yield walker.branch(transition, target_state)
+            yield walker.set_target(transition, target_state)
 
     def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
         """Advance the walker state with the given input token.
@@ -171,7 +173,9 @@ class StateMachine(TokenAcceptor):
             current_walker, current_token = queue.popleft()
 
             if current_walker.transition_walker is None:
-                logger.debug("🔵 Walker has no transition walker. Branching to next states.")
+                logger.debug(
+                    "🔵 Walker has no transition walker. Branching to next states."
+                )
                 has_valid_transition = False
                 for next_walker in self.branch_walkers(current_walker, current_token):
                     has_valid_transition = True
@@ -182,29 +186,30 @@ class StateMachine(TokenAcceptor):
                         f"🟢 Yielding walker with remaining input: {current_walker}"
                     )
                     yield current_walker
+
                 continue
 
             if current_walker.transition_walker.should_start_transition(current_token):
                 if (
                     current_walker.accepted_history
-                    and current_walker.transition_walker == current_walker.accepted_history[-1]
+                    and current_walker.transition_walker
+                    == current_walker.accepted_history[-1]
                 ):
                     logger.debug(
                         f"🟡 Popping accepted walker from history: {current_walker.accepted_history[-1]}"
                     )
                     current_walker.accepted_history.pop()
 
-                for advanced_walker in current_walker.transition_walker.consume_token(current_token):
-                    logger.debug(f"🟢 Advanced transition walker: {advanced_walker}")
+                for advanced_walker in current_walker.transition_walker.consume_token(
+                    current_token
+                ):
                     new_walker = current_walker.transition_with_walker(advanced_walker)
-                    logger.debug(f"🟢 Advanced walker: {new_walker}")
 
                     if new_walker.remaining_input:
-                        logger.debug(
-                            f"⚪️ Processing remaining input: {repr(new_walker.remaining_input)}"
-                        )
+                        logger.debug(f"⚪️ walker with remaining input: {new_walker}")
                         queue.append((new_walker, new_walker.remaining_input))
                     else:
+                        logger.debug(f"🟢 walker: {new_walker}")
                         yield new_walker
                 continue
 
@@ -212,13 +217,28 @@ class StateMachine(TokenAcceptor):
                 f"🔴 {current_walker.transition_walker.acceptor} cannot start transition with {repr(current_token)}"
             )
 
+            if current_walker.transition_walker.can_accept_more_input():
+                logger.debug(
+                    f"🟢 {current_walker.transition_walker.acceptor} can accept more input"
+                )
+                for next_transition_walker in current_walker.transition_walker.branch():
+                    if next_transition_walker.should_start_transition(current_token):  
+                        current_walker.transition_walker = next_transition_walker
+                        queue.append((current_walker, current_token))
+                continue
+
             if current_walker.transition_walker.has_reached_accept_state():
                 logger.debug(
-                    f"🔵 Branching {current_walker.acceptor.__class__.__name__} to next states."
+                    f"🟢 {current_walker.transition_walker.acceptor} has reached accept state"
                 )
+                logger.debug(f"🔵 Branching {current_walker.acceptor} to next states.")
                 for next_walker in self.branch_walkers(current_walker):
                     if next_walker.should_start_transition(current_token):
                         queue.append((next_walker, current_token))
+
+
+        # after queue is empty
+        logger.debug(f"🔵 {self} queue is empty!")
 
     @classmethod
     def advance_all_walkers(
@@ -265,7 +285,9 @@ class StateMachine(TokenAcceptor):
                 valid_prefix = token[:length_of_remaining_input]
                 logger.debug(f"🟡 Potential partial match: {repr(valid_prefix)}")
                 if dawg and valid_prefix and valid_prefix in dawg:
-                    logger.debug(f"🟢 Valid partial match: {repr(valid_prefix)}, token found in DAWG")
+                    logger.debug(
+                        f"🟢 Valid partial match: {repr(valid_prefix)}, token found in DAWG"
+                    )
                     walker.remaining_input = None
                     yield valid_prefix, walker
 
@@ -281,35 +303,39 @@ class StateMachine(TokenAcceptor):
         Returns:
             str: A formatted string showing the state machine's configuration.
         """
+
         def format_graph(graph: StateMachineGraph, indent: int = 0) -> str:
             if not graph:
                 return ""
 
             lines = []
-            indent_str = '    ' * indent
-            lines.append('graph={\n')
+            indent_str = "    " * indent
+            lines.append("graph={\n")
             for state, transitions in graph.items():
                 lines.append(f"{indent_str}    {state}: [")
                 transition_lines = []
                 for acceptor, target_state in transitions:
                     acceptor_repr = format_acceptor(acceptor, indent + 2)
-                    target_state_str = "'$'" if target_state == '$' else str(target_state)
+                    target_state_str = (
+                        "'$'" if target_state == "$" else str(target_state)
+                    )
                     transition_lines.append(f"({acceptor_repr}, {target_state_str})")
                 lines.append(", ".join(transition_lines) + "],\n")
             lines.append(f"{indent_str}}}")
-            return ''.join(lines)
+            return "".join(lines)
 
         def format_acceptor(acceptor: TokenAcceptor, indent: int) -> str:
             if isinstance(acceptor, StateMachine):
                 acceptor_repr = acceptor.__repr__()
                 return "\n".join(
-                    ('    ' * indent + line) if idx != 0 else line
+                    ("    " * indent + line) if idx != 0 else line
                     for idx, line in enumerate(acceptor_repr.splitlines())
                 )
             return repr(acceptor)
 
         formatted_graph = format_graph(self.graph)
         return f"{self.__class__.__name__}({formatted_graph})"
+
 
 class StateMachineWalker(Walker):
     """Walker for navigating through StateMachine states.
@@ -328,15 +354,17 @@ class StateMachineWalker(Walker):
             True if more input can be handled, False otherwise.
         """
         if self.transition_walker:
-            return self.transition_walker.can_accept_more_input()
+            if self.transition_walker.can_accept_more_input():
+                return True
 
-        if not self._accepts_remaining_input:
-            return False
+            logger.debug(
+                f"🔴 {self.transition_walker.acceptor} cannot accept more input"
+            )
 
-        if isinstance(self.acceptor, StateMachine):
-            return bool(self.acceptor.graph.get(self.current_state))
-
-        return False
+        return (
+            bool(self.acceptor.graph.get(self.current_state))
+            or self._accepts_more_input
+        )
 
     def is_within_value(self) -> bool:
         """Determine if the walker is currently within a value.

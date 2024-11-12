@@ -124,5 +124,5 @@ class PropertyWalker(SequenceWalker):
             return None
 
         if not self.prop_value:
-            return f"{self.prop_name}:"
+            return super().raw_value
         return f"{self.prop_name}: {self.prop_value}"
