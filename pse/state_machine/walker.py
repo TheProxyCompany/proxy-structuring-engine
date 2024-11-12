@@ -174,7 +174,7 @@ class Walker(ABC):
         if clone.should_complete_transition():
             if transition_walker.has_reached_accept_state() and self.target_state:
                 clone.current_state = self.target_state
-                logger.debug("new walker: %s", clone)
+                # logger.debug("new walker: %s", clone)
                 if not transition_walker.can_accept_more_input():
                     clone.accepted_history.append(transition_walker)
                     clone.transition_walker = None

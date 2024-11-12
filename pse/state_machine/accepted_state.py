@@ -74,7 +74,7 @@ class AcceptedState(Walker):
             True if the transition should start; False otherwise.
         """
         if not self.can_accept_more_input():
-            logger.debug("Accepted state cannot handle remaining input")
+            logger.debug(f"{self.accepted_walker.acceptor} cannot handle more input")
             return False
 
         return self.accepted_walker.should_start_transition(token)
@@ -91,7 +91,7 @@ class AcceptedState(Walker):
         logger.debug(f"Advancing walker in accepted state:\n{self}")
 
         if not self.can_accept_more_input():
-            logger.debug("Accepted state cannot handle remaining input")
+            logger.debug(f"{self.accepted_walker.acceptor} cannot handle more input")
             return
 
         yield from self.accepted_walker.consume_token(token)

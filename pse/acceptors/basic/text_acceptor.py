@@ -53,6 +53,9 @@ class TextAcceptor(StateMachine):
         """
         yield TextWalker(self)
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __repr__(self) -> str:
         """
         Provide a string representation of the TextAcceptor.
