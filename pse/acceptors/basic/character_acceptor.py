@@ -18,6 +18,7 @@ class CharacterAcceptor(StateMachine):
     def __init__(
         self,
         charset: Iterable[str],
+        char_min: Optional[int] = None,
         char_limit: Optional[int] = None,
         is_optional: bool = False,
         case_sensitive: bool = True,
@@ -37,6 +38,7 @@ class CharacterAcceptor(StateMachine):
         self.charset: Set[str] = (
             set(charset) if case_sensitive else set(char.lower() for char in charset)
         )
+        self.char_min = char_min or 0
         self.char_limit = char_limit or 0
 
     def get_walkers(self) -> Iterable[Walker]:
@@ -160,7 +162,11 @@ class CharacterWalker(StateMachineWalker):
         else:
             new_walker._accepts_more_input = not remaining_input
 
-        yield AcceptedState(new_walker)
+        yield (
+            AcceptedState(new_walker)
+            if new_walker.consumed_character_count >= self.acceptor.char_min
+            else new_walker
+        )
 
     @property
     def raw_value(self) -> str:

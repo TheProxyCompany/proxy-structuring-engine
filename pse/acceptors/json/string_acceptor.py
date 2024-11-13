@@ -57,7 +57,7 @@ class StringAcceptor(StateMachine):
             ],
             self.STATE_UNICODE_HEX: [
                 (
-                    CharacterAcceptor("0123456789ABCDEFabcdef", char_limit=4),
+                    CharacterAcceptor("0123456789ABCDEFabcdef", char_min=4, char_limit=4),
                     self.STATE_IN_STRING,
                 ),  # First hex digit
             ],
