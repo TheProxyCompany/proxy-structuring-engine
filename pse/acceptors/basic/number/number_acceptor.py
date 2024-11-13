@@ -31,6 +31,9 @@ class NumberAcceptor(StateMachine):
         if state == 0:
             yield from super().get_edges(1)
             yield from super().get_edges(state)
+        elif state == 2:
+            yield from super().get_edges(state)
+            yield from super().get_edges(3)
         elif state == 4:
             yield from super().get_edges(5)
             yield from super().get_edges(state)

@@ -76,8 +76,13 @@ class ObjectWalker(StateMachineWalker):
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
-        if self.current_state == 2 and self.target_state == 3 and self.transition_walker:
+        if (
+            self.current_state == 2
+            and self.transition_walker
+        ):
+            # breakpoint()
             prop_name, prop_value = self.transition_walker.get_current_value()
+            logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
         return True
 
@@ -88,4 +93,6 @@ class ObjectWalker(StateMachineWalker):
         Returns:
             Dict[str, Any]: The accumulated key-value pairs representing the JSON object.
         """
-        return self.value
+        if not self.raw_value:
+            return {}
+        return super().get_current_value()

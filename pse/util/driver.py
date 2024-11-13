@@ -237,7 +237,9 @@ class StructuredOutputDriver(LogitsProcessor):
                 self.walkers = full_match_walkers
                 return token_id
 
-        raise TokenRejected(f"No valid token found in the top {num_top_tokens} tokens")
+        raise TokenRejected(
+            f"No valid token found in the top {num_top_tokens} tokens: {top_tokens} "
+        )
 
     def advance_token(self, token_id: int) -> None:
         token = self.tokenizer.decode([token_id])

@@ -194,13 +194,12 @@ class Walker(ABC):
 
                 return AcceptedState(clone)
 
-        logger.debug(f"🟢 clone: {clone}")
         return clone
 
     def set_target(
         self,
         new_transition_walker: Walker,
-        target_state: StateType,
+        target_state: Optional[StateType] = None,
     ) -> Walker:
         clone = self.clone()
 
@@ -221,9 +220,15 @@ class Walker(ABC):
         Yields:
             New walker instances representing different paths.
         """
-        for new_transition_walker in self.acceptor.branch_walkers(self):
-            logger.debug(f"🟢 Branching {self} to {new_transition_walker}")
-            yield new_transition_walker
+        if (
+            self.transition_walker
+            and self.transition_walker.can_accept_more_input()
+        ):
+            for new_transition_walker in self.transition_walker.branch():
+                yield self.set_target(new_transition_walker, self.target_state)
+        else:
+            for new_transition_walker in self.acceptor.branch_walkers(self):
+                yield new_transition_walker
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).

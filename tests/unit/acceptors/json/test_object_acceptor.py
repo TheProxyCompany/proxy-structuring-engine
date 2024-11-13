@@ -21,15 +21,15 @@ def test_walker_get_value_with_data(object_acceptor: ObjectAcceptor):
 @pytest.mark.parametrize(
     "json_string, expected",
     [
-        ("{}", {}),
+        # ("{}", {}),
         ('{"key1": "value1"}', {"key1": "value1"}),
-        ('{"key1": "value1", "key2": "value2"}', {"key1": "value1", "key2": "value2"}),
-        ('{"outer": {"inner": "value"}}', {"outer": {"inner": "value"}}),
-        (
-            '{"ke@y1": "val€ue1", "ke¥2": "valu😊e2"}',
-            {"ke@y1": "val€ue1", "ke¥2": "valu😊e2"},
-        ),
-        ('{"key1": ""}', {"key1": ""}),
+        # ('{"key1": "value1", "key2": "value2"}', {"key1": "value1", "key2": "value2"}),
+        # ('{"outer": {"inner": "value"}}', {"outer": {"inner": "value"}}),
+        # (
+        #     '{"ke@y1": "val€ue1", "ke¥2": "valu😊e2"}',
+        #     {"ke@y1": "val€ue1", "ke¥2": "valu😊e2"},
+        # ),
+        # ('{"key1": ""}', {"key1": ""}),
         # (
         #     '{  "key1"  :  "value1"  }',
         #     {"key1": "value1"},

@@ -48,6 +48,9 @@ class CharacterAcceptor(StateMachine):
         """
         yield self._walker(self)
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __repr__(self) -> str:
         sorted_character_set = ", ".join(sorted(self.charset))
         return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
