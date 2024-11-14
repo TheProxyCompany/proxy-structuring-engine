@@ -179,7 +179,6 @@ class TextWalker(StateMachineWalker):
 
             next_walker = self.__class__(self.acceptor, new_pos)
             if remaining_input:
-                logger.debug(f"match found, remaining input: {remaining_input}")
                 next_walker.remaining_input = remaining_input
 
             if new_pos == len(expected_text):

@@ -153,6 +153,7 @@ class StateMachine(TokenAcceptor):
                 )
                 continue
 
+            logger.debug( f"🟢 exploring {transition} to {target_state}")
             yield walker.set_target(transition, target_state)
 
     def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:

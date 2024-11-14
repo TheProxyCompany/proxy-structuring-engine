@@ -37,19 +37,6 @@ class SequenceWalker(StateMachineWalker):
     Designed for inspectability and debugging purposes.
     """
 
-    def __init__(self, acceptor: SequenceAcceptor, current_acceptor_index: int = 0):
-        """
-        Initialize the SequenceAcceptor Walker.
-
-        Args:
-            acceptor (SequenceAcceptor): The parent SequenceAcceptor.
-            current_acceptor_index (int, optional):
-                The index of the current acceptor in the sequence. Defaults to 0.
-        """
-        super().__init__(acceptor)
-        self.current_acceptor_index: int = current_acceptor_index
-        self.acceptor = acceptor
-
     def can_accept_more_input(self) -> bool:
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
