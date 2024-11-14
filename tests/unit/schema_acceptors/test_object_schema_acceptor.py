@@ -215,3 +215,15 @@ def test_complex_json_structure(base_context: Dict[str, Any]) -> None:
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), "Transition to end state should return True for valid input."
+
+    for walker in walkers:
+        assert walker.get_current_value() == {
+            "name": "metacognition",
+            "arguments": {
+                "chain_of_thought":
+                    [
+                        "Thought 1",
+                        "Thought 2",
+                    ],
+            },
+        }

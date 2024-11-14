@@ -54,7 +54,4 @@ class SequenceWalker(StateMachineWalker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return (
-            self.current_state not in self.acceptor.end_states
-            # and self._accepts_more_input
-        )
+        return self.current_state not in self.acceptor.end_states

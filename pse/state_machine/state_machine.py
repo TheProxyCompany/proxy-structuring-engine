@@ -76,7 +76,7 @@ class StateMachine(TokenAcceptor):
 
     def get_transitions_from(
         self,
-        walker: Walker,
+        source_walker: Walker,
     ) -> Iterable[Tuple[Walker, StateType]]:
         """Get transition walkers for a given walker.
 
@@ -86,25 +86,30 @@ class StateMachine(TokenAcceptor):
         Returns:
             Iterable of (transition_walker, target_state) tuples.
         """
-        for acceptor, target_state in self.get_edges(walker.current_state):
+        logger.debug(f"🟡 Getting edges from {source_walker}")
+        for acceptor, target_state in self.get_edges(source_walker.current_state):
             for walker in acceptor.get_walkers():
                 yield walker, target_state
 
             if acceptor.is_optional():
+                logger.debug(f"🟡 {acceptor} is optional")
+
                 if (
                     target_state in self.end_states
-                    and not walker.can_accept_more_input()
+                    and not source_walker.can_accept_more_input()
                 ):
+                    # breakpoint()
                     logger.debug(
-                        f"🟢 {target_state} is in {self.end_states}, yielding accepted walker: {walker}"
+                        f"🟢 {target_state} is in {self.end_states}, yielding accepted walker: {source_walker}"
                     )
-                    yield AcceptedState(walker), target_state
+                    yield AcceptedState(source_walker), target_state
                 else:
                     logger.debug(
-                        f"🟡 {walker.acceptor} supports pass-through, getting transitions for next state {target_state}"
+                        f"🟢 {acceptor} supports pass-through, getting transitions for next state {target_state}"
                     )
-                    walker.current_state = target_state
-                    yield from self.get_transitions_from(walker)
+                    clone = source_walker.clone()
+                    clone.current_state = target_state
+                    yield from self.get_transitions_from(clone)
 
     def branch_walkers(
         self,
@@ -204,7 +209,9 @@ class StateMachine(TokenAcceptor):
                     ):
 
                         if new_walker.remaining_input:
-                            logger.debug(f"⚪️ walker with remaining input: {new_walker}")
+                            logger.debug(
+                                f"⚪️ walker with remaining input: {repr(new_walker)}"
+                            )
                             queue.append((new_walker, new_walker.remaining_input))
                         else:
                             yield new_walker

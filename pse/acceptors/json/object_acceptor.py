@@ -85,7 +85,6 @@ class ObjectWalker(StateMachineWalker):
             prop_name, prop_value = self.transition_walker.get_current_value()
             logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
-            return self.transition_walker.has_reached_accept_state()
 
         return True
 

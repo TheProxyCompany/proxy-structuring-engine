@@ -212,34 +212,56 @@ class StructuredOutputDriver(LogitsProcessor):
         """
         top_tokens = self._get_top_tokens(logits, num_top_tokens)
 
+        partial_match_walkers: Dict[str, Set[Walker]] = {}
 
-        for index, (token_id, token, score) in enumerate(top_tokens):
+        for token_id, token, score in top_tokens:
             logger.debug(
-                f"{index + 1}. token_id: {token_id}, token: {token}, score: {score}"
+                f"token(id: {token_id}): {repr(token)}, score: {score}"
             )
-            full_match_walkers: List[Walker] = []
-            for valid_token, walker in StateMachine.advance_all_walkers(
-                self.walkers, token, self.dawg
-            ):
-                if valid_token != token:
-                    logger.debug(f"{index + 1}. partial match: {valid_token}")
-                    logger.warning(f"Partial matches not implemented: {valid_token}")
-                    continue
-                else:
-                    logger.debug(f"{index + 1}. valid_token: {valid_token}")
-                    full_match_walkers.append(walker)
 
-                if walker.has_reached_accept_state():
-                    self.walkers = full_match_walkers
-                    return token_id
-
-            if full_match_walkers:
-                self.walkers = full_match_walkers
+            if token in partial_match_walkers:
+                # We've found a match for this token before as a partial match
+                # So we can use the computed walkers
+                logger.debug(f"already computed walkers for {token}")
+                self.walkers = list(partial_match_walkers[token])
                 return token_id
 
-        raise TokenRejected(
-            f"No valid token found in the top {num_top_tokens} tokens: {top_tokens} "
-        )
+            new_walkers: List[Walker] = []
+
+            for valid_token, walker in StateMachine.advance_all_walkers(
+                self.walkers,
+                token,
+                self.dawg,
+            ):
+                if valid_token == token:
+                    logger.debug(f"valid_token: {valid_token}")
+                    new_walkers.append(walker)
+                else:
+                    logger.debug(f"partial match: {valid_token}")
+                    partial_match_walkers.setdefault(valid_token, set()).add(walker)
+
+            if new_walkers:
+                self.walkers = new_walkers
+                return token_id
+
+        if not partial_match_walkers:
+            logger.error(f"No valid token found in the top {num_top_tokens} tokens")
+            raise TokenRejected("No valid token found")
+
+        for token, walkers in sorted(
+            partial_match_walkers.items(),
+            key=lambda item: (len(item[0]), len(item[1])),
+            reverse=True,
+        ):
+            valid_token_id = self.token_to_id.get(token)
+            if valid_token_id is not None:
+                self.walkers = list(walkers)
+                return valid_token_id
+            logger.debug(f"{token} not found in vocab, trying next partial match")
+
+        raise TokenRejected("No valid token found after trying partial matches")
+
+
 
     def advance_token(self, token_id: int) -> None:
         token = self.tokenizer.decode([token_id])

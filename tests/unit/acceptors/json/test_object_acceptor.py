@@ -1,38 +1,31 @@
 import pytest
-from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
+from pse.acceptors.json.object_acceptor import ObjectAcceptor
 from pse.state_machine.state_machine import StateMachine
 
 @pytest.fixture
 def object_acceptor() -> ObjectAcceptor:
     return ObjectAcceptor()
 
-
-def test_walker_get_value_empty(object_acceptor: ObjectAcceptor):
-    walker = ObjectWalker(object_acceptor)
-    assert walker.get_current_value() == {}
-
-
-
 @pytest.mark.parametrize(
     "json_string, expected",
     [
-        # ("{}", {}),
-        # ('{"key1": "value1"}', {"key1": "value1"}),
-        # ('{"key1": "value1", "key2": "value2"}', {"key1": "value1", "key2": "value2"}),
+        ("{}", {}),
+        ('{"key1": "value1"}', {"key1": "value1"}),
+        ('{"key1": "value1", "key2": "value2"}', {"key1": "value1", "key2": "value2"}),
         ('{"outer": {"inner": "value"}}', {"outer": {"inner": "value"}}),
-        # (
-        #     '{"ke@y1": "val€ue1", "ke¥2": "valu😊e2"}',
-        #     {"ke@y1": "val€ue1", "ke¥2": "valu😊e2"},
-        # ),
-        # ('{"key1": ""}', {"key1": ""}),
-        # (
-        #     '{  "key1"  :  "value1"  }',
-        #     {"key1": "value1"},
-        # ),
-        # (
-        #     '{ "a" :  "b","x":   "y"}',
-        #     {"a": "b", "x": "y"},
-        # ),
+        (
+            '{"ke@y1": "val€ue1", "ke¥2": "valu😊e2"}',
+            {"ke@y1": "val€ue1", "ke¥2": "valu😊e2"},
+        ),
+        ('{"key1": ""}', {"key1": ""}),
+        (
+            '{  "key1"  :  "value1"  }',
+            {"key1": "value1"},
+        ),
+        (
+            '{ "a" :  "b","x":   "y"}',
+            {"a": "b", "x": "y"},
+        ),
     ],
 )
 def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expected):
@@ -164,3 +157,16 @@ def test_more_invalid_json_objects(object_acceptor: ObjectAcceptor, json_string)
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Walkers should not be in an accepted state for invalid JSON: {json_string}"
+
+
+def test_no_spaces(object_acceptor: ObjectAcceptor):
+
+    input_string = '{"a":"b","c":"d"}'
+    walkers = list(object_acceptor.get_walkers())
+    walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, input_string)
+    ]
+    assert len(walkers) == 1
+    walker = walkers[0]
+    assert walker.has_reached_accept_state()
+    assert walker.get_current_value() == {"a": "b", "c": "d"}
