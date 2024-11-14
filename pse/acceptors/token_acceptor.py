@@ -82,7 +82,10 @@ class TokenAcceptor(ABC):
         return self._is_case_sensitive
 
     @abstractmethod
-    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
+    def get_walkers(
+        self,
+        state: Optional[StateType] = None,
+    ) -> Iterable[Walker]:
         """Retrieves walkers to traverse the acceptor.
 
         Returns:
@@ -91,13 +94,11 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def get_transitions(
+    def get_transitions_from(
         self,
-        state: StateType,
-        source_walker: Optional[Walker] = None,
+        walker: Walker,
     ) -> Iterable[Tuple[Walker, StateType]]:
-        """Retrieves transitions from the given state.
-        """
+        """Retrieves transitions from the given walker."""
         pass
 
     @abstractmethod
@@ -106,8 +107,7 @@ class TokenAcceptor(ABC):
         walker: Walker,
         token: Optional[str] = None,
     ) -> Iterable[Walker]:
-        """Branch the walker into multiple paths for parallel exploration.
-        """
+        """Branch the walker into multiple paths for parallel exploration."""
         pass
 
     @abstractmethod

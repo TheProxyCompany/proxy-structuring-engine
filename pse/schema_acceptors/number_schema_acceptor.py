@@ -61,8 +61,7 @@ class NumberSchemaWalker(NumberWalker):
     def should_start_transition(self, token: str) -> bool:
         if (
             self.acceptor.is_integer
-            and self.current_state == 3
-            and self.target_state == 4
+            and self.target_state == 3
         ):
             return False
         return super().should_start_transition(token)

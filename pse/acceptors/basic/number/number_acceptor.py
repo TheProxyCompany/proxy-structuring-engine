@@ -90,10 +90,6 @@ class NumberWalker(StateMachineWalker):
             if self.transition_walker.can_accept_more_input():
                 return True
 
-            logger.debug(
-                f"🔴 {self.transition_walker.acceptor} cannot accept more input"
-            )
-
         return (
             bool(self.acceptor.graph.get(self.current_state))
             and self._accepts_more_input

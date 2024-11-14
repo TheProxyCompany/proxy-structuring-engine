@@ -47,7 +47,7 @@ class ArraySchemaAcceptor(ArrayAcceptor):
         """
         Returns the maximum number of items in the array, according to the schema
         """
-        return self.schema.get("maxItems", 2**32)  # Arbitrary default
+        return self.schema.get("maxItems", 2**32)
 
 
 class ArraySchemaWalker(ArrayWalker):
@@ -60,8 +60,12 @@ class ArraySchemaWalker(ArrayWalker):
         self.acceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
-        if self.current_state == 4 and self.target_state == 2:
+        if (
+            self.current_state == 2 and self.target_state == 3
+            or self.current_state == 4 and self.target_state == 2
+        ):
             return len(self.value) < self.acceptor.max_items()
-        if self.target_state == "$":
+        if self.current_state == 3 and self.target_state == "$":
             return len(self.value) >= self.acceptor.min_items()
-        return True
+
+        return super().should_start_transition(token)

@@ -158,7 +158,7 @@ class Walker(ABC):
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
-    def transition_with_walker(self, transition_walker: Walker) -> Walker:
+    def transition_with_walker(self, transition_walker: Walker) -> Iterable[Walker]:
         """Advance the walker to the next state.
 
         Args:
@@ -176,21 +176,26 @@ class Walker(ABC):
         clone.consumed_character_count += transition_walker.consumed_character_count
         clone.explored_edges.add(clone.current_edge)
 
-        if clone.should_complete_transition():
-            if transition_walker.has_reached_accept_state() and self.target_state:
-                clone.current_state = self.target_state
+        if not clone.should_complete_transition():
+            if clone.can_accept_more_input():
+                yield clone
+            return
 
-                if not transition_walker.can_accept_more_input():
-                    clone.accepted_history.append(transition_walker)
-                    clone.transition_walker = None
-                    clone.target_state = None
+        if transition_walker.has_reached_accept_state() and self.target_state:
+            clone.current_state = self.target_state
 
-                if clone.current_state in clone.acceptor.end_states:
-                    from pse.state_machine.accepted_state import AcceptedState
+            if not transition_walker.can_accept_more_input():
+                clone.accepted_history.append(transition_walker)
+                clone.transition_walker = None
+                clone.target_state = None
 
-                    return AcceptedState(clone)
+            if clone.current_state in clone.acceptor.end_states:
+                from pse.state_machine.accepted_state import AcceptedState
+                yield AcceptedState(clone)
+                return
 
-        return clone
+        yield clone
+
 
     def set_target(
         self,
@@ -408,6 +413,11 @@ class Walker(ABC):
             and self.get_current_value() == other.get_current_value()
         )
 
+    def __str__(self) -> str:
+        if self.transition_walker:
+            return f"{self.acceptor}.Walker({self.transition_walker})"
+        return self.__repr__()
+
     def __repr__(self) -> str:
         """Return a structured string representation of the walker.
 
@@ -480,7 +490,6 @@ class Walker(ABC):
         info_parts = [
             part
             for part in [
-                _format_state_info(),
                 _format_history_info(),
                 _format_edge_info(),
                 _format_remaining_input(),
@@ -488,6 +497,12 @@ class Walker(ABC):
             ]
             if part
         ]
+
+        if self.current_state != self.acceptor.initial_state:
+            info_parts.insert(
+                0,
+                _format_state_info(),
+            )
 
         # Format final output
         # Format single line output if it fits within 80 chars

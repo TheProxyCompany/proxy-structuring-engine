@@ -75,7 +75,8 @@ class ObjectSchemaWalker(ObjectWalker):
         if self.current_state == 2 and self.target_state == 3:
             # Check if the property name is already in the object
             return token not in self.value
-        if self.current_state == 4 and self.target_state == 1:
+        if self.current_state == 4 and self.target_state == 2:
             # Are all allowed properties already set?
             return len(self.value.keys()) < len(self.acceptor.properties)
-        return True
+
+        return super().should_start_transition(token)

@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Set
 from lexpy import DAWG
 
 from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.walker import Walker, logger
+from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 
 
@@ -119,10 +119,8 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             Iterable[Walker]: An iterable containing the new walker state if input is valid.
         """
-        logger.debug(f"Advancing input: '{token}' with walker: {self}")
 
         if not token:
-            logger.debug("Walker does not accept empty input, returning.")
             self._accepts_more_input = False
             return
 
@@ -147,7 +145,6 @@ class CharacterWalker(StateMachineWalker):
         remaining_input = token[valid_length:] if valid_length < len(token) else None
 
         if not valid_characters:
-            logger.debug(f"🔴 {self} cannot handle input: {token}")
             self._accepts_more_input = False
             return
 

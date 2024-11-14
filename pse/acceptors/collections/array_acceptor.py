@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, Optional, Iterable, Type
+from typing import List, Any, Optional, Type
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
@@ -48,9 +48,6 @@ class ArrayAcceptor(StateMachine):
             }
         super().__init__(graph, walker_type=walker_type or ArrayWalker)
 
-    def get_walkers(self) -> Iterable[ArrayWalker]:
-        yield ArrayWalker(self)
-
 
 class ArrayWalker(StateMachineWalker):
     """
@@ -86,10 +83,10 @@ class ArrayWalker(StateMachineWalker):
             bool: True if the transition was successful, False otherwise.
         """
         if (
-            self.transition_walker
-            and self.transition_walker.target_state == 3
+            self.target_state == 3
+            and self.transition_walker
             and self.transition_walker.raw_value is not None
         ):
-            self.accepted_history.append(self.transition_walker)
             self.value.append(self.transition_walker.raw_value)
-        return True
+
+        return super().should_complete_transition()

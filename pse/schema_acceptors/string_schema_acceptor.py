@@ -117,6 +117,20 @@ class StringSchemaWalker(StringWalker):
         self.acceptor = acceptor
         self.is_escaping = False
 
+    def should_start_transition(self, token: str) -> bool:
+        if (
+            self.is_within_value()
+            and self.target_state
+            and self.target_state not in self.acceptor.end_states
+            and self.acceptor.pattern
+            and self.transition_walker
+            and self.transition_walker.raw_value
+            and not self.is_pattern_prefix(self.transition_walker.raw_value + token)
+        ):
+            return False
+
+        return super().should_start_transition(token)
+
     def should_complete_transition(self) -> bool:
         if (
             not self.is_within_value()
