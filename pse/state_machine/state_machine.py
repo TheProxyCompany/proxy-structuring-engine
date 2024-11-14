@@ -106,8 +106,6 @@ class StateMachine(TokenAcceptor):
                     logger.debug(
                         f"🟡 edge ({state})--[{acceptor}]-->({target_state}) supports pass-through, getting transitions for next state {target_state}"
                     )
-                    # if source_walker:
-                    #     source_walker.current_state = target_state
                     yield from self.get_transitions(target_state, source_walker)
 
     def branch_walkers(
@@ -180,7 +178,6 @@ class StateMachine(TokenAcceptor):
                 logger.debug(
                     "🔵 Walker has no transition walker. Branching to next states."
                 )
-                # breakpoint()
                 has_valid_transition = False
                 for next_walker in self.branch_walkers(current_walker, current_token):
                     has_valid_transition = True

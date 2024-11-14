@@ -6,6 +6,7 @@ from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
+    StateMachineWalker
 )
 
 
@@ -43,4 +44,9 @@ class EncapsulatedAcceptor(StateMachine):
         self.opening_delimiter: str = open_delimiter
         self.closing_delimiter: str = close_delimiter
         self.wait_for_acceptor: TokenAcceptor = acceptor
-        super().__init__(graph)
+        super().__init__(graph, walker_type=EncapsulatedWalker)
+
+class EncapsulatedWalker(StateMachineWalker):
+
+    def is_within_value(self) -> bool:
+        return self.current_state == 1

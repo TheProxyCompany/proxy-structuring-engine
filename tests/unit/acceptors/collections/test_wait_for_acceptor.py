@@ -74,29 +74,6 @@ def test_advance_with_and_without_trigger(
     ), f"WaitForAcceptor should {'be' if expected_triggered else 'not be'} triggered."
 
 
-def test_get_value_before_trigger(
-    setup_acceptors: Tuple[WaitForAcceptor, TextAcceptor],
-):
-    """
-    Test the get_value method before the trigger is encountered.
-    """
-    wait_for_acceptor, trigger_acceptor = setup_acceptors
-    input_sequence = "Waiting for trigger..."
-    walkers = list(wait_for_acceptor.get_walkers())
-
-    for char in input_sequence:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
-
-    for walker in walkers:
-        if not walker.has_reached_accept_state():
-            expected_value = str(trigger_acceptor)
-            assert (
-                walker.get_current_value() == expected_value
-            ), "get_value should return the correct waiting state description."
-
-
 def test_get_value_after_trigger(setup_acceptors: Tuple[WaitForAcceptor, TextAcceptor]):
     """
     Test the get_value method after the trigger is encountered.

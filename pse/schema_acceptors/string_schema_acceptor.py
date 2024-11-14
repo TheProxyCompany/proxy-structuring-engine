@@ -118,27 +118,23 @@ class StringSchemaWalker(StringWalker):
         self.is_escaping = False
 
     def should_complete_transition(self) -> bool:
-        in_string_content = self.is_in_string_content()
         if (
-            not in_string_content
+            not self.is_within_value()
             and self.target_state == self.acceptor.STATE_IN_STRING
             and self.acceptor.start_hook
         ):
             self.acceptor.start_hook()
 
         # Only update partial_value when processing actual string content
-        if in_string_content and self.target_state and self.target_state not in self.acceptor.end_states:
+        if (
+            self.is_within_value()
+            and self.target_state
+            and self.target_state not in self.acceptor.end_states
+        ):
             if self.is_escaping:
                 self.is_escaping = False
             elif self.transition_walker and self.transition_walker.raw_value == "\\":
                 self.is_escaping = True
-
-            if (
-                self.acceptor.pattern
-                and self._raw_value
-                and not self.is_pattern_prefix(self._raw_value)
-            ):
-                return False  # Reject early if pattern can't match
 
         if self.target_state and self.target_state in self.acceptor.end_states:
             if self.acceptor.end_hook:
@@ -151,10 +147,7 @@ class StringSchemaWalker(StringWalker):
 
         return True
 
-    def is_in_string_content(self) -> bool:
-        """
-        Determine if the walker is currently inside the string content (i.e., after the opening quote).
-        """
+    def is_within_value(self) -> bool:
         return self.current_state == self.acceptor.STATE_IN_STRING
 
     def is_pattern_prefix(self, s: str) -> bool:
