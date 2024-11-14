@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Type
 import logging
 
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.state_machine.state_machine import (
     StateMachine,
     StateMachineGraph,
@@ -38,16 +39,16 @@ class ObjectAcceptor(StateMachine):
             ],
             1: [
                 (WhitespaceAcceptor(), 2),
+                (TextAcceptor("}"), "$"),  # Empty object
             ],
             2: [
-                (TextAcceptor("}"), "$"),  # Empty object
                 (PropertyAcceptor(), 3),
             ],
             3: [
                 (WhitespaceAcceptor(), 4),
             ],
             4: [
-                (TextAcceptor(","), 1),  # Loop back to state 1 for more properties
+                (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
                 (TextAcceptor("}"), "$"),  # End of object
             ],
         }
@@ -77,13 +78,15 @@ class ObjectWalker(StateMachineWalker):
             bool: True if the transition was successful, False otherwise.
         """
         if (
-            self.current_state == 2
+            self.target_state == 3
             and self.transition_walker
+            and self.transition_walker.has_reached_accept_state()
         ):
-            # breakpoint()
             prop_name, prop_value = self.transition_walker.get_current_value()
             logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
+            return self.transition_walker.has_reached_accept_state()
+
         return True
 
     def get_current_value(self) -> Dict[str, Any]:
@@ -95,4 +98,4 @@ class ObjectWalker(StateMachineWalker):
         """
         if not self.raw_value:
             return {}
-        return super().get_current_value()
+        return self.value

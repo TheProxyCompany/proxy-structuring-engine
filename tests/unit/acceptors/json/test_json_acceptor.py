@@ -53,7 +53,7 @@ def test_json_acceptor_initialization(json_acceptor):
 )
 def test_parse_valid_json(json_string, expected, parse_json):
     parsed = parse_json(json_string)
-    assert parsed == expected, "Parsed JSON does not match expected output."
+    assert parsed == expected
 
 
 @pytest.mark.parametrize(

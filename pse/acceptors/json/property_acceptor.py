@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Tuple, Optional, Any, List, Type
 import logging
+import json
 
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
@@ -84,9 +85,9 @@ class PropertyWalker(SequenceWalker):
 
         try:
             if self.target_state == 1:
-                self.prop_name = self.transition_walker.raw_value
+                self.prop_name = json.loads(self.transition_walker.raw_value)
             elif self.target_state in self.acceptor.end_states:
-                self.prop_value = self.transition_walker.raw_value
+                self.prop_value = json.loads(self.transition_walker.raw_value)
         except Exception:
             return False
 
@@ -117,9 +118,9 @@ class PropertyWalker(SequenceWalker):
             return ("", None)
         return (self.prop_name, self.prop_value)
 
-    @property
-    def raw_value(self) -> Optional[str]:
-        if not self.prop_name or not self.prop_value:
-            return super().raw_value
+    # @property
+    # def raw_value(self) -> Optional[str]:
+    #     if not self.prop_name or not self.prop_value:
+    #         return super().raw_value
 
-        return f'{self.prop_name}: {self.prop_value}'
+    #     return f'{self.prop_name}: {self.prop_value}'

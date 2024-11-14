@@ -184,15 +184,11 @@ class Walker(ABC):
                     clone.accepted_history.append(transition_walker)
                     clone.transition_walker = None
                     clone.target_state = None
-                else:
-                    logger.debug(
-                        f"🟡 {transition_walker.acceptor} can accept more input"
-                    )
 
-            if clone.current_state in clone.acceptor.end_states:
-                from pse.state_machine.accepted_state import AcceptedState
+                if clone.current_state in clone.acceptor.end_states:
+                    from pse.state_machine.accepted_state import AcceptedState
 
-                return AcceptedState(clone)
+                    return AcceptedState(clone)
 
         return clone
 

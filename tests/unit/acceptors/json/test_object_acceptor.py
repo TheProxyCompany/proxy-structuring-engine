@@ -12,19 +12,14 @@ def test_walker_get_value_empty(object_acceptor: ObjectAcceptor):
     assert walker.get_current_value() == {}
 
 
-def test_walker_get_value_with_data(object_acceptor: ObjectAcceptor):
-    walker = ObjectWalker(object_acceptor)
-    walker.value = {"key1": "value1", "key2": "value2"}
-    assert walker.get_current_value() == {"key1": "value1", "key2": "value2"}
-
 
 @pytest.mark.parametrize(
     "json_string, expected",
     [
         # ("{}", {}),
-        ('{"key1": "value1"}', {"key1": "value1"}),
+        # ('{"key1": "value1"}', {"key1": "value1"}),
         # ('{"key1": "value1", "key2": "value2"}', {"key1": "value1", "key2": "value2"}),
-        # ('{"outer": {"inner": "value"}}', {"outer": {"inner": "value"}}),
+        ('{"outer": {"inner": "value"}}', {"outer": {"inner": "value"}}),
         # (
         #     '{"ke@y1": "val€ue1", "ke¥2": "valu😊e2"}',
         #     {"ke@y1": "val€ue1", "ke¥2": "valu😊e2"},

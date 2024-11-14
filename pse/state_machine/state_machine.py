@@ -106,6 +106,8 @@ class StateMachine(TokenAcceptor):
                     logger.debug(
                         f"🟡 edge ({state})--[{acceptor}]-->({target_state}) supports pass-through, getting transitions for next state {target_state}"
                     )
+                    # if source_walker:
+                    #     source_walker.current_state = target_state
                     yield from self.get_transitions(target_state, source_walker)
 
     def branch_walkers(
@@ -239,10 +241,6 @@ class StateMachine(TokenAcceptor):
                 for next_walker in self.branch_walkers(current_walker):
                     if next_walker.should_start_transition(current_token):
                         queue.append((next_walker, current_token))
-
-
-        # after queue is empty
-        logger.debug(f"🔵 {self} queue is empty!")
 
     @classmethod
     def advance_all_walkers(

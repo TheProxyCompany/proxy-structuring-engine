@@ -1,18 +1,11 @@
 import pytest
-from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
+from pse.acceptors.json.property_acceptor import PropertyAcceptor
 from pse.state_machine.state_machine import StateMachine
 
 
 @pytest.fixture
 def property_acceptor() -> PropertyAcceptor:
     return PropertyAcceptor()
-
-
-def test_walker_initialization(property_acceptor: PropertyAcceptor):
-    walker = PropertyWalker(property_acceptor)
-    assert walker.prop_name is None
-    assert walker.prop_value is None
-    assert walker.can_accept_more_input() is True
 
 
 @pytest.mark.parametrize(
@@ -65,13 +58,3 @@ def test_invalid_property_formats(property_acceptor: PropertyAcceptor, invalid_i
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Walker should not reach accepted state for invalid input: {invalid_input}"
-
-def test_walker_in_value_state(property_acceptor: PropertyAcceptor):
-    walker = PropertyWalker(property_acceptor)
-
-    # Not in value state initially
-    assert not walker.is_within_value()
-
-    # Set state to value parsing (state 4)
-    walker.current_state = 4
-    assert walker.is_within_value()

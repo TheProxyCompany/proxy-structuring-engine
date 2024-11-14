@@ -51,5 +51,5 @@ class JsonAcceptor(StateMachine):
         return []
 
     def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
-        for walker, _ in self.get_transitions(state or 0):
-            yield walker
+        for edge, target_state in self.get_edges(state or 0):
+            yield from edge.get_walkers()
