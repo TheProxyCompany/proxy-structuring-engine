@@ -30,7 +30,6 @@ def test_boolean_acceptor(token, expected_value):
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
-    print(walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert walker.current_value == expected_value

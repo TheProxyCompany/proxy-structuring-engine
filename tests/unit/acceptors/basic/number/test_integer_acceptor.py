@@ -25,11 +25,9 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    print(f"walkers: {walkers}")
     advanced_walkers = [
         walker for _, walker in sm.advance_all_walkers(walkers, input_string)
     ]
-    print(f"walkers: {advanced_walkers}")
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -61,10 +59,8 @@ def test_integer_acceptor(input_string, expected_value):
 
     walkers = list(sm.get_walkers())
     for char in input_string:
-        print(f"Advancing with {char}, walkers: {walkers}")
         walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
 
-    print(f"walkers after advancing: {walkers}")
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"IntegerAcceptor should accept input '{input_string}'."

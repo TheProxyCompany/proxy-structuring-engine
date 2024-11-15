@@ -100,8 +100,8 @@ class StateMachine(TokenAcceptor):
                 next_walkers = list(self.branch_walker(current_walker, current_token))
 
                 if next_walkers:
-                    for next_walker in next_walkers:
-                        queue.append((next_walker, current_token))
+                    logger.debug("🟢 Branching to %d next walkers", len(next_walkers))
+                    queue.extend((next_walker, current_token) for next_walker in next_walkers)
                 elif current_walker.remaining_input:
                     logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
                     yield current_walker
@@ -111,12 +111,7 @@ class StateMachine(TokenAcceptor):
                 continue
 
             if current_walker.should_start_transition(current_token):
-                # Remove duplicate walker from history if needed
-                if current_walker.accepted_history and current_walker.transition_walker == current_walker.accepted_history[-1]:
-                    logger.debug("🟡 Popping duplicate walker from history: %s", current_walker.accepted_history[-1])
-                    current_walker.accepted_history.pop()
-
-                # Process each new transition walker
+                logger.debug("⚪️ Advance %s with token %s", repr(current_walker), repr(current_token))
                 for transition_walker in current_walker.transition_walker.consume_token(current_token):
                     if new_walker := current_walker.transition(transition_walker):
                         if new_walker.remaining_input:

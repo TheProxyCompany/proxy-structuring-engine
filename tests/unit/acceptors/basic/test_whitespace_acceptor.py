@@ -31,7 +31,6 @@ def test_whitespace_acceptor_custom_min_whitespace():
     advanced_walkers = [
         walker for _, walker in StateMachine.advance_all_walkers(walkers, " ")
     ]
-    print(f"walkers: {advanced_walkers}")
     assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
     # Input with two whitespace characters, should be accepted
@@ -109,7 +108,6 @@ def test_whitespace_acceptor_mixed_input():
     advanced_walkers = [
         walker for _, walker in StateMachine.advance_all_walkers(walkers, "  abc")
     ]
-    print(f"walkers: {advanced_walkers}")
     assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
     # Should accept the whitespace part before the non-whitespace character
     walkers = list(acceptor.get_walkers())
