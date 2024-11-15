@@ -166,3 +166,33 @@ def test_multiple_sequences(acceptors: List[TokenAcceptor], token: str):
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Input '{token}' should be accepted by the given SequenceAcceptor."
+
+
+def test_optional_acceptor():
+    """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
+    sequence = SequenceAcceptor([
+            TextAcceptor(","),
+            WhitespaceAcceptor(min_whitespace=0),
+        ]
+    )
+    sm = StateMachine(
+        graph={
+            0: [
+                (TextAcceptor("Hello"), 1),
+                (TextAcceptor("World"), 1),
+            ],
+            1: [
+                (sequence, "0"),
+                (TextAcceptor("."), "$"),
+            ],
+        },
+        initial_state=0,
+    )
+    walkers = list(sm.get_walkers())
+    assert len(walkers) == 2
+    input_string = "Hello,World."
+    new_walkers = [
+        walker for _, walker in StateMachine.advance_all_walkers(walkers, input_string)
+    ]
+    assert len(new_walkers) == 1
+    assert new_walkers[0].current_value == input_string

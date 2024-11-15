@@ -84,12 +84,15 @@ class TextWalker(StateMachineWalker):
         super().__init__(acceptor)
         self.acceptor = acceptor
         self.consumed_character_count = consumed_character_count or 0
+        self._accepts_more_input = True
 
     def can_accept_more_input(self) -> bool:
         """
         Check if the walker can accept more input.
         """
-        return self.consumed_character_count < len(self.acceptor.text)
+        return self._accepts_more_input and self.consumed_character_count < len(
+            self.acceptor.text
+        )
 
     def should_start_transition(self, token: str) -> bool:
         """
@@ -98,15 +101,22 @@ class TextWalker(StateMachineWalker):
         if not token:
             return False
 
-        remaining_text = self.acceptor.text[self.consumed_character_count:]
-        return remaining_text.startswith(token) or token.startswith(remaining_text)
+        remaining_text = self.acceptor.text[self.consumed_character_count :]
+        should_start = remaining_text.startswith(token) or token.startswith(
+            remaining_text
+        )
+        if not should_start:
+            self._accepts_more_input = False
+
+        return should_start
 
     def should_complete_transition(self) -> bool:
         """
         Complete the transition if the transition value matches the remaining text.
         """
         return bool(self.transition_walker) and (
-            self.transition_walker.raw_value == self.acceptor.text[self.consumed_character_count:]
+            self.transition_walker.raw_value
+            == self.acceptor.text[self.consumed_character_count :]
         )
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
@@ -150,7 +160,7 @@ class TextWalker(StateMachineWalker):
         pos = self.consumed_character_count
         match_len = min(len(self.acceptor.text) - pos, len(token))
 
-        if self.acceptor.text[pos:pos + match_len] == token[:match_len]:
+        if self.acceptor.text[pos : pos + match_len] == token[:match_len]:
             next_walker = self.__class__(self.acceptor, pos + match_len)
             next_walker.remaining_input = token[match_len:] or None
 

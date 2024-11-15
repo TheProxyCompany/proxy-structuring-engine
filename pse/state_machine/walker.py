@@ -39,7 +39,7 @@ class Walker(ABC):
         explored_edges: Set of visited state transitions.
         consumed_character_count: Number of characters processed.
         remaining_input: Unprocessed input string.
-        _accepts_input: Whether walker can accept more input.
+        _accepts_more_input: Whether walker can accept more input.
     """
 
     def __init__(
@@ -216,6 +216,7 @@ class Walker(ABC):
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.state_machine.accepted_state import AcceptedState
+
                 return AcceptedState(clone)
 
         return clone

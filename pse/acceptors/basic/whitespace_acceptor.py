@@ -56,11 +56,13 @@ class WhitespaceWalker(Walker):
         self._raw_value = value or ""
         self.consumed_character_count = len(self._raw_value)
         self.length_exceeded: bool = len(self._raw_value) > self.acceptor.max_whitespace
-        self._accepts_input: bool = len(self._raw_value) <= self.acceptor.max_whitespace
+        self._accepts_more_input: bool = (
+            len(self._raw_value) <= self.acceptor.max_whitespace
+        )
 
     def should_start_transition(self, token: str) -> bool:
         if not token or not token[0].isspace():
-            self._accepts_input = False
+            self._accepts_more_input = False
             return False
 
         return True
@@ -87,7 +89,7 @@ class WhitespaceWalker(Walker):
 
     def can_accept_more_input(self) -> bool:
         return (
-            self._accepts_input
+            self._accepts_more_input
             and self.consumed_character_count < self.acceptor.max_whitespace
         )
 
@@ -100,7 +102,6 @@ class WhitespaceWalker(Walker):
         Returns:
             List[WhitespaceAcceptor.Walker]: List of new walkers after advancement.
         """
-        logger.debug(f"input: {repr(token)}, advancing walker: {self}")
         if self.length_exceeded:
             return []
 
@@ -118,28 +119,22 @@ class WhitespaceWalker(Walker):
         valid_input = token[:valid_length]
         remaining_input = token[valid_length:] or None
 
-        if remaining_input:
-            logger.debug(f"remaining_input: {repr(remaining_input)}")
-
         if not valid_input:
-            self._accepts_input = False
-            logger.debug("no valid whitespace prefix, returning no walkers")
+            self._accepts_more_input = False
             if (
                 remaining_input
                 and self.consumed_character_count >= self.acceptor.min_whitespace
             ):
                 copy = self.clone()
                 copy.remaining_input = remaining_input
-                copy._accepts_input = False
+                copy._accepts_more_input = False
                 yield AcceptedState(copy)
             return
-
-        logger.debug(f"valid_input: {repr(valid_input)}")
 
         next_walker = self.clone()
         next_walker._raw_value = (next_walker._raw_value or "") + valid_input
         next_walker.remaining_input = remaining_input
-        next_walker._accepts_input = remaining_input is None
+        next_walker._accepts_more_input = remaining_input is None
         next_walker.consumed_character_count += valid_length
 
         if next_walker.consumed_character_count > self.acceptor.max_whitespace:
