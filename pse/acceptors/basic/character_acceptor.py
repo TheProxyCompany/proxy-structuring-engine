@@ -42,13 +42,6 @@ class CharacterAcceptor(StateMachine):
         self.char_min = char_min or 0
         self.char_limit = char_limit or 0
 
-    def get_walkers(self) -> Iterable[Walker]:
-        """
-        Get one or more walkers to traverse the acceptor.
-        Override.
-        """
-        yield self._walker(self)
-
     def __str__(self) -> str:
         return self.__repr__()
 
@@ -63,7 +56,9 @@ class CharacterWalker(StateMachineWalker):
     """
 
     def __init__(
-        self, acceptor: CharacterAcceptor, value: Optional[str] = None
+        self,
+        acceptor: CharacterAcceptor,
+        value: Optional[str] = None,
     ) -> None:
         """
         Initialize the Walker.
@@ -74,7 +69,7 @@ class CharacterWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.acceptor: CharacterAcceptor = acceptor
-        self._raw_value = value
+        self._raw_value = value or ""
 
     def can_accept_more_input(self) -> bool:
         return self._accepts_more_input

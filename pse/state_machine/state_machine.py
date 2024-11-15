@@ -70,7 +70,10 @@ class StateMachine(TokenAcceptor):
             Walker instances positioned at the starting state.
         """
         initial_walker = self._walker(self, state)
-        yield from self.branch_walker(initial_walker)
+        if not self.graph:
+            yield initial_walker
+        else:
+            yield from self.branch_walker(initial_walker)
 
     def get_transition_walkers(
         self, walker: Walker, state: Optional[StateType] = None

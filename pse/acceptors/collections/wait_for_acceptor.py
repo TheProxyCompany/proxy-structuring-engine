@@ -31,20 +31,11 @@ class WaitForAcceptor(StateMachine):
             wait_for_acceptor (TokenAcceptor): The acceptor that, when triggered,
                 stops the waiting and stops accepting further characters.
         """
-        super().__init__({})
+        super().__init__(walker_type=WaitForWalker)
         self.wait_for_acceptor = wait_for_acceptor
         self.start_hook = start_hook
         self.end_hook = end_hook
         self.triggered = False
-
-    def get_walkers(self) -> Iterable[Walker]:
-        """
-        Retrieve the initial walker(s) for the WaitForAcceptor.
-
-        Returns:
-            Iterable[StateMachineAcceptor.Walker]: A list containing a single Walker instance.
-        """
-        yield WaitForWalker(self)
 
     def advance_all_walkers(
         self, walkers: Iterable[Walker], token: str

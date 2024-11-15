@@ -47,13 +47,6 @@ class TextAcceptor(StateMachine):
 
         self.text = text
 
-    def get_walkers(self) -> Iterable[Walker]:
-        """
-        Get one or more walkers to traverse the acceptor.
-        Override.
-        """
-        yield self._walker(self)
-
     def __str__(self) -> str:
         return self.__repr__()
 
@@ -76,7 +69,11 @@ class TextWalker(StateMachineWalker):
         consumed_character_count (int): The current position in the text being validated.
     """
 
-    def __init__(self, acceptor: TextAcceptor, consumed_character_count: int = 0):
+    def __init__(
+        self,
+        acceptor: TextAcceptor,
+        consumed_character_count: Optional[int] = None,
+    ):
         """
         Initialize a new Walker instance.
 
@@ -86,7 +83,7 @@ class TextWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.acceptor = acceptor
-        self.consumed_character_count = consumed_character_count
+        self.consumed_character_count = consumed_character_count or 0
 
     def can_accept_more_input(self) -> bool:
         """

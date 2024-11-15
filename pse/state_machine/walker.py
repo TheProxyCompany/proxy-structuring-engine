@@ -116,7 +116,7 @@ class Walker(ABC):
         Returns:
             The concatenated raw values from history and transitions.
         """
-        if self._raw_value is not None:
+        if self._raw_value:
             return self._raw_value
 
         if not self.accepted_history and not self.transition_walker:

@@ -349,19 +349,6 @@ def test_unexpected_input():
     assert not any(walker.has_reached_accept_state() for walker in walkers)
     assert len(walkers) == 0
 
-
-def test_state_machine_no_transitions():
-    """Test StateMachine with no transitions from initial state."""
-    sm = StateMachine(
-        graph={},  # No transitions
-        initial_state=0,
-        end_states=[1],
-    )
-
-    walkers = list(sm.get_walkers())
-    assert len(walkers) == 0
-
-
 def test_get_edges_nonexistent_state():
     """Test get_edges for a state that does not exist in the graph."""
     sm = StateMachine(graph={}, initial_state=0, end_states=[1])

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Set
+from typing import Iterable, Optional, Set
 
 from lexpy import DAWG
 from pse.state_machine.state_machine import StateMachine
@@ -29,14 +29,6 @@ class WhitespaceAcceptor(StateMachine):
         self.min_whitespace: int = min_whitespace
         self.max_whitespace: int = max_whitespace
 
-    def get_walkers(self) -> Iterable[Walker]:
-        """Initialize walkers at the start state.
-
-        Returns:
-            Iterable of walkers positioned at initial state.
-        """
-        yield self._walker(self)
-
     @property
     def is_optional(self) -> bool:
         return self.min_whitespace == 0
@@ -47,7 +39,11 @@ class WhitespaceWalker(Walker):
     Walker for WhitespaceAcceptor utilizing TokenTrie.
     """
 
-    def __init__(self, acceptor: WhitespaceAcceptor, text: str = ""):
+    def __init__(
+        self,
+        acceptor: WhitespaceAcceptor,
+        value: Optional[str] = None,
+    ):
         """
         Initialize the walker.
 
@@ -57,10 +53,10 @@ class WhitespaceWalker(Walker):
         """
         super().__init__(acceptor)
         self.acceptor: WhitespaceAcceptor = acceptor
-        self._raw_value = text
-        self.consumed_character_count = len(text)
-        self.length_exceeded: bool = len(text) > self.acceptor.max_whitespace
-        self._accepts_input: bool = len(text) <= self.acceptor.max_whitespace
+        self._raw_value = value or ""
+        self.consumed_character_count = len(self._raw_value)
+        self.length_exceeded: bool = len(self._raw_value) > self.acceptor.max_whitespace
+        self._accepts_input: bool = len(self._raw_value) <= self.acceptor.max_whitespace
 
     def should_start_transition(self, token: str) -> bool:
         if not token or not token[0].isspace():

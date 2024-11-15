@@ -143,16 +143,16 @@ def test_whitespace_acceptor_long_whitespace_within_max():
 def test_whitespace_acceptor_walker_get_value():
     """Test get_value method of WhitespaceAcceptor.Walker."""
     acceptor = WhitespaceAcceptor()
-    walker = WhitespaceWalker(acceptor, text=" \t")
+    walker = WhitespaceWalker(acceptor, value=" \t")
     assert walker.current_value == " \t"
 
 
 def test_whitespace_acceptor_walker_is_in_value():
     """Test is_in_value method of WhitespaceAcceptor.Walker."""
     acceptor = WhitespaceAcceptor()
-    walker = WhitespaceWalker(acceptor, text="")
+    walker = WhitespaceWalker(acceptor, value="")
     assert not walker.is_within_value()
-    walker = WhitespaceWalker(acceptor, text=" ")
+    walker = WhitespaceWalker(acceptor, value=" ")
     assert walker.is_within_value()
 
 
@@ -224,9 +224,9 @@ def test_whitespace_acceptor_partial_whitespace_input():
 def test_whitespace_acceptor_walker_length_exceeded():
     """Test that walker sets length_exceeded when max_whitespace is exceeded."""
     acceptor = WhitespaceAcceptor(max_whitespace=2)
-    walker = WhitespaceWalker(acceptor, text="  ")
+    walker = WhitespaceWalker(acceptor, value="  ")
     assert not walker.length_exceeded
-    walker = WhitespaceWalker(acceptor, text="   ")
+    walker = WhitespaceWalker(acceptor, value="   ")
     assert walker.length_exceeded
 
 
@@ -267,8 +267,8 @@ def test_whitespace_acceptor_no_remaining_input():
 def test_whitespace_acceptor_walker_equality():
     """Test equality and hashing of WhitespaceAcceptor.Walker."""
     acceptor = WhitespaceAcceptor()
-    walker1 = WhitespaceWalker(acceptor, text=" ")
-    walker2 = WhitespaceWalker(acceptor, text=" ")
+    walker1 = WhitespaceWalker(acceptor, value=" ")
+    walker2 = WhitespaceWalker(acceptor, value=" ")
     assert walker1 == walker2
     assert hash(walker1) == hash(walker2)
 
@@ -276,7 +276,7 @@ def test_whitespace_acceptor_walker_equality():
 def test_whitespace_acceptor_walker_clone():
     """Test cloning functionality of WhitespaceAcceptor.Walker."""
     acceptor = WhitespaceAcceptor()
-    walker = WhitespaceWalker(acceptor, text=" ")
+    walker = WhitespaceWalker(acceptor, value=" ")
     cloned_walker = walker.clone()
     assert walker == cloned_walker
     assert walker is not cloned_walker
