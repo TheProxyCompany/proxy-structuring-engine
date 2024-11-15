@@ -10,7 +10,6 @@ from typing import Iterable, Optional, Set, Tuple, Type
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.accepted_state import AcceptedState
 from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.state_machine.walker import Walker
 
@@ -96,11 +95,9 @@ class StateMachine(TokenAcceptor):
             current_walker, current_token = queue.popleft()
 
             if not current_walker.transition_walker:
-                logger.debug("🔵 Branching to next states.")
                 next_walkers = list(self.branch_walker(current_walker, current_token))
 
                 if next_walkers:
-                    logger.debug("🟢 Branching to %d next walkers", len(next_walkers))
                     queue.extend((next_walker, current_token) for next_walker in next_walkers)
                 elif current_walker.remaining_input:
                     logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
@@ -111,7 +108,12 @@ class StateMachine(TokenAcceptor):
                 continue
 
             if current_walker.should_start_transition(current_token):
-                logger.debug("⚪️ Advance %s with token %s", repr(current_walker), repr(current_token))
+                logger.debug(
+                    "⚪️ Advancing from %s with token %s via %s",
+                    current_walker.__class__.__name__,
+                    repr(current_token),
+                    current_walker.transition_walker.__class__.__name__,
+                )
                 for transition_walker in current_walker.transition_walker.consume_token(current_token):
                     if new_walker := current_walker.transition(transition_walker):
                         if new_walker.remaining_input:
@@ -138,7 +140,6 @@ class StateMachine(TokenAcceptor):
                     continue
 
             if current_walker.transition_walker.has_reached_accept_state():
-                logger.debug("🔵 Branching %s to next states.", current_walker)
                 for next_walker in self.branch_walker(current_walker):
                     if next_walker.should_start_transition(current_token):
                         queue.append((next_walker, current_token))
@@ -174,17 +175,13 @@ class StateMachine(TokenAcceptor):
             for transition_walker in acceptor.get_walkers():
                 yield transition_walker, current_state, target_state
 
-            if acceptor.is_optional:
-                logger.debug("🟡 Optional acceptor %s", acceptor)
-
-                if target_state in self.end_states and not walker.can_accept_more_input():
-                    logger.debug("🟢 Accepting at end state %s with walker %s",
-                               target_state, repr(walker))
-                    yield AcceptedState(walker), current_state, target_state
-                else:
-                    logger.debug("🟢 Handling pass-through for %s to state %s",
-                               acceptor, target_state)
-                    yield from self.get_transition_walkers(walker, target_state)
+            if (
+                acceptor.is_optional
+                and target_state not in self.end_states
+                and walker.can_accept_more_input()
+            ):
+                logger.debug("🟢 %s supports pass-through to state %s", acceptor, target_state)
+                yield from self.get_transition_walkers(walker, target_state)
 
     def branch_walker(
         self, walker: Walker, token: Optional[str] = None
@@ -201,6 +198,7 @@ class StateMachine(TokenAcceptor):
         Yields:
             New walker instances, each representing a different path.
         """
+        logger.debug("🔵 Branching %s to next states.", walker)
         for transition, start_state, target_state in self.get_transition_walkers(walker):
             input_token = token or walker.remaining_input
 

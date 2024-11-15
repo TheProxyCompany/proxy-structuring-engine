@@ -19,15 +19,19 @@ class AcceptedState(Walker):
         Args:
             walker: The walker that has reached an accepted state.
         """
-        super().__init__(walker.acceptor)
+        self.acceptor = walker.acceptor
         self.accepted_walker = walker
-        self.current_state = walker.current_state
-        self.target_state = walker.target_state
-        self._raw_value = walker.raw_value
-        self.remaining_input = walker.remaining_input
-        self.consumed_character_count = walker.consumed_character_count
         self.accepted_history = walker.accepted_history
         self.explored_edges = walker.explored_edges
+
+        self.current_state = walker.current_state
+        self.target_state = walker.target_state
+        self.transition_walker = walker.transition_walker
+
+        self.remaining_input = walker.remaining_input
+        self.consumed_character_count = walker.consumed_character_count
+
+        self._raw_value = walker.raw_value
         self._accepts_more_input = walker._accepts_more_input
 
     def clone(self) -> Walker:
@@ -90,8 +94,6 @@ class AcceptedState(Walker):
         Yields:
             Updated walkers after advancement.
         """
-        logger.debug(f"Advancing walker in accepted state:\n{self}")
-
         if not self.can_accept_more_input():
             logger.debug(f"🔴 {self.accepted_walker.acceptor} cannot handle more input")
             return
