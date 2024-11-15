@@ -94,34 +94,19 @@ class TextWalker(StateMachineWalker):
     def should_start_transition(self, token: str) -> bool:
         """
         Start a transition if the token is not empty and matches the remaining text.
-
-        Example:
-        ```
-            acceptor.text = "hello"
-            token = "hell"
-            start_transition(token) -> True
-        ```
         """
         if not token:
             return False
 
-        remaining_text = self.acceptor.text[self.consumed_character_count :]
-        should_start_transition = remaining_text.startswith(token) or token.startswith(
-            remaining_text
-        )
-
-        return should_start_transition
+        remaining_text = self.acceptor.text[self.consumed_character_count:]
+        return remaining_text.startswith(token) or token.startswith(remaining_text)
 
     def should_complete_transition(self) -> bool:
         """
         Complete the transition if the transition value matches the remaining text.
         """
-        if not self.transition_walker:
-            return False
-
-        return (
-            self.transition_walker.raw_value
-            == self.acceptor.text[self.consumed_character_count :]
+        return bool(self.transition_walker) and (
+            self.transition_walker.raw_value == self.acceptor.text[self.consumed_character_count:]
         )
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
@@ -155,34 +140,21 @@ class TextWalker(StateMachineWalker):
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
-        Advances the walker if the given value matches the expected text at the current position.
+        Advances the walker if the token matches the expected text at the current position.
         Args:
-            value (str): The string to match against the expected text.
+            token (str): The string to match against the expected text.
 
         Returns:
-            Iterable[TextAcceptorwalker]: A list containing the next walker if the value matches,
-                                or an empty list otherwise.
+            Iterable[Walker]: A walker if the token matches, empty otherwise.
         """
-        expected_text = self.acceptor.text
         pos = self.consumed_character_count
+        match_len = min(len(self.acceptor.text) - pos, len(token))
 
-        max_possible_match_len = len(expected_text) - pos
-        input_len = len(token)
-        match_len = min(max_possible_match_len, input_len)
+        if self.acceptor.text[pos:pos + match_len] == token[:match_len]:
+            next_walker = self.__class__(self.acceptor, pos + match_len)
+            next_walker.remaining_input = token[match_len:] or None
 
-        # Get the segment to compare
-        expected_segment = expected_text[pos : pos + match_len]
-        valid_prefix = token[:match_len]
-
-        if expected_segment == valid_prefix:
-            new_pos = pos + match_len
-            remaining_input = token[match_len:]
-
-            next_walker = self.__class__(self.acceptor, new_pos)
-            if remaining_input:
-                next_walker.remaining_input = remaining_input
-
-            if new_pos == len(expected_text):
+            if pos + match_len == len(self.acceptor.text):
                 yield AcceptedState(next_walker)
             else:
                 yield next_walker

@@ -111,17 +111,7 @@ class PropertyWalker(SequenceWalker):
 
         Returns:
             Tuple[str, Any]: A tuple containing the property name and its corresponding value.
-
-        Raises:
-            JSONParsingError: If the property name is missing.
         """
         if self.prop_name is None:
             return ("", None)
         return (self.prop_name, self.prop_value)
-
-    # @property
-    # def raw_value(self) -> Optional[str]:
-    #     if not self.prop_name or not self.prop_value:
-    #         return super().raw_value
-
-    #     return f'{self.prop_name}: {self.prop_value}'

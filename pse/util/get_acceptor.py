@@ -21,7 +21,7 @@ from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor
 from pse.schema_acceptors.string_schema_acceptor import StringSchemaAcceptor
 
 
-def get_json_acceptor(
+def get_acceptor(
     schema: Dict[str, Any],
     context: Optional[Dict[str, Any]] = None,
     start_hook: Optional[Callable] = None,
@@ -83,7 +83,9 @@ def get_json_acceptor(
     schema_type: Optional[Any] = schema.get("type")
 
     if isinstance(schema_type, list):
-        merged_schemas: List[Dict[str, Any]] = [{**schema, "type": type_} for type_ in schema_type]
+        merged_schemas: List[Dict[str, Any]] = [
+            {**schema, "type": type_} for type_ in schema_type
+        ]
         return AnySchemaAcceptor(merged_schemas, context)
 
     # Infer schema type based on properties if not explicitly defined
@@ -158,26 +160,38 @@ def resolve_subschemas(
         if schema_def is None:
             raise DefinitionNotFoundError(schema_ref)
         visited_refs[schema_ref] = []
-        resolved: List[Dict[str, Any]] = resolve_subschemas(schema_def, defs, visited_refs)
+        resolved: List[Dict[str, Any]] = resolve_subschemas(
+            schema_def, defs, visited_refs
+        )
         visited_refs[schema_ref].extend(resolved)
         return resolved
 
     if "allOf" in schema:
         base_schema: Dict[str, Any] = {k: v for k, v in schema.items() if k != "allOf"}
-        schemas: List[Dict[str, Any]] = resolve_subschemas(base_schema, defs, visited_refs)
+        schemas: List[Dict[str, Any]] = resolve_subschemas(
+            base_schema, defs, visited_refs
+        )
         for subschema in schema["allOf"]:
-            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(subschema, defs, visited_refs)
+            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(
+                subschema, defs, visited_refs
+            )
             schemas = [{**ms, **rs} for ms in schemas for rs in resolved_subschemas]
         return schemas
 
     if "anyOf" in schema or "oneOf" in schema:
         key: str = "anyOf" if "anyOf" in schema else "oneOf"
         base_schema: Dict[str, Any] = {k: v for k, v in schema.items() if k != key}
-        base_schemas: List[Dict[str, Any]] = resolve_subschemas(base_schema, defs, visited_refs)
+        base_schemas: List[Dict[str, Any]] = resolve_subschemas(
+            base_schema, defs, visited_refs
+        )
         combined_schemas: List[Dict[str, Any]] = []
         for subschema in schema[key]:
-            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(subschema, defs, visited_refs)
-            combined_schemas.extend([{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas])
+            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(
+                subschema, defs, visited_refs
+            )
+            combined_schemas.extend(
+                [{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas]
+            )
         return combined_schemas
 
     return [schema]

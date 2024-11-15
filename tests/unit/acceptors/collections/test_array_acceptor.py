@@ -21,7 +21,7 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
         list[Any]: The parsed array.
 
     Raises:
-        JSONParsingError: If the JSON array is invalid.
+        AssertionError: If the JSON array is invalid.
     """
     walkers = list(acceptor.get_walkers())
     for char in json_string:
@@ -59,6 +59,6 @@ def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[
     ],
 )
 def test_invalid_arrays(acceptor: ArrayAcceptor, json_string: str):
-    """Test that a JSONParsingError is raised for invalid arrays."""
+    """Test that an AssertionError is raised for invalid arrays."""
     with pytest.raises(AssertionError):
         parse_array(acceptor, json_string)

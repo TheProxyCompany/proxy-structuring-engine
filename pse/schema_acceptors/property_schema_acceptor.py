@@ -4,7 +4,7 @@ from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from typing import Dict, Any, Callable
 import json
 
-from pse.util.get_acceptor import get_json_acceptor
+from pse.util.get_acceptor import get_acceptor
 
 
 class PropertySchemaAcceptor(PropertyAcceptor):
@@ -39,7 +39,7 @@ class PropertySchemaAcceptor(PropertyAcceptor):
                 WhitespaceAcceptor(),
                 TextAcceptor(":"),
                 WhitespaceAcceptor(),
-                get_json_acceptor(
+                get_acceptor(
                     self.prop_schema,
                     self.prop_context,
                     value_started_hook,

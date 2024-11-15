@@ -87,36 +87,30 @@ class StringCharacterWalker(Walker):
         Advance the walker with the given input.
 
         Args:
-            input (str): The input to advance with.
+            token (str): The input to advance with.
 
         Returns:
             List[Walker]: List of new walkers after advancement.
         """
-        logger.debug(
-            f"Advancing walker in string char acceptor: {self}, with input: {token}"
-        )
-        # clean the input of invalid characters
+        logger.debug(f"Advancing walker with input: {token}")
+
+        # Split input at first invalid character
         valid_prefix = ""
-        remaining_input = token
-
-        for index, char in enumerate(token):
-            if char not in INVALID_CHARS:
-                valid_prefix += char
-            else:
-                remaining_input = token[index:]
+        for char in token:
+            if char in INVALID_CHARS:
                 break
-        else:
-            remaining_input = None
+            valid_prefix += char
 
-        if valid_prefix:
-            new_walker = self.clone()
-            new_walker._raw_value = (self._raw_value or "") + valid_prefix
-            new_walker.remaining_input = remaining_input
-            new_walker.consumed_character_count += len(valid_prefix)
-            yield AcceptedState(new_walker)
-        else:
+        if not valid_prefix:
             self._accepts_more_input = False
-            logger.debug(f"{self} cannot accept more input: {token}")
+            logger.debug(f"Cannot accept more input: {token}")
+            return
+
+        new_walker = self.clone()
+        new_walker._raw_value = (self._raw_value or "") + valid_prefix
+        new_walker.remaining_input = token[len(valid_prefix):] or None
+        new_walker.consumed_character_count += len(valid_prefix)
+        yield AcceptedState(new_walker)
 
     def is_within_value(self) -> bool:
         """

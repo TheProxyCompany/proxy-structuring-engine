@@ -1,21 +1,32 @@
 from typing import Dict, List, Tuple, Union
-
 from pse.acceptors.token_acceptor import TokenAcceptor
 
 StateType = Union[int, str]
-"""A state identifier in the StateMachine, which can be an integer or a string."""
+"""Represents a state within the StateMachine.  Can be an integer or a string."""
 
 # Type alias for edges in the StateMachine graph.
 EdgeType = Tuple[TokenAcceptor, StateType]
-"""An edge in the StateMachine graph, represented as a tuple of a TokenAcceptor and a
-target StateType."""
+"""Represents a transition between states in the StateMachine.
+
+An Edge consists of a `TokenAcceptor` that governs the conditions for the transition,
+and the `StateType` of the destination state.  Walkers traverse edges based on
+the acceptance criteria of the associated `TokenAcceptor`.
+"""
 
 # Type alias for visited edges in the StateMachine graph.
 VisitedEdgeType = Tuple[StateType, StateType, str]
-"""An edge in the StateMachine graph, represented as a tuple of a source state, a
-target state, and a string representing the value traversed."""
+"""Represents a traversed edge during StateMachine execution.
+
+A `VisitedEdgeType` records the source state, target state, and the token
+consumed during the transition.  This history aids in tracking walker progress
+and preventing cycles.
+"""
 
 # Type alias for the graph representation of the StateMachine.
 StateMachineGraph = Dict[StateType, List[EdgeType]]
-"""The graph representation of the StateMachine, mapping each state to a list of its
-outgoing edges."""
+"""Represents the structure of the StateMachine as a directed graph.
+
+Maps each `StateType` to a list of its outgoing `EdgeType`s.  This graph
+defines the possible transitions between states and forms the basis for
+walker navigation.
+"""

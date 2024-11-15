@@ -10,7 +10,7 @@ from pse.state_machine.state_machine import StateMachineGraph
 class ArraySchemaAcceptor(ArrayAcceptor):
     def __init__(self, schema: Dict[str, Any], context):
         from pse.util.get_acceptor import (
-            get_json_acceptor,
+            get_acceptor,
         )
 
         self.schema = schema
@@ -25,7 +25,7 @@ class ArraySchemaAcceptor(ArrayAcceptor):
                 (TextAcceptor("]"), "$"),
             ],
             2: [
-                (get_json_acceptor(self.schema["items"], self.context), 3),
+                (get_acceptor(self.schema["items"], self.context), 3),
             ],
             3: [
                 (WhitespaceAcceptor(), 4),
@@ -61,8 +61,10 @@ class ArraySchemaWalker(ArrayWalker):
 
     def should_start_transition(self, token: str) -> bool:
         if (
-            self.current_state == 2 and self.target_state == 3
-            or self.current_state == 4 and self.target_state == 2
+            self.current_state == 2
+            and self.target_state == 3
+            or self.current_state == 4
+            and self.target_state == 2
         ):
             return len(self.value) < self.acceptor.max_items()
         if self.target_state == "$":

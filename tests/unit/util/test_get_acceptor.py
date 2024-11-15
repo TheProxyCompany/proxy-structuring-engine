@@ -2,7 +2,7 @@ from collections import defaultdict
 import pytest
 from typing import Any, Dict, Optional, Type
 
-from pse.util.get_acceptor import get_json_acceptor
+from pse.util.get_acceptor import get_acceptor
 from pse.util.errors import (
     DefinitionNotFoundError,
     SchemaNotImplementedError,
@@ -41,7 +41,11 @@ def context() -> Dict[str, Any]:
             ObjectSchemaAcceptor,
             None,
         ),
-        ({"type": "array", "items": {"type": "string"}, "minItems": 1}, ArraySchemaAcceptor, None),
+        (
+            {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            ArraySchemaAcceptor,
+            None,
+        ),
         ({"const": "fixed_value"}, TextAcceptor, None),
         ({"enum": ["red", "green", "blue"]}, EnumSchemaAcceptor, None),
         ({"allOf": [{"type": "string"}, {"minLength": 5}]}, StringSchemaAcceptor, None),
@@ -55,13 +59,15 @@ def test_get_acceptor_schema_types(
     context: Dict[str, Any],
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
-    acceptor = get_json_acceptor(schema, context)
+    acceptor = get_acceptor(schema, context)
     assert isinstance(
         acceptor, expected_acceptor_cls
     ), f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
     if acceptor_len is not None:
         assert isinstance(acceptor, AnySchemaAcceptor)
-        assert len(acceptor.acceptors) == acceptor_len, f"Expected acceptor length {acceptor_len} for schema {schema}"
+        assert (
+            len(acceptor.acceptors) == acceptor_len
+        ), f"Expected acceptor length {acceptor_len} for schema {schema}"
 
 
 @pytest.mark.parametrize(
@@ -92,7 +98,7 @@ def test_get_acceptor_exceptions(
 ) -> None:
     """Test that get_json_acceptor raises expected exceptions for invalid schemas."""
     with pytest.raises(expected_exception, match=match):
-        get_json_acceptor(schema, context)
+        get_acceptor(schema, context)
 
 
 @pytest.fixture
@@ -110,7 +116,7 @@ def context_with_definition() -> Dict[str, Any]:
 def test_get_acceptor_with_ref_schema(context_with_definition: Dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
-    acceptor = get_json_acceptor(schema, context_with_definition)
+    acceptor = get_acceptor(schema, context_with_definition)
     assert isinstance(
         acceptor,
         ObjectSchemaAcceptor,

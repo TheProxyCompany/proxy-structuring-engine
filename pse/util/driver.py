@@ -11,7 +11,7 @@ from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.util.delimiter import DelimiterType
 from pse.util.errors import TokenRejected
-from pse.util.get_acceptor import get_json_acceptor
+from pse.util.get_acceptor import get_acceptor
 from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import StateMachine
 from pse.util.bias_logits import bias_logits
@@ -123,7 +123,7 @@ class StructuredOutputDriver(LogitsProcessor):
             return
 
         if type == DelimiterType.JSON:
-            acceptor = get_json_acceptor(
+            acceptor = get_acceptor(
                 schema,
                 start_hook=self._start_hook,
                 end_hook=self._end_hook,
@@ -185,9 +185,7 @@ class StructuredOutputDriver(LogitsProcessor):
         partial_match_walkers: Dict[str, Set[Walker]] = {}
 
         for token_id, token, score in top_tokens:
-            logger.debug(
-                f"token(id: {token_id}): {repr(token)}, score: {score}"
-            )
+            logger.debug(f"token(id: {token_id}): {repr(token)}, score: {score}")
 
             if token in partial_match_walkers:
                 # We've found a match for this token before as a partial match
@@ -231,22 +229,20 @@ class StructuredOutputDriver(LogitsProcessor):
 
         raise TokenRejected("No valid token found after trying partial matches")
 
-
-
     def advance_token(self, token_id: int) -> None:
         token = self.tokenizer.decode([token_id])
         try:
             new_walkers = [
                 walker
-                for _, walker in
-                StateMachine.advance_all_walkers(self.walkers, token, self.dawg)
+                for _, walker in StateMachine.advance_all_walkers(
+                    self.walkers, token, self.dawg
+                )
             ]
             if not new_walkers:
                 raise TokenRejected(f"Token `{token}` rejected by all walkers")
             self.walkers = new_walkers
         except TokenRejected:
             raise TokenRejected(f"Token `{token}` rejected by all walkers")
-
 
     # -------- Private Methods --------
 

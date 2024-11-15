@@ -87,22 +87,10 @@ class CharacterWalker(StateMachineWalker):
             yield char
 
     def should_start_transition(self, token: str) -> bool:
-        """Determines if a transition should start with the given input string.
-
-        Args:
-            token: The input string to process.
-
-        Returns:
-            True if the transition should start; False otherwise.
-        """
-        if not self.acceptor.is_case_sensitive:
-            token = token.lower()
-
-        if not token or token[0] not in self.acceptor.charset:
-            self._accepts_more_input = False
-            return False
-
-        return True
+        """Determines if a transition should start with the given input string."""
+        token = token.lower() if not self.acceptor.is_case_sensitive else token
+        self._accepts_more_input = bool(token and token[0] in self.acceptor.charset)
+        return self._accepts_more_input
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -114,47 +102,35 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             Iterable[Walker]: An iterable containing the new walker state if input is valid.
         """
-
         if not token:
             self._accepts_more_input = False
             return
 
-        if not self.acceptor.is_case_sensitive:
-            token = token.lower()
+        token = token.lower() if not self.acceptor.is_case_sensitive else token
 
+        # Find valid characters up to char_limit
         valid_length = 0
-        accumulated_length = self.consumed_character_count
-        for character in token:
-            if character not in self.acceptor.charset:
+        for char in token:
+            if char not in self.acceptor.charset:
                 break
-            if (
-                self.acceptor.char_limit > 0
-                and accumulated_length >= self.acceptor.char_limit
-            ):
+            if self.acceptor.char_limit > 0 and valid_length + self.consumed_character_count >= self.acceptor.char_limit:
                 break
-            accumulated_length += 1
             valid_length += 1
 
-        valid_characters = token[:valid_length]
-        remaining_input = token[valid_length:] if valid_length < len(token) else None
-
-        if not valid_characters:
+        if valid_length == 0:
             self._accepts_more_input = False
             return
 
-        # Accumulate valid characters with existing value
-        accumulated_value = f"{self._raw_value or ''}{valid_characters}"
-
-        new_walker = self.__class__(self.acceptor, accumulated_value)
-        new_walker.consumed_character_count = accumulated_length
-        new_walker.remaining_input = remaining_input
-
-        if self.acceptor.char_limit > 0:
-            new_walker._accepts_more_input = (
-                not remaining_input and valid_length < self.acceptor.char_limit
-            )
-        else:
-            new_walker._accepts_more_input = not remaining_input
+        # Create new walker with accumulated value
+        new_walker = self.__class__(
+            self.acceptor,
+            f"{self._raw_value or ''}{token[:valid_length]}"
+        )
+        new_walker.consumed_character_count = self.consumed_character_count + valid_length
+        new_walker.remaining_input = token[valid_length:] if valid_length < len(token) else None
+        new_walker._accepts_more_input = not new_walker.remaining_input and (
+            self.acceptor.char_limit <= 0 or valid_length < self.acceptor.char_limit
+        )
 
         yield (
             AcceptedState(new_walker)

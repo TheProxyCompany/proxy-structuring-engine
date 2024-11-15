@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.state_machine import (
-    StateMachine,
-    StateMachineGraph,
-)
+from pse.state_machine.state_machine import StateMachine
 
 class EnumSchemaAcceptor(StateMachine):
     """
@@ -33,11 +30,11 @@ class EnumSchemaAcceptor(StateMachine):
         if not isinstance(enum_values, list):
             raise TypeError("'enum' must be a list of string values.")
 
-        graph: StateMachineGraph = {
-            0: [
-                (TextAcceptor(value), "$")
-                for value in enum_values
-            ]
-        }
-
-        super().__init__(graph, end_states=["$"])
+        super().__init__(
+            {
+                0: [
+                    (TextAcceptor(value), "$") for value in enum_values
+                ],
+            },
+            end_states=["$"],
+        )
