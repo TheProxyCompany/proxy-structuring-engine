@@ -148,11 +148,7 @@ class Walker(ABC):
         return True
 
     def clone(self) -> Self:
-        """Create a shallow copy of the walker, including its accept history.
-
-        Returns:
-            A new Walker instance that is a clone of the current one.
-        """
+        """Creates a shallow copy of the walker with copied history and explored edges."""
         cloned_walker = shallow_copy(self)
         cloned_walker.accepted_history = self.accepted_history.copy()
         cloned_walker.explored_edges = self.explored_edges.copy()
@@ -203,8 +199,10 @@ class Walker(ABC):
         start_state: StateType,
         target_state: Optional[StateType] = None,
     ) -> Walker:
+        """Configures the walker with a new transition walker and updates states."""
         clone = self.clone()
 
+        # Append the previous transition walker to history if it reached an accept state
         if (
             clone.transition_walker
             and clone.transition_walker.has_reached_accept_state()
@@ -224,13 +222,15 @@ class Walker(ABC):
             New walker instances representing different paths.
         """
         if self.transition_walker and self.transition_walker.can_accept_more_input():
-            for transition_walker in self.transition_walker.branch():
+            # Branch using the transition walker's logic
+            for new_transition_walker in self.transition_walker.branch():
                 yield self.configure(
-                    transition_walker,
+                    new_transition_walker,
                     self.current_state,
                     self.target_state,
                 )
         else:
+            # Branch using the acceptor's logic
             for transition_walker in self.acceptor.branch_walkers(self):
                 yield transition_walker
 
