@@ -101,7 +101,7 @@ class CharacterWalker(StateMachineWalker):
         Returns:
             True if the transition should start; False otherwise.
         """
-        if not self.acceptor.is_case_sensitive():
+        if not self.acceptor.is_case_sensitive:
             token = token.lower()
 
         if not token or token[0] not in self.acceptor.charset:
@@ -125,7 +125,7 @@ class CharacterWalker(StateMachineWalker):
             self._accepts_more_input = False
             return
 
-        if not self.acceptor.is_case_sensitive():
+        if not self.acceptor.is_case_sensitive:
             token = token.lower()
 
         valid_length = 0

@@ -72,6 +72,54 @@ class StateMachine(TokenAcceptor):
         initial_walker = self._walker(self, state)
         yield from self.branch_walker(initial_walker)
 
+    def get_transition_walkers(
+        self, walker: Walker, state: Optional[StateType] = None
+    ) -> Iterable[Tuple[Walker, StateType, StateType]]:
+        """Retrieve transition walkers from the current state.
+
+        For each edge from the current state, yields walkers that can traverse that edge.
+        Handles optional acceptors and pass-through transitions appropriately.
+
+        Args:
+            source_walker: The walker initiating the transition.
+            start_state: Optional starting state. If None, uses the walker's current state.
+
+        Returns:
+            Iterable of tuples (transition_walker, source_state, target_state).
+        """
+        current_state = state or walker.current_state
+        logger.debug("🟡 Getting edges from state %s", current_state)
+
+        for acceptor, target_state in self.get_edges(current_state):
+            # Yield walkers from the acceptor
+            for transition_walker in acceptor.get_walkers():
+                yield transition_walker, current_state, target_state
+
+            if acceptor.is_optional:
+                logger.debug("🟡 Optional acceptor %s", acceptor)
+
+                # If the target state is an end state and
+                # the source walker can't accept more input,
+                # yield an accepted state
+                if (
+                    target_state in self.end_states
+                    and not walker.can_accept_more_input()
+                ):
+                    logger.debug(
+                        "🟢 Accepting at end state %s with walker %s",
+                        target_state,
+                        repr(walker),
+                    )
+                    yield AcceptedState(walker), current_state, target_state
+                else:
+                    # Handle pass-through transitions recursively
+                    logger.debug(
+                        "🟢 Handling pass-through for %s to state %s",
+                        acceptor,
+                        target_state,
+                    )
+                    yield from self.get_transition_walkers(walker, target_state)
+
     def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
         """Advance the walker state with the given input token.
 
@@ -165,7 +213,9 @@ class StateMachine(TokenAcceptor):
                 )
                 yield current_walker
 
-    def branch_walker(self, walker: Walker, token: Optional[str] = None) -> Iterable[Walker]:
+    def branch_walker(
+        self, walker: Walker, token: Optional[str] = None
+    ) -> Iterable[Walker]:
         """Branch the walker into multiple paths for parallel exploration.
 
         At each decision point, clone the current walker for each possible transition.
@@ -178,7 +228,9 @@ class StateMachine(TokenAcceptor):
         Yields:
             New walker instances, each representing a different path.
         """
-        for transition, start_state, target_state in self.get_transitions(walker):
+        for transition, start_state, target_state in self.get_transition_walkers(
+            walker
+        ):
             # Determine the input for transition checking
             input_token = token or walker.remaining_input
 
@@ -212,56 +264,6 @@ class StateMachine(TokenAcceptor):
                 start_state,
                 target_state,
             )
-
-    def get_transitions(
-        self,
-        walker: Walker,
-        state: Optional[StateType] = None
-    ) -> Iterable[Tuple[Walker, StateType, StateType]]:
-        """Retrieve transition walkers from the current state.
-
-        For each edge from the current state, yields walkers that can traverse that edge.
-        Handles optional acceptors and pass-through transitions appropriately.
-
-        Args:
-            source_walker: The walker initiating the transition.
-            start_state: Optional starting state. If None, uses the walker's current state.
-
-        Returns:
-            Iterable of tuples (transition_walker, source_state, target_state).
-        """
-        current_state = state or walker.current_state
-        logger.debug("🟡 Getting edges from state %s", current_state)
-
-        for acceptor, target_state in self.get_edges(current_state):
-            # Yield walkers from the acceptor
-            for walker in acceptor.get_walkers():
-                yield walker, current_state, target_state
-
-            if acceptor.is_optional():
-                logger.debug("🟡 Optional acceptor %s", acceptor)
-
-                # If the target state is an end state and
-                # the source walker can't accept more input,
-                # yield an accepted state
-                if (
-                    target_state in self.end_states
-                    and not walker.can_accept_more_input()
-                ):
-                    logger.debug(
-                        "🟢 Accepting at end state %s with walker %s",
-                        target_state,
-                        repr(walker),
-                    )
-                    yield AcceptedState(walker), current_state, target_state
-                else:
-                    # Handle pass-through transitions recursively
-                    logger.debug(
-                        "🟢 Handling pass-through for %s to state %s",
-                        acceptor,
-                        target_state,
-                    )
-                    yield from self.get_transitions(walker, target_state)
 
     @classmethod
     def advance_all_walkers(
@@ -300,51 +302,6 @@ class StateMachine(TokenAcceptor):
 
         for result in cls._EXECUTOR.map(process_walker, walkers):
             yield from result
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}()"
-
-    def __repr__(self) -> str:
-        """Return a formatted string representation of the StateMachine instance.
-
-        This method provides a detailed view of the state machine's configuration,
-        formatted with proper indentation for better readability.
-
-        Returns:
-            str: A formatted string showing the state machine's configuration.
-        """
-
-        def format_graph(graph: StateMachineGraph, indent: int = 0) -> str:
-            if not graph:
-                return ""
-
-            lines = []
-            indent_str = "    " * indent
-            lines.append("graph={\n")
-            for state, transitions in graph.items():
-                lines.append(f"{indent_str}    {state}: [")
-                transition_lines = []
-                for acceptor, target_state in transitions:
-                    acceptor_repr = format_acceptor(acceptor, indent + 2)
-                    target_state_str = (
-                        "'$'" if target_state == "$" else str(target_state)
-                    )
-                    transition_lines.append(f"({acceptor_repr}, {target_state_str})")
-                lines.append(", ".join(transition_lines) + "],\n")
-            lines.append(f"{indent_str}}}")
-            return "".join(lines)
-
-        def format_acceptor(acceptor: TokenAcceptor, indent: int) -> str:
-            if isinstance(acceptor, StateMachine):
-                acceptor_repr = acceptor.__repr__()
-                return "\n".join(
-                    ("    " * indent + line) if idx != 0 else line
-                    for idx, line in enumerate(acceptor_repr.splitlines())
-                )
-            return repr(acceptor)
-
-        formatted_graph = format_graph(self.graph)
-        return f"{self.__class__.__name__}({formatted_graph})"
 
 
 class StateMachineWalker(Walker):
@@ -391,6 +348,7 @@ class StateMachineWalker(Walker):
         """
         if self.transition_walker:
             return self.transition_walker.accepts_any_token()
+
         return False
 
     def consume_token(self, token: str) -> Iterable[Walker]:

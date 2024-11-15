@@ -65,6 +65,7 @@ class TokenAcceptor(ABC):
         self._is_optional = is_optional
         self._is_case_sensitive = is_case_sensitive
 
+    @property
     def is_optional(self) -> bool:
         """Checks if the acceptor is optional.
 
@@ -73,6 +74,7 @@ class TokenAcceptor(ABC):
         """
         return self._is_optional
 
+    @property
     def is_case_sensitive(self) -> bool:
         """Checks if the acceptor is case sensitive.
 
@@ -94,20 +96,11 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def get_transitions(
+    def get_transition_walkers(
         self,
         walker: Walker,
     ) -> Iterable[Tuple[Walker, StateType]]:
         """Retrieves transitions from the given walker."""
-        pass
-
-    @abstractmethod
-    def branch_walker(
-        self,
-        walker: Walker,
-        token: Optional[str] = None,
-    ) -> Iterable[Walker]:
-        """Branch the walker into multiple paths for parallel exploration."""
         pass
 
     @abstractmethod
@@ -126,3 +119,60 @@ class TokenAcceptor(ABC):
             Iterable[Walker]: An iterable of updated walkers after advancement.
         """
         pass
+
+    @abstractmethod
+    def branch_walker(
+        self,
+        walker: Walker,
+        token: Optional[str] = None,
+    ) -> Iterable[Walker]:
+        """Branch the walker into multiple paths for parallel exploration."""
+        pass
+
+
+    #
+    # String representations
+    #
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+    def __repr__(self) -> str:
+        """Return a formatted string representation of the StateMachine instance.
+
+        This method provides a detailed view of the state machine's configuration,
+        formatted with proper indentation for better readability.
+
+        Returns:
+            str: A formatted string showing the state machine's configuration.
+        """
+
+        def format_graph(graph: StateMachineGraph, indent: int = 0) -> str:
+            if not graph:
+                return ""
+
+            lines = []
+            indent_str = "    " * indent
+            lines.append("graph={\n")
+            for state, transitions in graph.items():
+                lines.append(f"{indent_str}    {state}: [")
+                transition_lines = []
+                for acceptor, target_state in transitions:
+                    acceptor_repr = format_acceptor(acceptor, indent + 2)
+                    target_state_str = (
+                        "'$'" if target_state == "$" else str(target_state)
+                    )
+                    transition_lines.append(f"({acceptor_repr}, {target_state_str})")
+                lines.append(", ".join(transition_lines) + "],\n")
+            lines.append(f"{indent_str}}}")
+            return "".join(lines)
+
+        def format_acceptor(acceptor: TokenAcceptor, indent: int) -> str:
+            acceptor_repr = acceptor.__repr__()
+            return "\n".join(
+                ("    " * indent + line) if idx != 0 else line
+                for idx, line in enumerate(acceptor_repr.splitlines())
+            )
+
+        formatted_graph = format_graph(self.graph)
+        return f"{self.__class__.__name__}({formatted_graph})"

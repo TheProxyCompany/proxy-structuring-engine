@@ -37,6 +37,7 @@ class WhitespaceAcceptor(StateMachine):
         """
         yield self._walker(self)
 
+    @property
     def is_optional(self) -> bool:
         return self.min_whitespace == 0
 
