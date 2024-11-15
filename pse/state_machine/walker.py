@@ -185,7 +185,7 @@ class Walker(ABC):
         cloned_walker.explored_edges = self.explored_edges.copy()
         return cloned_walker
 
-    def transition_with_walker(self, transition_walker: Walker) -> Iterable[Walker]:
+    def transition(self, transition_walker: Walker) -> Optional[Walker]:
         """Advance the walker to the next state.
 
         Args:
@@ -204,9 +204,7 @@ class Walker(ABC):
         clone.explored_edges.add(clone.current_edge)
 
         if not clone.should_complete_transition():
-            if clone.can_accept_more_input():
-                yield clone
-            return
+            return clone if clone.can_accept_more_input() else None
 
         if transition_walker.has_reached_accept_state() and self.target_state:
             clone.current_state = self.target_state
@@ -218,11 +216,9 @@ class Walker(ABC):
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.state_machine.accepted_state import AcceptedState
+                return AcceptedState(clone)
 
-                yield AcceptedState(clone)
-                return
-
-        yield clone
+        return clone
 
     def configure(
         self,

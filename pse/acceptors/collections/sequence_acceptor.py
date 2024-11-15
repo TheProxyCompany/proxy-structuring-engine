@@ -1,8 +1,13 @@
 from __future__ import annotations
+
+import logging
 from typing import List, Optional, Type
+
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.state_machine.walker import Walker
+
+logger = logging.getLogger(__name__)
 
 class SequenceAcceptor(StateMachine):
     """
@@ -26,7 +31,6 @@ class SequenceAcceptor(StateMachine):
             graph[i] = [(acceptor, i + 1)]
         super().__init__(
             graph,
-            initial_state=0,
             end_states=[len(acceptors)],
             walker_type=walker_type or SequenceWalker,
         )
@@ -41,4 +45,4 @@ class SequenceWalker(StateMachineWalker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return self.current_state not in self.acceptor.end_states
+        return not self.remaining_input and self.current_state not in self.acceptor.end_states

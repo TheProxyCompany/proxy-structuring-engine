@@ -31,7 +31,6 @@ class CharacterAcceptor(StateMachine):
             charset (Iterable[str]): An iterable of characters to be accepted.
         """
         super().__init__(
-            graph={},
             walker_type=walker_type or CharacterWalker,
             is_optional=is_optional,
             is_case_sensitive=case_sensitive,
