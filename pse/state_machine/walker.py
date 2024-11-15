@@ -262,7 +262,7 @@ class Walker(ABC):
                 )
         else:
             # Branch using the acceptor's logic
-            for transition_walker in self.acceptor.branch_walkers(self):
+            for transition_walker in self.acceptor.branch_walker(self):
                 yield transition_walker
 
     def accepts_any_token(self) -> bool:

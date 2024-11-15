@@ -34,10 +34,10 @@ class NumberAcceptor(StateMachine):
                 (IntegerAcceptor(), 2),
             ],
             2: [
-                (
-                    SequenceAcceptor([TextAcceptor("."), IntegerAcceptor(drop_leading_zeros=False)]),
-                    3,
-                ),
+                (SequenceAcceptor([
+                    TextAcceptor("."),
+                    IntegerAcceptor(drop_leading_zeros=False),
+                ]), 3),
             ],
             3: [
                 (CharacterAcceptor("eE"), 4),

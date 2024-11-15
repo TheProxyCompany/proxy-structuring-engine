@@ -94,7 +94,7 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def get_transitions_from(
+    def get_transitions(
         self,
         walker: Walker,
     ) -> Iterable[Tuple[Walker, StateType]]:
@@ -102,7 +102,7 @@ class TokenAcceptor(ABC):
         pass
 
     @abstractmethod
-    def branch_walkers(
+    def branch_walker(
         self,
         walker: Walker,
         token: Optional[str] = None,
