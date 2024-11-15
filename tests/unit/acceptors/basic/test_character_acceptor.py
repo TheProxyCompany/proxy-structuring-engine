@@ -73,7 +73,7 @@ def test_character_acceptor_basic(
         ), f"Should accept '{input_string}'"
         for _, walker in advanced:
             if walker.has_reached_accept_state():
-                assert walker.get_current_value() == expected_value
+                assert walker.current_value == expected_value
     else:
         assert not any(walker.has_reached_accept_state() for _, walker in advanced)
 
@@ -116,7 +116,7 @@ def test_character_acceptor_char_limit(
     assert any(walker.has_reached_accept_state() for _, walker in advanced)
     for _, walker in advanced:
         if walker.has_reached_accept_state():
-            assert walker.get_current_value() == expected_value
+            assert walker.current_value == expected_value
 
 
 def test_character_acceptor_select() -> None:

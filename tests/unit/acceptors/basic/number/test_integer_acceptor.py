@@ -36,7 +36,7 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -70,7 +70,7 @@ def test_integer_acceptor(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -165,7 +165,7 @@ def test_integer_acceptor_in_state_machine_sequence():
     ), "Combined text and integer input should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             expected_value = "Number: 42"
             assert (
                 value == expected_value
@@ -195,7 +195,7 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     ), "Combined text and integer input should be accepted when advancing char by char."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             expected_value = "Value: 9876"
             assert (
                 value == expected_value
@@ -223,7 +223,7 @@ def test_integer_acceptor_zero():
     ), "Zero should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             assert value == 0, f"Expected 0, got {value}"
 
 
@@ -248,7 +248,7 @@ def test_integer_acceptor_large_number():
     ), "Large numbers should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             assert (
                 value == 12345678901234567890
             ), f"Expected 12345678901234567890, got {value}"
@@ -283,7 +283,7 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+            value = walker.current_value
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -322,6 +322,6 @@ def test_integer_acceptor_walker_get_value_with_invalid_text():
     integer_acceptor = IntegerAcceptor()
     walker = integer_acceptor._walker(integer_acceptor, "abc")
 
-    value = walker.get_current_value()
+    value = walker.current_value
 
     assert value == "abc", f"Expected get_value to return 'abc', got '{value}'"

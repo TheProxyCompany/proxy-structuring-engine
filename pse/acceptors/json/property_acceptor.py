@@ -104,7 +104,8 @@ class PropertyWalker(SequenceWalker):
             return super().is_within_value()
         return False
 
-    def get_current_value(self) -> Tuple[str, Any]:
+    @property
+    def current_value(self) -> Tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 

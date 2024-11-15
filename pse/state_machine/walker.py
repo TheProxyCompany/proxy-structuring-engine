@@ -99,9 +99,40 @@ class Walker(ABC):
         """
         pass
 
-    # -------- Public Methods --------
+    @property
+    def raw_value(self) -> Optional[str]:
+        """Retrieve the raw accumulated value as a string.
 
-    def get_current_value(self) -> Any:
+        Returns:
+            The concatenated raw values from history and transitions.
+        """
+        if self._raw_value is not None:
+            return self._raw_value
+
+        if not self.accepted_history and not self.transition_walker:
+            return None
+
+        history = [walker.raw_value for walker in self.accepted_history]
+        if self.transition_walker:
+            history.append(self.transition_walker.raw_value)
+
+        return "".join(value for value in history if value is not None)
+
+    @property
+    def current_edge(self) -> VisitedEdgeType:
+        """Return the current edge as a tuple.
+
+        Returns:
+            A tuple representing the current edge.
+        """
+        return (
+            self.current_state,
+            self.target_state if self.target_state is not None else "$",
+            self.raw_value or "",
+        )
+
+    @property
+    def current_value(self) -> Any:
         """Retrieve the accumulated walker value.
 
         Returns:
@@ -349,40 +380,6 @@ class Walker(ABC):
             edge_lines.append(edge_line)
         return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
 
-    # -------- Properties --------
-
-    @property
-    def raw_value(self) -> Optional[str]:
-        """Retrieve the raw accumulated value as a string.
-
-        Returns:
-            The concatenated raw values from history and transitions.
-        """
-        if self._raw_value is not None:
-            return self._raw_value
-
-        if not self.accepted_history and not self.transition_walker:
-            return None
-
-        history = [walker.raw_value for walker in self.accepted_history]
-        if self.transition_walker:
-            history.append(self.transition_walker.raw_value)
-
-        return "".join(value for value in history if value is not None)
-
-    @property
-    def current_edge(self) -> VisitedEdgeType:
-        """Return the current edge as a tuple.
-
-        Returns:
-            A tuple representing the current edge.
-        """
-        return (
-            self.current_state,
-            self.target_state if self.target_state is not None else "$",
-            self.raw_value or "",
-        )
-
     # -------- Dunder Methods --------
 
     def __hash__(self) -> int:
@@ -413,7 +410,7 @@ class Walker(ABC):
         return (
             self.current_state == other.current_state
             and self.target_state == other.target_state
-            and self.get_current_value() == other.get_current_value()
+            and self.current_value == other.current_value
         )
 
     def __str__(self) -> str:
@@ -444,9 +441,9 @@ class Walker(ABC):
             if not self.accepted_history:
                 return ""
             history_values = [
-                repr(w.get_current_value())
+                repr(w.current_value)
                 for w in self.accepted_history
-                if w.get_current_value() is not None
+                if w.current_value is not None
             ]
             return f"History: {', '.join(history_values)}" if history_values else ""
 
@@ -463,14 +460,14 @@ class Walker(ABC):
             if self.target_state:
                 return _format_current_edge()
             return (
-                f"value: {repr(self.get_current_value() or self.raw_value)}"
-                if self.raw_value or self.get_current_value()
+                f"value: {repr(self.current_value or self.raw_value)}"
+                if self.raw_value or self.current_value
                 else ""
             )
 
         def _format_current_edge() -> str:
             to_state_display = "End" if self.target_state == "$" else self.target_state
-            accumulated_value = self.raw_value or self.get_current_value() or ""
+            accumulated_value = self.raw_value or self.current_value or ""
             return (
                 f"Current edge: ({self.current_state}) "
                 f"--{repr(accumulated_value)}--> ({to_state_display})"

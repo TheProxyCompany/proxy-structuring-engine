@@ -153,7 +153,8 @@ class WhitespaceWalker(Walker):
         else:
             yield next_walker
 
-    def get_current_value(self) -> str:
+    @property
+    def current_value(self) -> str:
         """
         Get the accumulated whitespace value.
 

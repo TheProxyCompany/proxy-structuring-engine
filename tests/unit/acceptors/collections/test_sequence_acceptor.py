@@ -47,7 +47,8 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
     """Test advancing the walker through the sequence of acceptors with specific inputs."""
     start_walkers = list(sequence_acceptor.get_walkers())
     new_walkers = [
-        walker for _, walker in sequence_acceptor.advance_all_walkers(start_walkers, " ")
+        walker
+        for _, walker in sequence_acceptor.advance_all_walkers(start_walkers, " ")
     ]
     assert len(new_walkers) == 1
 
@@ -82,7 +83,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.get_current_value() == input_sequence
+        assert walker.current_value == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):

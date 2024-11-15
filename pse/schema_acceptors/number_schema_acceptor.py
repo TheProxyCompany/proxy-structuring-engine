@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, NumberWalker
 
+
 class NumberSchemaAcceptor(NumberAcceptor):
     """
     Accept a JSON number that conforms to a JSON schema
@@ -59,10 +60,7 @@ class NumberSchemaWalker(NumberWalker):
         self.acceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
-        if (
-            self.acceptor.is_integer
-            and self.target_state == 3
-        ):
+        if self.acceptor.is_integer and self.target_state == 3:
             return False
         return super().should_start_transition(token)
 
@@ -70,6 +68,10 @@ class NumberSchemaWalker(NumberWalker):
         if not super().should_complete_transition():
             return False
         # Only validate when there is no remaining input
-        if self.target_state and self.target_state in self.acceptor.end_states and not self.remaining_input:
-            return self.acceptor.validate_value(self.get_current_value())
+        if (
+            self.target_state
+            and self.target_state in self.acceptor.end_states
+            and not self.remaining_input
+        ):
+            return self.acceptor.validate_value(self.current_value)
         return True

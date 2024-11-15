@@ -90,7 +90,7 @@ def test_get_value_after_trigger(setup_acceptors: Tuple[WaitForAcceptor, TextAcc
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.get_current_value() == "END"
+                walker.current_value == "END"
             ), "get_value should return 'END' after trigger."
 
 
@@ -114,11 +114,11 @@ def test_multiple_triggers(
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.get_current_value() == "END"
+                walker.current_value == "END"
             ), "get_value should return 'END' after trigger."
         else:
             assert (
-                walker.get_current_value() == "TextAcceptor('END')"
+                walker.current_value == "TextAcceptor('END')"
             ), "get_value should return the waiting state description."
 
     assert (
@@ -134,7 +134,8 @@ def test_no_trigger_in_input(setup_acceptors: Tuple[WaitForAcceptor, TextAccepto
     input_sequence = "No triggers here."
     walkers = list(wait_for_acceptor.get_walkers())
     walkers = [
-        walker for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
+        walker
+        for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
     ]
 
     assert not any(
@@ -153,7 +154,8 @@ def test_empty_input(setup_acceptors: Tuple[WaitForAcceptor, TextAcceptor]):
     input_sequence = ""
     walkers = list(wait_for_acceptor.get_walkers())
     walkers = [
-        walker for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
+        walker
+        for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
     ]
 
     assert not any(
@@ -177,7 +179,8 @@ def test_acceptor_triggered(setup_acceptors: Tuple[WaitForAcceptor, TextAcceptor
     ), "WaitForAcceptor should not be triggered initially."
 
     walkers = [
-        walker for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
+        walker
+        for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
     ]
 
     assert any(
@@ -203,7 +206,8 @@ def test_triggered_var_within_limit(
     ), "WaitForAcceptor should not be triggered initially."
 
     walkers = [
-        walker for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
+        walker
+        for _, walker in wait_for_acceptor.advance_all_walkers(walkers, input_sequence)
     ]
 
     assert (

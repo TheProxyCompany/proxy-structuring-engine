@@ -31,7 +31,7 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     # Assuming the first accepted walker contains the parsed value
     for walker in walkers:
         if walker.has_reached_accept_state():
-            return walker.get_current_value()
+            return walker.current_value
     return []
 
 

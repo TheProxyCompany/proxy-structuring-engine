@@ -82,13 +82,14 @@ class ObjectWalker(StateMachineWalker):
             and self.transition_walker
             and self.transition_walker.has_reached_accept_state()
         ):
-            prop_name, prop_value = self.transition_walker.get_current_value()
+            prop_name, prop_value = self.transition_walker.current_value
             logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
 
         return True
 
-    def get_current_value(self) -> Dict[str, Any]:
+    @property
+    def current_value(self) -> Dict[str, Any]:
         """
         Get the current parsed JSON object.
 

@@ -73,5 +73,6 @@ class PropertySchemaWalker(PropertyWalker):
                 hooks["value_end"](prop_name, self.prop_value)
         return True
 
-    def get_current_value(self):
+    @property
+    def current_value(self):
         return (self.acceptor.prop_name, self.prop_value)

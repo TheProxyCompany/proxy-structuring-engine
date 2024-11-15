@@ -121,7 +121,10 @@ class TextWalker(StateMachineWalker):
         if not self.transition_walker:
             return False
 
-        return self.transition_walker.raw_value == self.acceptor.text[self.consumed_character_count :]
+        return (
+            self.transition_walker.raw_value
+            == self.acceptor.text[self.consumed_character_count :]
+        )
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         """
@@ -186,7 +189,8 @@ class TextWalker(StateMachineWalker):
             else:
                 yield next_walker
 
-    def get_current_value(self) -> str:
+    @property
+    def current_value(self) -> str:
         """
         Retrieves the current state of the text being accepted, highlighting the remaining portion.
 

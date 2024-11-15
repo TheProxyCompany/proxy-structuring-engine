@@ -56,7 +56,8 @@ class IntegerWalker(CharacterWalker):
 
         return True
 
-    def get_current_value(self) -> str | None:
+    @property
+    def current_value(self) -> str | None:
         return self._parse_value(self._raw_value)
 
     def _parse_value(self, value: Any) -> Any:

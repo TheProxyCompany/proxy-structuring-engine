@@ -123,7 +123,9 @@ class WaitForWalker(Walker):
         Returns:
             bool: True if in a value, False otherwise.
         """
-        return self.acceptor.triggered or any(walker.is_within_value() for walker in self.walkers)
+        return self.acceptor.triggered or any(
+            walker.is_within_value() for walker in self.walkers
+        )
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -151,7 +153,8 @@ class WaitForWalker(Walker):
 
         yield WaitForWalker(self.acceptor, new_walkers)
 
-    def get_current_value(self) -> str:
+    @property
+    def current_value(self) -> str:
         """
         Retrieve the current value indicating the wait state.
 

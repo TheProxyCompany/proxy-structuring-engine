@@ -52,7 +52,8 @@ class BooleanWalker(StateMachineWalker):
             self._raw_value = self.transition_walker.raw_value
         return self._raw_value == "true" or self._raw_value == "false"
 
-    def get_current_value(self) -> Optional[bool]:
+    @property
+    def current_value(self) -> Optional[bool]:
         """
         Get the parsed boolean value.
 
@@ -85,5 +86,6 @@ class NullWalker(TextWalker):
     def select(self, dawg: DAWG) -> Iterable[str]:
         yield "null"
 
-    def get_current_value(self) -> str:
+    @property
+    def current_value(self) -> str:
         return "null"

@@ -154,7 +154,7 @@ class StringSchemaWalker(StringWalker):
             if self.acceptor.end_hook:
                 self.acceptor.end_hook()
 
-            if self.acceptor.validate_value(self.get_current_value()):
+            if self.acceptor.validate_value(self.current_value):
                 return True
             else:
                 return False
@@ -175,5 +175,6 @@ class StringSchemaWalker(StringWalker):
             return match is not None
         return True  # If no pattern, always return True
 
-    def get_current_value(self) -> Any:
+    @property
+    def current_value(self) -> Any:
         return json.loads(self.raw_value) if self.raw_value else None

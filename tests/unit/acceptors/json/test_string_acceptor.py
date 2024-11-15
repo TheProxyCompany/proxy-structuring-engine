@@ -45,9 +45,9 @@ def test_valid_strings(
     assert accepted_walkers, f"No walker accepted the input: {input_string}"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"
 
 
 @pytest.mark.parametrize(
@@ -120,9 +120,9 @@ def test_empty_string(string_acceptor: StringAcceptor) -> None:
     assert accepted_walkers, "StringAcceptor did not accept empty string"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected empty string, got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected empty string, got '{walker.current_value}'"
 
 
 def test_string_with_valid_escaped_tab(string_acceptor: StringAcceptor) -> None:
@@ -144,14 +144,14 @@ def test_string_with_valid_escaped_tab(string_acceptor: StringAcceptor) -> None:
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
     ]
-    assert accepted_walkers, (
-        "StringAcceptor did not accept string with escaped tab character"
-    )
+    assert (
+        accepted_walkers
+    ), "StringAcceptor did not accept string with escaped tab character"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"
 
 
 def test_string_with_escaped_solidus(string_acceptor: StringAcceptor) -> None:
@@ -173,14 +173,12 @@ def test_string_with_escaped_solidus(string_acceptor: StringAcceptor) -> None:
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
     ]
-    assert accepted_walkers, (
-        "StringAcceptor did not accept string with escaped solidus"
-    )
+    assert accepted_walkers, "StringAcceptor did not accept string with escaped solidus"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"
 
 
 def test_string_with_unescaped_control_characters(
@@ -324,9 +322,9 @@ def test_valid_strings_char_by_char(
     assert accepted_walkers, f"No walker accepted the input: {input_string}"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"
 
 
 @pytest.mark.parametrize(
@@ -403,9 +401,9 @@ def test_empty_string_char_by_char(string_acceptor: StringAcceptor) -> None:
     assert accepted_walkers, "StringAcceptor did not accept empty string"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected empty string, got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected empty string, got '{walker.current_value}'"
 
 
 def test_string_with_valid_escaped_tab_char_by_char(
@@ -431,14 +429,14 @@ def test_string_with_valid_escaped_tab_char_by_char(
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
     ]
-    assert accepted_walkers, (
-        "StringAcceptor did not accept string with escaped tab character"
-    )
+    assert (
+        accepted_walkers
+    ), "StringAcceptor did not accept string with escaped tab character"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"
 
 
 def test_string_with_escaped_solidus_char_by_char(
@@ -464,11 +462,9 @@ def test_string_with_escaped_solidus_char_by_char(
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
     ]
-    assert accepted_walkers, (
-        "StringAcceptor did not accept string with escaped solidus"
-    )
+    assert accepted_walkers, "StringAcceptor did not accept string with escaped solidus"
 
     for walker in accepted_walkers:
-        assert walker.get_current_value() == expected_value, (
-            f"Expected '{expected_value}', got '{walker.get_current_value()}'"
-        )
+        assert (
+            walker.current_value == expected_value
+        ), f"Expected '{expected_value}', got '{walker.current_value}'"

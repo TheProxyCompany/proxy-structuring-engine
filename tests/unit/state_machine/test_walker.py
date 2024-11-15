@@ -12,7 +12,8 @@ class Concretewalker(Walker):
         super().__init__(acceptor)
         self.value = "test_value"
 
-    def get_current_value(self) -> Any:
+    @property
+    def current_value(self) -> Any:
         """Concrete implementation of get_value."""
         return self.value
 
@@ -58,7 +59,7 @@ def test_walker_initialization(walker: Concretewalker, acceptor: StateMachine):
 
 def test_walker_get_value(walker: Concretewalker):
     """Test the get_value method of Walker."""
-    assert walker.get_current_value() == "test_value"
+    assert walker.current_value == "test_value"
 
 
 def test_walker_advance(walker: Concretewalker):

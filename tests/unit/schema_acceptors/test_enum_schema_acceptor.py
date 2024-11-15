@@ -24,11 +24,12 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = self.acceptor.get_walkers()
         for char in valid_value:
             walkers = [
-                walker for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker
+                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
             ]
         for walker in walkers:
             self.assertTrue(walker.has_reached_accept_state())
-            self.assertEqual(walker.get_current_value(), valid_value)
+            self.assertEqual(walker.current_value, valid_value)
 
     def test_reject_invalid_enum_value(self) -> None:
         """
@@ -38,7 +39,8 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = list(self.acceptor.get_walkers())
         for char in invalid_value:
             walkers = [
-                walker for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker
+                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
             ]
         # Final state should not be an accepted state
         self.assertFalse(
@@ -55,11 +57,14 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
             with self.subTest(valid_value=valid_value):
                 walkers = self.acceptor.get_walkers()
                 walkers = [
-                    walker for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, valid_value)
+                    walker
+                    for _, walker in EnumSchemaAcceptor.advance_all_walkers(
+                        walkers, valid_value
+                    )
                 ]
                 for walker in walkers:
                     self.assertTrue(walker.has_reached_accept_state())
-                    self.assertEqual(walker.get_current_value(), valid_value)
+                    self.assertEqual(walker.current_value, valid_value)
 
     def test_partial_enum_value_rejection(self) -> None:
         """
@@ -69,7 +74,8 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = list(self.acceptor.get_walkers())
         for char in partial_value:
             walkers = [
-                walker for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker
+                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
             ]
         self.assertFalse(
             any(walker.has_reached_accept_state() for walker in walkers),
@@ -116,10 +122,11 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
             with self.subTest(special_value=special_value):
                 walkers = acceptor.get_walkers()
                 walkers = [
-                    walker for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, special_value)
+                    walker
+                    for _, walker in EnumSchemaAcceptor.advance_all_walkers(
+                        walkers, special_value
+                    )
                 ]
                 for walker in walkers:
                     self.assertTrue(walker.has_reached_accept_state())
-                    self.assertEqual(
-                        walker.get_current_value(), special_value.strip('"')
-                    )
+                    self.assertEqual(walker.current_value, special_value.strip('"'))

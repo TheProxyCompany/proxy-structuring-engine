@@ -130,7 +130,6 @@ class CharacterWalker(StateMachineWalker):
         valid_length = 0
         accumulated_length = self.consumed_character_count
         for character in token:
-
             if character not in self.acceptor.charset:
                 break
             if (
@@ -172,7 +171,8 @@ class CharacterWalker(StateMachineWalker):
     def raw_value(self) -> str:
         return self._raw_value or ""
 
-    def get_current_value(self) -> Optional[str]:
+    @property
+    def current_value(self) -> Optional[str]:
         """
         Retrieve the current value of the walker.
 
