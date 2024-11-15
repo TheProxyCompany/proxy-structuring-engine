@@ -191,15 +191,16 @@ class Walker(ABC):
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.state_machine.accepted_state import AcceptedState
+
                 yield AcceptedState(clone)
                 return
 
         yield clone
 
-
-    def set_target(
+    def configure(
         self,
-        new_transition_walker: Walker,
+        transition_walker: Walker,
+        start_state: StateType,
         target_state: Optional[StateType] = None,
     ) -> Walker:
         clone = self.clone()
@@ -210,7 +211,8 @@ class Walker(ABC):
         ):
             clone.accepted_history.append(clone.transition_walker)
 
-        clone.transition_walker = new_transition_walker
+        clone.transition_walker = transition_walker
+        clone.current_state = start_state
         clone.target_state = target_state
 
         return clone
@@ -221,15 +223,16 @@ class Walker(ABC):
         Yields:
             New walker instances representing different paths.
         """
-        if (
-            self.transition_walker
-            and self.transition_walker.can_accept_more_input()
-        ):
-            for new_transition_walker in self.transition_walker.branch():
-                yield self.set_target(new_transition_walker, self.target_state)
+        if self.transition_walker and self.transition_walker.can_accept_more_input():
+            for transition_walker in self.transition_walker.branch():
+                yield self.configure(
+                    transition_walker,
+                    self.current_state,
+                    self.target_state,
+                )
         else:
-            for new_transition_walker in self.acceptor.branch_walkers(self):
-                yield new_transition_walker
+            for transition_walker in self.acceptor.branch_walkers(self):
+                yield transition_walker
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).

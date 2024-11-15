@@ -65,7 +65,7 @@ class ArraySchemaWalker(ArrayWalker):
             or self.current_state == 4 and self.target_state == 2
         ):
             return len(self.value) < self.acceptor.max_items()
-        if self.current_state == 3 and self.target_state == "$":
+        if self.target_state == "$":
             return len(self.value) >= self.acceptor.min_items()
 
         return super().should_start_transition(token)
