@@ -95,6 +95,7 @@ class StateMachine(TokenAcceptor):
             current_walker, current_token = queue.popleft()
 
             if not current_walker.transition_walker:
+                logger.debug("🟡 No Transition Walker for %s", current_walker.__class__.__name__)
                 next_walkers = list(self.branch_walker(current_walker, current_token))
 
                 if next_walkers:
@@ -103,7 +104,7 @@ class StateMachine(TokenAcceptor):
                     logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
                     yield current_walker
                 else:
-                    logger.debug("🔴 No valid branches for %s", current_walker)
+                    logger.debug("🚫 No valid branches for %s", current_walker)
 
                 continue
 
@@ -198,7 +199,7 @@ class StateMachine(TokenAcceptor):
         Yields:
             New walker instances, each representing a different path.
         """
-        logger.debug("🔵 Branching %s to next states.", walker)
+        logger.debug("🔵 Branching %s", walker)
         for transition, start_state, target_state in self.get_transition_walkers(walker):
             input_token = token or walker.remaining_input
 

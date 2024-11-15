@@ -84,7 +84,6 @@ class TextWalker(StateMachineWalker):
         super().__init__(acceptor)
         self.acceptor = acceptor
         self.consumed_character_count = consumed_character_count or 0
-        self._accepts_more_input = True
 
     def can_accept_more_input(self) -> bool:
         """
@@ -105,8 +104,7 @@ class TextWalker(StateMachineWalker):
         should_start = remaining_text.startswith(token) or token.startswith(
             remaining_text
         )
-        if not should_start:
-            self._accepts_more_input = False
+        self._accepts_more_input = should_start
 
         return should_start
 
