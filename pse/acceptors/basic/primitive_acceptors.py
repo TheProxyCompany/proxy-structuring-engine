@@ -72,10 +72,7 @@ class NullAcceptor(TextAcceptor):
         """
         Initialize the NullAcceptor with the text 'null'.
         """
-        super().__init__("null")
-
-    def get_walkers(self) -> Iterable[NullWalker]:
-        yield NullWalker(self)
+        super().__init__("null", walker_type=NullWalker)
 
 
 class NullWalker(TextWalker):

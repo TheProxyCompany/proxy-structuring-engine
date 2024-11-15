@@ -100,6 +100,16 @@ class Walker(ABC):
         pass
 
     @property
+    def current_value(self) -> Any:
+        """Retrieve the accumulated walker value.
+
+        Returns:
+            The current value from transition or history, parsed into appropriate type.
+            Returns None if no value is accumulated.
+        """
+        return self._parse_value(self.raw_value) if self.raw_value else None
+
+    @property
     def raw_value(self) -> Optional[str]:
         """Retrieve the raw accumulated value as a string.
 
@@ -130,16 +140,6 @@ class Walker(ABC):
             self.target_state if self.target_state is not None else "$",
             self.raw_value or "",
         )
-
-    @property
-    def current_value(self) -> Any:
-        """Retrieve the accumulated walker value.
-
-        Returns:
-            The current value from transition or history, parsed into appropriate type.
-            Returns None if no value is accumulated.
-        """
-        return self._parse_value(self.raw_value) if self.raw_value else None
 
     def should_start_transition(self, token: str) -> bool:
         """Determine if a transition should start with the given input token.

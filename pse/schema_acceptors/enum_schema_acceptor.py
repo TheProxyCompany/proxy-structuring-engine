@@ -34,10 +34,10 @@ class EnumSchemaAcceptor(StateMachine):
             raise TypeError("'enum' must be a list of string values.")
 
         graph: StateMachineGraph = {
-            "start": [
+            0: [
                 (TextAcceptor(value), "$")
                 for value in enum_values
             ]
         }
 
-        super().__init__(graph, initial_state="start", end_states=["$"])
+        super().__init__(graph, end_states=["$"])

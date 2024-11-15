@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set
+from typing import Iterable, Optional, Set, Type
 
 from lexpy import DAWG
 
@@ -22,6 +22,7 @@ class CharacterAcceptor(StateMachine):
         char_limit: Optional[int] = None,
         is_optional: bool = False,
         case_sensitive: bool = True,
+        walker_type: Optional[Type[CharacterWalker]] = None,
     ) -> None:
         """
         Initialize the CharAcceptor with a set of valid characters.
@@ -31,7 +32,7 @@ class CharacterAcceptor(StateMachine):
         """
         super().__init__(
             graph={},
-            walker_type=CharacterWalker,
+            walker_type=walker_type or CharacterWalker,
             is_optional=is_optional,
             is_case_sensitive=case_sensitive,
         )

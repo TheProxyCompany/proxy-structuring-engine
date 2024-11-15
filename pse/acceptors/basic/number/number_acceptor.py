@@ -22,24 +22,6 @@ class NumberAcceptor(StateMachine):
     decimal, and exponential formats as specified by the JSON standard.
     """
 
-    _cached_tries = {}
-
-    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
-        """
-        Get the edges for a given state.
-        """
-        if state == 0:
-            yield from super().get_edges(1)
-            yield from super().get_edges(state)
-        elif state == 2:
-            yield from super().get_edges(state)
-            yield from super().get_edges(3)
-        elif state == 4:
-            yield from super().get_edges(5)
-            yield from super().get_edges(state)
-        else:
-            yield from super().get_edges(state)
-
     def __init__(self, walker_type: Optional[Type[Walker]] = None):
         """
         Initialize the NumberAcceptor with its state transitions.
@@ -73,6 +55,22 @@ class NumberAcceptor(StateMachine):
             walker_type=walker_type or NumberWalker
         )
 
+    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
+        """
+        Get the edges for a given state.
+        """
+        if state == 0:
+            yield from super().get_edges(1)
+            yield from super().get_edges(state)
+        elif state == 2:
+            yield from super().get_edges(state)
+            yield from super().get_edges(3)
+        elif state == 4:
+            yield from super().get_edges(5)
+            yield from super().get_edges(state)
+        else:
+            yield from super().get_edges(state)
+
 
 class NumberWalker(StateMachineWalker):
     """
@@ -86,9 +84,11 @@ class NumberWalker(StateMachineWalker):
         self._accepts_more_input = True
 
     def can_accept_more_input(self) -> bool:
-        if self.transition_walker:
-            if self.transition_walker.can_accept_more_input():
-                return True
+        if (
+            self.transition_walker
+            and self.transition_walker.can_accept_more_input()
+        ):
+            return True
 
         return (
             bool(self.acceptor.graph.get(self.current_state))

@@ -5,7 +5,7 @@ from lexpy import DAWG
 from pse.state_machine.walker import Walker
 from pse.state_machine.state_machine import StateMachine, StateMachineWalker
 from pse.state_machine.accepted_state import AcceptedState
-from typing import Iterable, Set
+from typing import Iterable, Optional, Set, Type
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ class TextAcceptor(StateMachine):
         text: str,
         is_optional: bool = False,
         is_case_sensitive: bool = True,
+        walker_type: Optional[Type[TextWalker]] = None,
     ):
         """
         Initialize a new TextAcceptor instance with the specified text.
@@ -36,7 +37,7 @@ class TextAcceptor(StateMachine):
             ValueError: If the provided text is empty.
         """
         super().__init__(
-            walker_type=TextWalker,
+            walker_type=walker_type or TextWalker,
             is_optional=is_optional,
             is_case_sensitive=is_case_sensitive,
         )
@@ -46,12 +47,12 @@ class TextAcceptor(StateMachine):
 
         self.text = text
 
-    def get_walkers(self) -> Iterable[TextWalker]:
+    def get_walkers(self) -> Iterable[Walker]:
         """
         Get one or more walkers to traverse the acceptor.
         Override.
         """
-        yield TextWalker(self)
+        yield self._walker(self)
 
     def __str__(self) -> str:
         return self.__repr__()

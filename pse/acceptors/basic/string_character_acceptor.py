@@ -52,7 +52,9 @@ class StringCharacterWalker(Walker):
     """
 
     def __init__(
-        self, acceptor: StringCharacterAcceptor, value: Optional[str] = None
+        self,
+        acceptor: StringCharacterAcceptor,
+        value: Optional[str] = None,
     ) -> None:
         """
         Initialize the Walker.

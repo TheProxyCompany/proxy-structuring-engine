@@ -2,7 +2,8 @@ import pytest
 from typing import Dict, List
 from transformers import PreTrainedTokenizerFast, LlamaTokenizer
 import numpy as np
-from pse.util.driver import OutputType, StructuredOutputDriver
+from pse.util.delimiter import DelimiterType
+from pse.util.driver import StructuredOutputDriver
 from pse.util.errors import (
     TokenRejected,
     UnknownSchemaTypeError,
@@ -141,7 +142,9 @@ def test_create_acceptor_with_unsupported_output_type(
 ) -> None:
     """Test that creating an acceptor with an unsupported output type raises ValueError."""
     with pytest.raises(ValueError):
-        driver.create_acceptor(schema={"type": "string"}, output_type=OutputType.PYTHON)
+        driver.create_acceptor(
+            schema={"type": "string"}, type=DelimiterType.PYTHON
+        )
 
 
 def test_create_acceptor_with_custom_delimiters(driver: StructuredOutputDriver) -> None:

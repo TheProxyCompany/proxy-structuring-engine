@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from lexpy import DAWG
@@ -10,6 +9,7 @@ from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.util.delimiter import DelimiterType
 from pse.util.errors import TokenRejected
 from pse.util.get_acceptor import get_json_acceptor
 from pse.state_machine.walker import Walker
@@ -18,36 +18,6 @@ from pse.util.bias_logits import bias_logits
 from pse.util.handle_logits import handle_logits
 
 logger = logging.getLogger(__name__)
-
-
-class OutputType(Enum):
-    """
-    Represents the type of structured schema constraints for output.
-
-    Attributes:
-        JSON (OutputType): Output constrained by a JSON schema.
-        PYTHON (OutputType): Output constrained by a Python schema.
-        CYPHER (OutputType): Output constrained by a Cypher schema.
-        U_DIFF (OutputType): Output constrained by a U_DIFF schema.
-    """
-
-    JSON = (("```json\n", "\n```"),)
-    PYTHON = (("```python\n", "\n```"),)
-    CYPHER = (("```cypher\n", "\n```"),)
-    U_DIFF = (("```diff\n", "\n```"),)
-
-    def __init__(self, delimiters: Tuple[str, str]) -> None:
-        self._delimiters = delimiters
-
-    @property
-    def delimiters(self) -> Tuple[str, str]:
-        """
-        Returns the opening and closing delimiters based on the OutputType.
-
-        Returns:
-            Tuple[str, str]: A tuple containing the opening and closing delimiters.
-        """
-        return self._delimiters
 
 
 class StructuredOutputDriver(LogitsProcessor):
@@ -128,19 +98,19 @@ class StructuredOutputDriver(LogitsProcessor):
     def create_acceptor(
         self,
         schema: Optional[Dict[str, Any]] = None,
-        output_type: OutputType = OutputType.JSON,
+        type: DelimiterType = DelimiterType.JSON,
         encapsulated: bool = True,
         delimiters: Optional[Tuple[str, str]] = None,
     ) -> None:
         """
         Creates a StateMachineAcceptor based on the output types and provided schema.
 
-        This method initializes the appropriate acceptor(s) for each specified OutputType.
+        This method initializes the appropriate acceptor(s) for each specified DelimiterType.
         If encapsulation is enabled, it wraps the acceptor within the defined delimiters.
 
         Args:
             schema (Optional[Dict[str, Any]]): The JSON schema used to validate or constrain the output.
-            output_type (OutputType): The type of structured output.
+            type (DelimiterType): The type of structured output.
             encapsulated (bool): Whether to encapsulate the acceptor with delimiters.
             delimiters (Optional[Tuple[str, str]]): Custom delimiters.
 
@@ -152,18 +122,18 @@ class StructuredOutputDriver(LogitsProcessor):
             self.walkers = []
             return
 
-        if output_type == OutputType.JSON:
+        if type == DelimiterType.JSON:
             acceptor = get_json_acceptor(
                 schema,
                 start_hook=self._start_hook,
                 end_hook=self._end_hook,
             )
         else:
-            raise ValueError(f"Unsupported output type: {output_type}")
+            raise ValueError(f"Unsupported output type: {type}")
 
         if encapsulated:
             if delimiters is None:
-                delimiters = output_type.delimiters
+                delimiters = type.delimiters
 
             acceptor = EncapsulatedAcceptor(
                 acceptor,
