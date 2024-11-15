@@ -1,19 +1,17 @@
+"""State machine implementation for token acceptance based on graph traversal."""
+
 from __future__ import annotations
 
 import logging
+from collections import deque
 from pprint import pformat
 from typing import Iterable, Optional, Set, Tuple, Type
-from collections import deque
 
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.types import (
-    EdgeType,
-    StateMachineGraph,
-    StateType,
-)
+from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.state_machine.walker import Walker
 
 logger = logging.getLogger(__name__)
@@ -34,10 +32,10 @@ class StateMachine(TokenAcceptor):
         """Initialize the StateMachine with a state graph.
 
         Args:
-            graph: A dictionary mapping states to lists of (TokenAcceptor, target_state) tuples.
-                Defaults to an empty dict if not provided.
+            graph: Mapping of states to lists of (TokenAcceptor, target_state) tuples.
+                  Defaults to an empty dictionary.
             initial_state: The starting state. Defaults to 0.
-            end_states: Collection of accepting states. Defaults to ["$"].
+            end_states: Collection of accepting states. Defaults to ("$",).
             walker_type: The type of walker to use. Defaults to `StateMachineWalker`.
             is_optional: Whether the acceptor is optional. Defaults to False.
             is_case_sensitive: Whether the acceptor is case sensitive. Defaults to True.
@@ -55,58 +53,62 @@ class StateMachine(TokenAcceptor):
         """Retrieve outgoing transitions for a given state.
 
         Args:
-            state: Source state to get transitions from.
+            state: The source state to get transitions from.
 
         Returns:
-            Iterable of (acceptor, target_state) tuples representing possible transitions.
+            An iterable of (acceptor, target_state) tuples representing possible transitions.
         """
         return self.graph.get(state, [])
 
     def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
-        """Initialize walkers at the start state.
+        """Initialize walkers at the specified start state.
 
         Args:
-            state: Optional starting state.
+            state: The starting state. If None, uses the initial state.
 
-        Returns:
-            Iterable of walkers positioned at the initial state.
+        Yields:
+            Walker instances positioned at the starting state.
         """
         initial_walker = self._walker(self, state)
         yield from self.branch_walkers(initial_walker)
 
     def get_transitions_from(
-        self, source_walker: Walker, start_state: Optional[StateType] = None
+        self,
+        source_walker: Walker,
+        start_state: Optional[StateType] = None
     ) -> Iterable[Tuple[Walker, StateType, StateType]]:
-        """Get transition walkers for a given walker.
+        """Retrieve transition walkers from the current state.
+
+        For each edge from the current state, yields walkers that can traverse that edge.
+        Handles optional acceptors and pass-through transitions appropriately.
 
         Args:
-            walker: The walker initiating the transition.
+            source_walker: The walker initiating the transition.
+            start_state: Optional starting state. If None, uses the walker's current state.
 
         Returns:
-            Iterable of (transition_walker, target_state) tuples.
+            Iterable of tuples (transition_walker, source_state, target_state).
         """
-        logger.debug(f"🟡 Getting edges from {source_walker}")
         current_state = start_state or source_walker.current_state
+        logger.debug(f"🟡 Getting edges from state {current_state}")
+
         for acceptor, target_state in self.get_edges(current_state):
+            # Yield walkers from the acceptor
             for walker in acceptor.get_walkers():
                 yield walker, current_state, target_state
 
             if acceptor.is_optional():
-                logger.debug(f"🟡 {acceptor} is optional")
-                # breakpoint()
+                logger.debug(f"🟡 Optional acceptor {acceptor}")
 
-                if (
-                    target_state in self.end_states
-                    and not source_walker.can_accept_more_input()
-                ):
-                    logger.debug(
-                        f"🟢 {target_state} is in {self.end_states}, yielding accepted walker: {source_walker}"
-                    )
+                # If the target state is an end state and
+                # the source walker can't accept more input,
+                # yield an accepted state
+                if target_state in self.end_states and not source_walker.can_accept_more_input():
+                    logger.debug(f"🟢 Accepting at end state {target_state} with walker {source_walker}")
                     yield AcceptedState(source_walker), current_state, target_state
                 else:
-                    logger.debug(
-                        f"🟢 {acceptor} supports pass-through, getting transitions for next state {target_state}"
-                    )
+                    # Handle pass-through transitions recursively
+                    logger.debug(f"🟢 Handling pass-through for {acceptor} to state {target_state}")
                     yield from self.get_transitions_from(source_walker, target_state)
 
     def branch_walkers(
@@ -116,9 +118,8 @@ class StateMachine(TokenAcceptor):
     ) -> Iterable[Walker]:
         """Branch the walker into multiple paths for parallel exploration.
 
-        At each non-deterministic decision point, clone the current walker
-        for each possible transition. This allows simultaneous exploration
-        of all valid paths without explicit backtracking.
+        At each decision point, clone the current walker for each possible transition.
+        This allows simultaneous exploration of all valid paths without explicit backtracking.
 
         Args:
             walker: The current walker instance to branch from.
@@ -128,31 +129,33 @@ class StateMachine(TokenAcceptor):
             New walker instances, each representing a different path.
         """
         for transition, start_state, target_state in self.get_transitions_from(walker):
-            # Skip if transition can't start with either token or walker's remaining input
-            # saves time by skipping transitions that can't be completed
-            if (token and not transition.should_start_transition(token)) or (
-                walker.remaining_input
-                and not transition.should_start_transition(walker.remaining_input)
-            ):
+            # Determine the input for transition checking
+            input_token = token or walker.remaining_input
+
+            # Skip transitions that cannot start with the given input
+            if input_token and not transition.should_start_transition(input_token):
                 logger.debug(
                     "🔴 Skipping %s in %s - cannot start with %s",
                     transition,
                     walker.acceptor,
-                    repr(token or walker.remaining_input),
+                    repr(input_token),
                 )
                 continue
 
+            # Avoid redundant exploration of the same state
             if (
                 walker.target_state == target_state
                 and walker.transition_walker
                 and walker.transition_walker.can_accept_more_input()
             ):
                 logger.debug(
-                    f"🟡 {walker.acceptor}.Walker already exploring state {target_state}, skipping {transition.acceptor}"
+                    "🟡 Already exploring state %s, skipping %s",
+                    target_state,
+                    transition.acceptor,
                 )
                 continue
 
-            logger.debug(f"🟢 exploring {transition} to {target_state}")
+            logger.debug("🟢 Exploring %s to state %s", transition, target_state)
 
             yield walker.configure(
                 transition,
@@ -180,68 +183,55 @@ class StateMachine(TokenAcceptor):
         while queue:
             current_walker, current_token = queue.popleft()
 
-            if current_walker.transition_walker is None:
+            if not current_walker.transition_walker:
                 logger.debug("🔵 Branching to next states.")
-                has_valid_transition = False
+                branched = False
                 for next_walker in self.branch_walkers(current_walker, current_token):
-                    has_valid_transition = True
                     queue.append((next_walker, current_token))
+                    branched = True
 
-                if not has_valid_transition and current_walker.remaining_input:
-                    logger.debug(
-                        f"🟠 Yielding walker with remaining input: {current_walker}"
-                    )
+                if not branched and current_walker.remaining_input:
+                    logger.debug(f"🟠 Yielding walker with remaining input: {current_walker}")
                     yield current_walker
-
                 continue
 
             if current_walker.should_start_transition(current_token):
-                if (
-                    current_walker.accepted_history
-                    and current_walker.transition_walker
-                    == current_walker.accepted_history[-1]
-                ):
-                    logger.debug(
-                        f"🟡 Popping duplicate walker from history: {current_walker.accepted_history[-1]}"
-                    )
+                if (current_walker.accepted_history and
+                    current_walker.transition_walker == current_walker.accepted_history[-1]):
+                    logger.debug(f"🟡 Popping duplicate walker from history: {current_walker.accepted_history[-1]}")
                     current_walker.accepted_history.pop()
 
-                for advanced_walker in current_walker.transition_walker.consume_token(
-                    current_token
-                ):
-                    for new_walker in current_walker.transition_with_walker(
-                        advanced_walker
-                    ):
+                for advanced_walker in current_walker.transition_walker.consume_token(current_token):
+                    for new_walker in current_walker.transition_with_walker(advanced_walker):
                         if new_walker.remaining_input:
-                            logger.debug(
-                                f"⚪️ walker with remaining input: {repr(new_walker)}"
-                            )
+                            logger.debug(f"⚪️ Walker with remaining input: {repr(new_walker)}")
                             queue.append((new_walker, new_walker.remaining_input))
                         else:
                             yield new_walker
                 continue
 
-            logger.debug(
-                f"🔴 {current_walker.transition_walker.acceptor} cannot start transition with {repr(current_token)}"
-            )
+            logger.debug(f"🔴 {current_walker.transition_walker.acceptor} cannot start transition with {repr(current_token)}")
 
             if current_walker.transition_walker.can_accept_more_input():
-                has_valid_transition = False
+                branched = False
                 for next_transition_walker in current_walker.transition_walker.branch():
                     if next_transition_walker.should_start_transition(current_token):
-                        has_valid_transition = True
                         current_walker.transition_walker = next_transition_walker
                         queue.append((current_walker, current_token))
-
-                if has_valid_transition:
+                        branched = True
+                if branched:
                     continue
 
             if current_walker.transition_walker.has_reached_accept_state():
-                logger.debug(f"🔵 Branching {current_walker} to next states.")
-                # breakpoint()
+                logger.debug("🔵 Branching %s to next states.", current_walker)
                 for next_walker in self.branch_walkers(current_walker):
                     if next_walker.should_start_transition(current_token):
                         queue.append((next_walker, current_token))
+                continue
+
+            if current_walker.remaining_input:
+                logger.debug(f"🟠 Yielding walker with remaining input: {current_walker}")
+                yield current_walker
 
     @classmethod
     def advance_all_walkers(
@@ -263,35 +253,23 @@ class StateMachine(TokenAcceptor):
         if not walkers:
             return []
 
-        def process_walker(walker: Walker) -> Iterable[Walker]:
-            """Process a single walker by advancing it with the given input.
+        def process_walker(walker: Walker) -> Iterable[Tuple[str, Walker]]:
+            logger.debug(f"⚪️ Processing walker with token: {repr(token)}")
+            for advanced_walker in walker.consume_token(token):
+                if not advanced_walker.remaining_input:
+                    logger.debug(f"🟢 Full match for token: {repr(token)}")
+                    yield token, advanced_walker
+                else:
+                    # Partial match
+                    remaining_length = len(advanced_walker.remaining_input)
+                    valid_prefix = token[:-remaining_length]
+                    if dawg is not None and valid_prefix in dawg:
+                        logger.debug(f"🟢 Valid partial match: {repr(valid_prefix)}")
+                        advanced_walker.remaining_input = None
+                        yield valid_prefix, advanced_walker
 
-            Args:
-                walker: The walker to process.
-
-            Returns:
-                Updated walkers after advancement.
-            """
-            logger.debug(f"⚪️ Starting to process walker with token: {repr(token)}")
-            yield from walker.consume_token(token)
-
-        # Using map with executor and yielding results
-        for advanced_walkers in cls._EXECUTOR.map(process_walker, walkers):
-            for walker in advanced_walkers:
-                if not walker.remaining_input:
-                    logger.debug(f"🟢 Advanced input: {repr(token)}")
-                    logger.debug(f"🟢 Advanced walker: {repr(walker)}")
-                    yield token, walker
-                    continue
-
-                # Partial match
-                length_of_remaining_input = len(token) - len(walker.remaining_input)
-                valid_prefix = token[:length_of_remaining_input]
-                if dawg is not None and valid_prefix and valid_prefix in dawg:
-                    logger.debug(f"🟢 Valid partial match: {repr(valid_prefix)}")
-                    logger.debug(f"🟢 Advanced walker: {repr(walker)}")
-                    walker.remaining_input = None
-                    yield valid_prefix, walker
+        for result in cls._EXECUTOR.map(process_walker, walkers):
+            yield from result
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}()"
