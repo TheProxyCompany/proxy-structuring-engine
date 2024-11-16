@@ -31,8 +31,9 @@ class JsonAcceptor(StateMachine):
         """
         if state == 0:
             from .object_acceptor import ObjectAcceptor
-            from ..basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
-            from .string_acceptor import StringAcceptor
+            from ..basic.boolean_acceptors import BooleanAcceptor
+            from ..basic.string_acceptor import StringAcceptor
+            from ..basic import NullAcceptor
             from ..collections.array_acceptor import ArrayAcceptor
             from ..basic.number_acceptor import NumberAcceptor
 
@@ -40,7 +41,7 @@ class JsonAcceptor(StateMachine):
                 (ObjectAcceptor(), "$"),
                 (ArrayAcceptor(), "$"),
                 (StringAcceptor(), "$"),
-                (NullAcceptor(), "$"),
+                (NullAcceptor, "$"),
                 (BooleanAcceptor(), "$"),
                 (NumberAcceptor(), "$"),
             ]

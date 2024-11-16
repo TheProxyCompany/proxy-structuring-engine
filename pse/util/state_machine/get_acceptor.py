@@ -5,10 +5,8 @@ from typing import Any, Callable, Dict, List, Optional
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.acceptors.basic.primitive_acceptors import (
-    BooleanAcceptor,
-    NullAcceptor,
-)
+from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
+from pse.acceptors.basic import NullAcceptor
 from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.util.errors import (
@@ -99,7 +97,7 @@ def get_acceptor(
     if schema_type == "boolean":
         acceptor = BooleanAcceptor()
     elif schema_type == "null":
-        acceptor = NullAcceptor()
+        acceptor = NullAcceptor
     elif schema_type in ["number", "integer"]:
         acceptor = NumberSchemaAcceptor(schema)
     elif "enum" in schema:

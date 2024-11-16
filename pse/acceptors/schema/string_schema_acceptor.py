@@ -4,7 +4,7 @@ import re
 from typing import Callable, Optional, Any
 
 from pse.util.errors import SchemaNotImplementedError
-from pse.acceptors.json.string_acceptor import StringAcceptor, StringWalker
+from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
 
 import logging
 import regex  # Note: This is a third-party module

@@ -7,7 +7,7 @@ from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.json.string_acceptor import StringAcceptor
+from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
 from pse.core.walker import Walker
 

@@ -5,7 +5,7 @@ from lexpy import DAWG
 
 from pse.core.state_machine import StateMachine
 from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker, logger
+from pse.core.walker import Walker
 
 # INVALID_CHARS is a set containing characters that are not allowed in JSON strings.
 # It includes control characters (ASCII 0-31) and the double quote (") and backslash (\) characters.
@@ -66,14 +66,8 @@ class StringCharacterWalker(Walker):
     def can_accept_more_input(self) -> bool:
         return self._accepts_more_input
 
-    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        """
-        Select valid string characters by excluding invalid ones.
-
-        Returns:
-            Set[str]: Set of valid string characters.
-        """
-        return self.acceptor.valid_chars
+    def accepts_any_token(self) -> bool:
+        return True
 
     def should_start_transition(self, token: str) -> bool:
         if not token or token[0] in INVALID_CHARS:
@@ -92,8 +86,6 @@ class StringCharacterWalker(Walker):
         Returns:
             List[Walker]: List of new walkers after advancement.
         """
-        logger.debug(f"Advancing walker with input: {token}")
-
         # Split input at first invalid character
         valid_prefix = ""
         for char in token:
@@ -103,7 +95,6 @@ class StringCharacterWalker(Walker):
 
         if not valid_prefix:
             self._accepts_more_input = False
-            logger.debug(f"Cannot accept more input: {token}")
             return
 
         new_walker = self.clone()

@@ -3,8 +3,9 @@ from lexpy import DAWG
 
 from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.acceptors.basic import NullAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
+from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, IntegerAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -118,7 +119,7 @@ def test_walker_clone():
 def test_null_acceptor():
     """Test StateMachine with NullAcceptor."""
     sm = StateMachine(
-        graph={0: [(NullAcceptor(), 1)]},
+        graph={0: [(NullAcceptor, 1)]},
         initial_state=0,
         end_states=[1],
     )
