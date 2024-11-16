@@ -3,7 +3,7 @@ from typing import Dict, List
 from transformers import PreTrainedTokenizerFast, LlamaTokenizer
 import numpy as np
 from pse.util.state_machine.delimiter import DelimiterType
-from pse.core.driver import StructuredOutputDriver
+from pse.core.engine import StructuringEngine
 from pse.util.errors import (
     TokenRejected,
     UnknownSchemaTypeError,
@@ -84,20 +84,20 @@ def tokenizer() -> PreTrainedTokenizerFast:
 
 
 @pytest.fixture(scope="module")
-def driver(tokenizer: PreTrainedTokenizerFast) -> StructuredOutputDriver:
+def driver(tokenizer: PreTrainedTokenizerFast) -> StructuringEngine:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    driver = StructuredOutputDriver(tokenizer=tokenizer)
+    driver = StructuringEngine(tokenizer=tokenizer)
     return driver
 
 
 @pytest.fixture(autouse=True)
-def reset_driver(driver: StructuredOutputDriver) -> None:
+def reset_driver(driver: StructuringEngine) -> None:
     """Function-scoped fixture to reset the driver before each test."""
     driver.reset()
 
 
 def check_correct_token_mask(
-    driver: StructuredOutputDriver,
+    driver: StructuringEngine,
     test_logits: np.ndarray,
     vocab: Dict[str, int],
     valid_tokens: List[str],
@@ -118,36 +118,34 @@ def check_correct_token_mask(
     return logits
 
 
-def test_create_default(driver: StructuredOutputDriver) -> None:
+def test_create_default(driver: StructuringEngine) -> None:
     """Test the default initialization of StructuredOutputDriver."""
     driver.create_acceptor(schema={"type": "string"})
-    assert isinstance(driver, StructuredOutputDriver)
+    assert isinstance(driver, StructuringEngine)
     assert driver._waiting_for_trigger()
 
 
-def test_create_with_non_default_parameters(driver: StructuredOutputDriver) -> None:
+def test_create_with_non_default_parameters(driver: StructuringEngine) -> None:
     """Test initializing StructuredOutputDriver with non-default parameters."""
     driver.create_acceptor(schema={"type": "string"}, encapsulated=False)
     assert not driver._waiting_for_trigger()
 
 
-def test_create_acceptor_with_invalid_schema(driver: StructuredOutputDriver) -> None:
+def test_create_acceptor_with_invalid_schema(driver: StructuringEngine) -> None:
     """Test creating an acceptor with an invalid schema."""
     with pytest.raises(UnknownSchemaTypeError):
         driver.create_acceptor(schema={"type": "invalid_type"})
 
 
 def test_create_acceptor_with_unsupported_output_type(
-    driver: StructuredOutputDriver,
+    driver: StructuringEngine,
 ) -> None:
     """Test that creating an acceptor with an unsupported output type raises ValueError."""
     with pytest.raises(ValueError):
-        driver.create_acceptor(
-            schema={"type": "string"}, type=DelimiterType.PYTHON
-        )
+        driver.create_acceptor(schema={"type": "string"}, type=DelimiterType.PYTHON)
 
 
-def test_create_acceptor_with_custom_delimiters(driver: StructuredOutputDriver) -> None:
+def test_create_acceptor_with_custom_delimiters(driver: StructuringEngine) -> None:
     """Test creating an acceptor with custom delimiters."""
     from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 
@@ -164,7 +162,7 @@ def test_create_acceptor_with_custom_delimiters(driver: StructuredOutputDriver) 
 
 
 def test_advance_token_with_encapsulated_acceptor(
-    driver: StructuredOutputDriver, tokenizer: PreTrainedTokenizerFast
+    driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast
 ) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
     driver.create_acceptor({"type": "string"})
@@ -176,7 +174,7 @@ def test_advance_token_with_encapsulated_acceptor(
 
 
 def test_advance_token_with_encapsulated_acceptor_partial_trigger(
-    driver: StructuredOutputDriver, tokenizer: PreTrainedTokenizerFast
+    driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast
 ) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
     driver.create_acceptor({"type": "string"})
@@ -207,7 +205,7 @@ def test_advance_token_with_encapsulated_acceptor_partial_trigger(
 
 
 def test_advance_token_with_acceptor_invalid(
-    driver: StructuredOutputDriver, tokenizer: PreTrainedTokenizerFast
+    driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast
 ) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
     driver.create_acceptor({"type": "string"}, encapsulated=False)
@@ -223,7 +221,7 @@ def test_advance_token_with_acceptor_invalid(
 
 
 def test_create_acceptor_with_complex_schema(
-    driver: StructuredOutputDriver,
+    driver: StructuringEngine,
 ) -> None:
     """Test create_acceptor with a complex schema."""
     complex_schema = {
@@ -252,7 +250,7 @@ def test_create_acceptor_with_complex_schema(
 
 
 def test_create_acceptor_with_pattern_schema(
-    driver: StructuredOutputDriver, tokenizer: PreTrainedTokenizerFast
+    driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast
 ) -> None:
     """Test create_acceptor with a schema that includes a pattern."""
     pattern_schema = {
@@ -282,7 +280,7 @@ def test_create_acceptor_with_pattern_schema(
     assert driver.has_reached_accept_state()
 
 
-def test_in_accepted_state_with_no_walkers(driver: StructuredOutputDriver) -> None:
+def test_in_accepted_state_with_no_walkers(driver: StructuringEngine) -> None:
     """Test in_accepted_state when walkers are empty."""
     driver.create_acceptor(schema={"type": "string"})
     driver.walkers = []
@@ -359,7 +357,7 @@ def test_invalid_tokens_object() -> None:
         "{": 22,
     }
     mock_tokenizer = MockTokenizer(test_vocab)
-    driver = StructuredOutputDriver(tokenizer=mock_tokenizer)  # type: ignore
+    driver = StructuringEngine(tokenizer=mock_tokenizer)  # type: ignore
     driver.create_acceptor(complex_schema, encapsulated=False)
     test_logits = np.random.rand(len(mock_tokenizer.vocab))
 

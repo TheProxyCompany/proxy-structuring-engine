@@ -20,7 +20,7 @@ from pse.util.handle_logits import handle_logits
 logger = logging.getLogger(__name__)
 
 
-class StructuredOutputDriver(LogitsProcessor):
+class StructuringEngine(LogitsProcessor):
     """
     Drives a StateMachineAcceptor to manage and validate structured outputs based on a given schema.
 
