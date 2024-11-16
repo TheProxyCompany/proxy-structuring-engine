@@ -8,7 +8,7 @@ from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.util.state_machine.delimiter import DelimiterType
 from pse.util.errors import TokenRejected
 from pse.util.state_machine.get_acceptor import get_acceptor
@@ -40,7 +40,7 @@ class StructuredOutputDriver(LogitsProcessor):
         """
         self.tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = tokenizer
         self.eos_id: int = tokenizer.eos_token_id or 0
-        self.acceptor: Optional[TokenAcceptor] = None
+        self.acceptor: Optional[Acceptor] = None
         self.walkers: List[Walker] = []
         self.within_json_value: bool = False
         self._build_vocabulary()

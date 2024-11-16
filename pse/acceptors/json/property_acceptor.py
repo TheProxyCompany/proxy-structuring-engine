@@ -3,7 +3,7 @@ from typing import Tuple, Optional, Any, List, Type
 import logging
 import json
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -24,7 +24,7 @@ class PropertyAcceptor(SequenceAcceptor):
 
     def __init__(
         self,
-        sequence: Optional[List[TokenAcceptor]] = None,
+        sequence: Optional[List[Acceptor]] = None,
         walker_type: Optional[Type[Walker]] = None,
     ) -> None:
         """

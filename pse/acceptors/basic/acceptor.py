@@ -1,13 +1,13 @@
 """
-Base Token Acceptors Module.
+Base Acceptor Module.
 
-This module defines the foundational classes and methods for token acceptors,
+This module defines the foundational classes and methods for acceptors,
 which constrain the tokens acceptable during parsing or generation of text.
-Token acceptors utilize walkers to manage multiple parsing states efficiently,
+Acceptors utilize walkers to manage multiple parsing states efficiently,
 minimizing expensive backtracking operations.
 
 Classes:
-    TokenAcceptor: Base class for all token acceptors.
+    Acceptor: Base class for all token acceptors.
 """
 
 from __future__ import annotations
@@ -23,11 +23,11 @@ if TYPE_CHECKING:
     from pse.util.state_machine.types import StateType, StateMachineGraph
 
 
-class TokenAcceptor(ABC):
+class Acceptor(ABC):
     """
     Base class for token acceptors.
 
-    A token acceptor constrains the acceptable tokens at a specific point
+    An acceptor constrains the acceptable tokens at a specific point
     during parsing or generation.
 
     It manages multiple walkers representing different valid states,
@@ -47,7 +47,7 @@ class TokenAcceptor(ABC):
         is_optional: bool = False,
         is_case_sensitive: bool = True,
     ) -> None:
-        """Initializes the TokenAcceptor with the given initial and end states.
+        """Initializes the Acceptor with the given initial and end states.
 
         Args:
             initial_state (StateType): The starting state of the acceptor.
@@ -161,7 +161,7 @@ class TokenAcceptor(ABC):
             lines.append(f"{indent_str}}}")
             return "".join(lines)
 
-        def format_acceptor(acceptor: TokenAcceptor, indent: int) -> str:
+        def format_acceptor(acceptor: Acceptor, indent: int) -> str:
             acceptor_repr = acceptor.__repr__()
             return "\n".join(
                 ("    " * indent + line) if idx != 0 else line

@@ -1,7 +1,7 @@
 import pytest
 from typing import List
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
@@ -155,7 +155,7 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: List[TokenAcceptor], token: str):
+def test_multiple_sequences(acceptors: List[Acceptor], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
     walkers = list(sequence.get_walkers())

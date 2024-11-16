@@ -1,5 +1,5 @@
 from __future__ import annotations
-from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, NumberWalker
+from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
 
 
 class NumberSchemaAcceptor(NumberAcceptor):

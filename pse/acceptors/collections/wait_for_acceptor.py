@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Iterable, Optional, Callable
 import logging
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.core.state_machine import StateMachine
 from pse.core.walker import Walker
 
@@ -20,7 +20,7 @@ class WaitForAcceptor(StateMachine):
 
     def __init__(
         self,
-        wait_for_acceptor: TokenAcceptor,
+        wait_for_acceptor: Acceptor,
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
     ):

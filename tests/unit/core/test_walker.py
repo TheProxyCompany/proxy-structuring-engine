@@ -4,11 +4,11 @@ from typing import Any, Iterable
 from pse.util.state_machine.accepted_state import AcceptedState
 from pse.core.state_machine import StateMachine
 from pse.core.walker import Walker
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 
 
 class Concretewalker(Walker):
-    def __init__(self, acceptor: "TokenAcceptor"):
+    def __init__(self, acceptor: "Acceptor"):
         super().__init__(acceptor)
         self.value = "test_value"
 

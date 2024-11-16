@@ -7,11 +7,7 @@ from typing import (
     Iterable,
     Optional,
 )
-from pse.core.state_machine import (
-    StateMachine,
-    StateType,
-    EdgeType
-)
+from pse.core.state_machine import StateMachine, StateType, EdgeType
 from pse.core.walker import Walker
 
 
@@ -38,7 +34,7 @@ class JsonAcceptor(StateMachine):
             from ..basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
             from .string_acceptor import StringAcceptor
             from ..collections.array_acceptor import ArrayAcceptor
-            from ..basic.number.number_acceptor import NumberAcceptor
+            from ..basic.number_acceptor import NumberAcceptor
 
             return [
                 (ObjectAcceptor(), "$"),

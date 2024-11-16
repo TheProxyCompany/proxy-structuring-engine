@@ -4,10 +4,11 @@ import logging
 from typing import List, Optional, Type
 
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
+
 
 class SequenceAcceptor(StateMachine):
     """
@@ -17,7 +18,9 @@ class SequenceAcceptor(StateMachine):
     sequence of acceptors provided during initialization.
     """
 
-    def __init__(self, acceptors: List[TokenAcceptor], walker_type: Optional[Type[Walker]] = None):
+    def __init__(
+        self, acceptors: List[Acceptor], walker_type: Optional[Type[Walker]] = None
+    ):
         """
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
@@ -35,6 +38,7 @@ class SequenceAcceptor(StateMachine):
             walker_type=walker_type or SequenceWalker,
         )
 
+
 class SequenceWalker(StateMachineWalker):
     """
     Walker for navigating through the SequenceAcceptor.
@@ -45,4 +49,7 @@ class SequenceWalker(StateMachineWalker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return not self.remaining_input and self.current_state not in self.acceptor.end_states
+        return (
+            not self.remaining_input
+            and self.current_state not in self.acceptor.end_states
+        )

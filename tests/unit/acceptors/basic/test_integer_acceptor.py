@@ -1,5 +1,5 @@
 import pytest
-from pse.acceptors.basic.number.integer_acceptor import IntegerAcceptor
+from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.core.state_machine import StateMachine
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 

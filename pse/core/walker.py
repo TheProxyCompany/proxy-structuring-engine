@@ -14,7 +14,7 @@ from typing import Any, Iterable, List, Optional, Self, Set
 
 from lexpy import DAWG
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.util.state_machine.types import StateType, VisitedEdgeType
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class Walker(ABC):
 
     def __init__(
         self,
-        acceptor: TokenAcceptor,
+        acceptor: Acceptor,
         current_state: Optional[StateType] = None,
     ) -> None:
         """Initialize a new Walker with the given acceptor.
@@ -427,7 +427,8 @@ class Walker(ABC):
             state_info = f"State: {self.current_state}"
             return (
                 f"{state_info} ➔ {self.target_state}"
-                if self.target_state is not None and self.current_state != self.target_state
+                if self.target_state is not None
+                and self.current_state != self.target_state
                 else state_info
             )
 

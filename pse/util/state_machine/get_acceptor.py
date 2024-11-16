@@ -9,7 +9,7 @@ from pse.acceptors.basic.primitive_acceptors import (
     BooleanAcceptor,
     NullAcceptor,
 )
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.util.errors import (
     DefinitionNotFoundError,
@@ -26,7 +26,7 @@ def get_acceptor(
     context: Optional[Dict[str, Any]] = None,
     start_hook: Optional[Callable] = None,
     end_hook: Optional[Callable] = None,
-) -> TokenAcceptor:
+) -> Acceptor:
     """
     Create an acceptor to validate JSON input based on the provided schema.
 

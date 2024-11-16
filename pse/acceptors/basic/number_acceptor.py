@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Type
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.types import EdgeType, StateMachineGraph, StateType
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.acceptors.basic.number.integer_acceptor import IntegerAcceptor
+from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 import logging
@@ -34,10 +34,15 @@ class NumberAcceptor(StateMachine):
                 (IntegerAcceptor(), 2),
             ],
             2: [
-                (SequenceAcceptor([
-                    TextAcceptor("."),
-                    IntegerAcceptor(drop_leading_zeros=False),
-                ]), 3),
+                (
+                    SequenceAcceptor(
+                        [
+                            TextAcceptor("."),
+                            IntegerAcceptor(drop_leading_zeros=False),
+                        ]
+                    ),
+                    3,
+                ),
             ],
             3: [
                 (CharacterAcceptor("eE"), 4),
@@ -50,9 +55,7 @@ class NumberAcceptor(StateMachine):
             ],
         }
         super().__init__(
-            graph,
-            end_states=[2, 3, "$"],
-            walker_type=walker_type or NumberWalker
+            graph, end_states=[2, 3, "$"], walker_type=walker_type or NumberWalker
         )
 
     def get_edges(self, state: StateType) -> Iterable[EdgeType]:
@@ -84,10 +87,7 @@ class NumberWalker(StateMachineWalker):
         self._accepts_more_input = True
 
     def can_accept_more_input(self) -> bool:
-        if (
-            self.transition_walker
-            and self.transition_walker.can_accept_more_input()
-        ):
+        if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
         return (

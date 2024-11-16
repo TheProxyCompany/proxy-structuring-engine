@@ -1,11 +1,11 @@
 from typing import Dict, List, Tuple, Union
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 
 StateType = Union[int, str]
 """Represents a state within the StateMachine.  Can be an integer or a string."""
 
 # Type alias for edges in the StateMachine graph.
-EdgeType = Tuple[TokenAcceptor, StateType]
+EdgeType = Tuple[Acceptor, StateType]
 """Represents a transition between states in the StateMachine.
 
 An Edge consists of a `TokenAcceptor` that governs the conditions for the transition,

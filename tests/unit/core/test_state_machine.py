@@ -1,12 +1,12 @@
 import pytest
 from lexpy import DAWG
 
-from pse.acceptors.basic.number.integer_acceptor import IntegerWalker
+from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.acceptors.basic.number.number_acceptor import NumberAcceptor, IntegerAcceptor
+from pse.acceptors.basic.number_acceptor import NumberAcceptor, IntegerAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 
 
@@ -347,6 +347,7 @@ def test_unexpected_input():
     # Should not be in accepted state
     assert not any(walker.has_reached_accept_state() for walker in walkers)
     assert len(walkers) == 0
+
 
 def test_get_edges_nonexistent_state():
     """Test get_edges for a state that does not exist in the graph."""
