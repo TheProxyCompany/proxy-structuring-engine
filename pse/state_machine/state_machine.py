@@ -173,7 +173,6 @@ class StateMachine(TokenAcceptor):
         """
         current_state = state or walker.current_state
         logger.debug("🟡 Getting edges from state %s", current_state)
-
         for acceptor, target_state in self.get_edges(current_state):
             # create transition walkers from the edge's token acceptor
             for transition_walker in acceptor.get_walkers():
@@ -206,10 +205,12 @@ class StateMachine(TokenAcceptor):
         for transition, start_state, target_state in self.get_transition_walkers(walker):
             input_token = token or walker.remaining_input
 
-            if input_token and not transition.should_start_transition(input_token):
+            if (
+                input_token
+                and not transition.should_start_transition(input_token)
+                # and not transition.acceptor.is_optional
+            ):
                 logger.debug("🔴 %s in %s cannot start with %s", transition, walker.acceptor, repr(input_token))
-                if transition.acceptor.is_optional:
-                    logger.debug("🟢 %s supports pass-through to state %s", transition.acceptor, target_state)
                 continue
 
             if walker.target_state == target_state and walker.transition_walker and walker.transition_walker.can_accept_more_input():

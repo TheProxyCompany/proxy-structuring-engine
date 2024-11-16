@@ -170,11 +170,6 @@ def test_multiple_sequences(acceptors: List[TokenAcceptor], token: str):
 
 def test_optional_acceptor():
     """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
-    sequence = SequenceAcceptor([
-            TextAcceptor(","),
-            WhitespaceAcceptor(min_whitespace=0),
-        ]
-    )
     sm = StateMachine(
         graph={
             0: [
@@ -182,7 +177,15 @@ def test_optional_acceptor():
                 (TextAcceptor("World"), 1),
             ],
             1: [
-                (sequence, "0"),
+                (
+                    SequenceAcceptor(
+                        [
+                            TextAcceptor(","),
+                            WhitespaceAcceptor(min_whitespace=0),
+                        ]
+                    ),
+                    0,
+                ),
                 (TextAcceptor("."), "$"),
             ],
         },
