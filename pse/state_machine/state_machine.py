@@ -205,11 +205,7 @@ class StateMachine(TokenAcceptor):
         for transition, start_state, target_state in self.get_transition_walkers(walker):
             input_token = token or walker.remaining_input
 
-            if (
-                input_token
-                and not transition.should_start_transition(input_token)
-                # and not transition.acceptor.is_optional
-            ):
+            if input_token and not transition.should_start_transition(input_token):
                 logger.debug("🔴 %s in %s cannot start with %s", transition, walker.acceptor, repr(input_token))
                 continue
 

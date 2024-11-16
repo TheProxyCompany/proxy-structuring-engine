@@ -69,7 +69,7 @@ class NumberSchemaWalker(NumberWalker):
             return False
         # Only validate when there is no remaining input
         if (
-            self.target_state
+            self.target_state is not None
             and self.target_state in self.acceptor.end_states
             and not self.remaining_input
         ):

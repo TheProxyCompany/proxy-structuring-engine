@@ -427,7 +427,7 @@ class Walker(ABC):
             state_info = f"State: {self.current_state}"
             return (
                 f"{state_info} ➔ {self.target_state}"
-                if self.target_state and self.current_state != self.target_state
+                if self.target_state is not None and self.current_state != self.target_state
                 else state_info
             )
 
@@ -451,7 +451,7 @@ class Walker(ABC):
         def _format_edge_info() -> str:
             if self.explored_edges:
                 return self._format_explored_edges()
-            if self.target_state:
+            if self.target_state is not None:
                 return _format_current_edge()
             return (
                 f"value: {repr(self.current_value or self.raw_value)}"

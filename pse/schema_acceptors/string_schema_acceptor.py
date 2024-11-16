@@ -120,7 +120,7 @@ class StringSchemaWalker(StringWalker):
     def should_start_transition(self, token: str) -> bool:
         if (
             self.is_within_value()
-            and self.target_state
+            and self.target_state is not None
             and self.target_state not in self.acceptor.end_states
             and self.acceptor.pattern
             and self.transition_walker
@@ -142,7 +142,7 @@ class StringSchemaWalker(StringWalker):
         # Only update partial_value when processing actual string content
         if (
             self.is_within_value()
-            and self.target_state
+            and self.target_state is not None
             and self.target_state not in self.acceptor.end_states
         ):
             if self.is_escaping:
@@ -150,7 +150,7 @@ class StringSchemaWalker(StringWalker):
             elif self.transition_walker and self.transition_walker.raw_value == "\\":
                 self.is_escaping = True
 
-        if self.target_state and self.target_state in self.acceptor.end_states:
+        if self.target_state is not None and self.target_state in self.acceptor.end_states:
             if self.acceptor.end_hook:
                 self.acceptor.end_hook()
 
