@@ -62,6 +62,8 @@ class StateMachine(TokenAcceptor):
     def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
         """Initialize walkers at the specified start state.
 
+        If no graph is provided, only the initial walker is yielded.
+
         Args:
             state: The starting state. If None, uses the initial state.
 
@@ -81,6 +83,7 @@ class StateMachine(TokenAcceptor):
         1. If no active transition, branches to next possible states.
         2. If an active transition walker can proceed, advances it.
         3. If no valid transitions and the walker can accept more input, yields the walker.
+        4. If the walker is optional and can accept more input, yields the walker.
 
         Args:
             walker: The walker to advance.
@@ -162,8 +165,8 @@ class StateMachine(TokenAcceptor):
         Handles optional acceptors and pass-through transitions appropriately.
 
         Args:
-            source_walker: The walker initiating the transition.
-            start_state: Optional starting state. If None, uses the walker's current state.
+            walker: The walker initiating the transition.
+            state: Optional starting state. If None, uses the walker's current state.
 
         Returns:
             Iterable of tuples (transition_walker, source_state, target_state).
@@ -204,7 +207,9 @@ class StateMachine(TokenAcceptor):
             input_token = token or walker.remaining_input
 
             if input_token and not transition.should_start_transition(input_token):
-                logger.debug("🔴 Skipping %s in %s - cannot start with %s", transition, walker.acceptor, repr(input_token))
+                logger.debug("🔴 %s in %s cannot start with %s", transition, walker.acceptor, repr(input_token))
+                if transition.acceptor.is_optional:
+                    logger.debug("🟢 %s supports pass-through to state %s", transition.acceptor, target_state)
                 continue
 
             if walker.target_state == target_state and walker.transition_walker and walker.transition_walker.can_accept_more_input():

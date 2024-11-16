@@ -154,9 +154,6 @@ class Walker(ABC):
             return self.transition_walker.should_start_transition(token)
 
         if self.current_edge in self.explored_edges:
-            logger.debug(
-                f"🔴 {self.acceptor} already explored edge: {self.current_edge}"
-            )
             self._accepts_more_input = False
             return False
 
@@ -206,8 +203,8 @@ class Walker(ABC):
         if not clone.should_complete_transition():
             return clone if clone.can_accept_more_input() else None
 
-        if transition_walker.has_reached_accept_state() and self.target_state:
-            clone.current_state = self.target_state
+        if clone.target_state and transition_walker.has_reached_accept_state():
+            clone.current_state = clone.target_state
 
             if not transition_walker.can_accept_more_input():
                 clone.accepted_history.append(transition_walker)
