@@ -54,6 +54,3 @@ class SequenceWalker(StateMachineWalker):
             not self.remaining_input
             and self.current_state not in self.acceptor.end_states
         )
-
-    def should_complete_transition(self) -> bool:
-        return True
