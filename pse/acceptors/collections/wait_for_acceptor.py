@@ -41,8 +41,8 @@ class WaitForAcceptor(StateMachine):
     def walker_class(self) -> Type[Walker]:
         return WaitForWalker
 
-    def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
-        return self.wait_for_acceptor.advance_walker(walker, token)
+    def advance(self, walker: Walker, token: str) -> Iterable[Walker]:
+        return self.wait_for_acceptor.advance(walker, token)
 
     def __repr__(self) -> str:
         return f"WaitForAcceptor({repr(self.wait_for_acceptor)})"

@@ -108,7 +108,7 @@ class Acceptor(ABC):
         pass
 
     @abstractmethod
-    def advance_walker(
+    def advance(
         self,
         walker: Walker,
         token: str,

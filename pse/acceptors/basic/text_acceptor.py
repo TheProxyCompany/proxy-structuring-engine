@@ -100,21 +100,7 @@ class TextWalker(StateMachineWalker):
             return False
 
         remaining_text = self.acceptor.text[self.consumed_character_count :]
-        should_start = remaining_text.startswith(token) or token.startswith(
-            remaining_text
-        )
-        self._accepts_more_input = should_start
-
-        return should_start
-
-    def should_complete_transition(self) -> bool:
-        """
-        Complete the transition if the transition value matches the remaining text.
-        """
-        return bool(self.transition_walker) and (
-            self.transition_walker.raw_value
-            == self.acceptor.text[self.consumed_character_count :]
-        )
+        return remaining_text.startswith(token) or token.startswith(remaining_text)
 
     def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         """
@@ -160,6 +146,7 @@ class TextWalker(StateMachineWalker):
         if self.acceptor.text[pos : pos + match_len] == token[:match_len]:
             next_walker = self.__class__(self.acceptor, pos + match_len)
             next_walker.remaining_input = token[match_len:] or None
+            next_walker._accepts_more_input = (pos + match_len) < len(self.acceptor.text)
 
             if pos + match_len == len(self.acceptor.text):
                 yield AcceptedState(next_walker)
