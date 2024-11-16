@@ -83,7 +83,7 @@ class StateMachine(Acceptor):
             Iterable of tuples (transition_walker, source_state, target_state).
         """
         current_state = state or walker.current_state
-        logger.debug("🟡 Getting edges from state %s", current_state)
+        logger.debug("🟡 Getting edges from state %s in %s", current_state, self)
         for acceptor, target_state in self.get_edges(current_state):
             # create transition walkers from the edge's token acceptor
             for transition_walker in acceptor.get_walkers():
@@ -269,9 +269,8 @@ class StateMachine(Acceptor):
         for walker in walkers:
             logger.debug("⚪️ Processing walker with token: %s", repr(token))
             for advanced_walker in walker.consume_token(token):
-                # Full match
                 if not advanced_walker.remaining_input:
-                    logger.debug("🟢 Full match for token: %s", repr(token))
+                    logger.debug("🟢 Full match for token: %s\n", repr(token))
                     yield token, advanced_walker
                     continue
 
@@ -284,7 +283,7 @@ class StateMachine(Acceptor):
                 # Extract the valid prefix by removing remaining input
                 prefix = token[: -len(advanced_walker.remaining_input)]
                 if prefix and prefix in vocab:
-                    logger.debug("🟢 Valid partial match: %s", repr(prefix))
+                    logger.debug("🟢 Valid partial match: %s\n", repr(prefix))
                     advanced_walker.remaining_input = None
                     yield prefix, advanced_walker
 

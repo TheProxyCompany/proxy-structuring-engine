@@ -6,17 +6,17 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
 from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
-from pse.acceptors.basic import NullAcceptor
 from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
+from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
+from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
+
 from pse.util.errors import (
     DefinitionNotFoundError,
     SchemaNotImplementedError,
     UnknownSchemaTypeError,
 )
-from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
-from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
-from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
 
 
 def get_acceptor(
@@ -97,7 +97,7 @@ def get_acceptor(
     if schema_type == "boolean":
         acceptor = BooleanAcceptor()
     elif schema_type == "null":
-        acceptor = NullAcceptor
+        acceptor = TextAcceptor("null")
     elif schema_type in ["number", "integer"]:
         acceptor = NumberSchemaAcceptor(schema)
     elif "enum" in schema:

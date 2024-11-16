@@ -203,7 +203,7 @@ class Walker(ABC):
         if not clone.should_complete_transition():
             return clone if clone.can_accept_more_input() else None
 
-        if clone.target_state and transition_walker.has_reached_accept_state():
+        if clone.target_state is not None and transition_walker.has_reached_accept_state():
             clone.current_state = clone.target_state
 
             if not transition_walker.can_accept_more_input():

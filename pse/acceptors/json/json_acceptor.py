@@ -28,7 +28,7 @@ class JsonAcceptor(StateMachine):
             by tuples of TokenAcceptors and their corresponding target states.
         """
         if state == 0:
-            from pse.acceptors.basic import NullAcceptor
+            from pse.acceptors.basic.text_acceptor import TextAcceptor as NullAcceptor
             from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
             from pse.acceptors.basic.string_acceptor import StringAcceptor
             from pse.acceptors.basic.number_acceptor import NumberAcceptor
@@ -39,7 +39,7 @@ class JsonAcceptor(StateMachine):
                 (ObjectAcceptor(), "$"),
                 (ArrayAcceptor(), "$"),
                 (StringAcceptor(), "$"),
-                (NullAcceptor, "$"),
+                (NullAcceptor("null"), "$"),
                 (BooleanAcceptor(), "$"),
                 (NumberAcceptor(), "$"),
             ]

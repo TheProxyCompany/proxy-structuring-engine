@@ -1,4 +1,4 @@
-from .text_acceptor import TextAcceptor
+# from .text_acceptor import TextAcceptor
 
 
-NullAcceptor = TextAcceptor("null")
+# NullAcceptor = TextAcceptor("null")

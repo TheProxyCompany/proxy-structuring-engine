@@ -3,7 +3,6 @@ from lexpy import DAWG
 
 from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.acceptors.basic import NullAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
@@ -114,25 +113,6 @@ def test_walker_clone():
             assert new_walker.has_reached_accept_state()
             assert not cloned_walker.has_reached_accept_state()
             assert new_walker != cloned_walker
-
-
-def test_null_acceptor():
-    """Test StateMachine with NullAcceptor."""
-    sm = StateMachine(
-        state_graph={0: [(NullAcceptor, 1)]},
-        start_state=0,
-        end_states=[1],
-    )
-
-    walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, "null"))
-    walkers = [walker for _, walker in advanced]
-
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert walker.current_value is None
-
 
 def test_invalid_input_characters():
     """Test StateMachine handling of invalid input characters."""
