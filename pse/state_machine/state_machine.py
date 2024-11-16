@@ -14,7 +14,6 @@ from pse.state_machine.walker import Walker
 
 logger = logging.getLogger(__name__)
 
-
 class StateMachine(TokenAcceptor):
     """StateMachine for managing token acceptance based on a predefined graph."""
 
@@ -101,7 +100,8 @@ class StateMachine(TokenAcceptor):
                 next_walkers = list(self.branch_walker(current_walker, current_token))
 
                 if next_walkers:
-                    queue.extend((next_walker, current_token) for next_walker in next_walkers)
+                    new_walkers = [(next_walker, current_token) for next_walker in next_walkers]
+                    queue.extend(new_walkers)
                 elif current_walker.remaining_input:
                     logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
                     yield current_walker
@@ -184,6 +184,8 @@ class StateMachine(TokenAcceptor):
             ):
                 logger.debug("🟢 %s supports pass-through to state %s", acceptor, target_state)
                 yield from self.get_transition_walkers(walker, target_state)
+            elif acceptor.is_optional and target_state in self.end_states:
+                logger.debug("🟢 %s supports pass-through to accepted state %s", acceptor, target_state)
 
     def branch_walker(
         self, walker: Walker, token: Optional[str] = None
@@ -220,17 +222,29 @@ class StateMachine(TokenAcceptor):
         cls,
         walkers: Iterable[Walker],
         token: str,
-        dawg: Optional[DAWG] = None,
+        vocab: Optional[DAWG] = None,
     ) -> Iterable[Tuple[str, Walker]]:
-        """Advance all walkers with the given input.
+        """Advance all walkers in parallel to find valid token matches.
+
+        Processes multiple walkers concurrently to find valid token matches and partial matches.
+        Uses a thread pool to parallelize walker advancement for better performance.
 
         Args:
-            walkers: An iterable of walker instances.
-            token: The input string to advance the walkers with.
-            dawg: Optional DAWG to optimize prefix matching.
+            walkers: Collection of walker instances to advance in parallel
+            token: Input token string to match against
+            vocab: Optional DAWG vocabulary to validate partial token matches.
+                  If provided, enables partial matching by checking prefixes.
 
         Returns:
-            An iterable of (advanced token, updated walker) tuples.
+            An iterable of tuples containing:
+            - str: The matched token or valid prefix
+            - Walker: The advanced walker instance after consuming the token
+
+        For each walker:
+        1. Attempts to consume the input token
+        2. If a full match is found (no remaining input), yields the match
+        3. If partial match is found and vocab is provided, validates the prefix
+           against the vocab and yields valid partial matches
         """
         if not walkers:
             return []
@@ -238,20 +252,25 @@ class StateMachine(TokenAcceptor):
         def process_walker(walker: Walker) -> Iterable[Tuple[str, Walker]]:
             logger.debug("⚪️ Processing walker with token: %s", repr(token))
             for advanced_walker in walker.consume_token(token):
+                # Full match
                 if not advanced_walker.remaining_input:
                     logger.debug("🟢 Full match for token: %s", repr(token))
                     yield token, advanced_walker
-                elif (
-                    dawg is not None
-                    and (valid_prefix := token[:-len(advanced_walker.remaining_input)]) in dawg
-                ):
-                    logger.debug("🟢 Valid partial match: %s", repr(valid_prefix))
+                    continue
+
+                if vocab is None:
+                    logger.debug("🔴 No vocab provided, unable to check for partial match")
+                    continue
+
+                # Extract the valid prefix by removing remaining input
+                prefix = token[:-len(advanced_walker.remaining_input)]
+                if prefix and prefix in vocab:
+                    logger.debug("🟢 Valid partial match: %s", repr(prefix))
                     advanced_walker.remaining_input = None
-                    yield valid_prefix, advanced_walker
+                    yield prefix, advanced_walker
 
-        for result in cls._EXECUTOR.map(process_walker, walkers):
-            yield from result
-
+        for walker in walkers:
+            yield from process_walker(walker)
 
 class StateMachineWalker(Walker):
     """Walker for navigating through StateMachine states.

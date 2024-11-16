@@ -13,9 +13,7 @@ Classes:
 from __future__ import annotations
 
 import logging
-import os
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Iterable, Optional, Tuple, Type
 
 logger = logging.getLogger(__name__)
@@ -39,9 +37,6 @@ class TokenAcceptor(ABC):
         initial_state (StateType): The starting state of the acceptor.
         end_states (Iterable[StateType]): A collection of acceptable end states.
     """
-
-    _MAX_WORKERS: int = min(32, os.cpu_count() or 1)
-    _EXECUTOR: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=_MAX_WORKERS)
 
     def __init__(
         self,
@@ -128,7 +123,6 @@ class TokenAcceptor(ABC):
     ) -> Iterable[Walker]:
         """Branch the walker into multiple paths for parallel exploration."""
         pass
-
 
     #
     # String representations

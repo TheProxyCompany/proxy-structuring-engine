@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable, Tuple
+from typing import Iterable, Optional, Callable
 import logging
 
 from pse.acceptors.token_acceptor import TokenAcceptor
@@ -36,31 +36,6 @@ class WaitForAcceptor(StateMachine):
         self.start_hook = start_hook
         self.end_hook = end_hook
         self.triggered = False
-
-    def advance_all_walkers(
-        self, walkers: Iterable[Walker], token: str
-    ) -> Iterable[Tuple[str, Walker]]:
-        if not walkers:
-            return []
-
-        def process_walker(walker: Walker) -> Iterable[Walker]:
-            """Processes a single walker by advancing it with the given input.
-
-            Args:
-                walker (Walker): The walker to process.
-
-            Returns:
-                Iterable[Walker]: Updated walkers after advancement.
-            """
-            yield from walker.consume_token(token)
-
-        # Using map with executor and yielding results
-        for advanced_walkers in self._EXECUTOR.map(process_walker, walkers):
-            for walker in advanced_walkers:
-                if not walker.remaining_input:
-                    logger.debug(f"valid acceptance: {repr(token)}")
-                    yield token, walker
-                    continue
 
     def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
         return self.wait_for_acceptor.advance_walker(walker, token)
