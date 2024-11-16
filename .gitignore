@@ -2,4 +2,5 @@ dist
 __pycache__
 *.pyc
 .cursorrules
+.cursorignore
 .DS_Store

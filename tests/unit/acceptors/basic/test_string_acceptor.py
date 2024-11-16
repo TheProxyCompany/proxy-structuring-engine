@@ -35,9 +35,7 @@ def test_valid_strings(
     """
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -89,9 +87,7 @@ def test_invalid_strings(
     """
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -110,9 +106,7 @@ def test_empty_string(string_acceptor: StringAcceptor) -> None:
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -137,9 +131,7 @@ def test_string_with_valid_escaped_tab(string_acceptor: StringAcceptor) -> None:
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -166,9 +158,7 @@ def test_string_with_escaped_solidus(string_acceptor: StringAcceptor) -> None:
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -194,9 +184,7 @@ def test_string_with_unescaped_control_characters(
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -214,9 +202,7 @@ def test_string_with_invalid_unicode_escape(string_acceptor: StringAcceptor) -> 
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -234,9 +220,7 @@ def test_string_with_incomplete_unicode_escape(string_acceptor: StringAcceptor) 
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -254,9 +238,7 @@ def test_string_missing_start_quote(string_acceptor: StringAcceptor) -> None:
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -274,9 +256,7 @@ def test_incomplete_string(string_acceptor: StringAcceptor) -> None:
 
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
-        walkers = [
-            walker for _, walker in string_acceptor.advance_all_walkers(walkers, ch)
-        ]
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -312,7 +292,7 @@ def test_valid_strings_char_by_char(
     for ch in input_string:
         new_walkers = []
         for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all_walkers([walker], ch)
+            advanced_walkers = string_acceptor.advance_all([walker], ch)
             new_walkers.extend([w for _, w in advanced_walkers])
         walkers = new_walkers
 
@@ -368,7 +348,7 @@ def test_invalid_strings_char_by_char(
     for ch in input_string:
         new_walkers = []
         for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all_walkers([walker], ch)
+            advanced_walkers = string_acceptor.advance_all([walker], ch)
             new_walkers.extend([w for _, w in advanced_walkers])
         walkers = new_walkers
 
@@ -391,7 +371,7 @@ def test_empty_string_char_by_char(string_acceptor: StringAcceptor) -> None:
     for ch in input_string:
         new_walkers = []
         for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all_walkers([walker], ch)
+            advanced_walkers = string_acceptor.advance_all([walker], ch)
             new_walkers.extend([w for _, w in advanced_walkers])
         walkers = new_walkers
 
@@ -422,7 +402,7 @@ def test_string_with_valid_escaped_tab_char_by_char(
     for ch in input_string:
         new_walkers = []
         for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all_walkers([walker], ch)
+            advanced_walkers = string_acceptor.advance_all([walker], ch)
             new_walkers.extend([w for _, w in advanced_walkers])
         walkers = new_walkers
 
@@ -455,7 +435,7 @@ def test_string_with_escaped_solidus_char_by_char(
     for ch in input_string:
         new_walkers = []
         for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all_walkers([walker], ch)
+            advanced_walkers = string_acceptor.advance_all([walker], ch)
             new_walkers.extend([w for _, w in advanced_walkers])
         walkers = new_walkers
 

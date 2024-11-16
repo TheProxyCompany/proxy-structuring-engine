@@ -27,7 +27,7 @@ def test_boolean_acceptor(token, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -55,7 +55,7 @@ def test_text_acceptor(token, acceptor_args, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -84,7 +84,7 @@ def test_state_transitions(first, second, end, token):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -107,7 +107,7 @@ def test_walker_clone():
         cloned_walker = original_walker.clone()
 
         # Advance the original walker
-        advanced = list(StateMachine.advance_all_walkers([original_walker], "clone"))
+        advanced = list(StateMachine.advance_all([original_walker], "clone"))
         new_walkers = [w for _, w in advanced]
 
         for new_walker in new_walkers:
@@ -125,7 +125,7 @@ def test_null_acceptor():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "null"))
+    advanced = list(StateMachine.advance_all(walkers, "null"))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -144,7 +144,7 @@ def test_invalid_input_characters():
 
     invalid_input = "vali$d"  # '$' is an invalid character
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, invalid_input))
+    advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
     # The input contains an invalid character, so there should be no valid walkers
@@ -162,7 +162,7 @@ def test_partial_matches():
 
     partial_input = "comp"
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, partial_input))
+    advanced = list(StateMachine.advance_all(walkers, partial_input))
     walkers = [walker for _, walker in advanced]
 
     # No walkers should be in accepted state since the input is incomplete
@@ -194,7 +194,7 @@ def test_advance_all_multiple_states(token, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -213,7 +213,7 @@ def test_advance_all_invalid_input():
 
     invalid_input = "hell@"
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, invalid_input))
+    advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
     # The input contains an invalid character '@', so there should be no valid walkers
@@ -234,7 +234,7 @@ def test_complex_input():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "{\n["))
+    advanced = list(StateMachine.advance_all(walkers, "{\n["))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -253,7 +253,7 @@ def test_number_acceptor():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "123.456"))
+    advanced = list(StateMachine.advance_all(walkers, "123.456"))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -273,7 +273,7 @@ def test_number_acceptor_in_state_machine_sequence():
 
     walkers = list(sm.get_walkers())
     input_string = "Value: 42"
-    advanced = list(StateMachine.advance_all_walkers(walkers, input_string))
+    advanced = list(StateMachine.advance_all(walkers, input_string))
     walkers = [walker for _, walker in advanced]
 
     assert any(
@@ -285,7 +285,7 @@ def test_number_acceptor_in_state_machine_sequence():
                 walker.current_value == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
-    new_advanced = list(StateMachine.advance_all_walkers(walkers, ".0"))
+    new_advanced = list(StateMachine.advance_all(walkers, ".0"))
     walkers = [walker for _, walker in new_advanced]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -312,7 +312,7 @@ def test_char_by_char_in_state_machine():
     walkers = list(sm.get_walkers())
     input_string = "Value: 42"
     for char in input_string:
-        advanced = list(StateMachine.advance_all_walkers(walkers, char))
+        advanced = list(StateMachine.advance_all(walkers, char))
         walkers = [walker for _, walker in advanced]
         if not walkers:
             break
@@ -342,7 +342,7 @@ def test_unexpected_input():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "unexpected"))
+    advanced = list(StateMachine.advance_all(walkers, "unexpected"))
     walkers = [walker for _, walker in advanced]
 
     # Should not be in accepted state
@@ -360,7 +360,7 @@ def test_get_edges_nonexistent_state():
 def test_state_machine_advance_all_with_no_walkers():
     """Test advance_all_walkers when there are no walkers to advance."""
     walkers = []
-    advanced = list(StateMachine.advance_all_walkers(walkers, "input"))
+    advanced = list(StateMachine.advance_all(walkers, "input"))
     assert advanced == []
 
 
@@ -376,7 +376,7 @@ def test_state_machine_empty_transition():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "test"))
+    advanced = list(StateMachine.advance_all(walkers, "test"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
@@ -398,7 +398,7 @@ def test_state_machine_with_loop():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, "aaab"))
+    advanced = list(StateMachine.advance_all(walkers, "aaab"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
@@ -419,7 +419,7 @@ def test_state_machine_advance_walker_with_remaining_input():
 
     initial_walkers = list(sm.get_walkers())
     # Advance with partial input to create remaining input scenario
-    advanced = list(StateMachine.advance_all_walkers(initial_walkers, "abcde"))
+    advanced = list(StateMachine.advance_all(initial_walkers, "abcde"))
     walkers = [walker for _, walker in advanced]
     # Should handle remaining input 'e' after 'abcd'
     assert not any(walker.has_reached_accept_state() for walker in walkers)
@@ -456,7 +456,7 @@ def test_whitespace_acceptor():
     assert first_walker.current_state == sm.start_state
     assert isinstance(first_walker.transition_walker, TextWalker)
 
-    advancement = StateMachine.advance_all_walkers(original_walkers, "{.", dawg)
+    advancement = StateMachine.advance_all(original_walkers, "{.", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "{"
@@ -468,7 +468,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 1, "Expected 1 walker after advancing with '{.'"
 
-    advancement = StateMachine.advance_all_walkers(new_walkers, " ", dawg)
+    advancement = StateMachine.advance_all(new_walkers, " ", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == " "
@@ -480,7 +480,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
 
-    advancement = StateMachine.advance_all_walkers(new_walkers, "\n}", dawg)
+    advancement = StateMachine.advance_all(new_walkers, "\n}", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "\n}"
@@ -517,9 +517,7 @@ def test_simple_number_acceptor():
     assert isinstance(integer_acceptor_walker, StateMachineWalker)
     assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)
 
-    for advanced_token, walker in StateMachine.advance_all_walkers(
-        walkers, "-1.2", dawg
-    ):
+    for advanced_token, walker in StateMachine.advance_all(walkers, "-1.2", dawg):
         assert advanced_token == "-1"
         assert walker.has_reached_accept_state()
         assert walker.current_value == -1

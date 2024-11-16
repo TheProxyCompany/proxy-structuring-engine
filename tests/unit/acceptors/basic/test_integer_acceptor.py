@@ -25,9 +25,7 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -59,7 +57,7 @@ def test_integer_acceptor(input_string, expected_value):
 
     walkers = list(sm.get_walkers())
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -85,7 +83,7 @@ def test_integer_acceptor_invalid_input():
     for input_string in invalid_inputs:
         walkers = list(sm.get_walkers())
         advanced_walkers = [
-            walker for _, walker in sm.advance_all_walkers(walkers, input_string)
+            walker for _, walker in sm.advance_all(walkers, input_string)
         ]
         assert not any(
             walker.has_reached_accept_state() for walker in advanced_walkers
@@ -105,9 +103,7 @@ def test_integer_acceptor_empty_input():
     input_string = ""
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -127,9 +123,7 @@ def test_integer_acceptor_partial_input():
     input_string = "12a34"
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -152,9 +146,7 @@ def test_integer_acceptor_in_state_machine_sequence():
     input_string = "Number: 42"
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -184,7 +176,7 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     input_string = "Value: 9876"
     walkers = list(sm.get_walkers())
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -210,9 +202,7 @@ def test_integer_acceptor_zero():
     input_string = "0"
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -235,9 +225,7 @@ def test_integer_acceptor_large_number():
     input_string = "12345678901234567890"
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers
@@ -270,9 +258,7 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced_walkers = [
-        walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-    ]
+    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in advanced_walkers

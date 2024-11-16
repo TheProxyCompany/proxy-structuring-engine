@@ -166,9 +166,7 @@ def test_walker_rejects_on_pattern_mismatch_during_parsing():
     input_string = '"abx'
 
     for idx, char in enumerate(input_string):
-        walkers = [
-            walker for _, walker in acceptor.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
         if idx == len(input_string) - 1:
             assert (
                 len(walkers) == 0
@@ -195,9 +193,7 @@ def test_walker_accepts_on_pattern_match_during_parsing() -> None:
     input_string: str = '"abcd"'
 
     for idx, char in enumerate(input_string):
-        walkers = [
-            walker for _, walker in acceptor.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
         assert (
             len(walkers) > 0
         ), f"Walkers should not be empty after input '{input_string[:idx+1]}'"
@@ -219,10 +215,12 @@ def test_walker_start_transition_min_length_met() -> None:
 
     walkers = acceptor.get_walkers()
     advanced_walkers = [
-        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+        walker for _, walker in acceptor.advance_all(walkers, input_string)
     ]
 
-    accepted: bool = any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    accepted: bool = any(
+        walker.has_reached_accept_state() for walker in advanced_walkers
+    )
     assert accepted, "Walker should accept input when min_length is met."
 
 
@@ -239,7 +237,7 @@ def test_walker_start_transition_min_length_not_met() -> None:
 
     walkers = acceptor.get_walkers()
     advanced_walkers = [
-        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+        walker for _, walker in acceptor.advance_all(walkers, input_string)
     ]
 
     accepted: bool = any(
@@ -261,10 +259,12 @@ def test_walker_start_transition_max_length_met() -> None:
 
     walkers = acceptor.get_walkers()
     advanced_walkers = [
-        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+        walker for _, walker in acceptor.advance_all(walkers, input_string)
     ]
 
-    accepted: bool = any(walker.has_reached_accept_state() for walker in advanced_walkers)
+    accepted: bool = any(
+        walker.has_reached_accept_state() for walker in advanced_walkers
+    )
     assert accepted, "Walker should accept input when max_length is met."
 
 
@@ -278,7 +278,7 @@ def test_walker_start_transition_max_length_exceeded():
 
     walkers = acceptor.get_walkers()
     advanced_walkers = [
-        walker for _, walker in acceptor.advance_all_walkers(walkers, input_string)
+        walker for _, walker in acceptor.advance_all(walkers, input_string)
     ]
 
     accepted = any(walker.has_reached_accept_state() for walker in advanced_walkers)

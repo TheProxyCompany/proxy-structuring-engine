@@ -33,9 +33,7 @@ def object_acceptor() -> ObjectAcceptor:
 def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expected):
     walkers = list(object_acceptor.get_walkers())
     for char in json_string:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -68,9 +66,7 @@ def test_valid_json_objects_all_at_once(
     object_acceptor: ObjectAcceptor, json_string, expected
 ):
     walkers = list(object_acceptor.get_walkers())
-    walkers = [
-        walker for _, walker in StateMachine.advance_all_walkers(walkers, json_string)
-    ]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, json_string)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -95,9 +91,7 @@ def test_valid_json_objects_all_at_once(
 def test_invalid_json_objects(object_acceptor: ObjectAcceptor, json_string):
     walkers = list(object_acceptor.get_walkers())
     for char in json_string:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Walkers should not be in an accepted state for invalid JSON: {json_string}"
@@ -124,9 +118,7 @@ def test_invalid_json_objects(object_acceptor: ObjectAcceptor, json_string):
 def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expected):
     walkers = list(object_acceptor.get_walkers())
     for char in json_string:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -153,9 +145,7 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
 def test_more_invalid_json_objects(object_acceptor: ObjectAcceptor, json_string):
     walkers = list(object_acceptor.get_walkers())
     for char in json_string:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Walkers should not be in an accepted state for invalid JSON: {json_string}"
@@ -164,9 +154,7 @@ def test_more_invalid_json_objects(object_acceptor: ObjectAcceptor, json_string)
 def test_no_spaces(object_acceptor: ObjectAcceptor):
     input_string = '{"a":"b","c":"d"}'
     walkers = list(object_acceptor.get_walkers())
-    walkers = [
-        walker for _, walker in StateMachine.advance_all_walkers(walkers, input_string)
-    ]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, input_string)]
     assert len(walkers) == 1
     walker = walkers[0]
     assert walker.has_reached_accept_state()

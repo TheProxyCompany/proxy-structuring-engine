@@ -166,7 +166,7 @@ class StructuringEngine(LogitsProcessor):
 
         return bias_logits(logits, set(token_ids))
 
-    def get_valid_token(self, logits, num_top_tokens: int = 8) -> int:
+    def get_valid_token(self, logits) -> int:
         """
         Advances the acceptor's state using the provided logits.
 
@@ -180,7 +180,13 @@ class StructuringEngine(LogitsProcessor):
         Raises:
             TokenRejected: If no valid token is found.
         """
-        top_tokens = self._get_top_tokens(logits, num_top_tokens)
+
+
+        #
+        # TODO: PARALLELIZE THIS FOR CHEAP
+        #
+
+        top_tokens = self._get_top_tokens(logits)
 
         partial_match_walkers: Dict[str, Set[Walker]] = {}
 
@@ -196,7 +202,7 @@ class StructuringEngine(LogitsProcessor):
 
             new_walkers: List[Walker] = []
 
-            for valid_token, walker in StateMachine.advance_all_walkers(
+            for valid_token, walker in StateMachine.advance_all(
                 self.walkers,
                 token,
                 self.dawg,
@@ -213,7 +219,7 @@ class StructuringEngine(LogitsProcessor):
                 return token_id
 
         if not partial_match_walkers:
-            logger.error(f"No valid token found in the top {num_top_tokens} tokens")
+            logger.error("No valid token found in the top tokens")
             raise TokenRejected("No valid token found")
 
         for token, walkers in sorted(
@@ -234,7 +240,7 @@ class StructuringEngine(LogitsProcessor):
         try:
             new_walkers = [
                 walker
-                for _, walker in StateMachine.advance_all_walkers(
+                for _, walker in StateMachine.advance_all(
                     self.walkers, token, self.dawg
                 )
             ]

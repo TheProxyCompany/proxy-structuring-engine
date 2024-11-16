@@ -65,7 +65,7 @@ def test_character_acceptor_basic(
     dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, input_string, dawg))
+    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
 
     if should_accept:
         assert any(
@@ -111,7 +111,7 @@ def test_character_acceptor_char_limit(
     dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all_walkers(walkers, input_string, dawg))
+    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
 
     assert any(walker.has_reached_accept_state() for _, walker in advanced)
     for _, walker in advanced:

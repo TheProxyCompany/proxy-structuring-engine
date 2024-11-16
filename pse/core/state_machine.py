@@ -186,12 +186,12 @@ class StateMachine(Acceptor):
                     "🟢 %s supports pass-through to state %s", acceptor, target_state
                 )
                 yield from self.get_transition_walkers(walker, target_state)
-            elif acceptor.is_optional and target_state in self.end_states:
-                logger.debug(
-                    "🟢 %s supports pass-through to accepted state %s",
-                    acceptor,
-                    target_state,
-                )
+            # elif acceptor.is_optional and target_state in self.end_states:
+            #     logger.debug(
+            #         "🟢 %s supports pass-through to accepted state %s",
+            #         acceptor,
+            #         target_state,
+            #     )
 
     def branch_walker(
         self, walker: Walker, token: Optional[str] = None
@@ -213,6 +213,14 @@ class StateMachine(Acceptor):
             walker
         ):
             input_token = token or walker.remaining_input
+
+            # if transition.acceptor.is_optional and not walker.can_accept_more_input():
+            #     logger.debug(
+            #         "🟢 %s supports pass-through to accepted state %s",
+            #         transition.acceptor,
+            #         target_state,
+            #     )
+            #     continue
 
             if input_token and not transition.should_start_transition(input_token):
                 logger.debug(
@@ -238,12 +246,9 @@ class StateMachine(Acceptor):
             logger.debug("🟢 Exploring %s to state %s", transition, target_state)
             yield walker.configure(transition, start_state, target_state)
 
-    @classmethod
-    def advance_all_walkers(
-        cls,
-        walkers: Iterable[Walker],
-        token: str,
-        vocab: Optional[DAWG] = None,
+    @staticmethod
+    def advance_all(
+        walkers: Iterable[Walker], token: str, vocab: Optional[DAWG] = None
     ) -> Iterable[Tuple[str, Walker]]:
         """Advance all walkers in parallel to find valid token matches.
 
@@ -267,6 +272,10 @@ class StateMachine(Acceptor):
         3. If partial match is found and vocab is provided, validates the prefix
            against the vocab and yields valid partial matches
         """
+
+        #
+        # TODO: PARALLELIZE THIS FOR CHEAP
+        #
 
         for walker in walkers:
             logger.debug("⚪️ Processing walker with token: %s", repr(token))

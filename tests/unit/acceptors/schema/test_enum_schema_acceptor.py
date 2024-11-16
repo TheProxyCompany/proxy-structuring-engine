@@ -24,8 +24,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = self.acceptor.get_walkers()
         for char in valid_value:
             walkers = [
-                walker
-                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)
             ]
         for walker in walkers:
             self.assertTrue(walker.has_reached_accept_state())
@@ -39,8 +38,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = list(self.acceptor.get_walkers())
         for char in invalid_value:
             walkers = [
-                walker
-                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)
             ]
         # Final state should not be an accepted state
         self.assertFalse(
@@ -58,7 +56,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
                 walkers = self.acceptor.get_walkers()
                 walkers = [
                     walker
-                    for _, walker in EnumSchemaAcceptor.advance_all_walkers(
+                    for _, walker in EnumSchemaAcceptor.advance_all(
                         walkers, valid_value
                     )
                 ]
@@ -74,8 +72,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         walkers = list(self.acceptor.get_walkers())
         for char in partial_value:
             walkers = [
-                walker
-                for _, walker in EnumSchemaAcceptor.advance_all_walkers(walkers, char)
+                walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)
             ]
         self.assertFalse(
             any(walker.has_reached_accept_state() for walker in walkers),
@@ -123,7 +120,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
                 walkers = acceptor.get_walkers()
                 walkers = [
                     walker
-                    for _, walker in EnumSchemaAcceptor.advance_all_walkers(
+                    for _, walker in EnumSchemaAcceptor.advance_all(
                         walkers, special_value
                     )
                 ]

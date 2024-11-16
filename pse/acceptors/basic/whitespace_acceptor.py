@@ -58,9 +58,6 @@ class WhitespaceWalker(Walker):
         self._raw_value = value or ""
         self.consumed_character_count = len(self._raw_value)
         self.length_exceeded: bool = len(self._raw_value) > self.acceptor.max_whitespace
-        self._accepts_more_input: bool = (
-            len(self._raw_value) <= self.acceptor.max_whitespace
-        )
 
     def should_start_transition(self, token: str) -> bool:
         if not token or not token[0].isspace():
@@ -136,16 +133,21 @@ class WhitespaceWalker(Walker):
         next_walker = self.clone()
         next_walker._raw_value = (next_walker._raw_value or "") + valid_input
         next_walker.remaining_input = remaining_input
-        next_walker._accepts_more_input = remaining_input is None
         next_walker.consumed_character_count += valid_length
 
         if next_walker.consumed_character_count > self.acceptor.max_whitespace:
             return []
 
-        if next_walker.consumed_character_count >= self.acceptor.min_whitespace:
-            yield AcceptedState(next_walker)
-        else:
-            yield next_walker
+        next_walker._accepts_more_input = (
+            remaining_input is None
+            and next_walker.consumed_character_count <= self.acceptor.max_whitespace
+        )
+
+        yield (
+            AcceptedState(next_walker)
+            if next_walker.consumed_character_count >= self.acceptor.min_whitespace
+            else next_walker
+        )
 
     @property
     def current_value(self) -> str:

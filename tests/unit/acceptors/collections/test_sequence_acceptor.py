@@ -47,8 +47,7 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
     """Test advancing the walker through the sequence of acceptors with specific inputs."""
     start_walkers = list(sequence_acceptor.get_walkers())
     new_walkers = [
-        walker
-        for _, walker in sequence_acceptor.advance_all_walkers(start_walkers, " ")
+        walker for _, walker in sequence_acceptor.advance_all(start_walkers, " ")
     ]
     assert len(new_walkers) == 1
 
@@ -56,9 +55,7 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
     full_input = " Hello World"
     walkers = sequence_acceptor.get_walkers()
     for char in full_input:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     # Verify that at least one walker is in the accepted state
     assert any(
@@ -77,9 +74,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
     input_sequence = " Hello World"
     walkers = [initial_walker]
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
@@ -91,9 +86,7 @@ def test_partial_match(sequence_acceptor: SequenceAcceptor):
     partial_input = " Hello "
     walkers = list(sequence_acceptor.get_walkers())
     for char in partial_input:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     # Ensure no walker has reached the accepted state with partial input
     assert not any(
@@ -106,9 +99,7 @@ def test_no_match(sequence_acceptor: SequenceAcceptor):
     non_matching_input = "Goodbye"
     walkers = list(sequence_acceptor.get_walkers())
     for char in non_matching_input:
-        walkers = [
-            walker for _, walker in sequence_acceptor.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
 
     assert len(list(walkers)) == 0
 
@@ -122,9 +113,7 @@ def test_whitespace_variations(sequence_acceptor: SequenceAcceptor, input_varian
     """Test that the SequenceAcceptor correctly handles various whitespace variations."""
     walkers = list(sequence_acceptor.get_walkers())
     for char in input_variant:
-        walkers = [
-            walker for _, walker in sequence_acceptor.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Input variation '{input_variant}' should be accepted by the SequenceAcceptor."
@@ -136,9 +125,7 @@ def test_single_acceptor_sequence():
     single_acceptor = SequenceAcceptor([TextAcceptor(single_text)])
     walkers = list(single_acceptor.get_walkers())
     for char in single_text:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Single acceptor SequenceAcceptor should accept the input '{single_text}'."
@@ -160,9 +147,7 @@ def test_multiple_sequences(acceptors: List[Acceptor], token: str):
     sequence = SequenceAcceptor(acceptors)
     walkers = list(sequence.get_walkers())
     for char in token:
-        walkers = [
-            walker for _, walker in StateMachine.advance_all_walkers(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Input '{token}' should be accepted by the given SequenceAcceptor."
@@ -193,9 +178,24 @@ def test_optional_acceptor():
     )
     walkers = list(sm.get_walkers())
     assert len(walkers) == 2
-    input_string = "Hello,World."
-    new_walkers = [
-        walker for _, walker in StateMachine.advance_all_walkers(walkers, input_string)
+    input_string_with_whitespace = "Hello, World."
+    new_walkers_with_whitespace = [
+        walker
+        for _, walker in StateMachine.advance_all(walkers, input_string_with_whitespace)
     ]
-    assert len(new_walkers) == 1
-    assert new_walkers[0].current_value == input_string
+    assert len(new_walkers_with_whitespace) == 1
+    assert new_walkers_with_whitespace[0].current_value == input_string_with_whitespace
+
+    input_string_no_whitespace = "Hello,World."
+    # Currently bugged because the sequence acceptor
+    # is not properly putting itself in an accepted state - it
+    # should be in the accepted state after it tries to advance the
+    # optional acceptor and fails.
+    #
+    # TODO: Fix this.
+    new_walkers_no_whitespace = [
+        walker
+        for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)
+    ]
+    assert len(new_walkers_no_whitespace) == 1
+    assert new_walkers_no_whitespace[0].current_value == input_string_no_whitespace

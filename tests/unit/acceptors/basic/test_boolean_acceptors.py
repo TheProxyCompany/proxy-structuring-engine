@@ -14,7 +14,7 @@ def boolean_acceptor():
 # Helper function to process input for BooleanAcceptor
 def process_input(acceptor: StateMachine, token: str) -> Iterable[Walker]:
     walkers = acceptor.get_walkers()
-    return [walker for _, walker in acceptor.advance_all_walkers(walkers, token)]
+    return [walker for _, walker in acceptor.advance_all(walkers, token)]
 
 
 # Test for BooleanAcceptor

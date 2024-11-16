@@ -109,9 +109,7 @@ class WaitForWalker(Walker):
         """
         new_walkers = []
 
-        for advanced_token, walker in self.acceptor.advance_all_walkers(
-            self.walkers, token
-        ):
+        for advanced_token, walker in self.acceptor.advance_all(self.walkers, token):
             if walker.has_reached_accept_state():
                 self.acceptor.triggered = True
                 if self.acceptor.end_hook:

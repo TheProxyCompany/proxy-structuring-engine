@@ -43,9 +43,7 @@ def parse_number(acceptor: NumberAcceptor):
         """
         walkers = list(acceptor.get_walkers())
         for char in json_string:
-            walkers = [
-                walker for _, walker in acceptor.advance_all_walkers(walkers, char)
-            ]
+            walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
 
         assert (
             len(walkers) > 0
@@ -270,7 +268,7 @@ def test_number_acceptor_with_state_machine_float(acceptor: NumberAcceptor) -> N
 
     walkers = sm.get_walkers()
     number_string = "-123.456"
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, number_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, number_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -299,7 +297,7 @@ def test_number_acceptor_with_state_machine_exponential(
 
     walkers = sm.get_walkers()
     number_string = "6.022e23"
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, number_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, number_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -331,7 +329,7 @@ def test_number_acceptor_with_state_machine_sequence(
 
     input_string = "Value: 42.0"
     walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, input_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -379,7 +377,7 @@ def test_number_acceptor_multi_char_advancement(
     )
 
     walkers = list(sm.get_walkers())
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, input_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -425,7 +423,7 @@ def test_number_acceptor_single_char_advancement(
     walkers = list(sm.get_walkers())
 
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -466,9 +464,7 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
             end_states=[1],
         )
         walkers = list(sm.get_walkers())
-        walkers = [
-            walker for _, walker in sm.advance_all_walkers(walkers, input_string)
-        ]
+        walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
         assert not any(
             walker.has_reached_accept_state() for walker in walkers
         ), f"Input '{input_string}' should not be accepted."
@@ -489,7 +485,7 @@ def test_number_acceptor_empty_input(acceptor: NumberAcceptor) -> None:
     input_string = ""
 
     walkers = list(sm.get_walkers())
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, input_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -512,7 +508,7 @@ def test_number_acceptor_partial_invalid_input(acceptor: NumberAcceptor) -> None
     )
 
     walkers = list(sm.get_walkers())
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, input_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers
@@ -536,7 +532,7 @@ def test_number_acceptor_large_floating_point(acceptor: NumberAcceptor) -> None:
     )
 
     walkers = list(sm.get_walkers())
-    walkers = [walker for _, walker in sm.advance_all_walkers(walkers, input_string)]
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers

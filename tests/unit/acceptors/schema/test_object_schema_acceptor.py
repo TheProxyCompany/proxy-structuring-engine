@@ -86,13 +86,13 @@ def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
     acceptor = ObjectSchemaAcceptor(schema, base_context, start_hook=started_hook)
     walkers = list(acceptor.get_walkers())
     for char in '{"id':
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
     # The hook should not be called yet
     started_hook.assert_not_called()
 
     # Continue parsing
     for char in '": 123}':
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -114,11 +114,11 @@ def test_value_started_hook(base_context: Dict[str, Any]) -> None:
     acceptor = ObjectSchemaAcceptor(schema, base_context, start_hook=started_hook)
     walkers = list(acceptor.get_walkers())
     for char in '{"email": ':
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
 
     started_hook.assert_not_called()
     # Simulate starting a string value
-    walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, '"')]
+    walkers = [walker for _, walker in acceptor.advance_all(walkers, '"')]
     # The hook should be called now
     started_hook.assert_called_once()
 
@@ -139,12 +139,12 @@ def test_value_ended_hook(base_context: Dict[str, Any]) -> None:
 
     additional_chars = '{"id": "hi'
     for char in additional_chars:
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
     ended_hook.assert_not_called()
 
     # Finish the string and the object
     for char in '"}':
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -193,7 +193,7 @@ def test_complex_json_structure(base_context: Dict[str, Any]) -> None:
     walkers = list(acceptor.get_walkers())
     valid_json = '{"name": "metacognition", "arguments": {"chain_of_thought": ["Thought 1", "Thought 2"]}}'
     for char in valid_json:
-        walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
 
     assert any(
         walker.has_reached_accept_state() for walker in walkers

@@ -13,9 +13,7 @@ def parse_json(json_acceptor: JsonAcceptor):
     def parser(json_string: str) -> Any:
         walkers = json_acceptor.get_walkers()
         for char in json_string:
-            walkers = [
-                walker for _, walker in json_acceptor.advance_all_walkers(walkers, char)
-            ]
+            walkers = [walker for _, walker in json_acceptor.advance_all(walkers, char)]
             if not walkers:
                 raise AssertionError("No walkers after parsing")
         accepted_values = [
