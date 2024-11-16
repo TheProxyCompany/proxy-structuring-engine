@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from pprint import pformat
 from typing import Iterable, Optional, Set, Tuple, Type
 
 from lexpy import DAWG
@@ -285,10 +284,10 @@ class StateMachineWalker(Walker):
         Returns:
             True if in a value, False otherwise.
         """
-        if self.consumed_character_count > 0 and self.transition_walker:
+        if self.transition_walker:
             return self.transition_walker.is_within_value()
 
-        return False
+        return self.consumed_character_count > 0
 
     def accepts_any_token(self) -> bool:
         """Check if current transition matches all characters.
@@ -329,34 +328,7 @@ class StateMachineWalker(Walker):
             )
 
         edge_walker_prefixes = set()
-        depth_prefix = f"{depth * ' '}{depth}. " if depth > 0 else ""
-        if (
-            self.target_state is not None
-            and isinstance(self.acceptor, StateMachine)
-            and self.has_reached_accept_state()
-        ):
-            for acceptor, state in self.acceptor.get_edges(self.target_state):
-                logger.debug(
-                    "\n%sDownstream edge analysis:\n"
-                    f"  Source state: {self.target_state}\n"
-                    f"  Target state: {state}\n"
-                    f"  Acceptor: {acceptor.__class__.__name__}\n"
-                    f"  Acceptor details: {pformat(acceptor, indent=2)}",
-                    depth_prefix,
-                )
-                for possible_next_walker in acceptor.get_walkers():
-                    prefixes = possible_next_walker.get_valid_continuations(
-                        dawg, depth + 1
-                    )
-                    edge_walker_prefixes.update(prefixes)
-
-        logger.debug(
-            "\nSelecting prefixes at depth %d:\n"
-            f"  Current state: {self.current_state}\n"
-            f"  Target state: {self.target_state}\n"
-            f"  Valid prefixes: {pformat(valid_prefixes, indent=2)}\n"
-            f"  Edge walker prefixes: {pformat(edge_walker_prefixes, indent=2)}"
-        )
         if not edge_walker_prefixes:
             return valid_prefixes
+
         return valid_prefixes.union(edge_walker_prefixes)
