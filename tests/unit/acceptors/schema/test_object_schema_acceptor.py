@@ -1,6 +1,6 @@
 import pytest
 from typing import Any, Dict
-from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
+from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
 from pse.util.errors import InvalidSchemaError
 from unittest.mock import MagicMock
 

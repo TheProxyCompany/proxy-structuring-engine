@@ -3,8 +3,8 @@ import pytest
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.state_machine import StateMachine
+from pse.util.state_machine.accepted_state import AcceptedState
+from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture

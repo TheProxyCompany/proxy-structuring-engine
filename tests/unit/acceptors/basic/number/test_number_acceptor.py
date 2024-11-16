@@ -2,7 +2,7 @@ import pytest
 from typing import Any
 
 from pse.acceptors.basic.number.number_acceptor import NumberAcceptor
-from pse.state_machine.state_machine import StateMachine
+from pse.core.state_machine import StateMachine
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
 

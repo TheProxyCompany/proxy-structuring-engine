@@ -4,7 +4,7 @@ from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from typing import Dict, Any, Callable
 import json
 
-from pse.util.get_acceptor import get_acceptor
+from pse.util.state_machine.get_acceptor import get_acceptor
 
 
 class PropertySchemaAcceptor(PropertyAcceptor):

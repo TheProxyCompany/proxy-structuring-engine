@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.state_machine import StateMachine
+from pse.core.state_machine import StateMachine
 
 class EnumSchemaAcceptor(StateMachine):
     """

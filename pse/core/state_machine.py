@@ -1,4 +1,17 @@
-"""State machine implementation for token acceptance based on graph traversal."""
+"""
+A hierarchical state machine implementation for token-based parsing and validation.
+
+This module provides a flexible state machine framework that:
+- Supports parallel recursive descent parsing
+- Enables efficient graph-based token acceptance
+- Handles branching and backtracking through parallel walker exploration
+- Allows composition of sub-state machines for complex grammars
+- Provides case-sensitive and case-insensitive matching options
+
+The core StateMachine class manages state transitions and token acceptance based on a
+predefined graph structure, while the StateMachineWalker handles traversal and maintains
+parsing state.
+"""
 
 from __future__ import annotations
 
@@ -9,8 +22,8 @@ from typing import Iterable, Optional, Set, Tuple, Type
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.types import EdgeType, StateMachineGraph, StateType
-from pse.state_machine.walker import Walker
+from pse.util.state_machine.types import EdgeType, StateMachineGraph, StateType
+from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
 
@@ -246,10 +259,8 @@ class StateMachine(TokenAcceptor):
         3. If partial match is found and vocab is provided, validates the prefix
            against the vocab and yields valid partial matches
         """
-        if not walkers:
-            return []
 
-        def process_walker(walker: Walker) -> Iterable[Tuple[str, Walker]]:
+        for walker in walkers:
             logger.debug("⚪️ Processing walker with token: %s", repr(token))
             for advanced_walker in walker.consume_token(token):
                 # Full match
@@ -259,18 +270,17 @@ class StateMachine(TokenAcceptor):
                     continue
 
                 if vocab is None:
-                    logger.debug("🔴 No vocab provided, unable to check for partial match")
+                    logger.debug(
+                        "🔴 No vocab provided, unable to check for partial match"
+                    )
                     continue
 
                 # Extract the valid prefix by removing remaining input
-                prefix = token[:-len(advanced_walker.remaining_input)]
+                prefix = token[: -len(advanced_walker.remaining_input)]
                 if prefix and prefix in vocab:
                     logger.debug("🟢 Valid partial match: %s", repr(prefix))
                     advanced_walker.remaining_input = None
                     yield prefix, advanced_walker
-
-        for walker in walkers:
-            yield from process_walker(walker)
 
 class StateMachineWalker(Walker):
     """Walker for navigating through StateMachine states.

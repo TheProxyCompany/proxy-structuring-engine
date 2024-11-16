@@ -1,4 +1,4 @@
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateType,
     EdgeType,
     StateMachineGraph,

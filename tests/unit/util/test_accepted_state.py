@@ -1,6 +1,6 @@
 import pytest
-from pse.state_machine.walker import Walker
-from pse.state_machine.accepted_state import AcceptedState
+from pse.core.walker import Walker
+from pse.util.state_machine.accepted_state import AcceptedState
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 
 

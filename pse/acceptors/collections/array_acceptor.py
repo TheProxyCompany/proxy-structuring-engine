@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import List, Any, Optional, Type
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateMachineWalker,
 )
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor

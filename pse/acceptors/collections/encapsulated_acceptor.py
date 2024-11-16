@@ -3,7 +3,7 @@ from __future__ import annotations
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateMachineWalker

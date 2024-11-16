@@ -5,8 +5,8 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.json.string_acceptor import StringAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.walker import Walker
+from pse.core.state_machine import StateMachine
+from pse.core.walker import Walker
 
 
 def test_whitespace_acceptor_default():

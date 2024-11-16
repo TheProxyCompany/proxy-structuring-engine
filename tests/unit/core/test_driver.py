@@ -2,8 +2,8 @@ import pytest
 from typing import Dict, List
 from transformers import PreTrainedTokenizerFast, LlamaTokenizer
 import numpy as np
-from pse.util.delimiter import DelimiterType
-from pse.util.driver import StructuredOutputDriver
+from pse.util.state_machine.delimiter import DelimiterType
+from pse.core.driver import StructuredOutputDriver
 from pse.util.errors import (
     TokenRejected,
     UnknownSchemaTypeError,

@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Type
 
-from pse.state_machine.state_machine import StateMachine, StateMachineWalker
+from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
 

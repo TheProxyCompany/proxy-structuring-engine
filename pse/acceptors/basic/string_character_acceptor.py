@@ -3,9 +3,9 @@ from typing import Iterable, Optional, Set
 
 from lexpy import DAWG
 
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.walker import Walker, logger
+from pse.core.state_machine import StateMachine
+from pse.util.state_machine.accepted_state import AcceptedState
+from pse.core.walker import Walker, logger
 
 # INVALID_CHARS is a set containing characters that are not allowed in JSON strings.
 # It includes control characters (ASCII 0-31) and the double quote (") and backslash (\) characters.

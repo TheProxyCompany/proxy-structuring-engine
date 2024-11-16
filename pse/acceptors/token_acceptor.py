@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Iterable, Optional, Tuple, Type
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from pse.state_machine.walker import Walker
-    from pse.state_machine.types import StateType, StateMachineGraph
+    from pse.core.walker import Walker
+    from pse.util.state_machine.types import StateType, StateMachineGraph
 
 
 class TokenAcceptor(ABC):

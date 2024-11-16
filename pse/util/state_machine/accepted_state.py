@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Iterable
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
 

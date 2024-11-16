@@ -10,15 +10,15 @@ from pse.acceptors.basic.primitive_acceptors import (
     NullAcceptor,
 )
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.schema_acceptors.any_schema_acceptor import AnySchemaAcceptor
+from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.util.errors import (
     DefinitionNotFoundError,
     SchemaNotImplementedError,
     UnknownSchemaTypeError,
 )
-from pse.schema_acceptors.enum_schema_acceptor import EnumSchemaAcceptor
-from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor
-from pse.schema_acceptors.string_schema_acceptor import StringSchemaAcceptor
+from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
+from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
 
 
 def get_acceptor(
@@ -111,14 +111,14 @@ def get_acceptor(
     elif schema_type == "object":
         if "properties" in schema:
             # Only allows named properties in the object.
-            from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
+            from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
 
             acceptor = ObjectSchemaAcceptor(schema, context, start_hook, end_hook)
         else:
             # Allows any properties in the object.
             acceptor = ObjectAcceptor()
     elif schema_type == "array":
-        from pse.schema_acceptors.array_schema_acceptor import ArraySchemaAcceptor
+        from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
 
         if "items" in schema:
             acceptor = ArraySchemaAcceptor(schema, context)

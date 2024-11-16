@@ -7,12 +7,12 @@ from typing import (
     Iterable,
     Optional,
 )
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateType,
     EdgeType
 )
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 
 
 class JsonAcceptor(StateMachine):

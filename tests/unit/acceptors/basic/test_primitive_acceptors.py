@@ -3,8 +3,8 @@ from pse.acceptors.basic.primitive_acceptors import (
     BooleanAcceptor,
     NullAcceptor,
 )
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.walker import Walker
+from pse.core.state_machine import StateMachine
+from pse.core.walker import Walker
 from typing import Iterable
 
 

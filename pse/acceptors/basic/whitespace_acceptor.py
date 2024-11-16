@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import Iterable, Optional, Set
 
 from lexpy import DAWG
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.walker import Walker
+from pse.core.state_machine import StateMachine
+from pse.util.state_machine.accepted_state import AcceptedState
+from pse.core.walker import Walker
 import logging
 
 logger = logging.getLogger()

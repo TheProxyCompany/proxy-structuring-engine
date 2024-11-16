@@ -1,5 +1,5 @@
 import pytest
-from pse.schema_acceptors.any_schema_acceptor import AnySchemaAcceptor
+from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.util.errors import JSONParsingError, UnknownSchemaTypeError
 from typing import Any
 from collections import defaultdict

@@ -9,11 +9,11 @@ from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.util.delimiter import DelimiterType
+from pse.util.state_machine.delimiter import DelimiterType
 from pse.util.errors import TokenRejected
-from pse.util.get_acceptor import get_acceptor
-from pse.state_machine.walker import Walker
-from pse.state_machine.state_machine import StateMachine
+from pse.util.state_machine.get_acceptor import get_acceptor
+from pse.core.walker import Walker
+from pse.core.state_machine import StateMachine
 from pse.util.bias_logits import bias_logits
 from pse.util.handle_logits import handle_logits
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Iterable, Optional
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateMachineWalker,

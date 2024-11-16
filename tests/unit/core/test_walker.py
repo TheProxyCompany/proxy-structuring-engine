@@ -1,9 +1,9 @@
 import pytest
 from typing import Any, Iterable
 
-from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.walker import Walker
+from pse.util.state_machine.accepted_state import AcceptedState
+from pse.core.state_machine import StateMachine
+from pse.core.walker import Walker
 from pse.acceptors.token_acceptor import TokenAcceptor
 
 

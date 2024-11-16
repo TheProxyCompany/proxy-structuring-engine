@@ -2,7 +2,7 @@ import pytest
 from lexpy import DAWG
 
 from pse.acceptors.basic.number.integer_acceptor import IntegerWalker
-from pse.state_machine.state_machine import StateMachine, StateMachineWalker
+from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.primitive_acceptors import BooleanAcceptor, NullAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor

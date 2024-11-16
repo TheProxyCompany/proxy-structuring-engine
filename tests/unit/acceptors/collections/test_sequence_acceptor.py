@@ -5,7 +5,7 @@ from pse.acceptors.token_acceptor import TokenAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.state_machine import StateMachine
+from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture

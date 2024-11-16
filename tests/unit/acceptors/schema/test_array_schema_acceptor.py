@@ -1,5 +1,5 @@
 import pytest
-from pse.schema_acceptors.array_schema_acceptor import ArraySchemaAcceptor
+from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
 from pse.util.errors import JSONParsingError
 from typing import Any, Dict, List
 

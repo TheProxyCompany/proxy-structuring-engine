@@ -9,7 +9,7 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.string_acceptor import StringAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 
 logger = logging.getLogger()
 

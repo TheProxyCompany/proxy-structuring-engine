@@ -15,7 +15,7 @@ from typing import Any, Iterable, List, Optional, Self, Set
 from lexpy import DAWG
 
 from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.types import StateType, VisitedEdgeType
+from pse.util.state_machine.types import StateType, VisitedEdgeType
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +212,7 @@ class Walker(ABC):
                 clone.target_state = None
 
             if clone.current_state in clone.acceptor.end_states:
-                from pse.state_machine.accepted_state import AcceptedState
+                from pse.util.state_machine.accepted_state import AcceptedState
 
                 return AcceptedState(clone)
 

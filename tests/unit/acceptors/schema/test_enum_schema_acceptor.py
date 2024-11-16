@@ -1,5 +1,5 @@
 import unittest
-from pse.schema_acceptors.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 
 
 class TestEnumSchemaAcceptor(unittest.TestCase):

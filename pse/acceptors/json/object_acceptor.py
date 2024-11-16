@@ -3,12 +3,12 @@ from typing import Any, Dict, Optional, Type
 import logging
 
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateMachineGraph,
     StateMachineWalker,
 )
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor

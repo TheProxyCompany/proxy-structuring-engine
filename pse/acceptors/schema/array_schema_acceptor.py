@@ -4,12 +4,12 @@ from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine.state_machine import StateMachineGraph
+from pse.core.state_machine import StateMachineGraph
 
 
 class ArraySchemaAcceptor(ArrayAcceptor):
     def __init__(self, schema: Dict[str, Any], context):
-        from pse.util.get_acceptor import (
+        from pse.util.state_machine.get_acceptor import (
             get_acceptor,
         )
 

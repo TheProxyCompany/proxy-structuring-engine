@@ -3,9 +3,9 @@ from typing import Iterable, Optional, Set, Type
 
 from lexpy import DAWG
 
-from pse.state_machine.accepted_state import AcceptedState
-from pse.state_machine.walker import Walker
-from pse.state_machine.state_machine import StateMachine, StateMachineWalker
+from pse.util.state_machine.accepted_state import AcceptedState
+from pse.core.walker import Walker
+from pse.core.state_machine import StateMachine, StateMachineWalker
 
 
 class CharacterAcceptor(StateMachine):

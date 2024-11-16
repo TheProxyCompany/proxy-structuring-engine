@@ -3,7 +3,7 @@ from typing import Tuple
 import pytest
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor, WaitForWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.state_machine import StateMachine
+from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture

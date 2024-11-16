@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, Callable
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.util.errors import InvalidSchemaError
-from pse.schema_acceptors.property_schema_acceptor import PropertySchemaAcceptor
+from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
 
 
 class ObjectSchemaAcceptor(ObjectAcceptor):

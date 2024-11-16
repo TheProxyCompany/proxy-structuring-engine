@@ -1,4 +1,4 @@
-from pse.schema_acceptors.string_schema_acceptor import StringSchemaAcceptor
+from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
 
 
 def test_init_default_schema():

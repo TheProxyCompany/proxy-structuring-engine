@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Type
-from pse.state_machine.state_machine import (
+from pse.core.state_machine import (
     StateMachine,
     StateMachineWalker,
     StateMachineGraph,
@@ -8,7 +8,7 @@ from pse.state_machine.state_machine import (
 from pse.acceptors.basic.character_acceptor import (
     CharacterAcceptor,
 )
-from pse.state_machine.walker import Walker
+from pse.core.walker import Walker
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 

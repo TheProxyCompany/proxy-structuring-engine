@@ -7,7 +7,7 @@ import pytest
 from lexpy import DAWG
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
-from pse.state_machine.state_machine import StateMachine
+from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture
