@@ -164,7 +164,7 @@ def test_whitespace_acceptor_integration_with_text_acceptor():
                     0: [(WhitespaceAcceptor(), 1)],
                     1: [(TextAcceptor("hello"), "$")],
                 },
-                initial_state=0,
+                start_state=0,
                 end_states=["$"],
             )
 
@@ -291,7 +291,7 @@ def test_whitespace_acceptor_state_machine():
             3: [(TextAcceptor("world"), 4)],
             4: [(WhitespaceAcceptor(), "$")],
         },
-        initial_state=0,
+        start_state=0,
         end_states=["$"],
     )
     walkers = list(sm.get_walkers())

@@ -1,16 +1,12 @@
 from __future__ import annotations
-from typing import List, Any, Optional, Type
-from pse.core.state_machine import (
-    StateMachine,
-    StateMachineGraph,
-    StateMachineWalker,
-)
+from typing import List, Any, Type, Optional
+from pse.util.state_machine.types import StateGraph
+from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.core.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-
 
 class ArrayAcceptor(StateMachine):
     """
@@ -20,11 +16,7 @@ class ArrayAcceptor(StateMachine):
     and maintaining the current array values being parsed.
     """
 
-    def __init__(
-        self,
-        graph: Optional[StateMachineGraph] = None,
-        walker_type: Optional[Type[Walker]] = None,
-    ) -> None:
+    def __init__(self, state_graph: Optional[StateGraph] = None) -> None:
         """
         Initialize the ArrayAcceptor with a state transition graph.
 
@@ -32,21 +24,24 @@ class ArrayAcceptor(StateMachine):
             graph (Optional[Dict[StateMachineAcceptor.StateType, List[Tuple[TokenAcceptor, StateMachineAcceptor.StateType]]]], optional):
                 Custom state transition graph. If None, a default graph is used to parse JSON arrays.
         """
-        if graph is None:
-            graph = {
-                0: [(TextAcceptor("["), 1)],
-                1: [
-                    (WhitespaceAcceptor(), 2),
-                    (TextAcceptor("]"), "$"),  # Allow empty array
-                ],
-                2: [(JsonAcceptor({}), 3)],
-                3: [(WhitespaceAcceptor(), 4)],
-                4: [
-                    (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
-                    (TextAcceptor("]"), "$"),
-                ],
-            }
-        super().__init__(graph, walker_type=walker_type or ArrayWalker)
+        base_array_state_graph: StateGraph = {
+            0: [(TextAcceptor("["), 1)],
+            1: [
+                (WhitespaceAcceptor(), 2),
+                (TextAcceptor("]"), "$"),  # Allow empty array
+            ],
+            2: [(JsonAcceptor(), 3)],
+            3: [(WhitespaceAcceptor(), 4)],
+            4: [
+                (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
+                (TextAcceptor("]"), "$"),
+            ]
+        }
+        super().__init__(state_graph or base_array_state_graph)
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return ArrayWalker
 
 
 class ArrayWalker(StateMachineWalker):

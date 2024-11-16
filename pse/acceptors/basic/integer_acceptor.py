@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Type
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
+from pse.core.walker import Walker
 
 
 class IntegerAcceptor(CharacterAcceptor):
@@ -10,8 +11,12 @@ class IntegerAcceptor(CharacterAcceptor):
     """
 
     def __init__(self, drop_leading_zeros: bool = True) -> None:
-        super().__init__("0123456789", walker_type=IntegerWalker)
+        super().__init__("0123456789")
         self.drop_leading_zeros = drop_leading_zeros
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return IntegerWalker
 
 class IntegerWalker(CharacterWalker):
     """

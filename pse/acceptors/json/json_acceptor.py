@@ -1,22 +1,20 @@
 """
 Acceptors for JSON parsing or constraining LLM generation to JSON outputs.
-Thread-safe implementations with caching, error handling, and performance optimizations.
 """
 
 from typing import (
     Iterable,
     Optional,
 )
-from pse.core.state_machine import StateMachine, StateType, EdgeType
+from pse.core.state_machine import StateMachine, State, Edge
 from pse.core.walker import Walker
-
 
 class JsonAcceptor(StateMachine):
     """
     Acceptor for parsing any JSON value, delegating to specific acceptors based on the value type.
     """
 
-    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
+    def get_edges(self, state: State) -> Iterable[Edge]:
         """
         Retrieve the graph edges for transitions out of the current state.
 
@@ -30,12 +28,12 @@ class JsonAcceptor(StateMachine):
             by tuples of TokenAcceptors and their corresponding target states.
         """
         if state == 0:
-            from .object_acceptor import ObjectAcceptor
-            from ..basic.boolean_acceptors import BooleanAcceptor
-            from ..basic.string_acceptor import StringAcceptor
-            from ..basic import NullAcceptor
-            from ..collections.array_acceptor import ArrayAcceptor
-            from ..basic.number_acceptor import NumberAcceptor
+            from pse.acceptors.basic import NullAcceptor
+            from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
+            from pse.acceptors.basic.string_acceptor import StringAcceptor
+            from pse.acceptors.basic.number_acceptor import NumberAcceptor
+            from pse.acceptors.collections.array_acceptor import ArrayAcceptor
+            from pse.acceptors.json.object_acceptor import ObjectAcceptor
 
             return [
                 (ObjectAcceptor(), "$"),
@@ -47,6 +45,6 @@ class JsonAcceptor(StateMachine):
             ]
         return []
 
-    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
+    def get_walkers(self, state: Optional[State] = None) -> Iterable[Walker]:
         for edge, _ in self.get_edges(state or 0):
             yield from edge.get_walkers()

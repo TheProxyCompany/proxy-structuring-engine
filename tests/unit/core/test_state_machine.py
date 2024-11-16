@@ -21,8 +21,8 @@ from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 def test_boolean_acceptor(token, expected_value):
     """Test StateMachine with BooleanAcceptor accepting 'true' or 'false'."""
     sm = StateMachine(
-        graph={0: [(BooleanAcceptor(), 1)]},
-        initial_state=0,
+        state_graph={0: [(BooleanAcceptor(), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -49,8 +49,8 @@ def test_boolean_acceptor(token, expected_value):
 def test_text_acceptor(token, acceptor_args, expected_value):
     """Test StateMachine with TextAcceptor transitions."""
     sm = StateMachine(
-        graph={0: [(TextAcceptor(**acceptor_args), 1)]},
-        initial_state=0,
+        state_graph={0: [(TextAcceptor(**acceptor_args), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -74,12 +74,12 @@ def test_text_acceptor(token, acceptor_args, expected_value):
 def test_state_transitions(first, second, end, token):
     """Test StateMachine with multiple sequential transitions."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor(first), 1)],
             1: [(TextAcceptor(second), 2)],
             2: [(TextAcceptor(end), 3)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[3],
     )
 
@@ -96,8 +96,8 @@ def test_state_transitions(first, second, end, token):
 def test_walker_clone():
     """Test cloning functionality of the StateMachine Walker."""
     sm = StateMachine(
-        graph={0: [(TextAcceptor("clone"), 1)]},
-        initial_state=0,
+        state_graph={0: [(TextAcceptor("clone"), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -119,8 +119,8 @@ def test_walker_clone():
 def test_null_acceptor():
     """Test StateMachine with NullAcceptor."""
     sm = StateMachine(
-        graph={0: [(NullAcceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(NullAcceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -137,8 +137,8 @@ def test_null_acceptor():
 def test_invalid_input_characters():
     """Test StateMachine handling of invalid input characters."""
     sm = StateMachine(
-        graph={0: [(TextAcceptor("valid"), 1)]},
-        initial_state=0,
+        state_graph={0: [(TextAcceptor("valid"), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -155,8 +155,8 @@ def test_invalid_input_characters():
 def test_partial_matches():
     """Test StateMachine handling of partial matches."""
     sm = StateMachine(
-        graph={0: [(TextAcceptor("complete"), 1)]},
-        initial_state=0,
+        state_graph={0: [(TextAcceptor("complete"), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -181,7 +181,7 @@ def test_partial_matches():
 def test_advance_all_multiple_states(token, expected_value):
     """Test StateMachine.advance_all_walkers with multiple current states and transitions."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [
                 (TextAcceptor("cat"), 1),
                 (TextAcceptor("car"), 2),
@@ -189,7 +189,7 @@ def test_advance_all_multiple_states(token, expected_value):
             1: [(TextAcceptor("dog"), 3)],
             2: [(TextAcceptor("door"), 3)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[3],
     )
 
@@ -206,8 +206,8 @@ def test_advance_all_multiple_states(token, expected_value):
 def test_advance_all_invalid_input():
     """Test StateMachine.advance_all_walkers with invalid input characters."""
     sm = StateMachine(
-        graph={0: [(TextAcceptor("hello"), 1)]},
-        initial_state=0,
+        state_graph={0: [(TextAcceptor("hello"), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -224,12 +224,12 @@ def test_advance_all_invalid_input():
 def test_complex_input():
     """Test StateMachine.advance_all_walkers with complex input."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(CharacterAcceptor("{"), 1)],
             1: [(CharacterAcceptor("\n"), 2)],
             2: [(CharacterAcceptor("["), 3)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[3],
     )
 
@@ -247,8 +247,8 @@ def test_number_acceptor():
     """Test StateMachine with NumberAcceptor."""
 
     sm = StateMachine(
-        graph={0: [(NumberAcceptor(), 1)]},
-        initial_state=0,
+        state_graph={0: [(NumberAcceptor(), 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -263,11 +263,11 @@ def test_number_acceptor_in_state_machine_sequence():
     """Test NumberAcceptor within a StateMachine sequence along with other acceptors."""
 
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(NumberAcceptor(), 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -301,11 +301,11 @@ def test_char_by_char_in_state_machine():
     """Test NumberAcceptor within a StateMachine sequence along with other acceptors."""
 
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(NumberAcceptor(), 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -334,10 +334,10 @@ def test_char_by_char_in_state_machine():
 def test_unexpected_input():
     """Test StateMachine with unexpected input."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("expected"), 1)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[1],
     )
 
@@ -352,7 +352,7 @@ def test_unexpected_input():
 
 def test_get_edges_nonexistent_state():
     """Test get_edges for a state that does not exist in the graph."""
-    sm = StateMachine(graph={}, initial_state=0, end_states=[1])
+    sm = StateMachine(state_graph={}, start_state=0, end_states=[1])
     edges = sm.get_edges(99)  # State 99 does not exist
     assert edges == []
 
@@ -367,11 +367,11 @@ def test_state_machine_advance_all_with_no_walkers():
 def test_state_machine_empty_transition():
     """Test StateMachine with an EmptyTransition."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("ignored", is_optional=True), 1)],
             1: [(TextAcceptor("test"), 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -387,13 +387,13 @@ def test_state_machine_empty_transition():
 def test_state_machine_with_loop():
     """Test StateMachine handling loop transitions."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [
                 (TextAcceptor("a"), 0),
                 (TextAcceptor("b"), 1),
             ],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[1],
     )
 
@@ -409,11 +409,11 @@ def test_state_machine_with_loop():
 def test_state_machine_advance_walker_with_remaining_input():
     """Test advance_walker handling remaining input in transition_walker."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("ab"), 1)],
             1: [(TextAcceptor("cd"), 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -453,7 +453,7 @@ def test_whitespace_acceptor():
     assert len(original_walkers) == 1
     first_walker = next(iter(original_walkers))
     assert isinstance(first_walker, StateMachineWalker)
-    assert first_walker.current_state == sm.initial_state
+    assert first_walker.current_state == sm.start_state
     assert isinstance(first_walker.transition_walker, TextWalker)
 
     advancement = StateMachine.advance_all_walkers(original_walkers, "{.", dawg)

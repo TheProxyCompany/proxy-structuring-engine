@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable
+from typing import Iterable, Optional, Callable, Type
 import logging
 
 from pse.acceptors.basic.acceptor import Acceptor
@@ -31,11 +31,15 @@ class WaitForAcceptor(StateMachine):
             wait_for_acceptor (TokenAcceptor): The acceptor that, when triggered,
                 stops the waiting and stops accepting further characters.
         """
-        super().__init__(walker_type=WaitForWalker)
+        super().__init__()
         self.wait_for_acceptor = wait_for_acceptor
         self.start_hook = start_hook
         self.end_hook = end_hook
         self.triggered = False
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return WaitForWalker
 
     def advance_walker(self, walker: Walker, token: str) -> Iterable[Walker]:
         return self.wait_for_acceptor.advance_walker(walker, token)

@@ -13,7 +13,7 @@ def test_acceptor() -> TextAcceptor:
 @pytest.fixture
 def mock_walker(test_acceptor: TextAcceptor) -> Walker:
     """Fixture to create a mock walker from the test_acceptor."""
-    return test_acceptor._walker(test_acceptor)
+    return test_acceptor.walker_class(test_acceptor)
 
 
 def test_in_accepted_state_returns_true(mock_walker: TextWalker) -> None:
@@ -54,9 +54,9 @@ def test_multiple_instances_operate_independently() -> None:
     Test that multiple instances of AcceptedState operate independently.
     """
     acceptor1 = TextAcceptor("first")
-    walker1 = acceptor1._walker(acceptor1)
+    walker1 = acceptor1.walker_class(acceptor1)
     acceptor2 = TextAcceptor("second")
-    walker2 = acceptor2._walker(acceptor2)
+    walker2 = acceptor2.walker_class(acceptor2)
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 
@@ -72,8 +72,8 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
     """
     Test that different AcceptedState instances with identical walker values are not equal.
     """
-    walker1 = test_acceptor._walker(test_acceptor)
-    walker2 = test_acceptor._walker(test_acceptor)
+    walker1 = test_acceptor.walker_class(test_acceptor)
+    walker2 = test_acceptor.walker_class(test_acceptor)
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 

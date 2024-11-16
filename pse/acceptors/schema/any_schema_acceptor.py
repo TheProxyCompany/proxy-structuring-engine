@@ -1,9 +1,5 @@
-from pse.core.state_machine import (
-    StateMachine,
-    StateMachineGraph,
-)
+from pse.core.state_machine import StateMachine
 from typing import List, Dict, Any
-
 
 class AnySchemaAcceptor(StateMachine):
     """
@@ -24,8 +20,6 @@ class AnySchemaAcceptor(StateMachine):
 
         # Construct the state machine graph with an initial state `0` that transitions
         # to the end state `$` for each schema acceptor.
-
         self.acceptors = [get_acceptor(schema, context) for schema in schemas]
-        graph: StateMachineGraph = {0: [(acceptor, "$") for acceptor in self.acceptors]}
 
-        super().__init__(graph)
+        super().__init__({0: [(acceptor, "$") for acceptor in self.acceptors]})

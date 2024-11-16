@@ -1,9 +1,10 @@
 from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Type
 import json
 
+from pse.core.walker import Walker
 from pse.util.state_machine.get_acceptor import get_acceptor
 
 
@@ -46,8 +47,11 @@ class PropertySchemaAcceptor(PropertyAcceptor):
                     value_ended_hook,
                 ),
             ],
-            PropertySchemaWalker,
         )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return PropertySchemaWalker
 
 
 class PropertySchemaWalker(PropertyWalker):

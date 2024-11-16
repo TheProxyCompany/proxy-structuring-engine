@@ -263,8 +263,8 @@ def test_number_acceptor_with_state_machine_float(acceptor: NumberAcceptor) -> N
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -292,8 +292,8 @@ def test_number_acceptor_with_state_machine_exponential(
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -321,11 +321,11 @@ def test_number_acceptor_with_state_machine_sequence(
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(acceptor, 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -373,8 +373,8 @@ def test_number_acceptor_multi_char_advancement(
         expected_value (float): The expected parsed value.
     """
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -417,8 +417,8 @@ def test_number_acceptor_single_char_advancement(
         expected_value (float): The expected parsed value.
     """
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -461,8 +461,8 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
 
     for input_string in invalid_inputs:
         sm = StateMachine(
-            graph={0: [(acceptor, 1)]},
-            initial_state=0,
+            state_graph={0: [(acceptor, 1)]},
+            start_state=0,
             end_states=[1],
         )
         walkers = list(sm.get_walkers())
@@ -482,8 +482,8 @@ def test_number_acceptor_empty_input(acceptor: NumberAcceptor) -> None:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
     input_string = ""
@@ -506,8 +506,8 @@ def test_number_acceptor_partial_invalid_input(acceptor: NumberAcceptor) -> None
     input_string = "12.3a4"
 
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -530,8 +530,8 @@ def test_number_acceptor_large_floating_point(acceptor: NumberAcceptor) -> None:
     expected_value = 12345678901234567890.123456789
 
     sm = StateMachine(
-        graph={0: [(acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 

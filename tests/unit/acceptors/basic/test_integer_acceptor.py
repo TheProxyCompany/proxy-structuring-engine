@@ -19,8 +19,8 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -52,8 +52,8 @@ def test_integer_acceptor(input_string, expected_value):
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -75,8 +75,8 @@ def test_integer_acceptor_invalid_input():
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -97,8 +97,8 @@ def test_integer_acceptor_empty_input():
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -119,8 +119,8 @@ def test_integer_acceptor_partial_input():
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -141,11 +141,11 @@ def test_integer_acceptor_in_state_machine_sequence():
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("Number: "), 1)],
             1: [(integer_acceptor, 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -173,11 +173,11 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(integer_acceptor, 2)],
         },
-        initial_state=0,
+        start_state=0,
         end_states=[2],
     )
 
@@ -202,8 +202,8 @@ def test_integer_acceptor_zero():
     """Test IntegerAcceptor with zero."""
     integer_acceptor = IntegerAcceptor()
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -227,8 +227,8 @@ def test_integer_acceptor_large_number():
     """Test IntegerAcceptor with a large number."""
     integer_acceptor = IntegerAcceptor()
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -264,8 +264,8 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
     integer_acceptor = IntegerAcceptor()
 
     sm = StateMachine(
-        graph={0: [(integer_acceptor, 1)]},
-        initial_state=0,
+        state_graph={0: [(integer_acceptor, 1)]},
+        start_state=0,
         end_states=[1],
     )
 
@@ -286,9 +286,9 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
 def test_integer_acceptor_walker_equality():
     """Test the equality of IntegerAcceptor walkers."""
     integer_acceptor = IntegerAcceptor()
-    walker1 = integer_acceptor._walker(integer_acceptor, "123")
-    walker2 = integer_acceptor._walker(integer_acceptor, "123")
-    walker3 = integer_acceptor._walker(integer_acceptor, "124")
+    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
+    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
+    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
 
     assert walker1 == walker2, "Walkers with the same state and value should be equal."
     assert (
@@ -300,9 +300,9 @@ def test_integer_acceptor_walker_hash():
     """Test the hash function of IntegerAcceptor walkers."""
     integer_acceptor = IntegerAcceptor()
     walker_set = set()
-    walker1 = integer_acceptor._walker(integer_acceptor, "123")
-    walker2 = integer_acceptor._walker(integer_acceptor, "123")
-    walker3 = integer_acceptor._walker(integer_acceptor, "124")
+    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
+    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
+    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
 
     walker_set.add(walker1)
     walker_set.add(walker2)
@@ -316,7 +316,7 @@ def test_integer_acceptor_walker_hash():
 def test_integer_acceptor_walker_get_value_with_invalid_text():
     """Test get_value method with invalid text in IntegerAcceptor.Walker."""
     integer_acceptor = IntegerAcceptor()
-    walker = integer_acceptor._walker(integer_acceptor, "abc")
+    walker = integer_acceptor.walker_class(integer_acceptor, "abc")
 
     value = walker.current_value
 

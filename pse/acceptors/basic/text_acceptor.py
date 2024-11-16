@@ -23,8 +23,7 @@ class TextAcceptor(StateMachine):
         self,
         text: str,
         is_optional: bool = False,
-        is_case_sensitive: bool = True,
-        walker_type: Optional[Type[TextWalker]] = None,
+        is_case_sensitive: bool = True
     ):
         """
         Initialize a new TextAcceptor instance with the specified text.
@@ -36,16 +35,16 @@ class TextAcceptor(StateMachine):
         Raises:
             ValueError: If the provided text is empty.
         """
-        super().__init__(
-            walker_type=walker_type or TextWalker,
-            is_optional=is_optional,
-            is_case_sensitive=is_case_sensitive,
-        )
+        super().__init__(is_optional=is_optional, is_case_sensitive=is_case_sensitive)
 
         if not text:
             raise ValueError("Text must be a non-empty string.")
 
         self.text = text
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return TextWalker
 
     def __str__(self) -> str:
         return self.__repr__()

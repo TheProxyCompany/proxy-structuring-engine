@@ -1,11 +1,11 @@
 from typing import Dict, List, Tuple, Union
 from pse.acceptors.basic.acceptor import Acceptor
 
-StateType = Union[int, str]
+State = Union[int, str]
 """Represents a state within the StateMachine.  Can be an integer or a string."""
 
 # Type alias for edges in the StateMachine graph.
-EdgeType = Tuple[Acceptor, StateType]
+Edge = Tuple[Acceptor, State]
 """Represents a transition between states in the StateMachine.
 
 An Edge consists of a `TokenAcceptor` that governs the conditions for the transition,
@@ -14,7 +14,7 @@ the acceptance criteria of the associated `TokenAcceptor`.
 """
 
 # Type alias for visited edges in the StateMachine graph.
-VisitedEdgeType = Tuple[StateType, StateType, str]
+VisitedEdge = Tuple[State, State, str]
 """Represents a traversed edge during StateMachine execution.
 
 A `VisitedEdgeType` records the source state, target state, and the token
@@ -23,7 +23,7 @@ and preventing cycles.
 """
 
 # Type alias for the graph representation of the StateMachine.
-StateMachineGraph = Dict[StateType, List[EdgeType]]
+StateGraph = Dict[State, List[Edge]]
 """Represents the structure of the StateMachine as a directed graph.
 
 Maps each `StateType` to a list of its outgoing `EdgeType`s.  This graph

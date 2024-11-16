@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Type
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
+from pse.core.walker import Walker
 from pse.util.errors import InvalidSchemaError
 from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
 
@@ -13,6 +14,7 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
     ):
+        super().__init__()
         self.schema = schema
         self.context = context
         self.properties: Dict[str, Any] = schema.get("properties", {})
@@ -36,7 +38,10 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                 )
 
         assert self.properties is not None
-        super().__init__(ObjectSchemaWalker)
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return ObjectSchemaWalker
 
     def get_edges(self, state):
         if state == 2:

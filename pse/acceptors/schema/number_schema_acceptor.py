@@ -1,6 +1,7 @@
 from __future__ import annotations
+from typing import Type
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
-
+from pse.core.walker import Walker
 
 class NumberSchemaAcceptor(NumberAcceptor):
     """
@@ -8,7 +9,7 @@ class NumberSchemaAcceptor(NumberAcceptor):
     """
 
     def __init__(self, schema):
-        super().__init__(NumberSchemaWalker)
+        super().__init__()
         self.schema = schema
         self.is_integer = schema["type"] == "integer"
         self.requires_validation = any(
@@ -21,6 +22,10 @@ class NumberSchemaAcceptor(NumberAcceptor):
                 "multipleOf",
             ]
         )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return NumberSchemaWalker
 
     def validate_value(self, value):
         """

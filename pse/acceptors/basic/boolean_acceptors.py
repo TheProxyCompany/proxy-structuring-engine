@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Type
 from pse.core.state_machine import (
     StateMachine,
-    StateMachineGraph,
     StateMachineWalker,
 )
+from pse.core.walker import Walker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
 class BooleanAcceptor(StateMachine):
@@ -16,14 +16,18 @@ class BooleanAcceptor(StateMachine):
         """
         Initialize the BooleanAcceptor with its state transitions defined as a state graph.
         """
-        graph: StateMachineGraph = {
-            0: [
-                (TextAcceptor("true"), "$"),
-                (TextAcceptor("false"), "$"),
-            ]
-        }
-        super().__init__(graph, walker_type=BooleanWalker)
+        super().__init__(
+            {
+                0: [
+                    (TextAcceptor("true"), "$"),
+                    (TextAcceptor("false"), "$"),
+                ]
+            }
+        )
 
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return BooleanWalker
 
 class BooleanWalker(StateMachineWalker):
     """

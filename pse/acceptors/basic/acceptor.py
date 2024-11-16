@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pse.core.walker import Walker
-    from pse.util.state_machine.types import StateType, StateMachineGraph
+    from pse.util.state_machine.types import State, StateGraph
 
 
 class Acceptor(ABC):
@@ -40,23 +40,26 @@ class Acceptor(ABC):
 
     def __init__(
         self,
-        graph: StateMachineGraph,
-        initial_state: StateType,
-        end_states: Iterable[StateType],
-        walker_type: Type[Walker],
+        state_graph: Optional[StateGraph] = None,
+        start_state: State = 0,
+        end_states: Optional[Iterable[State]] = None,
         is_optional: bool = False,
         is_case_sensitive: bool = True,
     ) -> None:
-        """Initializes the Acceptor with the given initial and end states.
+        """Initialize the Acceptor with a state graph.
 
         Args:
-            initial_state (StateType): The starting state of the acceptor.
-            end_states (Iterable[StateType]): A collection of acceptable end states.
+            walker_type: The type of the walker to traverse the state graph
+            graph: Mapping of states to lists of (TokenAcceptor, target_state) tuples.
+                  Defaults to an empty dictionary.
+            initial_state: The starting state. Defaults to 0.
+            end_states: Collection of accepting states. Defaults to ("$",).
+            is_optional: Whether the acceptor is optional. Defaults to False.
+            is_case_sensitive: Whether the acceptor is case sensitive. Defaults to True.
         """
-        self.graph = graph
-        self.initial_state = initial_state
-        self.end_states = end_states
-        self._walker = walker_type
+        self.state_graph = state_graph or {}
+        self.start_state = start_state
+        self.end_states = end_states or ["$"]
         self._is_optional = is_optional
         self._is_case_sensitive = is_case_sensitive
 
@@ -78,10 +81,16 @@ class Acceptor(ABC):
         """
         return self._is_case_sensitive
 
+    @property
+    @abstractmethod
+    def walker_class(self) -> Type[Walker]:
+        """The walker class for this acceptor."""
+        pass
+
     @abstractmethod
     def get_walkers(
         self,
-        state: Optional[StateType] = None,
+        state: Optional[State] = None,
     ) -> Iterable[Walker]:
         """Retrieves walkers to traverse the acceptor.
 
@@ -94,7 +103,7 @@ class Acceptor(ABC):
     def get_transition_walkers(
         self,
         walker: Walker,
-    ) -> Iterable[Tuple[Walker, StateType]]:
+    ) -> Iterable[Tuple[Walker, State]]:
         """Retrieves transitions from the given walker."""
         pass
 
@@ -141,7 +150,7 @@ class Acceptor(ABC):
             str: A formatted string showing the state machine's configuration.
         """
 
-        def format_graph(graph: StateMachineGraph, indent: int = 0) -> str:
+        def format_graph(graph: StateGraph, indent: int = 0) -> str:
             if not graph:
                 return ""
 
@@ -168,5 +177,5 @@ class Acceptor(ABC):
                 for idx, line in enumerate(acceptor_repr.splitlines())
             )
 
-        formatted_graph = format_graph(self.graph)
+        formatted_graph = format_graph(self.state_graph)
         return f"{self.__class__.__name__}({formatted_graph})"

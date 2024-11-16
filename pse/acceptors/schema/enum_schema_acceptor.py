@@ -36,5 +36,4 @@ class EnumSchemaAcceptor(StateMachine):
                     (TextAcceptor(value), "$") for value in enum_values
                 ],
             },
-            end_states=["$"],
         )

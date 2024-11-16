@@ -49,7 +49,7 @@ def walker(acceptor: StateMachine) -> Concretewalker:
 def test_walker_initialization(walker: Concretewalker, acceptor: StateMachine):
     """Test that the walker initializes correctly."""
     assert walker.acceptor == acceptor
-    assert walker.current_state == acceptor.initial_state
+    assert walker.current_state == acceptor.start_state
     assert walker.target_state is None
     assert walker.transition_walker is None
     assert walker.accepted_history == []

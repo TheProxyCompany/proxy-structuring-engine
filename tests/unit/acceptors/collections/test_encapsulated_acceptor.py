@@ -42,13 +42,13 @@ def test_initialization_with_custom_delimiters(content_acceptor):
         close_delimiter=custom_close,
     )
 
-    transitions_state_0 = encapsulated_acceptor.graph[0]
+    transitions_state_0 = encapsulated_acceptor.state_graph[0]
     acceptor_0, _ = transitions_state_0[0]
     assert isinstance(acceptor_0, WaitForAcceptor)
     assert isinstance(acceptor_0.wait_for_acceptor, TextAcceptor)
     assert acceptor_0.wait_for_acceptor.text == custom_open
 
-    transitions_state_2 = encapsulated_acceptor.graph[2]
+    transitions_state_2 = encapsulated_acceptor.state_graph[2]
     acceptor_2, _ = transitions_state_2[0]
     assert isinstance(acceptor_2, TextAcceptor)
     assert acceptor_2.text == custom_close

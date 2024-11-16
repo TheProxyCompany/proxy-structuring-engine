@@ -1,13 +1,9 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Type
 import logging
 
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.core.state_machine import (
-    StateMachine,
-    StateMachineGraph,
-    StateMachineWalker,
-)
+from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.core.walker import Walker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -24,35 +20,37 @@ class ObjectAcceptor(StateMachine):
     and maintaining the current object properties being parsed.
     """
 
-    def __init__(
-        self,
-        walker_type: Optional[Type[Walker]] = None,
-    ) -> None:
+    def __init__(self) -> None:
         """
         Initialize the ObjectAcceptor with a predefined state transition graph.
 
         Sets up the state transition graph for parsing JSON objects.
         """
-        graph: StateMachineGraph = {
-            0: [
-                (TextAcceptor("{"), 1),
-            ],
-            1: [
-                (WhitespaceAcceptor(), 2),
-                (TextAcceptor("}"), "$"),  # Empty object
-            ],
-            2: [
-                (PropertyAcceptor(), 3),
-            ],
-            3: [
-                (WhitespaceAcceptor(), 4),
-            ],
-            4: [
-                (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
-                (TextAcceptor("}"), "$"),  # End of object
-            ],
-        }
-        super().__init__(graph, walker_type=walker_type or ObjectWalker)
+        super().__init__(
+            {
+                0: [
+                    (TextAcceptor("{"), 1),
+                ],
+                1: [
+                    (WhitespaceAcceptor(), 2),
+                    (TextAcceptor("}"), "$"),  # Empty object
+                ],
+                2: [
+                    (PropertyAcceptor(), 3),
+                ],
+                3: [
+                    (WhitespaceAcceptor(), 4),
+                ],
+                4: [
+                    (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
+                    (TextAcceptor("}"), "$"),  # End of object
+                ],
+            }
+        )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return ObjectWalker
 
 
 class ObjectWalker(StateMachineWalker):

@@ -22,7 +22,7 @@ from typing import Iterable, Optional, Set, Tuple, Type
 from lexpy import DAWG
 
 from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.types import EdgeType, StateMachineGraph, StateType
+from pse.util.state_machine.types import Edge, State
 from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
@@ -31,36 +31,12 @@ logger = logging.getLogger(__name__)
 class StateMachine(Acceptor):
     """StateMachine for managing token acceptance based on a predefined graph."""
 
-    def __init__(
-        self,
-        graph: Optional[StateMachineGraph] = None,
-        initial_state: StateType = 0,
-        end_states: Optional[Iterable[StateType]] = None,
-        walker_type: Optional[Type[Walker]] = None,
-        is_optional: bool = False,
-        is_case_sensitive: bool = True,
-    ) -> None:
-        """Initialize the StateMachine with a state graph.
+    @property
+    def walker_class(self) -> Type[Walker]:
+        """The walker class for this state machine."""
+        return StateMachineWalker
 
-        Args:
-            graph: Mapping of states to lists of (TokenAcceptor, target_state) tuples.
-                  Defaults to an empty dictionary.
-            initial_state: The starting state. Defaults to 0.
-            end_states: Collection of accepting states. Defaults to ("$",).
-            walker_type: The type of walker to use. Defaults to `StateMachineWalker`.
-            is_optional: Whether the acceptor is optional. Defaults to False.
-            is_case_sensitive: Whether the acceptor is case sensitive. Defaults to True.
-        """
-        super().__init__(
-            graph or {},
-            initial_state,
-            end_states or ["$"],
-            walker_type or StateMachineWalker,
-            is_optional,
-            is_case_sensitive,
-        )
-
-    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
+    def get_edges(self, state: State) -> Iterable[Edge]:
         """Retrieve outgoing transitions for a given state.
 
         Args:
@@ -69,9 +45,9 @@ class StateMachine(Acceptor):
         Returns:
             An iterable of (acceptor, target_state) tuples representing possible transitions.
         """
-        return self.graph.get(state, [])
+        return self.state_graph.get(state, [])
 
-    def get_walkers(self, state: Optional[StateType] = None) -> Iterable[Walker]:
+    def get_walkers(self, state: Optional[State] = None) -> Iterable[Walker]:
         """Initialize walkers at the specified start state.
 
         If no graph is provided, only the initial walker is yielded.
@@ -82,8 +58,8 @@ class StateMachine(Acceptor):
         Yields:
             Walker instances positioned at the starting state.
         """
-        initial_walker = self._walker(self, state)
-        if not self.graph:
+        initial_walker = self.walker_class(self, state)
+        if not self.state_graph:
             yield initial_walker
         else:
             yield from self.branch_walker(initial_walker)
@@ -180,8 +156,8 @@ class StateMachine(Acceptor):
                 yield current_walker
 
     def get_transition_walkers(
-        self, walker: Walker, state: Optional[StateType] = None
-    ) -> Iterable[Tuple[Walker, StateType, StateType]]:
+        self, walker: Walker, state: Optional[State] = None
+    ) -> Iterable[Tuple[Walker, State, State]]:
         """Retrieve transition walkers from the current state.
 
         For each edge from the current state, yields walkers that can traverse that edge.
@@ -336,7 +312,7 @@ class StateMachineWalker(Walker):
                 return True
 
         return (
-            bool(self.acceptor.graph.get(self.current_state))
+            bool(self.acceptor.state_graph.get(self.current_state))
             or self._accepts_more_input
         )
 

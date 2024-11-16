@@ -1,7 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set
-
-from lexpy import DAWG
+from typing import Iterable, Optional, Set, Type
 
 from pse.core.state_machine import StateMachine
 from pse.util.state_machine.accepted_state import AcceptedState
@@ -18,27 +16,9 @@ class StringCharacterAcceptor(StateMachine):
     Accepts one or more valid JSON unescaped string characters.
     """
 
-    def __init__(self) -> None:
-        """
-        Initialize the StringCharAcceptor with its state transitions.
-        """
-        super().__init__(walker_type=StringCharacterWalker)
-
-    @classmethod
-    def prepare_dawg(cls, dawg: DAWG) -> DAWG:
-        """
-        Build a collapsed trie that reduces the search space for valid tokens.
-        Multiple collapsed tries are cached to handle scenarios where string
-        matching starts in the middle of the main trie.
-
-        Args:
-            dawg (DAWG): The main vocabulary dawg.
-
-        Returns:
-            DAWG: The optimized string character dawg.
-        """
-        cls.valid_chars = set(INVALID_CHARS)
-        return dawg
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return StringCharacterWalker
 
 
 class StringCharacterWalker(Walker):

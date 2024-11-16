@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Type
+from typing import Iterable, Type
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.util.state_machine.types import EdgeType, StateMachineGraph, StateType
+from pse.util.state_machine.types import Edge, State
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
@@ -22,43 +22,47 @@ class NumberAcceptor(StateMachine):
     decimal, and exponential formats as specified by the JSON standard.
     """
 
-    def __init__(self, walker_type: Optional[Type[Walker]] = None):
+    def __init__(self):
         """
         Initialize the NumberAcceptor with its state transitions.
         """
-        graph: StateMachineGraph = {
-            0: [
-                (TextAcceptor("-"), 1),
-            ],
-            1: [
-                (IntegerAcceptor(), 2),
-            ],
-            2: [
-                (
-                    SequenceAcceptor(
-                        [
-                            TextAcceptor("."),
-                            IntegerAcceptor(drop_leading_zeros=False),
-                        ]
-                    ),
-                    3,
-                ),
-            ],
-            3: [
-                (CharacterAcceptor("eE"), 4),
-            ],
-            4: [
-                (CharacterAcceptor("+-"), 5),
-            ],
-            5: [
-                (IntegerAcceptor(), "$"),
-            ],
-        }
         super().__init__(
-            graph, end_states=[2, 3, "$"], walker_type=walker_type or NumberWalker
+            {
+                0: [
+                    (TextAcceptor("-"), 1),
+                ],
+                1: [
+                    (IntegerAcceptor(), 2),
+                ],
+                2: [
+                    (
+                        SequenceAcceptor(
+                            [
+                                TextAcceptor("."),
+                                IntegerAcceptor(drop_leading_zeros=False),
+                            ]
+                        ),
+                        3,
+                    ),
+                ],
+                3: [
+                    (CharacterAcceptor("eE"), 4),
+                ],
+                4: [
+                    (CharacterAcceptor("+-"), 5),
+                ],
+                5: [
+                    (IntegerAcceptor(), "$"),
+                ],
+            },
+            end_states=[2, 3, "$"],
         )
 
-    def get_edges(self, state: StateType) -> Iterable[EdgeType]:
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return NumberWalker
+
+    def get_edges(self, state: State) -> Iterable[Edge]:
         """
         Get the edges for a given state.
         """
@@ -91,7 +95,7 @@ class NumberWalker(StateMachineWalker):
             return True
 
         return (
-            bool(self.acceptor.graph.get(self.current_state))
+            bool(self.acceptor.state_graph.get(self.current_state))
             and self._accepts_more_input
             and not self.remaining_input
         )

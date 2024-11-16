@@ -21,8 +21,8 @@ def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
 
     def create(acceptor: CharacterAcceptor) -> StateMachine:
         return StateMachine(
-            graph={0: [(acceptor, 1)]},
-            initial_state=0,
+            state_graph={0: [(acceptor, 1)]},
+            start_state=0,
             end_states=[1],
         )
 

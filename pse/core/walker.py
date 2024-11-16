@@ -15,7 +15,7 @@ from typing import Any, Iterable, List, Optional, Self, Set
 from lexpy import DAWG
 
 from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.types import StateType, VisitedEdgeType
+from pse.util.state_machine.types import State, VisitedEdge
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class Walker(ABC):
     def __init__(
         self,
         acceptor: Acceptor,
-        current_state: Optional[StateType] = None,
+        current_state: Optional[State] = None,
     ) -> None:
         """Initialize a new Walker with the given acceptor.
 
@@ -55,10 +55,10 @@ class Walker(ABC):
         """
         self.acceptor = acceptor
         self.accepted_history: List[Walker] = []
-        self.explored_edges: Set[VisitedEdgeType] = set()
+        self.explored_edges: Set[VisitedEdge] = set()
 
-        self.current_state: StateType = current_state or acceptor.initial_state
-        self.target_state: Optional[StateType] = None
+        self.current_state: State = current_state or acceptor.start_state
+        self.target_state: Optional[State] = None
         self.transition_walker: Optional[Walker] = None
 
         self.consumed_character_count: int = 0
@@ -129,7 +129,7 @@ class Walker(ABC):
         return "".join(value for value in history if value is not None)
 
     @property
-    def current_edge(self) -> VisitedEdgeType:
+    def current_edge(self) -> VisitedEdge:
         """Return the current edge as a tuple.
 
         Returns:
@@ -221,8 +221,8 @@ class Walker(ABC):
     def configure(
         self,
         transition_walker: Walker,
-        start_state: StateType,
-        target_state: Optional[StateType] = None,
+        start_state: State,
+        target_state: Optional[State] = None,
     ) -> Walker:
         """Configures the walker with a new transition walker and updates states."""
         clone = self.clone()
@@ -493,7 +493,7 @@ class Walker(ABC):
             if part
         ]
 
-        if self.current_state != self.acceptor.initial_state:
+        if self.current_state != self.acceptor.start_state:
             info_parts.insert(
                 0,
                 _format_state_info(),

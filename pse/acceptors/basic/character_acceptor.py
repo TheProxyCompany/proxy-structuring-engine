@@ -22,7 +22,6 @@ class CharacterAcceptor(StateMachine):
         char_limit: Optional[int] = None,
         is_optional: bool = False,
         case_sensitive: bool = True,
-        walker_type: Optional[Type[CharacterWalker]] = None,
     ) -> None:
         """
         Initialize the CharAcceptor with a set of valid characters.
@@ -30,16 +29,18 @@ class CharacterAcceptor(StateMachine):
         Args:
             charset (Iterable[str]): An iterable of characters to be accepted.
         """
-        super().__init__(
-            walker_type=walker_type or CharacterWalker,
-            is_optional=is_optional,
-            is_case_sensitive=case_sensitive,
-        )
-        self.charset: Set[str] = (
-            set(charset) if case_sensitive else set(char.lower() for char in charset)
-        )
+        super().__init__(is_optional=is_optional, is_case_sensitive=case_sensitive)
         self.char_min = char_min or 0
         self.char_limit = char_limit or 0
+        self.charset: Set[str] = (
+            set(charset)
+            if case_sensitive
+            else set(char.lower() for char in charset)
+        )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return CharacterWalker
 
     def __str__(self) -> str:
         return self.__repr__()

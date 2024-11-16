@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Tuple, Optional, Any, List, Type
+from typing import Tuple, Optional, Any, Type
 import logging
 import json
 
 from pse.acceptors.basic.acceptor import Acceptor
+
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -22,31 +23,24 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(
-        self,
-        sequence: Optional[List[Acceptor]] = None,
-        walker_type: Optional[Type[Walker]] = None,
-    ) -> None:
+    def __init__(self, sequence: Optional[list[Acceptor]] = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
-
-        Args:
-            sequence (Optional[List[TokenAcceptor]], optional): Custom sequence of acceptors.
-                If None, a default sequence is used to parse a JSON property.
-                Defaults to None.
         """
-        if sequence is None:
-            sequence = [
+
+        super().__init__(
+            sequence or [
                 StringAcceptor(),
                 WhitespaceAcceptor(),
                 TextAcceptor(":"),
                 WhitespaceAcceptor(),
-                JsonAcceptor({}),
+                JsonAcceptor(),
             ]
-        super().__init__(
-            sequence,
-            walker_type=walker_type or PropertyWalker,
         )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return PropertyWalker
 
 
 class PropertyWalker(SequenceWalker):

@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, Type
+from pse.core.walker import Walker
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.core.state_machine import StateMachineGraph
-
 
 class ArraySchemaAcceptor(ArrayAcceptor):
+
     def __init__(self, schema: Dict[str, Any], context):
         from pse.util.state_machine.get_acceptor import (
             get_acceptor,
@@ -15,27 +15,31 @@ class ArraySchemaAcceptor(ArrayAcceptor):
 
         self.schema = schema
         self.context = context
-        # Start of Selection
-        graph: StateMachineGraph = {
-            0: [
-                (TextAcceptor("["), 1),
-            ],
-            1: [
-                (WhitespaceAcceptor(), 2),
-                (TextAcceptor("]"), "$"),
-            ],
-            2: [
-                (get_acceptor(self.schema["items"], self.context), 3),
-            ],
-            3: [
-                (WhitespaceAcceptor(), 4),
-            ],
-            4: [
-                (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
-                (TextAcceptor("]"), "$"),
-            ],
-        }
-        super().__init__(graph, walker_type=ArraySchemaWalker)
+        super().__init__(
+            {
+                0: [
+                    (TextAcceptor("["), 1),
+                ],
+                1: [
+                    (WhitespaceAcceptor(), 2),
+                    (TextAcceptor("]"), "$"),
+                ],
+                2: [
+                    (get_acceptor(self.schema["items"], self.context), 3),
+                ],
+                3: [
+                    (WhitespaceAcceptor(), 4),
+                ],
+                4: [
+                    (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
+                    (TextAcceptor("]"), "$"),
+                ],
+            }
+        )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return ArraySchemaWalker
 
     def min_items(self) -> int:
         """

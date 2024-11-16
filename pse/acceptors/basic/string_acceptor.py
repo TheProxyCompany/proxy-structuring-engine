@@ -1,13 +1,10 @@
 from __future__ import annotations
-from typing import Optional, Type
+from typing import Type
 from pse.core.state_machine import (
     StateMachine,
     StateMachineWalker,
-    StateMachineGraph,
 )
-from pse.acceptors.basic.character_acceptor import (
-    CharacterAcceptor,
-)
+from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.core.walker import Walker
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
@@ -21,53 +18,54 @@ class StringAcceptor(StateMachine):
     """
 
     # State constants
-    STATE_START = 0
-    STATE_IN_STRING = 1
-    STATE_ESCAPE = 2
-    STATE_UNICODE_HEX = 3
+    STRING_CONTENTS = 1
+    ESCAPED_SEQUENCE = 2
+    HEX_CODE = 3
 
-    def __init__(self, walker_type: Optional[Type[Walker]] = None):
+    def __init__(self):
         """
         Initialize the StringAcceptor with its state transitions.
 
         The state machine is configured to parse JSON strings, handling escape sequences
         and Unicode characters appropriately.
         """
-        graph: StateMachineGraph = {
-            self.STATE_START: [
-                (TextAcceptor('"'), self.STATE_IN_STRING),  # Start of string
-            ],
-            self.STATE_IN_STRING: [
-                (
-                    StringCharacterAcceptor(),
-                    self.STATE_IN_STRING,
-                ),  # Regular chars first
-                (TextAcceptor('"'), "$"),  # End quote second
-                (TextAcceptor("\\"), self.STATE_ESCAPE),  # Escape last
-            ],
-            self.STATE_ESCAPE: [
-                (
-                    CharacterAcceptor('"\\/bfnrt', char_limit=1),
-                    self.STATE_IN_STRING,
-                ),  # Escaped characters
-                (
-                    TextAcceptor("u"),
-                    self.STATE_UNICODE_HEX,
-                ),  # Unicode escape sequence
-            ],
-            self.STATE_UNICODE_HEX: [
-                (
-                    CharacterAcceptor("0123456789ABCDEFabcdef", char_min=4, char_limit=4),
-                    self.STATE_IN_STRING,
-                ),  # First hex digit
-            ],
-        }
         super().__init__(
-            graph,
-            self.STATE_START,
-            ["$"],
-            walker_type=walker_type or StringWalker,
+            {
+                0: [
+                    (TextAcceptor('"'), self.STRING_CONTENTS),
+                ],
+                self.STRING_CONTENTS: [
+                    (
+                        StringCharacterAcceptor(),
+                        self.STRING_CONTENTS,
+                    ),  # Regular chars first
+                    (TextAcceptor('"'), "$"),  # End quote second
+                    (TextAcceptor("\\"), self.ESCAPED_SEQUENCE),  # Escape last
+                ],
+                self.ESCAPED_SEQUENCE: [
+                    (
+                        CharacterAcceptor('"\\/bfnrt', char_limit=1),
+                        self.STRING_CONTENTS,
+                    ),  # Escaped characters
+                    (
+                        TextAcceptor("u"),
+                        self.HEX_CODE,
+                    ),  # Unicode escape sequence
+                ],
+                self.HEX_CODE: [
+                    (
+                        CharacterAcceptor(
+                            "0123456789ABCDEFabcdef", char_min=4, char_limit=4
+                        ),
+                        self.STRING_CONTENTS,
+                    ),  # First hex digit
+                ],
+            }
         )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return StringWalker
 
 
 class StringWalker(StateMachineWalker):

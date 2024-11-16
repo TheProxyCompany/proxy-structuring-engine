@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from typing import Type
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.core.state_machine import StateMachine, StateMachineGraph, StateMachineWalker
+from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.core.walker import Walker
 
 
 class EncapsulatedAcceptor(StateMachine):
@@ -28,19 +30,24 @@ class EncapsulatedAcceptor(StateMachine):
             open_delimiter: The string that denotes the start of the JSON content.
             close_delimiter: The string that denotes the end of the JSON content.
         """
-        graph: StateMachineGraph = {
-            0: [
-                (WaitForAcceptor(TextAcceptor(open_delimiter)), 1),
-            ],
-            1: [
-                (acceptor, 2),
-            ],
-            2: [(TextAcceptor(close_delimiter), "$")],
-        }
-        self.opening_delimiter: str = open_delimiter
-        self.closing_delimiter: str = close_delimiter
-        self.wait_for_acceptor: Acceptor = acceptor
-        super().__init__(graph, walker_type=EncapsulatedWalker)
+        super().__init__(
+            {
+                0: [
+                    (WaitForAcceptor(TextAcceptor(open_delimiter)), 1),
+                ],
+                1: [
+                    (acceptor, 2),
+                ],
+                2: [(TextAcceptor(close_delimiter), "$")],
+            }
+        )
+        self.opening_delimiter = open_delimiter
+        self.closing_delimiter = close_delimiter
+        self.wait_for_acceptor = acceptor
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return EncapsulatedWalker
 
 
 class EncapsulatedWalker(StateMachineWalker):

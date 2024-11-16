@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set
+from typing import Iterable, Optional, Set, Type
 
 from lexpy import DAWG
 from pse.core.state_machine import StateMachine
@@ -22,17 +22,19 @@ class WhitespaceAcceptor(StateMachine):
         Initialize the WhitespaceAcceptor.
 
         Args:
+            min_whitespace (int, optional): Minimum allowable whitespace characters.
+                Defaults to 0.
             max_whitespace (int, optional): Maximum allowable whitespace characters.
-                                            Defaults to 40.
+                Defaults to 40.
         """
-        super().__init__({}, walker_type=WhitespaceWalker)
         self.min_whitespace: int = min_whitespace
         self.max_whitespace: int = max_whitespace
 
-    @property
-    def is_optional(self) -> bool:
-        return self.min_whitespace == 0
+        super().__init__(is_optional=(min_whitespace == 0))
 
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return WhitespaceWalker
 
 class WhitespaceWalker(Walker):
     """

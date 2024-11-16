@@ -171,7 +171,7 @@ def test_multiple_sequences(acceptors: List[Acceptor], token: str):
 def test_optional_acceptor():
     """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
     sm = StateMachine(
-        graph={
+        state_graph={
             0: [
                 (TextAcceptor("Hello"), 1),
                 (TextAcceptor("World"), 1),
@@ -189,7 +189,7 @@ def test_optional_acceptor():
                 (TextAcceptor("."), "$"),
             ],
         },
-        initial_state=0,
+        start_state=0,
     )
     walkers = list(sm.get_walkers())
     assert len(walkers) == 2

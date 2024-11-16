@@ -14,7 +14,7 @@ def test_advance_incomplete(text_acceptor: TextAcceptor):
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("h"):
         assert walker.current_value == "h👉ello"
-        assert isinstance(walker, text_acceptor._walker)
+        assert isinstance(walker, text_acceptor.walker_class)
         assert walker.consumed_character_count == 1
 
 

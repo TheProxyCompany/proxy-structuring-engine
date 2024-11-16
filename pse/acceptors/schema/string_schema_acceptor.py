@@ -1,11 +1,11 @@
 from __future__ import annotations
 import json
 import re
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, Type
 
 from pse.util.errors import SchemaNotImplementedError
 from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
-
+from pse.core.walker import Walker
 import logging
 import regex  # Note: This is a third-party module
 
@@ -23,7 +23,7 @@ class StringSchemaAcceptor(StringAcceptor):
         start_hook: Optional[Callable] = None,
         end_hook: Optional[Callable] = None,
     ):
-        super().__init__(StringSchemaWalker)
+        super().__init__()
         self.schema = schema or {}
         self.start_hook = start_hook
         self.end_hook = end_hook
@@ -41,6 +41,10 @@ class StringSchemaAcceptor(StringAcceptor):
                 raise SchemaNotImplementedError(
                     f"Format '{self.format}' not implemented"
                 )
+
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return StringSchemaWalker
 
     def min_length(self) -> int:
         """
@@ -134,7 +138,7 @@ class StringSchemaWalker(StringWalker):
     def should_complete_transition(self) -> bool:
         if (
             not self.is_within_value()
-            and self.target_state == self.acceptor.STATE_IN_STRING
+            and self.target_state == self.acceptor.STRING_CONTENTS
             and self.acceptor.start_hook
         ):
             self.acceptor.start_hook()
@@ -150,7 +154,10 @@ class StringSchemaWalker(StringWalker):
             elif self.transition_walker and self.transition_walker.raw_value == "\\":
                 self.is_escaping = True
 
-        if self.target_state is not None and self.target_state in self.acceptor.end_states:
+        if (
+            self.target_state is not None
+            and self.target_state in self.acceptor.end_states
+        ):
             if self.acceptor.end_hook:
                 self.acceptor.end_hook()
 
@@ -162,7 +169,7 @@ class StringSchemaWalker(StringWalker):
         return True
 
     def is_within_value(self) -> bool:
-        return self.current_state == self.acceptor.STATE_IN_STRING
+        return self.current_state == self.acceptor.STRING_CONTENTS
 
     def is_pattern_prefix(self, s: str) -> bool:
         """
