@@ -213,14 +213,13 @@ class Walker(ABC):
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.util.state_machine.accepted_state import AcceptedState
-
                 return AcceptedState(clone)
 
         return clone
 
     def configure(
         self,
-        transition_walker: Walker,
+        transition_walker: Optional[Walker],
         start_state: State,
         target_state: Optional[State] = None,
     ) -> Walker:
@@ -237,6 +236,10 @@ class Walker(ABC):
         clone.transition_walker = transition_walker
         clone.current_state = start_state
         clone.target_state = target_state
+
+        if clone.current_state in clone.acceptor.end_states:
+            from pse.util.state_machine.accepted_state import AcceptedState
+            return AcceptedState(clone)
 
         return clone
 

@@ -100,47 +100,51 @@ class StateMachine(Acceptor):
                 yield from self.get_transition_walkers(walker, target_state)
 
     def advance(self, walker: Walker, token: str) -> Iterable[Walker]:
-        """Advance the walker state with the given input token.
+        """Process a token through the state machine, advancing walker states and managing transitions.
 
-        Processes the input token and manages state transitions:
-        1. If no active transition, branches to next possible states.
-        2. If an active transition walker can proceed, advances it.
-        3. If no valid transitions and the walker can accept more input, yields the walker.
-        4. If the walker is optional and can accept more input, yields the walker.
+        This method implements a breadth-first traversal of possible state transitions, handling:
+        1. Initial state branching when no transition is active
+        2. Active transition advancement
+        3. Transition branching when current path is blocked
+        4. Accepted state processing
+        5. Partial match yielding
 
         Args:
-            walker: The walker to advance.
-            token: The input string to process.
+            walker: Current walker instance containing state and transition information
+            token: Input string to process
 
         Yields:
-            Updated walkers after processing the token.
+            Walker: Updated walker instances representing:
+                - Completed transitions
+                - Partial matches
+                - Valid branches
         """
         queue: deque[Tuple[Walker, str]] = deque([(walker, token)])
 
         while queue:
             current_walker, current_token = queue.popleft()
 
+            # 1. Handle case where no active transition exists
             if not current_walker.transition_walker:
-                logger.debug(
-                    "🟡 No Transition Walker for %s", current_walker.__class__.__name__
-                )
-                next_walkers = list(self.branch_walker(current_walker, current_token))
+                logger.debug("🟡 No transitions for %s", current_walker.__class__.__name__)
 
-                if next_walkers:
-                    new_walkers = [
-                        (next_walker, current_token) for next_walker in next_walkers
-                    ]
-                    queue.extend(new_walkers)
-                elif current_walker.remaining_input:
-                    logger.debug(
-                        "🟠 Yielding walker with remaining input: %s", current_walker
-                    )
-                    yield current_walker
-                else:
-                    logger.debug("🚫 No valid branches for %s", current_walker)
+                # Branch to next possible states
+                branched = False
+                for next_walker in self.branch_walker(current_walker, current_token):
+                    if next_walker.should_start_transition(current_token):
+                        queue.append((next_walker, current_token))
+                        branched = True
 
+                # If no branches were found, yield the walker if it has remaining input
+                if not branched:
+                    if current_walker.remaining_input:
+                        logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
+                        yield current_walker
+                    else:
+                        logger.debug("🚫 No valid branches for %s", current_walker)
                 continue
 
+            # 2. Handle active transition
             if current_walker.should_start_transition(current_token):
                 logger.debug(
                     "⚪️ Advancing from %s with token %s via %s",
@@ -148,19 +152,16 @@ class StateMachine(Acceptor):
                     repr(current_token),
                     current_walker.transition_walker.__class__.__name__,
                 )
-                for transition_walker in current_walker.transition_walker.consume_token(
-                    current_token
-                ):
+                for transition_walker in current_walker.transition_walker.consume_token(current_token):
                     if new_walker := current_walker.transition(transition_walker):
                         if new_walker.remaining_input:
-                            logger.debug(
-                                "⚪️ Walker with remaining input: %s", repr(new_walker)
-                            )
+                            logger.debug("⚪️ Walker with remaining input: %s", repr(new_walker))
                             queue.append((new_walker, new_walker.remaining_input))
                         else:
                             yield new_walker
                 continue
 
+            # 3. Handle blocked transition
             logger.debug(
                 "🔴 %s cannot start transition with %s",
                 current_walker.transition_walker.acceptor,
@@ -177,17 +178,16 @@ class StateMachine(Acceptor):
                 if branched:
                     continue
 
+            # 4. Handle accepted state
             if current_walker.transition_walker.has_reached_accept_state():
                 for next_walker in self.branch_walker(current_walker):
                     if next_walker.should_start_transition(current_token):
                         queue.append((next_walker, current_token))
                 continue
 
+            # 5. Yield walker if conditions are met
             if current_walker.remaining_input:
-                logger.debug(
-                    "🟠 Yielding walker with remaining input: %s",
-                    current_walker,
-                )
+                logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
                 yield current_walker
 
     def branch_walker(
@@ -218,6 +218,10 @@ class StateMachine(Acceptor):
                     walker.acceptor,
                     repr(input_token),
                 )
+                if transition.acceptor.is_optional:
+                    logger.debug("🟢 %s supports pass-through, branching", transition)
+                    # yield walker.configure(None, start_state=target_state)
+
                 continue
 
             if (
@@ -232,7 +236,7 @@ class StateMachine(Acceptor):
                 )
                 continue
 
-            logger.debug("🟢 Exploring %s to state %s", transition, target_state)
+            logger.debug("🟡 %s to state %s via %s", self, target_state, transition)
             yield walker.configure(transition, start_state, target_state)
 
     @staticmethod
