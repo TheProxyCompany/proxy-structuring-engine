@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import logging
+from pse.util.bias_logits import bias_logits
 
 try:
     import mlx.core as mx
@@ -20,9 +21,6 @@ try:
 except ImportError:
     _has_torch = False
 
-from pse.util.bias_logits import bias_logits
-
-# Configure logging for debugging purposes
 logger = logging.getLogger(__name__)
 
 @pytest.fixture(params=[

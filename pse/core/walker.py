@@ -137,9 +137,16 @@ class Walker(ABC):
         """
         return (
             self.current_state,
-            self.target_state if self.target_state is not None else "$",
-            self.raw_value or "",
+            self.target_state,
+            self.raw_value,
         )
+
+    def clone(self) -> Self:
+        """Creates a shallow copy of the walker with copied history and explored edges."""
+        cloned_walker = shallow_copy(self)
+        cloned_walker.accepted_history = self.accepted_history.copy()
+        cloned_walker.explored_edges = self.explored_edges.copy()
+        return cloned_walker
 
     def should_start_transition(self, token: str) -> bool:
         """Determine if a transition should start with the given input token.
@@ -172,17 +179,48 @@ class Walker(ABC):
         if self.transition_walker:
             return self.transition_walker.should_complete_transition()
 
-        # By default, we can complete the transition.
         return True
 
-    def clone(self) -> Self:
-        """Creates a shallow copy of the walker with copied history and explored edges."""
-        cloned_walker = shallow_copy(self)
-        cloned_walker.accepted_history = self.accepted_history.copy()
-        cloned_walker.explored_edges = self.explored_edges.copy()
-        return cloned_walker
+    def start_transition(
+        self,
+        transition_walker: Walker,
+        token: Optional[str] = None,
+        start_state: Optional[State] = None,
+        target_state: Optional[State] = None,
+    ) -> Optional[Walker]:
+        """Start a new transition with the given token."""
 
-    def transition(self, transition_walker: Walker) -> Optional[Walker]:
+        if (
+            token is not None
+            and not transition_walker.should_start_transition(token)
+        ):
+            return None
+
+        if (
+            self.target_state == target_state
+            and self.transition_walker
+            and self.transition_walker.can_accept_more_input()
+        ):
+            return None
+
+        clone = self.clone()
+        clone.current_state = start_state or clone.current_state
+        clone.target_state = target_state
+
+        if (
+            clone.transition_walker is not None
+            and clone.transition_walker.has_reached_accept_state()
+        ):
+            clone.accepted_history.append(clone.transition_walker)
+
+        clone.transition_walker = transition_walker
+
+        return clone
+
+    def complete_transition(
+        self,
+        transition_walker: Walker,
+    ) -> Optional[Walker]:
         """Advance the walker to the next state.
 
         Args:
@@ -203,7 +241,10 @@ class Walker(ABC):
         if not clone.should_complete_transition():
             return clone if clone.can_accept_more_input() else None
 
-        if clone.target_state is not None and transition_walker.has_reached_accept_state():
+        if (
+            clone.target_state is not None
+            and transition_walker.has_reached_accept_state()
+        ):
             clone.current_state = clone.target_state
 
             if not transition_walker.can_accept_more_input():
@@ -213,54 +254,25 @@ class Walker(ABC):
 
             if clone.current_state in clone.acceptor.end_states:
                 from pse.util.state_machine.accepted_state import AcceptedState
+
                 return AcceptedState(clone)
 
         return clone
 
-    def configure(
-        self,
-        transition_walker: Optional[Walker],
-        start_state: State,
-        target_state: Optional[State] = None,
-    ) -> Walker:
-        """Configures the walker with a new transition walker and updates states."""
-        clone = self.clone()
-
-        # Append the previous transition walker to history if it reached an accept state
-        if (
-            clone.transition_walker
-            and clone.transition_walker.has_reached_accept_state()
-        ):
-            clone.accepted_history.append(clone.transition_walker)
-
-        clone.transition_walker = transition_walker
-        clone.current_state = start_state
-        clone.target_state = target_state
-
-        if clone.current_state in clone.acceptor.end_states:
-            from pse.util.state_machine.accepted_state import AcceptedState
-            return AcceptedState(clone)
-
-        return clone
-
     def branch(self) -> Iterable[Walker]:
-        """Branch the walker to explore all possible transitions from the current state.
+        """Branch the current walker or transition walker to explore all possible
+        transitions from the current state.
 
         Yields:
             New walker instances representing different paths.
         """
         if self.transition_walker and self.transition_walker.can_accept_more_input():
-            # Branch using the transition walker's logic
             for new_transition_walker in self.transition_walker.branch():
-                yield self.configure(
-                    new_transition_walker,
-                    self.current_state,
-                    self.target_state,
-                )
+                clone = self.clone()
+                clone.transition_walker = new_transition_walker
+                yield clone
         else:
-            # Branch using the acceptor's logic
-            for transition_walker in self.acceptor.branch_walker(self):
-                yield transition_walker
+            yield from self.acceptor.branch_walker(self)
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).

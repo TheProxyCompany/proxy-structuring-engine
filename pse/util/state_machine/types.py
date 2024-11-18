@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 from pse.acceptors.basic.acceptor import Acceptor
 
 State = Union[int, str]
@@ -14,7 +14,7 @@ the acceptance criteria of the associated `TokenAcceptor`.
 """
 
 # Type alias for visited edges in the StateMachine graph.
-VisitedEdge = Tuple[State, State, str]
+VisitedEdge = Tuple[State, Optional[State], Optional[str]]
 """Represents a traversed edge during StateMachine execution.
 
 A `VisitedEdgeType` records the source state, target state, and the token

@@ -62,12 +62,12 @@ class StateMachine(Acceptor):
             Walker instances positioned at the starting state.
         """
         initial_walker = self.walker_class(self, state)
-        if not self.state_graph:
-            yield initial_walker
-        else:
+        if self.state_graph:
             yield from self.branch_walker(initial_walker)
+        else:
+            yield initial_walker
 
-    def get_transition_walkers(
+    def get_transitions(
         self, walker: Walker, state: Optional[State] = None
     ) -> Iterable[Tuple[Walker, State, State]]:
         """Retrieve transition walkers from the current state.
@@ -85,9 +85,8 @@ class StateMachine(Acceptor):
         current_state = state or walker.current_state
         logger.debug("🟡 Getting edges from state %s in %s", current_state, self)
         for acceptor, target_state in self.get_edges(current_state):
-            # create transition walkers from the edge's token acceptor
-            for transition_walker in acceptor.get_walkers():
-                yield transition_walker, current_state, target_state
+            for transition in acceptor.get_walkers():
+                yield transition, current_state, target_state
 
             if (
                 acceptor.is_optional
@@ -95,9 +94,44 @@ class StateMachine(Acceptor):
                 and walker.can_accept_more_input()
             ):
                 logger.debug(
-                    "🟢 %s supports pass-through to state %s", acceptor, target_state
+                    "🟢 %s supports pass-through to state %s",
+                    acceptor, target_state
                 )
-                yield from self.get_transition_walkers(walker, target_state)
+                yield from self.get_transitions(walker, target_state)
+
+    def branch_walker(
+        self, walker: Walker, token: Optional[str] = None
+    ) -> Iterable[Walker]:
+        """
+        Branch the walker into multiple paths for parallel exploration.
+
+        Args:
+            walker: The current walker to branch from.
+            token: Optional token to start transitions.
+
+        Yields:
+            New walker instances, each representing a different path.
+        """
+        logger.debug("🔵 Branching %s", repr(walker))
+        input_token = token or walker.remaining_input
+
+        for transition, start_state, target_state in self.get_transitions(walker):
+            if branched_walker := walker.start_transition(
+                transition,
+                input_token,
+                start_state,
+                target_state,
+            ):
+                yield branched_walker
+                continue
+
+            if transition.acceptor.is_optional:
+                # TODO: Handle branching via optional transitions
+                logger.debug(
+                    "🟠 %s cannot start transition with %s, but transition is optional",
+                    transition,
+                    repr(input_token),
+                )
 
     def advance(self, walker: Walker, token: str) -> Iterable[Walker]:
         """Process a token through the state machine, advancing walker states and managing transitions.
@@ -126,7 +160,9 @@ class StateMachine(Acceptor):
 
             # 1. Handle case where no active transition exists
             if not current_walker.transition_walker:
-                logger.debug("🟡 No transitions for %s", current_walker.__class__.__name__)
+                logger.debug(
+                    "🟡 No transitions for %s", current_walker.__class__.__name__
+                )
 
                 # Branch to next possible states
                 branched = False
@@ -138,7 +174,10 @@ class StateMachine(Acceptor):
                 # If no branches were found, yield the walker if it has remaining input
                 if not branched:
                     if current_walker.remaining_input:
-                        logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
+                        logger.debug(
+                            "🟠 Yielding walker with remaining input: %s",
+                            current_walker,
+                        )
                         yield current_walker
                     else:
                         logger.debug("🚫 No valid branches for %s", current_walker)
@@ -152,10 +191,16 @@ class StateMachine(Acceptor):
                     repr(current_token),
                     current_walker.transition_walker.__class__.__name__,
                 )
-                for transition_walker in current_walker.transition_walker.consume_token(current_token):
-                    if new_walker := current_walker.transition(transition_walker):
+                for transition_walker in current_walker.transition_walker.consume_token(
+                    current_token
+                ):
+                    if new_walker := current_walker.complete_transition(
+                        transition_walker
+                    ):
                         if new_walker.remaining_input:
-                            logger.debug("⚪️ Walker with remaining input: %s", repr(new_walker))
+                            logger.debug(
+                                "⚪️ Walker with remaining input: %s", repr(new_walker)
+                            )
                             queue.append((new_walker, new_walker.remaining_input))
                         else:
                             yield new_walker
@@ -187,57 +232,10 @@ class StateMachine(Acceptor):
 
             # 5. Yield walker if conditions are met
             if current_walker.remaining_input:
-                logger.debug("🟠 Yielding walker with remaining input: %s", current_walker)
+                logger.debug(
+                    "🟠 Yielding walker with remaining input: %s", current_walker
+                )
                 yield current_walker
-
-    def branch_walker(
-        self, walker: Walker, token: Optional[str] = None
-    ) -> Iterable[Walker]:
-        """Branch the walker into multiple paths for parallel exploration.
-
-        At each decision point, clone the current walker for each possible transition.
-        This allows simultaneous exploration of all valid paths without explicit backtracking.
-
-        Args:
-            walker: The current walker instance to branch from.
-            token: Optional token to start transitions.
-
-        Yields:
-            New walker instances, each representing a different path.
-        """
-        logger.debug("🔵 Branching %s", repr(walker))
-        for transition, start_state, target_state in self.get_transition_walkers(
-            walker
-        ):
-            input_token = token or walker.remaining_input
-
-            if input_token and not transition.should_start_transition(input_token):
-                logger.debug(
-                    "🔴 %s in %s cannot start with %s",
-                    transition,
-                    walker.acceptor,
-                    repr(input_token),
-                )
-                if transition.acceptor.is_optional:
-                    logger.debug("🟢 %s supports pass-through, branching", transition)
-                    # yield walker.configure(None, start_state=target_state)
-
-                continue
-
-            if (
-                walker.target_state == target_state
-                and walker.transition_walker
-                and walker.transition_walker.can_accept_more_input()
-            ):
-                logger.debug(
-                    "🟡 Already exploring state %s, skipping %s",
-                    target_state,
-                    transition.acceptor,
-                )
-                continue
-
-            logger.debug("🟡 %s to state %s via %s", self, target_state, transition)
-            yield walker.configure(transition, start_state, target_state)
 
     @staticmethod
     def advance_all(
@@ -265,11 +263,6 @@ class StateMachine(Acceptor):
         3. If partial match is found and vocab is provided, validates the prefix
            against the vocab and yields valid partial matches
         """
-
-        #
-        # TODO: PARALLELIZE THIS FOR CHEAP
-        #
-
         for walker in walkers:
             logger.debug("⚪️ Processing walker with token: %s", repr(token))
             for advanced_walker in walker.consume_token(token):
@@ -279,9 +272,7 @@ class StateMachine(Acceptor):
                     continue
 
                 if vocab is None:
-                    logger.debug(
-                        "🔴 No vocab provided, unable to check for partial match"
-                    )
+                    logger.debug("🔴 No vocab - unable to check for partial match")
                     continue
 
                 # Extract the valid prefix by removing remaining input
@@ -308,13 +299,24 @@ class StateMachineWalker(Walker):
         Returns:
             True if more input can be handled, False otherwise.
         """
-        if self.transition_walker:
-            if self.transition_walker.can_accept_more_input():
-                return True
+        if self.transition_walker and self.transition_walker.can_accept_more_input():
+            return True
+
+        return self._accepts_more_input or bool(
+            self.acceptor.state_graph.get(self.current_state)
+        )
+
+    def accepts_any_token(self) -> bool:
+        """Check if current transition matches all characters.
+
+        Returns:
+            True if matches all, False otherwise.
+        """
 
         return (
-            bool(self.acceptor.state_graph.get(self.current_state))
-            or self._accepts_more_input
+            self.transition_walker.accepts_any_token()
+            if self.transition_walker
+            else False
         )
 
     def is_within_value(self) -> bool:
@@ -323,21 +325,11 @@ class StateMachineWalker(Walker):
         Returns:
             True if in a value, False otherwise.
         """
-        if self.transition_walker:
-            return self.transition_walker.is_within_value()
-
-        return self.consumed_character_count > 0
-
-    def accepts_any_token(self) -> bool:
-        """Check if current transition matches all characters.
-
-        Returns:
-            True if matches all, False otherwise.
-        """
-        if self.transition_walker:
-            return self.transition_walker.accepts_any_token()
-
-        return False
+        return (
+            self.transition_walker.is_within_value()
+            if self.transition_walker
+            else self.consumed_character_count > 0
+        )
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """Advance walker with input token.

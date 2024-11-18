@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 import logging
+from pse.util.handle_logits import handle_logits
 
-# Attempt to import optional dependencies
 try:
     import mlx.core as mx
     _has_mlx = True
@@ -21,9 +21,6 @@ try:
 except ImportError:
     _has_torch = False
 
-from pse.util.handle_logits import handle_logits
-
-# Configure logging for debugging purposes
 logger = logging.getLogger(__name__)
 
 @pytest.fixture(params=[

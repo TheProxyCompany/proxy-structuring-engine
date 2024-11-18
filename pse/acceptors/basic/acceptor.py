@@ -100,7 +100,7 @@ class Acceptor(ABC):
         pass
 
     @abstractmethod
-    def get_transition_walkers(
+    def get_transitions(
         self,
         walker: Walker,
     ) -> Iterable[Tuple[Walker, State]]:
