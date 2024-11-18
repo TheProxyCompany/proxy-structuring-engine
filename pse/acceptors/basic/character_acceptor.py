@@ -69,10 +69,7 @@ class CharacterWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.acceptor: CharacterAcceptor = acceptor
-        self._raw_value = value or ""
-
-    def can_accept_more_input(self) -> bool:
-        return self._accepts_more_input
+        self._raw_value = value
 
     def select(self, dawg: DAWG) -> Iterable[str]:
         """
@@ -123,10 +120,7 @@ class CharacterWalker(StateMachineWalker):
             return
 
         # Create new walker with accumulated value
-        new_walker = self.__class__(
-            self.acceptor,
-            f"{self._raw_value or ''}{token[:valid_length]}"
-        )
+        new_walker = self.__class__(self.acceptor, f"{self.raw_value}{token[:valid_length]}")
         new_walker.consumed_character_count = self.consumed_character_count + valid_length
         new_walker.remaining_input = token[valid_length:] if valid_length < len(token) else None
         new_walker._accepts_more_input = not new_walker.remaining_input and (
@@ -153,11 +147,11 @@ class CharacterWalker(StateMachineWalker):
         """
         return self._raw_value
 
-    def is_within_value(self) -> bool:
-        """
-        Check if the walker has a value.
+    # def is_within_value(self) -> bool:
+    #     """
+    #     Check if the walker has a value.
 
-        Returns:
-            bool: True if the walker has a value, False otherwise.
-        """
-        return self.consumed_character_count > 0
+    #     Returns:
+    #         bool: True if the walker has a value, False otherwise.
+    #     """
+    #     return self.consumed_character_count > 0

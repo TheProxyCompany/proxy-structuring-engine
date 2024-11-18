@@ -81,9 +81,9 @@ def test_character_acceptor_basic(
 @pytest.mark.parametrize(
     "charset, char_limit, input_string, expected_value",
     [
-        # (["1", "2", "3"], 2, "123", "12"),
+        (["1", "2", "3"], 2, "123", "12"),
         (["a", "b", "c"], 1, "abc", "a"),
-        # (["x", "y", "z"], 3, "xy", "xy"),
+        (["x", "y", "z"], 3, "xy", "xy"),
     ],
 )
 def test_character_acceptor_char_limit(
@@ -116,7 +116,7 @@ def test_character_acceptor_char_limit(
     assert any(walker.has_reached_accept_state() for _, walker in advanced)
     for _, walker in advanced:
         if walker.has_reached_accept_state():
-            assert walker.current_value == expected_value
+            assert str(walker.current_value) == expected_value
 
 
 def test_character_acceptor_select() -> None:

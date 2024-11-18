@@ -186,54 +186,54 @@ def test_number_with_trailing_zeros(acceptor: NumberAcceptor) -> None:
 @pytest.mark.parametrize(
     "input_string, error_message",
     [
-        # (
-        #     "12.34.56",
-        #     "Should raise AssertionError for invalid number with multiple decimals.",
-        # ),
-        # (
-        #     "1e",
-        #     "Should raise AssertionError for incomplete exponentials.",
-        # ),
-        # (
-        #     "1e+e",
-        #     "Should raise AssertionError for invalid exponential format.",
-        # ),
-        # (
-        #     "1e1.5",
-        #     "Should raise AssertionError for non-integer exponent.",
-        # ),
-        # (
-        #     ".456",
-        #     "Should raise AssertionError for numbers starting with a dot.",
-        # ),
-        # (
-        #     "abc",
-        #     "Should raise AssertionError for non-numeric input.",
-        # ),
-        # (
-        #     "--123",
-        #     "Should raise AssertionError for multiple negative signs.",
-        # ),
-        # (
-        #     "",
-        #     "Should raise AssertionError for empty input.",
-        # ),
-        # (
-        #     "12a34",
-        #     "Should raise AssertionError for invalid characters in number.",
-        # ),
+        (
+            "12.34.56",
+            "Should raise AssertionError for invalid number with multiple decimals.",
+        ),
+        (
+            "1e",
+            "Should raise AssertionError for incomplete exponentials.",
+        ),
+        (
+            "1e+e",
+            "Should raise AssertionError for invalid exponential format.",
+        ),
+        (
+            "1e1.5",
+            "Should raise AssertionError for non-integer exponent.",
+        ),
+        (
+            ".456",
+            "Should raise AssertionError for numbers starting with a dot.",
+        ),
+        (
+            "abc",
+            "Should raise AssertionError for non-numeric input.",
+        ),
+        (
+            "--123",
+            "Should raise AssertionError for multiple negative signs.",
+        ),
+        (
+            "",
+            "Should raise AssertionError for empty input.",
+        ),
+        (
+            "12a34",
+            "Should raise AssertionError for invalid characters in number.",
+        ),
         (
             "123.",
             "Should raise AssertionError for incomplete decimal number.",
         ),
-        # (
-        #     "1.2.3",
-        #     "Should raise AssertionError for multiple decimal points.",
-        # ),
-        # (
-        #     "1e10e5",
-        #     "Should raise AssertionError for multiple exponentials.",
-        # ),
+        (
+            "1.2.3",
+            "Should raise AssertionError for multiple decimal points.",
+        ),
+        (
+            "1e10e5",
+            "Should raise AssertionError for multiple exponentials.",
+        ),
     ],
 )
 def test_invalid_number_parsing(
@@ -444,17 +444,17 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
     invalid_inputs = [
-        # "abc",
-        # "12a4",
-        # "3.14.15",
+        "abc",
+        "12a4",
+        "3.14.15",
         "1..23",
-        # "--3.14",
-        # "",
-        # ".456",  # Starts with a dot but no leading digit
-        # "123a.456",
-        # "123.-456",
-        # "1e1.5",  # Invalid exponent
-        # ".",  # Just a dot
+        "--3.14",
+        "",
+        ".456",  # Starts with a dot but no leading digit
+        "123a.456",
+        "123.-456",
+        "1e1.5",  # Invalid exponent
+        ".",  # Just a dot
     ]
 
     for input_string in invalid_inputs:

@@ -259,20 +259,27 @@ class Walker(ABC):
 
         return clone
 
-    def branch(self) -> Iterable[Walker]:
+    def branch(self, token: Optional[str] = None) -> Iterable[Walker]:
         """Branch the current walker or transition walker to explore all possible
         transitions from the current state.
 
         Yields:
             New walker instances representing different paths.
         """
-        if self.transition_walker and self.transition_walker.can_accept_more_input():
-            for new_transition_walker in self.transition_walker.branch():
+        if self.transition_walker:
+            transition_walkers = []
+            if self.transition_walker.can_accept_more_input():
+                transition_walkers.extend(self.transition_walker.branch(token))
+
+            for new_transition_walker in transition_walkers:
                 clone = self.clone()
                 clone.transition_walker = new_transition_walker
                 yield clone
-        else:
-            yield from self.acceptor.branch_walker(self)
+
+            if not transition_walkers and not self.transition_walker.has_reached_accept_state():
+                return
+
+        yield from self.acceptor.branch_walker(self, token)
 
     def accepts_any_token(self) -> bool:
         """Check if the acceptor accepts any token (i.e., free text).
@@ -500,6 +507,7 @@ class Walker(ABC):
         info_parts = [
             part
             for part in [
+                _format_state_info(),
                 _format_history_info(),
                 _format_edge_info(),
                 _format_remaining_input(),
@@ -507,12 +515,6 @@ class Walker(ABC):
             ]
             if part
         ]
-
-        if self.current_state != self.acceptor.start_state:
-            info_parts.insert(
-                0,
-                _format_state_info(),
-            )
 
         # Format final output
         # Format single line output if it fits within 80 chars

@@ -42,7 +42,7 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
         ("[]", []),
         ("[123]", [123]),
         ('[123, 456, "789"]', [123, 456, "789"]),
-        # ("[[1, 2], [3, 4]]", [[1, 2], [3, 4]]),
+        ("[[1, 2], [3, 4]]", [[1, 2], [3, 4]]),
     ],
 )
 def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[Any]):
