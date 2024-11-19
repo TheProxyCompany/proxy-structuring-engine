@@ -367,3 +367,102 @@ def test_invalid_tokens_object() -> None:
     logits = driver.mask_invalid_tokens(test_logits)
     valid_token_id: int = driver.get_valid_token(logits)
     assert valid_token_id in {21, 22}
+
+
+def test_simple_json_structure(driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast) -> None:
+    schema = {
+        "type": "object",
+        "properties": {"value": {"type": "number"}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    driver.create_acceptor(schema)
+    test_logits = np.random.rand(len(tokenizer.get_vocab()))
+
+    assert not driver.within_json_value
+    assert not driver.in_structured_state
+
+
+def test_complex_json_structure(driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast) -> None:
+    """Test parsing a complex JSON structure."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"const": "metacognition"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "chain_of_thought": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "feelings": {
+                        "type": ["string"],
+                        "nullable": True,
+                        "default": None,
+                    },
+                },
+                "required": ["chain_of_thought"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    driver.create_acceptor(schema)
+    test_logits = np.random.rand(len(tokenizer.get_vocab()))
+
+def test_better_than_openai(driver: StructuringEngine, tokenizer: PreTrainedTokenizerFast) -> None:
+    """Test that OpenAI sucks."""
+    # openAI's structured output blog post said:
+    #
+    #   "The following is a sample recursive schema that is supported on
+    #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
+    #
+    # let's test that.
+    schema = {
+        "name": "ui",
+        "description": "Dynamically generated UI",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "The type of the UI component",
+                    "enum": ["div", "button", "header", "section", "field", "form"],
+                },
+                "label": {
+                    "type": "string",
+                    "description": "The label of the UI component, used for buttons or form fields",
+                },
+                "children": {
+                    "type": "array",
+                    "description": "Nested UI components",
+                    "items": {"$ref": "#"},
+                },
+                "attributes": {
+                    "type": "array",
+                    "description": "Arbitrary attributes for the UI component, suitable for any element",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the attribute, for example onClick or className",
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The value of the attribute",
+                            },
+                        },
+                    },
+                },
+            },
+            "required": ["type", "label", "children", "attributes"],
+            "additionalProperties": False,
+        },
+    }
+    driver.create_acceptor(schema, encapsulated=False)
+    test_logits = np.random.rand(len(tokenizer.get_vocab()))
+
+    assert not driver.within_json_value
+    assert driver.in_structured_state

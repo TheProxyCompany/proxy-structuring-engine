@@ -46,16 +46,6 @@ class StructuringEngine(LogitsProcessor):
         self._build_vocabulary()
 
     @property
-    def can_accept_input(self) -> bool:
-        """
-        Checks if the acceptor can accept input.
-
-        Returns:
-            bool: True if the acceptor can accept input, False otherwise.
-        """
-        return self.acceptor is not None and not self.has_reached_accept_state
-
-    @property
     def in_structured_state(self) -> bool:
         """
         Checks whether the driver is in a structured state.
@@ -124,7 +114,7 @@ class StructuringEngine(LogitsProcessor):
 
         if type == DelimiterType.JSON:
             acceptor = get_acceptor(
-                schema,
+                schema.get("schema") or schema,
                 start_hook=self._start_hook,
                 end_hook=self._end_hook,
             )
@@ -270,7 +260,6 @@ class StructuringEngine(LogitsProcessor):
 
             self.token_to_id[decoded_token] = token_id
 
-        self.vocabulary = set(self.token_to_id.keys()) - self.special_tokens_set
         self.dawg.reduce()
 
     def _get_top_tokens(
