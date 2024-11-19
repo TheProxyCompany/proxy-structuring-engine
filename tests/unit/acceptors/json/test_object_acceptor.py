@@ -80,11 +80,9 @@ def test_valid_json_objects_all_at_once(
 @pytest.mark.parametrize(
     "json_string",
     [
-        (
-            "{key: 'value'}"
-        ),  # Missing quotes around key and inconsistent quotes around value
+        ("{key: 'value'}"),  # Missing quotes around key and inconsistent quotes around value
         ('{"key1": undefined}'),
-        ('{"key1": "value1",, "key2": "value2"}'),
+        ('{"a": "b",, "c": "d"}'),
         ('{"key1": "value1"'),
     ],
 )

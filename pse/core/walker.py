@@ -276,7 +276,10 @@ class Walker(ABC):
                 clone.transition_walker = new_transition_walker
                 yield clone
 
-            if not transition_walkers and not self.transition_walker.has_reached_accept_state():
+            if (
+                not transition_walkers
+                and not self.transition_walker.has_reached_accept_state()
+            ):
                 return
 
         yield from self.acceptor.branch_walker(self, token)
