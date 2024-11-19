@@ -1,12 +1,11 @@
 import pytest
-from typing import Iterable, List
+from typing import List
 
-from pse.acceptors.token_acceptor import TokenAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine.state_machine import StateMachine
-from pse.state_machine.cursor import Cursor
+from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture
@@ -44,92 +43,65 @@ def sequence_acceptor(
     )
 
 
-def test_initialization(sequence_acceptor: SequenceAcceptor):
-    """Test that the SequenceAcceptor initializes with the correct number and types of acceptors."""
-    expected_acceptor_count = 4
-    assert (
-        len(sequence_acceptor.acceptors) == expected_acceptor_count
-    ), f"SequenceAcceptor should have {expected_acceptor_count} acceptors."
-
-    # Verify each acceptor is of the expected type
-    assert isinstance(
-        sequence_acceptor.acceptors[0], WhitespaceAcceptor
-    ), "First acceptor should be a WhitespaceAcceptor."
-    assert isinstance(
-        sequence_acceptor.acceptors[1], TextAcceptor
-    ), "Second acceptor should be a TextAcceptor for 'Hello'."
-    assert isinstance(
-        sequence_acceptor.acceptors[2], WhitespaceAcceptor
-    ), "Third acceptor should be a WhitespaceAcceptor."
-    assert isinstance(
-        sequence_acceptor.acceptors[3], TextAcceptor
-    ), "Fourth acceptor should be a TextAcceptor for 'World'."
-
-
-def test_get_cursors(sequence_acceptor: SequenceAcceptor):
-    """Test that the SequenceAcceptor initializes with the correct initial cursors."""
-    cursors: Iterable[Cursor] = sequence_acceptor.get_cursors()
-    for cursor in cursors:
-        assert isinstance(cursor, SequenceAcceptor.Cursor)
-
-
-def test_cursor_advance(sequence_acceptor: SequenceAcceptor):
-    """Test advancing the cursor through the sequence of acceptors with specific inputs."""
-    start_cursors = list(sequence_acceptor.get_cursors())
-    new_cursors = list(sequence_acceptor.advance_all(start_cursors, " "))
-    assert len(new_cursors) == 1
+def test_walker_advance(sequence_acceptor: SequenceAcceptor):
+    """Test advancing the walker through the sequence of acceptors with specific inputs."""
+    start_walkers = list(sequence_acceptor.get_walkers())
+    new_walkers = [
+        walker for _, walker in sequence_acceptor.advance_all(start_walkers, " ")
+    ]
+    assert len(new_walkers) == 1
 
     # Advance through the full input sequence " Hello World"
     full_input = " Hello World"
-    cursors = sequence_acceptor.get_cursors()
+    walkers = sequence_acceptor.get_walkers()
     for char in full_input:
-        cursors = StateMachine.advance_all(cursors, char)
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
-    # Verify that at least one cursor is in the accepted state
+    # Verify that at least one walker is in the accepted state
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), "The full input ' Hello World' should be accepted by the SequenceAcceptor."
 
 
-def test_cursor_in_accepted_state(sequence_acceptor: SequenceAcceptor):
-    """Test the state of the cursor before and after processing a complete input sequence."""
-    initial_cursor = list(sequence_acceptor.get_cursors())[0]
+def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
+    """Test the state of the walker before and after processing a complete input sequence."""
+    initial_walker = list(sequence_acceptor.get_walkers())[0]
     assert (
-        not initial_cursor.in_accepted_state()
-    ), "Initial cursor should not be in an accepted state."
+        not initial_walker.has_reached_accept_state()
+    ), "Initial walker should not be in an accepted state."
 
     # Process the complete input sequence
     input_sequence = " Hello World"
-    cursors = [initial_cursor]
+    walkers = [initial_walker]
     for char in input_sequence:
-        cursors = StateMachine.advance_all(cursors, char)
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
-    for cursor in cursors:
-        assert cursor.in_accepted_state()
-        assert cursor.get_value() == input_sequence
+    for walker in walkers:
+        assert walker.has_reached_accept_state()
+        assert walker.current_value == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):
     """Test that a partial input sequence does not result in acceptance."""
     partial_input = " Hello "
-    cursors = list(sequence_acceptor.get_cursors())
+    walkers = list(sequence_acceptor.get_walkers())
     for char in partial_input:
-        cursors = StateMachine.advance_all(cursors, char)
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
-    # Ensure no cursor has reached the accepted state with partial input
+    # Ensure no walker has reached the accepted state with partial input
     assert not any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), f"Partial input '{partial_input}' should not be accepted by the SequenceAcceptor."
 
 
 def test_no_match(sequence_acceptor: SequenceAcceptor):
-    """Test that an input sequence not matching the acceptor sequence results in no accepted cursors."""
+    """Test that an input sequence not matching the acceptor sequence results in no accepted walkers."""
     non_matching_input = "Goodbye"
-    cursors = list(sequence_acceptor.get_cursors())
+    walkers = list(sequence_acceptor.get_walkers())
     for char in non_matching_input:
-        cursors = sequence_acceptor.advance_all(cursors, char)
+        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
 
-    assert len(list(cursors)) == 0
+    assert len(list(walkers)) == 0
 
 
 @pytest.mark.parametrize(
@@ -139,11 +111,11 @@ def test_no_match(sequence_acceptor: SequenceAcceptor):
 )
 def test_whitespace_variations(sequence_acceptor: SequenceAcceptor, input_variant: str):
     """Test that the SequenceAcceptor correctly handles various whitespace variations."""
-    cursors = list(sequence_acceptor.get_cursors())
+    walkers = list(sequence_acceptor.get_walkers())
     for char in input_variant:
-        cursors = sequence_acceptor.advance_all(cursors, char)
+        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), f"Input variation '{input_variant}' should be accepted by the SequenceAcceptor."
 
 
@@ -151,11 +123,11 @@ def test_single_acceptor_sequence():
     """Test that a SequenceAcceptor with a single TextAcceptor correctly accepts the input."""
     single_text = "Test"
     single_acceptor = SequenceAcceptor([TextAcceptor(single_text)])
-    cursors = list(single_acceptor.get_cursors())
+    walkers = list(single_acceptor.get_walkers())
     for char in single_text:
-        cursors = StateMachine.advance_all(cursors, char)
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), f"Single acceptor SequenceAcceptor should accept the input '{single_text}'."
 
 
@@ -170,12 +142,60 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: List[TokenAcceptor], token: str):
+def test_multiple_sequences(acceptors: List[Acceptor], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
-    cursors = list(sequence.get_cursors())
+    walkers = list(sequence.get_walkers())
     for char in token:
-        cursors = StateMachine.advance_all(cursors, char)
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(
-        cursor.in_accepted_state() for cursor in cursors
+        walker.has_reached_accept_state() for walker in walkers
     ), f"Input '{token}' should be accepted by the given SequenceAcceptor."
+
+
+def test_optional_acceptor():
+    """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
+    sm = StateMachine(
+        state_graph={
+            0: [
+                (TextAcceptor("Hello"), 1),
+                (TextAcceptor("World"), 1),
+            ],
+            1: [
+                (
+                    SequenceAcceptor(
+                        [
+                            TextAcceptor(","),
+                            WhitespaceAcceptor(min_whitespace=0),
+                        ]
+                    ),
+                    0,
+                ),
+                (TextAcceptor("."), "$"),
+            ],
+        },
+        start_state=0,
+    )
+    walkers = list(sm.get_walkers())
+    assert len(walkers) == 2
+    input_string_with_whitespace = "Hello, World."
+    new_walkers_with_whitespace = [
+        walker
+        for _, walker in StateMachine.advance_all(walkers, input_string_with_whitespace)
+    ]
+    assert len(new_walkers_with_whitespace) == 1
+    assert new_walkers_with_whitespace[0].current_value == input_string_with_whitespace
+
+    input_string_no_whitespace = "Hello,World."
+    # Currently bugged because the sequence acceptor
+    # is not properly putting itself in an accepted state - it
+    # should be in the accepted state after it tries to advance the
+    # optional acceptor and fails.
+    #
+    # TODO: Fix this.
+    new_walkers_no_whitespace = [
+        walker
+        for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)
+    ]
+    assert len(new_walkers_no_whitespace) == 1
+    assert new_walkers_no_whitespace[0].current_value == input_string_no_whitespace

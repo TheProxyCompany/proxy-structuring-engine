@@ -1,8 +1,14 @@
 from __future__ import annotations
-from typing import Any, List
-from pse.state_machine.state_machine import StateMachine
-from pse.acceptors.token_acceptor import TokenAcceptor
-from pse.state_machine.cursor import Cursor
+
+import logging
+from typing import List, Type
+
+from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.walker import Walker
+
+logger = logging.getLogger(__name__)
+
 
 class SequenceAcceptor(StateMachine):
     """
@@ -12,7 +18,7 @@ class SequenceAcceptor(StateMachine):
     sequence of acceptors provided during initialization.
     """
 
-    def __init__(self, acceptors: List[TokenAcceptor]):
+    def __init__(self, acceptors: List[Acceptor]):
         """
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
@@ -20,45 +26,31 @@ class SequenceAcceptor(StateMachine):
             acceptors (Iterable[TokenAcceptor]): An iterable of TokenAcceptors to be chained.
         """
         self.acceptors = acceptors
-        graph = {}
+        state_graph = {}
         for i, acceptor in enumerate(self.acceptors):
             # Each state points **only** to the next acceptor
-            graph[i] = [(acceptor, i + 1)]
-        super().__init__(graph, initial_state=0, end_states=[len(acceptors)])
+            state_graph[i] = [(acceptor, i + 1)]
+        super().__init__(
+            state_graph,
+            end_states=[len(acceptors)],
+        )
 
-    def __repr__(self) -> str:
-        return f"SequenceAcceptor(acceptors={self.acceptors})"
+    @property
+    def walker_class(self) -> Type[Walker]:
+        return SequenceWalker
 
-    def expects_more_input(self, cursor: Cursor) -> bool:
-        return cursor.current_state not in self.end_states
 
-    class Cursor(StateMachine.Cursor):
-        """
-        Cursor for navigating through the SequenceAcceptor.
-        Designed for inspectability and debugging purposes.
-        """
+class SequenceWalker(StateMachineWalker):
+    """
+    Walker for navigating through the SequenceAcceptor.
+    Designed for inspectability and debugging purposes.
+    """
 
-        def __init__(self, acceptor: SequenceAcceptor, current_acceptor_index: int = 0):
-            """
-            Initialize the SequenceAcceptor Cursor.
+    def can_accept_more_input(self) -> bool:
+        if self.transition_walker and self.transition_walker.can_accept_more_input():
+            return True
 
-            Args:
-                acceptor (SequenceAcceptor): The parent SequenceAcceptor.
-                current_acceptor_index (int, optional):
-                    The index of the current acceptor in the sequence. Defaults to 0.
-            """
-            super().__init__(acceptor)
-            self.current_acceptor_index: int = current_acceptor_index
-            self.acceptor = acceptor
-
-        def get_value(self) -> Any:
-            """
-            Get the accumulated value from the current acceptor.
-
-            Returns:
-                Any: The accumulated value from the current acceptor.
-            """
-            return "".join([cursor.get_value() for cursor in self.accept_history])
-
-        def __repr__(self) -> str:
-            return f"SequenceAcceptor.Cursor(acceptor={self.acceptor}, value={self.get_value()})"
+        return (
+            not self.remaining_input
+            and self.current_state not in self.acceptor.end_states
+        )
