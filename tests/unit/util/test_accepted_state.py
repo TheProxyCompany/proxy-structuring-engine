@@ -61,11 +61,11 @@ def test_multiple_instances_operate_independently() -> None:
     accepted2 = AcceptedState(walker2)
 
     assert (
-        accepted1.current_value == "👉first"
-    ), "First AcceptedState should return '👉first'."
+        accepted1.current_value == ""
+    ), "First AcceptedState should return ''."
     assert (
-        accepted2.current_value == "👉second"
-    ), "Second AcceptedState should return '👉second'."
+        accepted2.current_value == ""
+    ), "Second AcceptedState should return ''."
 
 
 def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> None:

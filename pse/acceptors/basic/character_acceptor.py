@@ -71,18 +71,12 @@ class CharacterWalker(StateMachineWalker):
         self.acceptor: CharacterAcceptor = acceptor
         self._raw_value = value
 
-    def select(self, dawg: DAWG) -> Iterable[str]:
-        """
-        Select characters that are valid based on the acceptor's charset.
-
-        Args:
-            candidate_chars (Set[str]): Set of candidate characters (ignored in this implementation).
-
-        Returns:
-            Iterable[str]: An iterable of valid characters from the acceptor's charset.
-        """
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
+        valid_tokens = set()
         for char in self.acceptor.charset:
-            yield char
+            valid_tokens.update(dawg.search_with_prefix(char))
+
+        return valid_tokens
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string."""

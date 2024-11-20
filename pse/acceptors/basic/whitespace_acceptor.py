@@ -66,23 +66,13 @@ class WhitespaceWalker(Walker):
 
         return True
 
-    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        """
-        Select valid whitespace characters.
-
-        Args:
-            candidate_chars (Set[str]): Set of candidate characters.
-
-        Returns:
-            Set[str]: Set of valid whitespace characters.
-        """
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
         valid_tokens = set()
         if self.length_exceeded:
             return valid_tokens
 
-        for char in set(WHITESPACE_CHARS):
-            search_result = dawg.search_with_prefix(char)
-            valid_tokens.update(search_result)
+        for char in WHITESPACE_CHARS:
+            valid_tokens.update(dawg.search_with_prefix(char))
 
         return valid_tokens
 

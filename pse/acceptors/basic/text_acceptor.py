@@ -56,7 +56,7 @@ class TextAcceptor(StateMachine):
         Returns:
             str: A string representation of the TextAcceptor.
         """
-        return f"TextAcceptor(👉{repr(self.text)})"
+        return f"TextAcceptor({repr(self.text)})"
 
 
 class TextWalker(StateMachineWalker):
@@ -102,22 +102,12 @@ class TextWalker(StateMachineWalker):
         remaining_text = self.acceptor.text[self.consumed_character_count :]
         return remaining_text.startswith(token) or token.startswith(remaining_text)
 
-    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        """
-        Selects prefix matches of the target text from the current position.
-
-        Args:
-            dawg (DAWG): The DAWG to select from.
-            depth (int): The current depth of the walker in the state machine.
-        Returns:
-            Set[str]: A set containing exact partial matches of the target text.
-        """
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
+        results = set()
         if self.consumed_character_count >= len(self.acceptor.text):
-            return set()
+            return results
 
         remaining_text = self.acceptor.text[self.consumed_character_count :]
-        results = set()
-
         # Only check if the exact partial text exists in the DAWG
         if remaining_text in dawg:
             results.add(remaining_text)
@@ -127,6 +117,7 @@ class TextWalker(StateMachineWalker):
         for i in range(1, max_possible_match_len):
             partial = remaining_text[:i]
             if partial in dawg:
+                # if partial is a token (exists in DAWG), add it to the results
                 results.add(partial)
 
         return results
@@ -159,15 +150,14 @@ class TextWalker(StateMachineWalker):
         Retrieves the current state of the text being accepted, highlighting the remaining portion.
 
         Returns:
-            str: The accepted portion of the text followed by a marker and the remaining text,
-                    e.g., 'hel👉lo' if consumed_character_count is 3.
+            str: The accepted portion of the text
         """
         return self.raw_value
 
     @property
     def raw_value(self) -> str:
         return (
-            f"{self.acceptor.text[:self.consumed_character_count]}👉{self.acceptor.text[self.consumed_character_count:]}"
+            self.acceptor.text[: self.consumed_character_count]
             if self.consumed_character_count < len(self.acceptor.text)
             else self.acceptor.text
         )
