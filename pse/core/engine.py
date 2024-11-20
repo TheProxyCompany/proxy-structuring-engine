@@ -4,18 +4,19 @@ import logging
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from lexpy import DAWG
+from pydantic import BaseModel
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
-from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.delimiter import DelimiterType
-from pse.util.errors import TokenRejected
-from pse.util.state_machine.get_acceptor import get_acceptor
 from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine
+from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
+from pse.acceptors.basic.acceptor import Acceptor
+from pse.util.errors import TokenRejected
+from pse.util.state_machine.get_acceptor import get_acceptor
 from pse.util.bias_logits import bias_logits
-from pse.util.handle_logits import handle_logits
+from pse.util.get_top_logits import get_top_logits
+from pse.util.pydantic_to_json import pydantic_to_json
 
 logger = logging.getLogger(__name__)
 
@@ -30,20 +31,23 @@ class StructuringEngine(LogitsProcessor):
     """
 
     def __init__(
-        self, tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
+        self,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        vocabulary: Optional[Dict[str, int]] = None,
     ) -> None:
         """
         Initializes the StructuredOutputDriver with the provided tokenizer.
 
         Args:
             tokenizer (Union[PreTrainedTokenizer, PreTrainedTokenizerFast]): The tokenizer used to convert tokens to strings.
+            vocabulary (Optional[Dict[str, int]]): A dictionary mapping tokens to their IDs. Defaults to tokenizer's vocabulary.
         """
+        StructuringEngine.build_vocabulary(tokenizer, vocabulary)
         self.tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = tokenizer
         self.eos_id: int = tokenizer.eos_token_id or 0
         self.acceptor: Optional[Acceptor] = None
         self.walkers: List[Walker] = []
         self.within_json_value: bool = False
-        self._build_vocabulary()
 
     @property
     def in_structured_state(self) -> bool:
@@ -61,78 +65,83 @@ class StructuringEngine(LogitsProcessor):
         Returns:
             bool: True if in a structured state, False otherwise.
         """
-        if self._waiting_for_trigger():
-            return False
 
         return not self._waiting_for_trigger() and not self.within_json_value
 
-    def has_reached_accept_state(self) -> bool:
+    @classmethod
+    def build_vocabulary(
+        cls,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        vocabulary: Optional[Dict[str, int]] = None,
+    ) -> None:
         """
-        Checks whether the acceptor has reached a valid final state.
+        Builds a vocabulary mapping for the tokenizer.
 
-        Returns:
-            bool: True if in an accepted state, False otherwise.
+        Args:
+            tokenizer: The tokenizer to build vocabulary from
+            vocabulary: Optional custom vocabulary mapping. If not provided,
+                       uses tokenizer's vocabulary.
         """
-        if not self.acceptor:
-            return False
+        cls.dawg = DAWG()
+        cls.token_to_id = {}
 
-        return any(walker.has_reached_accept_state() for walker in self.walkers)
+        # Get token IDs and decoded tokens
+        vocab = vocabulary if vocabulary else tokenizer.get_vocab()
+        token_ids = list(vocab.values())
+        decoded_tokens = (
+            list(vocab.keys()) if vocabulary else tokenizer.batch_decode(token_ids)
+        )
+        breakpoint()
 
-    def reset(self) -> None:
-        """
-        Resets the driver to its initial state.
-        """
-        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
-        self.within_json_value = False
+        # Build DAWG from sorted tokens
+        cls.dawg.add_all(sorted(decoded_tokens))
+        cls.dawg.reduce()
 
-    def create_acceptor(
+        # Create token to ID mapping
+        for token, id in zip(decoded_tokens, token_ids):
+            cls.token_to_id[token] = id
+
+    def set_schema(
         self,
-        schema: Optional[Dict[str, Any]] = None,
-        type: DelimiterType = DelimiterType.JSON,
-        encapsulated: bool = True,
+        schema: BaseModel | List[BaseModel] | Dict[str, Any] | List[Dict[str, Any]],
+        use_delimiters: bool = True,
         delimiters: Optional[Tuple[str, str]] = None,
     ) -> None:
         """
-        Creates a StateMachineAcceptor based on the output types and provided schema.
-
-        This method initializes the appropriate acceptor(s) for each specified DelimiterType.
-        If encapsulation is enabled, it wraps the acceptor within the defined delimiters.
-
-        Args:
-            schema (Optional[Dict[str, Any]]): The JSON schema used to validate or constrain the output.
-            type (DelimiterType): The type of structured output.
-            encapsulated (bool): Whether to encapsulate the acceptor with delimiters.
-            delimiters (Optional[Tuple[str, str]]): Custom delimiters.
-
-        Raises:
-            ValueError: If an unsupported output type is provided.
+        Adds a schema with delimiters to the engine.
         """
-        if not schema:
-            self.acceptor = None
-            self.walkers = []
-            return
 
-        if type == DelimiterType.JSON:
-            acceptor = get_acceptor(
-                schema.get("schema") or schema,
-                start_hook=self._start_hook,
-                end_hook=self._end_hook,
+        def get_schema(schema: Any) -> Dict[str, Any]:
+            if isinstance(schema, list):
+                if schema and isinstance(schema[0], BaseModel):
+                    return {"anyOf": [pydantic_to_json(type(s)) for s in schema]}
+                return {"anyOf": schema}
+            if isinstance(schema, BaseModel):
+                return pydantic_to_json(type(schema))
+            if isinstance(schema, dict):
+                if "schema" in schema:
+                    logger.warning(
+                        "Schema should not be provided as an object with 'schema' key."
+                    )
+                    return schema["schema"]
+                return schema
+            return {}
+
+        acceptor = get_acceptor(
+            schema=get_schema(schema),
+            start_hook=self._start_hook,
+            end_hook=self._end_hook,
+        )
+
+        if use_delimiters:
+            open_delimiter, close_delimiter = delimiters or ("```json\n", "\n```")
+            self.acceptor = EncapsulatedAcceptor(
+                acceptor, open_delimiter, close_delimiter
             )
         else:
-            raise ValueError(f"Unsupported output type: {type}")
+            self.acceptor = acceptor
 
-        if encapsulated:
-            if delimiters is None:
-                delimiters = type.delimiters
-
-            acceptor = EncapsulatedAcceptor(
-                acceptor,
-                delimiters[0],
-                delimiters[1],
-            )
-
-        self.acceptor = acceptor
-        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
+        self.walkers = list(self.acceptor.get_walkers())
 
     def mask_invalid_tokens(self, logits):
         """
@@ -156,111 +165,90 @@ class StructuringEngine(LogitsProcessor):
 
         return bias_logits(logits, set(token_ids))
 
-    def get_valid_token(self, logits) -> int:
+    def process_input(self, raw_input: str) -> None:
+        """Advances the acceptor using the provided raw input.
+
+        Breaks input into tokens and advances all walkers for each token.
+        Only exact token matches are supported (no partial matches).
+
+        Args:
+            raw_input: The input string to advance the acceptor with.
+        """
+        # Process each token of the raw string input
+        for token_id in self.tokenizer.encode(raw_input, add_special_tokens=False):
+            token = self.tokenizer.decode([token_id])
+
+            # Get walkers that accept this exact token
+            new_walkers = [
+                walker
+                for valid_token, walker in StateMachine.advance_all(
+                    self.walkers, token, self.dawg
+                )
+                if valid_token == token
+            ]
+
+            # Update walkers if we found valid transitions
+            if new_walkers:
+                self.walkers = new_walkers
+
+    def get_next_token(self, logits) -> int:
         """
         Advances the acceptor's state using the provided logits.
 
         Args:
             logits: The logits from the language model.
-            num_top_tokens (int): The number of top tokens to consider.
 
         Returns:
-            int: The token ID of the next token to generate.
-
-        Raises:
-            TokenRejected: If no valid token is found.
+            int: The next token ID to generate.
         """
-
-
-        #
-        # TODO: PARALLELIZE THIS FOR CHEAP
-        #
-
         top_tokens = self._get_top_tokens(logits)
 
-        partial_match_walkers: Dict[str, Set[Walker]] = {}
+        # Single dict for both full and partial matches
+        seen: Dict[str, Set[Walker]] = {}
+        longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
 
-        for token_id, token, score in top_tokens:
-            logger.debug(f"token(id: {token_id}): {repr(token)}, score: {score}")
-
-            if token in partial_match_walkers:
-                # We've found a match for this token before as a partial match
-                # So we can use the computed walkers
-                logger.debug(f"already computed walkers for {token}")
-                self.walkers = list(partial_match_walkers[token])
-                return token_id
-
-            new_walkers: List[Walker] = []
-
-            for valid_token, walker in StateMachine.advance_all(
-                self.walkers,
-                token,
-                self.dawg,
-            ):
-                if valid_token == token:
-                    logger.debug(f"valid_token: {valid_token}")
-                    new_walkers.append(walker)
-                else:
-                    logger.debug(f"partial match: {valid_token}")
-                    partial_match_walkers.setdefault(valid_token, set()).add(walker)
-
-            if new_walkers:
-                self.walkers = new_walkers
-                return token_id
-
-        if not partial_match_walkers:
-            logger.error("No valid token found in the top tokens")
-            raise TokenRejected("No valid token found")
-
-        for token, walkers in sorted(
-            partial_match_walkers.items(),
-            key=lambda item: (len(item[0]), len(item[1])),
-            reverse=True,
-        ):
-            valid_token_id = self.token_to_id.get(token)
-            if valid_token_id is not None:
+        for token_id, token, _ in top_tokens:
+            # Check if we've already seen this token (full match or partial match)
+            if walkers := seen.get(token):
                 self.walkers = list(walkers)
-                return valid_token_id
-            logger.debug(f"{token} not found in vocab, trying next partial match")
+                return token_id
 
-        raise TokenRejected("No valid token found after trying partial matches")
+            # Advance state machine for this token
+            for valid_token, walker in StateMachine.advance_all(
+                self.walkers, token, self.dawg
+            ):
+                seen.setdefault(valid_token, set()).add(walker)
 
-    def advance_token(self, token_id: int) -> None:
-        token = self.tokenizer.decode([token_id])
-        try:
-            new_walkers = [
-                walker
-                for _, walker in StateMachine.advance_all(
-                    self.walkers, token, self.dawg
-                )
-            ]
-            if not new_walkers:
-                raise TokenRejected(f"Token `{token}` rejected by all walkers")
-            self.walkers = new_walkers
-        except TokenRejected:
-            raise TokenRejected(f"Token `{token}` rejected by all walkers")
+                if valid_token != token:
+                    # Track longest partial (avoid sort operation later)
+                    if len(valid_token) > len(longest_partial[0]):
+                        if valid_id := self.token_to_id.get(valid_token):
+                            longest_partial = (valid_token, valid_id)
+            # If we advanced walkers for this token, return the token id
+            if walkers := seen.get(token):
+                self.walkers = list(walkers)
+                return token_id
+
+        # Fallback to the longest partial match
+        if longest_partial[1] != -1:
+            self.walkers = list(seen[longest_partial[0]])
+            return longest_partial[1]
+
+        raise TokenRejected("No valid token found")
+
+    def has_reached_accept_state(self) -> bool:
+        """
+        Checks whether the acceptor has reached a valid final state.
+
+        Returns:
+            bool: True if in an accepted state, False otherwise.
+        """
+        if not self.acceptor:
+            return False
+
+        return any(walker.has_reached_accept_state() for walker in self.walkers)
 
     # -------- Private Methods --------
-
-    def _build_vocabulary(self) -> None:
-        """
-        Integrates the tokenizer's vocabulary into the driver.
-        Maintains both the original and decoded forms of tokens.
-        """
-        self.dawg = DAWG()
-        self.special_tokens_set = set()
-        self.token_to_id: Dict[str, int] = {}  # mapping of decoded token to its ID
-        token_ids = list(self.tokenizer.get_vocab().values())
-        decoded_tokens: List[str] = self.tokenizer.batch_decode(token_ids)
-
-        for decoded_token, token_id in sorted(zip(decoded_tokens, token_ids)):
-            self.dawg.add(decoded_token)
-            if decoded_token in self.tokenizer.all_special_tokens:
-                self.special_tokens_set.add(decoded_token)
-
-            self.token_to_id[decoded_token] = token_id
-
-        self.dawg.reduce()
 
     def _get_top_tokens(
         self, logits, num_tokens: int = 64
@@ -273,14 +261,17 @@ class StructuringEngine(LogitsProcessor):
             num_tokens (int): The number of top tokens to consider.
 
         Returns:
-            List[Tuple[int, str, float]]: A list of tuples containing the token ID, token, and raw score.
+            List[Tuple[int, str, float]]: A list of tuples containing (token_id, token_text, score).
         """
-        top_logits = handle_logits(logits, num_tokens)
-        top_logits.sort(key=lambda x: x[1], reverse=True)
-        token_ids = [token_id for token_id, _ in top_logits]
+        # Get top token IDs and scores
+        top_token_scores = get_top_logits(logits, num_tokens)
+
+        # Decode token IDs to text
+        token_ids, scores = zip(*top_token_scores)
         tokens = self.tokenizer.batch_decode(token_ids)
-        top_tokens = list(zip(token_ids, tokens, [score for _, score in top_logits]))
-        return top_tokens
+
+        # Sort by score and combine into tuples
+        return sorted(zip(token_ids, tokens, scores), key=lambda x: x[2], reverse=True)
 
     def _waiting_for_trigger(self) -> bool:
         """

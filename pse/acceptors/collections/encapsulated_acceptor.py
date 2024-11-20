@@ -51,5 +51,7 @@ class EncapsulatedAcceptor(StateMachine):
 
 
 class EncapsulatedWalker(StateMachineWalker):
+
+
     def is_within_value(self) -> bool:
         return self.current_state == 1
