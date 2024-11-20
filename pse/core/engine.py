@@ -49,6 +49,40 @@ class StructuringEngine(LogitsProcessor):
         self.walkers: List[Walker] = []
         self.within_json_value: bool = False
 
+    @classmethod
+    def build_vocabulary(
+        cls,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        vocabulary: Optional[Dict[str, int]] = None,
+    ) -> None:
+        """
+        Builds a vocabulary mapping for the tokenizer.
+
+        Args:
+            tokenizer: The tokenizer to build vocabulary from
+            vocabulary: Optional custom vocabulary mapping. If not provided,
+                       uses tokenizer's vocabulary.
+        """
+        cls.dawg = DAWG()
+        cls.vocabulary: Dict[str, int] = {}
+        cls.reverse_vocabulary: Dict[int, str] = {}
+
+        # Get token IDs and decoded tokens
+        vocab = vocabulary if vocabulary else tokenizer.get_vocab()
+        token_ids = list(vocab.values())
+        decoded_tokens = (
+            list(vocab.keys()) if vocabulary else tokenizer.batch_decode(token_ids)
+        )
+
+        # Build DAWG from sorted tokens
+        cls.dawg.add_all(sorted(decoded_tokens))
+        cls.dawg.reduce()
+
+        # Create token to ID mapping
+        for token, id in zip(decoded_tokens, token_ids):
+            cls.vocabulary[token] = id
+            cls.reverse_vocabulary[id] = token
+
     @property
     def in_structured_state(self) -> bool:
         """
@@ -68,38 +102,17 @@ class StructuringEngine(LogitsProcessor):
 
         return not self._waiting_for_trigger() and not self.within_json_value
 
-    @classmethod
-    def build_vocabulary(
-        cls,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-        vocabulary: Optional[Dict[str, int]] = None,
-    ) -> None:
+    def has_reached_accept_state(self) -> bool:
         """
-        Builds a vocabulary mapping for the tokenizer.
+        Checks whether the acceptor has reached a valid final state.
 
-        Args:
-            tokenizer: The tokenizer to build vocabulary from
-            vocabulary: Optional custom vocabulary mapping. If not provided,
-                       uses tokenizer's vocabulary.
+        Returns:
+            bool: True if in an accepted state, False otherwise.
         """
-        cls.dawg = DAWG()
-        cls.token_to_id = {}
+        if not self.acceptor:
+            return False
 
-        # Get token IDs and decoded tokens
-        vocab = vocabulary if vocabulary else tokenizer.get_vocab()
-        token_ids = list(vocab.values())
-        decoded_tokens = (
-            list(vocab.keys()) if vocabulary else tokenizer.batch_decode(token_ids)
-        )
-        breakpoint()
-
-        # Build DAWG from sorted tokens
-        cls.dawg.add_all(sorted(decoded_tokens))
-        cls.dawg.reduce()
-
-        # Create token to ID mapping
-        for token, id in zip(decoded_tokens, token_ids):
-            cls.token_to_id[token] = id
+        return any(walker.has_reached_accept_state() for walker in self.walkers)
 
     def set_schema(
         self,
@@ -160,7 +173,7 @@ class StructuringEngine(LogitsProcessor):
         token_ids: List[int] = [
             token_id
             for prefix in valid_prefixes
-            if (token_id := self.token_to_id.get(prefix)) is not None
+            if (token_id := self.vocabulary.get(prefix)) is not None
         ]
 
         return bias_logits(logits, set(token_ids))
@@ -201,13 +214,17 @@ class StructuringEngine(LogitsProcessor):
         Returns:
             int: The next token ID to generate.
         """
-        top_tokens = self._get_top_tokens(logits)
-
         # Single dict for both full and partial matches
         seen: Dict[str, Set[Walker]] = {}
         longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
 
-        for token_id, token, _ in top_tokens:
+        top_logits = get_top_logits(logits, top_k=64)
+        for token_id, _ in sorted(top_logits, key=lambda x: x[1], reverse=True):
+            # Get token from token_id using reverse vocabulary map
+            if not (token := self.reverse_vocabulary.get(token_id)):
+                logger.warning(f"Unknown token ID: {token_id}")
+                continue
+
             # Check if we've already seen this token (full match or partial match)
             if walkers := seen.get(token):
                 self.walkers = list(walkers)
@@ -222,7 +239,7 @@ class StructuringEngine(LogitsProcessor):
                 if valid_token != token:
                     # Track longest partial (avoid sort operation later)
                     if len(valid_token) > len(longest_partial[0]):
-                        if valid_id := self.token_to_id.get(valid_token):
+                        if valid_id := self.vocabulary.get(valid_token):
                             longest_partial = (valid_token, valid_id)
             # If we advanced walkers for this token, return the token id
             if walkers := seen.get(token):
@@ -236,42 +253,7 @@ class StructuringEngine(LogitsProcessor):
 
         raise TokenRejected("No valid token found")
 
-    def has_reached_accept_state(self) -> bool:
-        """
-        Checks whether the acceptor has reached a valid final state.
-
-        Returns:
-            bool: True if in an accepted state, False otherwise.
-        """
-        if not self.acceptor:
-            return False
-
-        return any(walker.has_reached_accept_state() for walker in self.walkers)
-
     # -------- Private Methods --------
-
-    def _get_top_tokens(
-        self, logits, num_tokens: int = 64
-    ) -> List[Tuple[int, str, float]]:
-        """
-        Returns the top tokens from the logits.
-
-        Args:
-            logits: The logits tensor from the language model.
-            num_tokens (int): The number of top tokens to consider.
-
-        Returns:
-            List[Tuple[int, str, float]]: A list of tuples containing (token_id, token_text, score).
-        """
-        # Get top token IDs and scores
-        top_token_scores = get_top_logits(logits, num_tokens)
-
-        # Decode token IDs to text
-        token_ids, scores = zip(*top_token_scores)
-        tokens = self.tokenizer.batch_decode(token_ids)
-
-        # Sort by score and combine into tuples
-        return sorted(zip(token_ids, tokens, scores), key=lambda x: x[2], reverse=True)
 
     def _waiting_for_trigger(self) -> bool:
         """

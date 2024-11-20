@@ -45,20 +45,20 @@ def get_top_logits(logits, top_k: int = 64) -> List[Tuple[int, float]]:
         TypeError: If `logits` is not an instance of one of the supported array types.
     """
     if _has_mlx and isinstance(logits, mx.array):
-        indices, values = handle_logits_mlx(logits, top_k)
+        indices, values = get_top_logits_mlx(logits, top_k)
     elif isinstance(logits, np.ndarray):
-        indices, values = handle_logits_numpy(logits, top_k)
+        indices, values = get_top_logits_numpy(logits, top_k)
     elif _has_jax and isinstance(logits, jnp.ndarray):
-        indices, values = handle_logits_jax(logits, top_k)
+        indices, values = get_top_logits_jax(logits, top_k)
     elif _has_torch and isinstance(logits, torch.Tensor):
-        indices, values = handle_logits_pytorch(logits, top_k)
+        indices, values = get_top_logits_pytorch(logits, top_k)
     else:
         raise TypeError(f"Unsupported array type for logits: {type(logits)}")
 
     return [(int(idx), float(score)) for idx, score in zip(indices, values)]
 
 
-def handle_logits_mlx(logits, top_k: int):
+def get_top_logits_mlx(logits, top_k: int):
     """
     Implementation using MLX arrays optimized for large vocabularies.
     """
@@ -95,7 +95,7 @@ def handle_logits_mlx(logits, top_k: int):
     return top_k_indices, top_k_values
 
 
-def handle_logits_numpy(logits, top_k: int):
+def get_top_logits_numpy(logits, top_k: int):
     """
     Implementation using NumPy arrays optimized for large vocabularies.
     """
@@ -127,7 +127,7 @@ def handle_logits_numpy(logits, top_k: int):
     return top_k_indices, top_k_values
 
 
-def handle_logits_jax(logits, top_k: int):
+def get_top_logits_jax(logits, top_k: int):
     """
     Implementation using JAX arrays optimized for large vocabularies.
     """
@@ -164,7 +164,7 @@ def handle_logits_jax(logits, top_k: int):
     return top_k_indices, top_k_values
 
 
-def handle_logits_pytorch(logits, top_k: int):
+def get_top_logits_pytorch(logits, top_k: int):
     """
     Implementation using PyTorch tensors optimized for large vocabularies.
     """

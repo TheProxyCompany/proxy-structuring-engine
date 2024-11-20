@@ -224,7 +224,6 @@ def test_invalid_tokens_object(engine: StructuringEngine) -> None:
     assert engine.in_structured_state
 
     logits = engine.mask_invalid_tokens(test_logits)
-    breakpoint()
     valid_token_id = engine.get_next_token(logits)
     assert valid_token_id in {21, 22}
 
