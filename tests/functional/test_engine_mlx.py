@@ -6,13 +6,14 @@ from pse.core.engine import StructuringEngine
 try:
     import mlx.core as mx
     import mlx.nn as nn
+    from mlx_lm.utils import load
+    from mlx_lm.sample_utils import categorical_sampling
 except ImportError:
-    pytest.skip("mlx is not installed. Skipping tests.", allow_module_level=True)
+    pytest.skip("mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True)
 
 @pytest.fixture(scope="module")
 def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    from mlx_lm.utils import load
     TEST_MODEL = (
         "/Users/jckwind/Documents/ProxyBot/language_models/Llama-3.1-SuperNova-Lite"
     )
@@ -46,7 +47,6 @@ def generate_step(
         valid_token_id = engine.get_next_token(logits[0, :], top_k=4)
         token = mx.array([valid_token_id])
     else:
-        from mlx_lm.sample_utils import categorical_sampling
         token: mx.array = categorical_sampling(logits, temp) if temp > 0.0 else mx.argmax(logits, axis=-1)
 
     logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
