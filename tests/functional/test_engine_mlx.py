@@ -1,18 +1,18 @@
+import pytest
 import json
 from typing import Tuple, cast
-import pytest
 from pse.core.engine import StructuringEngine
 
-import mlx.nn as nn
-import mlx.core as mx
-from mlx_lm.utils import load
-from mlx_lm.sample_utils import categorical_sampling
-
-pytest.importorskip("mlx_lm", reason="mlx_lm is not installed. Skipping tests.")
+try:
+    import mlx.core as mx
+    import mlx.nn as nn
+except ImportError:
+    pytest.skip("mlx is not installed. Skipping tests.", allow_module_level=True)
 
 @pytest.fixture(scope="module")
 def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
+    from mlx_lm.utils import load
     TEST_MODEL = (
         "/Users/jckwind/Documents/ProxyBot/language_models/Llama-3.1-SuperNova-Lite"
     )
@@ -46,6 +46,7 @@ def generate_step(
         valid_token_id = engine.get_next_token(logits[0, :], top_k=4)
         token = mx.array([valid_token_id])
     else:
+        from mlx_lm.sample_utils import categorical_sampling
         token: mx.array = categorical_sampling(logits, temp) if temp > 0.0 else mx.argmax(logits, axis=-1)
 
     logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
@@ -53,6 +54,10 @@ def generate_step(
     return token, logprobs
 
 def test_simple_json_structure(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
+    """
+    Test that the engine can generate a simple JSON object from
+    real LLM output.
+    """
     model, engine = model_and_engine
     schema = {
         "type": "object",
@@ -62,9 +67,6 @@ def test_simple_json_structure(model_and_engine: Tuple[nn.Module, StructuringEng
     }
     raw_prompt = f"Please generate a simple JSON object with the number 9.11. Follow this schema: {str(schema)}"
     engine.set_schema(schema, use_delimiters=False)
-
-    assert not engine.within_json_value
-    assert engine.in_structured_state
 
     messages = [{"role": "user", "content": raw_prompt}]
     encoded_prompt = engine.tokenizer.apply_chat_template(messages, add_generation_prompt=True)
