@@ -129,5 +129,5 @@ def test_character_acceptor_select() -> None:
     for char in charset:
         dawg.add(char)
 
-    selections = walker.select(dawg)
+    selections = walker.get_valid_continuations(dawg)
     assert set(selections) == set(charset)

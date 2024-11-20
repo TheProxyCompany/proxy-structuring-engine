@@ -14,7 +14,7 @@ from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.basic.acceptor import Acceptor
 from pse.util.errors import TokenRejected
 from pse.util.state_machine.get_acceptor import get_acceptor
-from pse.util.bias_logits import bias_logits
+from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_top_logits import get_top_logits
 from pse.util.pydantic_to_json import pydantic_to_json
 
@@ -156,29 +156,83 @@ class StructuringEngine(LogitsProcessor):
 
         self.walkers = list(self.acceptor.get_walkers())
 
-    def mask_invalid_tokens(self, logits):
+    def get_next_token(self, logprobs, top_k: int = 64) -> int:
         """
-        Masks invalid tokens in logits based on the current state of the acceptor.
+        Advances the acceptor's state using the provided logits.
 
         Args:
-            logits: The logits tensor to be modified.
+            logprobs: The log probabilities from the language model.
 
         Returns:
-            Modified logits with invalid tokens masked.
+            int: The next token ID to generate.
         """
-        valid_prefixes: Set[str] = set()
+        # Single dict for both full and partial matches
+        seen: Dict[str, Set[Walker]] = {}
+        longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
+
+        top_logits = get_top_logits(logprobs, top_k)
+        for token_id, score in sorted(top_logits, key=lambda x: x[1], reverse=True):
+            # Get token from token_id using reverse vocabulary map
+            if not (token := self.reverse_vocabulary.get(token_id)):
+                logger.warning(f"Unknown token ID: {token_id}")
+                continue
+
+            logger.debug(f"⚪️ LLM predicted token: {repr(token)}, Score: {score}")
+            # Check if we've already seen this token (full match or partial match)
+            if walkers := seen.get(token):
+                self.walkers = list(walkers)
+                return token_id
+
+            # Advance state machine for this token
+            for valid_token, walker in StateMachine.advance_all(
+                self.walkers, token, self.dawg
+            ):
+                seen.setdefault(valid_token, set()).add(walker)
+
+                if valid_token != token:
+                    # Track longest partial (avoid sort operation later)
+                    if len(valid_token) > len(longest_partial[0]):
+                        if valid_id := self.vocabulary.get(valid_token):
+                            longest_partial = (valid_token, valid_id)
+
+            # If we advanced walkers for this token, return the token id
+            if walkers := seen.get(token):
+                self.walkers = list(walkers)
+                return token_id
+
+        # Fallback to the longest partial match
+        if longest_partial[1] != -1:
+            self.walkers = list(seen[longest_partial[0]])
+            return longest_partial[1]
+
+        raise TokenRejected("No valid token found")
+
+    def generate_logit_bias_mask(self, logits):
+        """
+        Masks invalid tokens in logits based on the current state of the acceptor. Returns a bias.
+
+        Args:
+            logits: The logits tensor to mask. Just used for dimensionality.
+
+        Returns:
+            The bias, of the same type as `logits`.
+        """
+        valid_prefixes = set()
         for walker in self.walkers:
             valid_prefixes.update(walker.find_valid_prefixes(self.dawg))
 
-        token_ids: List[int] = [
+        if not valid_prefixes:
+            return get_logit_bias(logits, set())
+
+        token_ids = [
             token_id
             for prefix in valid_prefixes
             if (token_id := self.vocabulary.get(prefix)) is not None
         ]
 
-        return bias_logits(logits, set(token_ids))
+        return get_logit_bias(logits, set(token_ids))
 
-    def process_input(self, raw_input: str) -> None:
+    def consume_raw_input(self, raw_input: str) -> None:
         """Advances the acceptor using the provided raw input.
 
         Breaks input into tokens and advances all walkers for each token.
@@ -203,55 +257,6 @@ class StructuringEngine(LogitsProcessor):
             # Update walkers if we found valid transitions
             if new_walkers:
                 self.walkers = new_walkers
-
-    def get_next_token(self, logits) -> int:
-        """
-        Advances the acceptor's state using the provided logits.
-
-        Args:
-            logits: The logits from the language model.
-
-        Returns:
-            int: The next token ID to generate.
-        """
-        # Single dict for both full and partial matches
-        seen: Dict[str, Set[Walker]] = {}
-        longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
-
-        top_logits = get_top_logits(logits, top_k=64)
-        for token_id, _ in sorted(top_logits, key=lambda x: x[1], reverse=True):
-            # Get token from token_id using reverse vocabulary map
-            if not (token := self.reverse_vocabulary.get(token_id)):
-                logger.warning(f"Unknown token ID: {token_id}")
-                continue
-
-            # Check if we've already seen this token (full match or partial match)
-            if walkers := seen.get(token):
-                self.walkers = list(walkers)
-                return token_id
-
-            # Advance state machine for this token
-            for valid_token, walker in StateMachine.advance_all(
-                self.walkers, token, self.dawg
-            ):
-                seen.setdefault(valid_token, set()).add(walker)
-
-                if valid_token != token:
-                    # Track longest partial (avoid sort operation later)
-                    if len(valid_token) > len(longest_partial[0]):
-                        if valid_id := self.vocabulary.get(valid_token):
-                            longest_partial = (valid_token, valid_id)
-            # If we advanced walkers for this token, return the token id
-            if walkers := seen.get(token):
-                self.walkers = list(walkers)
-                return token_id
-
-        # Fallback to the longest partial match
-        if longest_partial[1] != -1:
-            self.walkers = list(seen[longest_partial[0]])
-            return longest_partial[1]
-
-        raise TokenRejected("No valid token found")
 
     # -------- Private Methods --------
 

@@ -305,16 +305,10 @@ class Walker(ABC):
         Returns:
             A set of strings that represent valid continuations from current state.
         """
-        logger.debug(
-            "Getting valid continuations for walker:\n"
-            "  Current State: %s\n"
-            "  Depth: %d\n"
-            "  DAWG Size: %d",
-            self.current_state,
-            depth,
-            len(dawg),
-        )
-        return set()
+        if not self.transition_walker or depth > 10:
+            return set()
+
+        return self.transition_walker.get_valid_continuations(dawg, depth + 1)
 
     def find_valid_prefixes(self, dawg: DAWG) -> Set[str]:
         """Identify complete tokens that can advance the acceptor to a valid state.
@@ -325,7 +319,7 @@ class Walker(ABC):
         Returns:
             A set of valid prefixes that can be used to advance the walker.
         """
-        
+
         valid_prefixes: Set[str] = set()
 
         for continuation in self.get_valid_continuations(dawg):
@@ -470,7 +464,7 @@ class Walker(ABC):
 
         def _format_remaining_input() -> str:
             return (
-                f"Remaining input: `{self.remaining_input}`"
+                f"Remaining input: {repr(self.remaining_input)}"
                 if self.remaining_input
                 else ""
             )

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from typing import Iterable, Optional, Set, Tuple, Type
+from typing import Iterable, Optional, Tuple, Type
 
 from lexpy import DAWG
 
@@ -223,7 +223,7 @@ class StateMachine(Acceptor):
             logger.debug(f"⚪️ Processing walker with token: {token}")
             for advanced_walker in walker.consume_token(token):
                 if not advanced_walker.remaining_input:
-                    logger.debug(f"🟢 Full match for token: {token}")
+                    logger.debug(f"🟢 Full match for token: {repr(token)}")
                     yield token, advanced_walker
                     continue
 
@@ -234,7 +234,7 @@ class StateMachine(Acceptor):
                 # Extract the valid prefix by removing remaining input
                 prefix = token[: -len(advanced_walker.remaining_input)]
                 if prefix and prefix in vocab:
-                    logger.debug(f"🟢 Valid partial match: {prefix}")
+                    logger.debug(f"🟢 Valid partial match: {repr(prefix)}")
                     advanced_walker.remaining_input = None
                     yield prefix, advanced_walker
 
@@ -295,25 +295,3 @@ class StateMachineWalker(Walker):
             Updated walkers after advancement.
         """
         yield from self.acceptor.advance(self, token)
-
-    def select(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        """Select valid characters based on current state.
-
-        Args:
-            dawg: DAWG to select from.
-            depth: Current depth in state machine.
-
-        Returns:
-            Set of valid characters.
-        """
-        valid_prefixes = set()
-        if self.transition_walker:
-            valid_prefixes = self.transition_walker.get_valid_continuations(
-                dawg, depth + 1
-            )
-
-        edge_walker_prefixes = set()
-        if not edge_walker_prefixes:
-            return valid_prefixes
-
-        return valid_prefixes.union(edge_walker_prefixes)

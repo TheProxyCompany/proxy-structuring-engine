@@ -148,7 +148,7 @@ def test_partial_matches():
     # No walkers should be in accepted state since the input is incomplete
     assert not any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
-        assert walker.current_value == "comp👉lete"
+        assert walker.current_value == "comp"
 
 
 @pytest.mark.parametrize(
@@ -441,7 +441,7 @@ def test_whitespace_acceptor():
     for advanced_token, walker in advancement:
         assert advanced_token == "{"
         if walker.target_state == "$":
-            assert walker.current_value == "{👉}"
+            assert walker.current_value == "{"
         else:
             assert walker.current_value == "{"
         new_walkers.append(walker)
@@ -453,7 +453,7 @@ def test_whitespace_acceptor():
     for advanced_token, walker in advancement:
         assert advanced_token == " "
         if walker.target_state == "$":
-            assert walker.current_value == "{ 👉}"
+            assert walker.current_value == "{ "
         else:
             assert walker.current_value == "{ "
         new_walkers.append(walker)

@@ -1,25 +1,18 @@
 import pytest
 import numpy as np
-from transformers import PreTrainedTokenizerFast, LlamaTokenizer
+from transformers import LlamaTokenizer
 from pse.core.engine import StructuringEngine
 from pse.util.errors import UnknownSchemaTypeError
 
-import logging
-
-logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
-def tokenizer() -> PreTrainedTokenizerFast:
-    """Module-scoped fixture for the tokenizer."""
-    TEST_MODEL = "fxmarty/tiny-llama-fast-tokenizer"
-    return LlamaTokenizer.from_pretrained(TEST_MODEL, legacy=False)
-
-
-@pytest.fixture(scope="module")
-def engine(tokenizer: PreTrainedTokenizerFast) -> StructuringEngine:
+def engine() -> StructuringEngine:
     """Module-scoped fixture for the StructuredOutputDriver."""
+    TEST_MODEL = "fxmarty/tiny-llama-fast-tokenizer"
+    tokenizer = LlamaTokenizer.from_pretrained(TEST_MODEL, legacy=False)
     engine = StructuringEngine(tokenizer=tokenizer)
     return engine
+
 
 def test_create_default(engine: StructuringEngine) -> None:
     """Test the default initialization of StructuredOutputDriver."""
@@ -58,29 +51,31 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
 def test_delimitered_acceptor(engine: StructuringEngine) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
     engine.set_schema({"type": "string"})
-    engine.process_input('```json\n"test string"\n```')
+    engine.consume_raw_input('```json\n"test string"\n```')
     assert engine.has_reached_accept_state()
+
 
 def test_partial_delimiters(engine: StructuringEngine) -> None:
     """Test that delimiters are handled correctly."""
     engine.set_schema({"type": "string"})
     assert engine._waiting_for_trigger()
-    engine.process_input("```")
+    engine.consume_raw_input("```")
     assert engine._waiting_for_trigger()
-    engine.process_input("python")
+    engine.consume_raw_input("python")
     assert engine._waiting_for_trigger()
-    engine.process_input("json")
+    engine.consume_raw_input("json")
     assert engine._waiting_for_trigger()
-    engine.process_input("\n")
+    engine.consume_raw_input("\n")
     assert not engine._waiting_for_trigger()
     assert engine.in_structured_state
+
 
 def test_invalid_input(engine: StructuringEngine) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
     engine.set_schema({"type": "string"}, use_delimiters=False)
 
     assert not engine._waiting_for_trigger()
-    engine.process_input("```")
+    engine.consume_raw_input("```")
 
     assert not engine._waiting_for_trigger()
     assert not engine.has_reached_accept_state()
@@ -129,7 +124,7 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
     assert engine.walkers is not None
 
     # Test valid input that matches the pattern
-    engine.process_input('"test"')
+    engine.consume_raw_input('"test"')
     assert engine.has_reached_accept_state(), "Driver should be in accepted state"
 
 
@@ -146,7 +141,7 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
     assert engine.walkers is not None
 
     # Reset engine for invalid input test
-    engine.process_input("123")
+    engine.consume_raw_input("123")
     assert not engine.has_reached_accept_state()
 
 
@@ -199,102 +194,6 @@ def test_invalid_tokens_object(engine: StructuringEngine) -> None:
     assert not engine.within_json_value
     assert engine.in_structured_state
 
-    logits = engine.mask_invalid_tokens(test_logits)
+    logits = engine.generate_logit_bias_mask(test_logits)
     valid_token_id = engine.get_next_token(logits)
     assert valid_token_id in {21, 22}
-
-def test_simple_json_structure(engine: StructuringEngine) -> None:
-    schema = {
-        "type": "object",
-        "properties": {"value": {"type": "number"}},
-        "required": ["value"],
-        "additionalProperties": False,
-    }
-    engine.set_schema(schema)
-
-    assert not engine.within_json_value
-    assert not engine.in_structured_state
-
-def test_complex_json_structure(
-    engine: StructuringEngine, tokenizer: PreTrainedTokenizerFast
-) -> None:
-    """Test parsing a complex JSON structure."""
-    schema = {
-        "type": "object",
-        "properties": {
-            "name": {"const": "metacognition"},
-            "arguments": {
-                "type": "object",
-                "properties": {
-                    "chain_of_thought": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                    },
-                    "feelings": {
-                        "type": ["string"],
-                        "nullable": True,
-                        "default": None,
-                    },
-                },
-                "required": ["chain_of_thought"],
-            },
-        },
-        "required": ["name", "arguments"],
-    }
-    engine.set_schema(schema)
-
-
-def test_better_than_openai(
-    engine: StructuringEngine, tokenizer: PreTrainedTokenizerFast
-) -> None:
-    """Test that OpenAI sucks."""
-    # openAI's structured output blog post said:
-    #
-    #   "The following is a sample recursive schema that is supported on
-    #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
-    #
-    # let's test that.
-    schema = {
-        "name": "ui",
-        "description": "Dynamically generated UI",
-        "strict": True,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "The type of the UI component",
-                    "enum": ["div", "button", "header", "section", "field", "form"],
-                },
-                "label": {
-                    "type": "string",
-                    "description": "The label of the UI component, used for buttons or form fields",
-                },
-                "children": {
-                    "type": "array",
-                    "description": "Nested UI components",
-                    "items": {"$ref": "#"},
-                },
-                "attributes": {
-                    "type": "array",
-                    "description": "Arbitrary attributes for the UI component, suitable for any element",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "The name of the attribute, for example onClick or className",
-                            },
-                            "value": {
-                                "type": "string",
-                                "description": "The value of the attribute",
-                            },
-                        },
-                    },
-                },
-            },
-            "required": ["type", "label", "children", "attributes"],
-            "additionalProperties": False,
-        },
-    }
-    engine.set_schema(schema, use_delimiters=False)

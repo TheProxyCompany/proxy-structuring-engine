@@ -13,7 +13,7 @@ def test_advance_incomplete(text_acceptor: TextAcceptor):
     """Test advancing the walker with an incomplete match."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("h"):
-        assert walker.current_value == "h👉ello"
+        assert walker.current_value == "h"
         assert isinstance(walker, text_acceptor.walker_class)
         assert walker.consumed_character_count == 1
 
@@ -38,13 +38,13 @@ def test_advance_invalid_character(text_acceptor: TextAcceptor):
 def test_get_value_at_start(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value at the start."""
     walker = TextWalker(text_acceptor, 0)
-    assert walker.current_value == "👉hello"
+    assert walker.current_value == ""
 
 
 def test_get_value_middle(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value in the middle."""
     walker = TextWalker(text_acceptor, 2)
-    assert walker.current_value == "he👉llo"
+    assert walker.current_value == "he"
 
 
 def test_get_value_end(text_acceptor: TextAcceptor):
@@ -68,7 +68,7 @@ def test_partial_acceptance(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor correctly handles partial acceptance."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("he"):
-        assert walker.current_value == "he👉llo"
+        assert walker.current_value == "he"
 
 
 def test_repeated_characters():
@@ -114,20 +114,20 @@ def test_case_sensitivity(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor is case-sensitive."""
     walker = TextWalker(text_acceptor, 0)
     for walker in walker.consume_token("H"):
-        assert walker.current_value == "👉hello"
+        assert walker.current_value == ""
 
     for walker in walker.consume_token("h"):
-        assert walker.current_value == "h👉ello"
+        assert walker.current_value == "h"
 
 
 def test_multiple_advance_steps(text_acceptor: TextAcceptor):
     """Test advancing the walker multiple steps in succession."""
     walker = TextWalker(text_acceptor, 0)
     steps = [
-        ("h", 1, "h👉ello"),
-        ("e", 2, "he👉llo"),
-        ("l", 3, "hel👉lo"),
-        ("l", 4, "hell👉o"),
+        ("h", 1, "h"),
+        ("e", 2, "he"),
+        ("l", 3, "hel"),
+        ("l", 4, "hell"),
         ("o", 5, "hello"),
     ]
     for char, expected_pos, expected_value in steps:

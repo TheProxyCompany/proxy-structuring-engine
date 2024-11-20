@@ -1,39 +1,48 @@
 import numpy as np
 import logging
 from typing import TypeVar, overload
+
 logger = logging.getLogger(__name__)
 
 # Attempt to import optional dependencies
 try:
     import mlx.core as mx
+
     _has_mlx = True
 except ImportError:
     _has_mlx = False
 
 try:
     import jax.numpy as jnp
+
     _has_jax = True
 except ImportError:
     _has_jax = False
 
 try:
     import torch
+
     _has_torch = True
 except ImportError:
     _has_torch = False
 
 T = TypeVar("T", np.ndarray, "torch.Tensor", "mx.array", "jnp.ndarray")
 
-@overload
-def bias_logits(logits: np.ndarray, accepted_token_ids: set[int]) -> np.ndarray: ...
-@overload
-def bias_logits(logits: "torch.Tensor", accepted_token_ids: set[int]) -> "torch.Tensor": ...
-@overload
-def bias_logits(logits: "mx.array", accepted_token_ids: set[int]) -> "mx.array": ...
-@overload
-def bias_logits(logits: "jnp.ndarray", accepted_token_ids: set[int]) -> "jnp.ndarray": ...
 
-def bias_logits(logits: T, accepted_token_ids: set[int]) -> T:
+@overload
+def get_logit_bias(logits: np.ndarray, accepted_token_ids: set[int]) -> np.ndarray: ...
+
+@overload
+def get_logit_bias(logits: "torch.Tensor", accepted_token_ids: set[int]) -> "torch.Tensor": ...
+
+@overload
+def get_logit_bias(logits: "mx.array", accepted_token_ids: set[int]) -> "mx.array": ...
+
+@overload
+def get_logit_bias(logits: "jnp.ndarray", accepted_token_ids: set[int]) -> "jnp.ndarray": ...
+
+
+def get_logit_bias(logits: T, accepted_token_ids: set[int]) -> T:
     """
     Apply a -inf bias to logits of tokens that are not accepted.
 
@@ -62,12 +71,15 @@ def bias_logits(logits: T, accepted_token_ids: set[int]) -> T:
     else:
         raise TypeError(f"Unsupported array type for logits: {type(logits)}")
 
+
 def bias_logits_mlx(logits, accepted_token_ids: set[int]):
     """
     Implementation using mlx arrays that supports multi-dimensional logits arrays.
     """
     if not _has_mlx:
-        raise ImportError("mlx module is not installed. Please install it with 'pip install mlx'.")
+        raise ImportError(
+            "mlx module is not installed. Please install it with 'pip install mlx'."
+        )
 
     if logits.ndim < 1:
         raise ValueError("logits must be at least a 1-dimensional array.")
@@ -83,19 +95,25 @@ def bias_logits_mlx(logits, accepted_token_ids: set[int]):
         return logits
 
     bias_shape = logits.shape
-    bias = mx.full(shape=bias_shape, vals=0.0 if num_accepted_tokens > vocab_size / 2 else float("-inf"))
+    bias = mx.full(
+        shape=bias_shape,
+        vals=0.0 if num_accepted_tokens > vocab_size / 2 else float("-inf"),
+    )
 
     indices = [slice(None)] * (logits.ndim - 1)
     if num_accepted_tokens > vocab_size / 2:
         # Bias non-accepted tokens
-        indices.append(mx.array(list(set(range(vocab_size)) - accepted_token_ids), dtype=mx.int32))
+        indices.append(
+            mx.array(list(set(range(vocab_size)) - accepted_token_ids), dtype=mx.int32)
+        )
         bias[tuple(indices)] = float("-inf")
     else:
         # Bias accepted tokens
         indices.append(mx.array(list(accepted_token_ids), dtype=mx.int32))
         bias[tuple(indices)] = 0.0
 
-    return logits + bias
+    return bias
+
 
 def bias_logits_numpy(logits, accepted_token_ids: set[int]):
     """
@@ -120,14 +138,16 @@ def bias_logits_numpy(logits, accepted_token_ids: set[int]):
     bias = np.full(
         shape=bias_shape,
         fill_value=0.0 if num_accepted_tokens > vocab_size / 2 else float("-inf"),
-        dtype=logits.dtype
+        dtype=logits.dtype,
     )
 
     # Prepare indices for biasing
     indices = [slice(None)] * (logits.ndim - 1)
     if num_accepted_tokens > vocab_size / 2:
         # Bias non-accepted tokens
-        non_accepted_ids = np.setdiff1d(np.arange(vocab_size), np.array(list(accepted_token_ids)))
+        non_accepted_ids = np.setdiff1d(
+            np.arange(vocab_size), np.array(list(accepted_token_ids))
+        )
         indices.append(non_accepted_ids)
         bias[tuple(indices)] = float("-inf")
     else:
@@ -136,7 +156,8 @@ def bias_logits_numpy(logits, accepted_token_ids: set[int]):
         indices.append(accepted_indices)
         bias[tuple(indices)] = 0.0
 
-    return logits + bias
+    return bias
+
 
 def bias_logits_jax(logits, accepted_token_ids: set[int]):
     """
@@ -190,14 +211,17 @@ def bias_logits_jax(logits, accepted_token_ids: set[int]):
     bias_value = float("-inf") if num_accepted_tokens > num_tokens / 2 else 0.0
     bias = jnp.where(mask, bias_value, bias)
 
-    return logits + bias
+    return bias
+
 
 def bias_logits_pytorch(logits, accepted_token_ids: set[int]):
     """
     Implementation using PyTorch tensors that supports multi-dimensional logits tensors.
     """
     if not _has_torch:
-        raise ImportError("PyTorch module is not installed. Please install it with 'pip install torch'.")
+        raise ImportError(
+            "PyTorch module is not installed. Please install it with 'pip install torch'."
+        )
 
     if logits.dim() < 1:
         raise ValueError("logits must be at least a 1-dimensional tensor.")
@@ -224,18 +248,22 @@ def bias_logits_pytorch(logits, accepted_token_ids: set[int]):
         size=bias_shape,
         fill_value=0.0 if num_accepted_tokens > num_tokens / 2 else float("-inf"),
         device=device,
-        dtype=logits.dtype
+        dtype=logits.dtype,
     )
 
     # Prepare indices for biasing
     if num_accepted_tokens > num_tokens / 2:
         # Bias non-accepted tokens
-        accepted_indices = torch.tensor(list(accepted_token_ids), dtype=torch.long, device=device)
+        accepted_indices = torch.tensor(
+            list(accepted_token_ids), dtype=torch.long, device=device
+        )
         mask = torch.ones(vocab_size, dtype=torch.bool, device=device)
         mask[accepted_indices] = False
     else:
         # Bias accepted tokens
-        accepted_indices = torch.tensor(list(accepted_token_ids), dtype=torch.long, device=device)
+        accepted_indices = torch.tensor(
+            list(accepted_token_ids), dtype=torch.long, device=device
+        )
         mask = torch.zeros(vocab_size, dtype=torch.bool, device=device)
         mask[accepted_indices] = True
 
@@ -247,4 +275,4 @@ def bias_logits_pytorch(logits, accepted_token_ids: set[int]):
     bias_value = float("-inf") if num_accepted_tokens > num_tokens / 2 else 0.0
     bias = torch.where(mask, bias_value, bias)
 
-    return logits + bias
+    return bias
