@@ -1,7 +1,6 @@
 import pytest
-from typing import Dict, List
-from transformers import PreTrainedTokenizerFast, LlamaTokenizer
 import numpy as np
+from transformers import PreTrainedTokenizerFast, LlamaTokenizer
 from pse.core.engine import StructuringEngine
 from pse.util.errors import UnknownSchemaTypeError
 
@@ -21,29 +20,6 @@ def engine(tokenizer: PreTrainedTokenizerFast) -> StructuringEngine:
     """Module-scoped fixture for the StructuredOutputDriver."""
     engine = StructuringEngine(tokenizer=tokenizer)
     return engine
-
-
-def check_correct_token_mask(
-    engine: StructuringEngine,
-    test_logits: np.ndarray,
-    vocab: Dict[str, int],
-    valid_tokens: List[str],
-) -> np.ndarray:
-    """Check that the correct tokens are masked."""
-    logits = engine.mask_invalid_tokens(test_logits)
-    valid_token_ids = [vocab[token] for token in valid_tokens]
-    for token_id, score in enumerate(logits):
-        if token_id not in valid_token_ids:
-            assert (
-                score == -np.inf
-            ), f"Token {engine.tokenizer.decode([token_id])} was incorrectly masked, valid tokens: {valid_tokens}"
-        else:
-            assert (
-                score != -np.inf
-            ), f"Token {engine.tokenizer.decode([token_id])} is not supposed to be masked, valid tokens: {valid_tokens}"
-
-    return logits
-
 
 def test_create_default(engine: StructuringEngine) -> None:
     """Test the default initialization of StructuredOutputDriver."""
@@ -227,7 +203,6 @@ def test_invalid_tokens_object(engine: StructuringEngine) -> None:
     valid_token_id = engine.get_next_token(logits)
     assert valid_token_id in {21, 22}
 
-
 def test_simple_json_structure(engine: StructuringEngine) -> None:
     schema = {
         "type": "object",
@@ -239,14 +214,6 @@ def test_simple_json_structure(engine: StructuringEngine) -> None:
 
     assert not engine.within_json_value
     assert not engine.in_structured_state
-
-    # test_logits = np.random.rand(len(tokenizer.get_vocab()))
-
-    # logits = engine.mask_invalid_tokens(test_logits)
-    # valid_token_id: int = engine.get_valid_token(logits)
-
-    # assert tokenizer.decode([valid_token_id]).startswith("{")
-
 
 def test_complex_json_structure(
     engine: StructuringEngine, tokenizer: PreTrainedTokenizerFast
@@ -275,12 +242,6 @@ def test_complex_json_structure(
         "required": ["name", "arguments"],
     }
     engine.set_schema(schema)
-    # test_logits = np.random.rand(len(tokenizer.get_vocab()))
-
-    # logits = engine.mask_invalid_tokens(test_logits)
-    # valid_token_id: int = engine.get_valid_token(logits)
-
-    # assert tokenizer.decode([valid_token_id]).startswith("{")
 
 
 def test_better_than_openai(
@@ -337,14 +298,3 @@ def test_better_than_openai(
         },
     }
     engine.set_schema(schema, use_delimiters=False)
-    # test_logits = np.random.rand(len(tokenizer.get_vocab()))
-
-    # assert not engine.within_json_value
-    # assert engine.in_structured_state
-
-    # logits = engine.mask_invalid_tokens(test_logits)
-    # valid_token_id: int = engine.get_valid_token(logits)
-
-    # assert tokenizer.decode([valid_token_id]).startswith("{")
-
-    # not done these tests yet
