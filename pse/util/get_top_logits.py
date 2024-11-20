@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 from typing import List, Tuple
+
 logger = logging.getLogger(__name__)
 
 # Attempt to import optional dependencies
@@ -25,7 +26,8 @@ try:
 except ImportError:
     _has_torch = False
 
-def handle_logits(logits, top_k: int = 64) -> List[Tuple[int, float]]:
+
+def get_top_logits(logits, top_k: int = 64) -> List[Tuple[int, float]]:
     """
     Returns the top_k logits and their corresponding token ids.
 
@@ -43,24 +45,27 @@ def handle_logits(logits, top_k: int = 64) -> List[Tuple[int, float]]:
         TypeError: If `logits` is not an instance of one of the supported array types.
     """
     if _has_mlx and isinstance(logits, mx.array):
-        indices, values = handle_logits_mlx(logits, top_k)
+        indices, values = get_top_logits_mlx(logits, top_k)
     elif isinstance(logits, np.ndarray):
-        indices, values = handle_logits_numpy(logits, top_k)
+        indices, values = get_top_logits_numpy(logits, top_k)
     elif _has_jax and isinstance(logits, jnp.ndarray):
-        indices, values = handle_logits_jax(logits, top_k)
+        indices, values = get_top_logits_jax(logits, top_k)
     elif _has_torch and isinstance(logits, torch.Tensor):
-        indices, values = handle_logits_pytorch(logits, top_k)
+        indices, values = get_top_logits_pytorch(logits, top_k)
     else:
         raise TypeError(f"Unsupported array type for logits: {type(logits)}")
 
     return [(int(idx), float(score)) for idx, score in zip(indices, values)]
 
-def handle_logits_mlx(logits, top_k: int):
+
+def get_top_logits_mlx(logits, top_k: int):
     """
     Implementation using MLX arrays optimized for large vocabularies.
     """
     if not _has_mlx:
-        raise ImportError("MLX module is not installed. Please install it with 'pip install mlx'.")
+        raise ImportError(
+            "MLX module is not installed. Please install it with 'pip install mlx'."
+        )
 
     if not isinstance(logits, mx.array):
         raise TypeError("Expected logits to be an instance of mx.array.")
@@ -89,7 +94,8 @@ def handle_logits_mlx(logits, top_k: int):
 
     return top_k_indices, top_k_values
 
-def handle_logits_numpy(logits, top_k: int):
+
+def get_top_logits_numpy(logits, top_k: int):
     """
     Implementation using NumPy arrays optimized for large vocabularies.
     """
@@ -120,12 +126,15 @@ def handle_logits_numpy(logits, top_k: int):
 
     return top_k_indices, top_k_values
 
-def handle_logits_jax(logits, top_k: int):
+
+def get_top_logits_jax(logits, top_k: int):
     """
     Implementation using JAX arrays optimized for large vocabularies.
     """
     if not _has_jax:
-        raise ImportError("JAX module is not installed. Please install it with 'pip install jax jaxlib'.")
+        raise ImportError(
+            "JAX module is not installed. Please install it with 'pip install jax jaxlib'."
+        )
 
     if not isinstance(logits, jnp.ndarray):
         raise TypeError("Expected logits to be a jax.numpy.ndarray.")
@@ -154,12 +163,15 @@ def handle_logits_jax(logits, top_k: int):
 
     return top_k_indices, top_k_values
 
-def handle_logits_pytorch(logits, top_k: int):
+
+def get_top_logits_pytorch(logits, top_k: int):
     """
     Implementation using PyTorch tensors optimized for large vocabularies.
     """
     if not _has_torch:
-        raise ImportError("PyTorch module is not installed. Please install it with 'pip install torch'.")
+        raise ImportError(
+            "PyTorch module is not installed. Please install it with 'pip install torch'."
+        )
 
     if not isinstance(logits, torch.Tensor):
         raise TypeError("Expected logits to be a torch.Tensor.")
@@ -178,8 +190,6 @@ def handle_logits_pytorch(logits, top_k: int):
         return torch.tensor([], dtype=torch.long), torch.tensor([], dtype=logits.dtype)
 
     # Use torch.topk which is optimized and avoids sorting the entire array
-    top_k_values, top_k_indices = torch.topk(
-        logits, k=top_k, largest=True, sorted=True
-    )
+    top_k_values, top_k_indices = torch.topk(logits, k=top_k, largest=True, sorted=True)
 
     return top_k_indices, top_k_values

@@ -325,6 +325,7 @@ class Walker(ABC):
         Returns:
             A set of valid prefixes that can be used to advance the walker.
         """
+        
         valid_prefixes: Set[str] = set()
 
         for continuation in self.get_valid_continuations(dawg):

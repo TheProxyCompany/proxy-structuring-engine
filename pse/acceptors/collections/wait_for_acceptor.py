@@ -74,6 +74,20 @@ class WaitForWalker(Walker):
         else:
             self.walkers = list(self.acceptor.wait_for_acceptor.get_walkers())
 
+    def should_start_transition(self, token: str) -> bool:
+        for walker in self.walkers:
+            if walker.should_start_transition(token):
+                return True
+
+        return False
+
+    def should_complete_transition(self) -> bool:
+        for walker in self.walkers:
+            if walker.should_complete_transition():
+                return True
+
+        return False
+
     def accepts_any_token(self) -> bool:
         """
         Indicates that this acceptor matches all characters until a trigger is found.
