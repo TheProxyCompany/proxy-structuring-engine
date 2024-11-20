@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Tuple, cast
 import pytest
 from pse.core.engine import StructuringEngine
@@ -50,7 +51,7 @@ def generate_step(
     mx.async_eval(token, logprobs)
     return token, logprobs
 
-
+@pytest.mark.skipif(os.name != "darwin", reason="only for MacOS")
 def test_simple_json_structure(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
     model, engine = model_and_engine
     schema = {
