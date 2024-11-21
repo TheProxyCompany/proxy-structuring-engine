@@ -80,10 +80,17 @@ def test_complex_json_structure(model_and_engine: Tuple[nn.Module, StructuringEn
     )
     engine.set_schema(schema, use_delimiters=True)
     completed_generation = generate_response(raw_prompt, model, engine)
+    raw_output = completed_generation.output
     try:
-        output = json.loads(completed_generation.output)
+        only_json = raw_output.split("```json\n", 1)[1].split("\n```", 1)[0]
+    except IndexError:
+        pytest.fail(f"Failed to extract JSON content from delimited output: {raw_output}")
+
+    try:
+        output = json.loads(only_json)
     except json.JSONDecodeError:
         pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
+
     assert output["name"] == "metacognition"
     assert "arguments" in output
     assert "chain_of_thought" in output["arguments"]

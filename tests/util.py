@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import cast, Any
+from typing import cast
 from pse.core.engine import StructuringEngine
 import mlx.core as mx
 import mlx.nn as nn
@@ -23,11 +23,10 @@ class GenerateStepResult:
 
 @dataclass
 class CompletedGeneration:
-    output: Any
+    output: str
     average_mask_latency: float
     average_time_to_get_next_token: float
     average_total_time: float
-
 
 def generate_step(
     prompt: mx.array,

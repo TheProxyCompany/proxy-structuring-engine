@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import Dict, Any, Callable, Type
+from typing import Dict, Any, Callable, Type, Optional, Iterable, Tuple
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.core.walker import Walker
 from pse.util.errors import InvalidSchemaError
+from pse.util.state_machine.types import State
 from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
 
-
 class ObjectSchemaAcceptor(ObjectAcceptor):
+
     def __init__(
         self,
         schema: Dict[str, Any],
@@ -20,30 +21,27 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
         self.properties: Dict[str, Any] = schema.get("properties", {})
         self.start_hook = start_hook
         self.end_hook = end_hook
-        # Note that, according to the JSON schema specification, additional properties
-        # should be allowed by default.
-        if "additionalProperties" in schema:
-            if schema["additionalProperties"] is False:
-                self.allow_additional_properties = False
-            else:
-                # Implement handling for additionalProperties schema if necessary
-                self.allow_additional_properties = True
-        else:
-            self.allow_additional_properties = True  # Default behavior per JSON Schema
-        self.required_property_names = schema.get("required", [])
-        for required_property_name in self.required_property_names:
-            if required_property_name not in self.properties:
-                raise InvalidSchemaError(
-                    f"Required property '{required_property_name}' not defined"
-                )
 
-        assert self.properties is not None
+        # Determine if additional properties are allowed based on the schema
+        self.allow_additional_properties = schema.get("additionalProperties", True) is not False
+
+        # Validate required properties
+        self.required_property_names = schema.get("required", [])
+        undefined_required_properties = [
+            prop
+            for prop in self.required_property_names
+            if prop not in self.properties
+        ]
+        if undefined_required_properties:
+            raise InvalidSchemaError(
+                f"Required properties not defined in schema: {', '.join(undefined_required_properties)}"
+            )
 
     @property
     def walker_class(self) -> Type[Walker]:
         return ObjectSchemaWalker
 
-    def get_edges(self, state):
+    def get_edges(self, state, value: Dict[str, Any] = {}):
         if state == 2:
             return [
                 (
@@ -57,9 +55,37 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                     3,
                 )
                 for prop_name, prop_schema in self.properties.items()
+                if prop_name not in value
             ]
         else:
             return super().get_edges(state)
+
+    def get_transitions(
+        self, walker: Walker, state: Optional[State] = None
+    ) -> Iterable[Tuple[Walker, State, State]]:
+        """Retrieve transition walkers from the current state.
+
+        For each edge from the current state, yields walkers that can traverse that edge.
+        Handles optional acceptors and pass-through transitions appropriately.
+
+        Args:
+            walker: The walker initiating the transition.
+            state: Optional starting state. If None, uses the walker's current state.
+
+        Returns:
+            Iterable of tuples (transition_walker, source_state, target_state).
+        """
+        current_state = state or walker.current_state
+        for acceptor, target_state in self.get_edges(current_state, walker.current_value):
+            for transition in acceptor.get_walkers():
+                yield transition, current_state, target_state
+
+            if (
+                acceptor.is_optional
+                and target_state not in self.end_states
+                and walker.can_accept_more_input()
+            ):
+                yield from self.get_transitions(walker, target_state)
 
 
 class ObjectSchemaWalker(ObjectWalker):
