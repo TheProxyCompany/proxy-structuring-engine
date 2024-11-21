@@ -1,113 +1,93 @@
 import pytest
 import json
-from typing import Tuple, cast
+from typing import Tuple
 from pse.core.engine import StructuringEngine
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 try:
-    import mlx.core as mx
     import mlx.nn as nn
     from mlx_lm.utils import load
-    from mlx_lm.sample_utils import categorical_sampling
+    from tests.util import generate_response
 except ImportError:
-    pytest.skip("mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True)
+    pytest.skip(
+        "mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True
+    )
+
 
 @pytest.fixture(scope="module")
 def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    TEST_MODEL = (
-        "/Users/jckwind/Documents/ProxyBot/language_models/Llama-3.1-SuperNova-Lite"
-    )
-    model, tokenizer = load(TEST_MODEL)
+    model, tokenizer = load("meta-llama/Llama-3.2-3B-Instruct")
     engine = StructuringEngine(tokenizer._tokenizer)
     return model, engine
 
-def generate_step(
-    prompt: mx.array,
-    model: nn.Module,
-    engine: StructuringEngine,
-    temp: float = 1.0,
-) -> Tuple[mx.array, mx.array]:
+def test_simple_json_structure(
+    model_and_engine: Tuple[nn.Module, StructuringEngine],
+) -> None:
     """
-    A generator producing token ids based on the given prompt from the model.
-
-    Args:
-        prompt (mx.array): The input prompt.
-        model (nn.Module): The model to use for generation.
-        engine (StructuringEngine): The engine to use for generation.
-        temp (float): The temperature for sampling, if 0.0 the argmax is used.
-          Default: ``1.0``.
-    Yields:
-        Tuple[mx.array, mx.array]: A tuple of one token and a vector of log probabilities.
-    """
-    logits = model(prompt[None])
-    logits = logits[:, -1, :]
-    logits += engine.generate_logit_bias_mask(logits)
-
-    if engine.acceptor and not engine.has_reached_accept_state():
-        valid_token_id = engine.get_next_token(logits[0, :], top_k=4)
-        token = mx.array([valid_token_id])
-    else:
-        token: mx.array = categorical_sampling(logits, temp) if temp > 0.0 else mx.argmax(logits, axis=-1)
-
-    logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
-    mx.async_eval(token, logprobs)
-    return token, logprobs
-
-def test_simple_json_structure(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
-    """
-    Test that the engine can generate a simple JSON object from
-    real LLM output.
+    Validates that the engine can generate a simple JSON object
+    adhering to a specified schema using real LLM output.
     """
     model, engine = model_and_engine
+    # Define schema and prompt
     schema = {
         "type": "object",
         "properties": {"value": {"type": "number"}},
         "required": ["value"],
         "additionalProperties": False,
     }
-    raw_prompt = f"Please generate a simple JSON object with the number 9.11. Follow this schema: {str(schema)}"
+    raw_prompt = (
+        f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
+    )
     engine.set_schema(schema, use_delimiters=False)
-
-    messages = [{"role": "user", "content": raw_prompt}]
-    encoded_prompt = engine.tokenizer.apply_chat_template(messages, add_generation_prompt=True)
-    prompt = mx.array(encoded_prompt)
-    tokens = []
-
-    while not engine.has_reached_accept_state():
-        token, _ = generate_step(prompt, model, engine)
-        prompt = mx.concatenate([prompt, token])
-        tokens.append(cast(int, token.item()))
-
-    output = engine.tokenizer.decode(tokens)
-    assert json.loads(output) == {"value": 9.11}
+    completed_generation = generate_response(raw_prompt, model, engine)
+    # Validate the generated output
+    assert json.loads(completed_generation.output) == {"value": 9.11}
 
 
-# def test_complex_json_structure(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
-#     """Test parsing a complex JSON structure."""
-#     model, engine = model_and_engine
-#     schema = {
-#         "type": "object",
-#         "properties": {
-#             "name": {"const": "metacognition"},
-#             "arguments": {
-#                 "type": "object",
-#                 "properties": {
-#                     "chain_of_thought": {
-#                         "type": "array",
-#                         "items": {"type": "string"},
-#                     },
-#                     "feelings": {
-#                         "type": ["string"],
-#                         "nullable": True,
-#                         "default": None,
-#                     },
-#                 },
-#                 "required": ["chain_of_thought"],
-#             },
-#         },
-#         "required": ["name", "arguments"],
-#     }
-#     engine.set_schema(schema)
+def test_complex_json_structure(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
+    """Test parsing a complex JSON structure."""
+    model, engine = model_and_engine
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"const": "metacognition"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "chain_of_thought": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "feelings": {
+                        "type": ["string"],
+                        "nullable": True,
+                        "default": None,
+                    },
+                },
+                "required": ["chain_of_thought"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    raw_prompt = (
+        f"This is a test of your abilities."
+        f"Please structure your response to follow the following schema: {schema}."
+        f"You must wrap your response with ```json\n and \n```."
+    )
+    engine.set_schema(schema, use_delimiters=True)
+    completed_generation = generate_response(raw_prompt, model, engine)
+    try:
+        output = json.loads(completed_generation.output)
+    except json.JSONDecodeError:
+        pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
+    assert output["name"] == "metacognition"
+    assert "arguments" in output
+    assert "chain_of_thought" in output["arguments"]
+    assert isinstance(output["arguments"]["chain_of_thought"], list)
 
 
 # def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
