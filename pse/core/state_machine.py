@@ -84,7 +84,6 @@ class StateMachine(Acceptor):
             Iterable of tuples (transition_walker, source_state, target_state).
         """
         current_state = state or walker.current_state
-        logger.debug(f"🟡 Getting edges from state {current_state} in {self}")
         for acceptor, target_state in self.get_edges(current_state):
             for transition in acceptor.get_walkers():
                 yield transition, current_state, target_state

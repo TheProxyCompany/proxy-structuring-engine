@@ -469,19 +469,8 @@ class Walker(ABC):
                 else ""
             )
 
-        def _format_edge_info() -> str:
-            if self.explored_edges:
-                return self._format_explored_edges()
-            if self.target_state is not None:
-                return _format_current_edge()
-            return (
-                f"value: {repr(self.current_value or self.raw_value)}"
-                if self.raw_value or self.current_value
-                else ""
-            )
-
         def _format_current_edge() -> str:
-            to_state_display = "End" if self.target_state == "$" else self.target_state
+            to_state_display = self.target_state or "?"
             accumulated_value = self.raw_value or self.current_value or ""
             return (
                 f"Current edge: ({self.current_state}) "
@@ -507,7 +496,7 @@ class Walker(ABC):
             for part in [
                 _format_state_info(),
                 _format_history_info(),
-                _format_edge_info(),
+                _format_current_edge(),
                 _format_remaining_input(),
                 _format_transition_info(),
             ]
