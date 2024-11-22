@@ -321,7 +321,8 @@ class Walker(ABC):
             dawg: The Directed Acyclic Word Graph to search for valid prefixes.
 
         Returns:
-            A set of valid prefixes that can be used to advance the walker.
+            A set of valid prefixes that can be used to advance the walker. Returns
+            an empty set to indicate that all tokens are valid.
         """
 
         valid_prefixes: Set[str] = set()

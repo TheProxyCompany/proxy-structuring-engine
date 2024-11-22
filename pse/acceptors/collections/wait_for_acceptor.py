@@ -73,6 +73,8 @@ class WaitForWalker(Walker):
         self.acceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
+        if self.transition_walker and self.transition_walker.is_within_value():
+            return self.transition_walker.should_start_transition(token)
         return True
 
     def accepts_any_token(self) -> bool:
@@ -82,6 +84,8 @@ class WaitForWalker(Walker):
         Returns:
             bool: Always True.
         """
+        if self.transition_walker and self.transition_walker.is_within_value():
+            return False
         return True
 
     def can_accept_more_input(self) -> bool:

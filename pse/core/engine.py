@@ -224,10 +224,10 @@ class StructuringEngine(LogitsProcessor):
         """
         valid_prefixes = set()
         for walker in self.walkers:
-            valid_prefixes.update(walker.find_valid_prefixes(self.dawg))
+            if walker.accepts_any_token():
+                return get_logit_bias(logits, set())
 
-        if not valid_prefixes:
-            return get_logit_bias(logits, set())
+            valid_prefixes.update(walker.find_valid_prefixes(self.dawg))
 
         token_ids = [
             token_id

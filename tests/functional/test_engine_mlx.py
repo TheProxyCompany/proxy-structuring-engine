@@ -95,7 +95,6 @@ def test_complex_json_structure(model_and_engine: Tuple[nn.Module, StructuringEn
     assert "arguments" in output
     assert "chain_of_thought" in output["arguments"]
     assert isinstance(output["arguments"]["chain_of_thought"], list)
-    # assert len(output["arguments"]["chain_of_thought"]) == 3
 
 def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
     """Test that OpenAI sucks."""
