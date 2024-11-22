@@ -385,11 +385,11 @@ class Walker(ABC):
             self.explored_edges,
             key=lambda x: (
                 x[2],
-                str(x[0]) if x[0] != "$" else "End",
-                str(x[1]) if x[1] != "$" else "End",
+                str(x[0]) if x[0] != "$" else "$",
+                str(x[1]) if x[1] != "$" else "$",
             ),
         ):
-            to_state_display = "End" if to_state == "End" else to_state
+            to_state_display = "✅" if to_state == "$" else to_state
             edge_line = f"({from_state}) --{repr(edge_value)}--> ({to_state_display})"
             edge_lines.append(edge_line)
         return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
@@ -446,7 +446,7 @@ class Walker(ABC):
         def _format_state_info() -> str:
             state_info = f"State: {self.current_state}"
             return (
-                f"{state_info} ➔ {self.target_state}"
+                f"{state_info} ➔ {self.target_state if self.target_state != '$' else '✅'}"
                 if self.target_state is not None
                 and self.current_state != self.target_state
                 else state_info
@@ -470,11 +470,12 @@ class Walker(ABC):
             )
 
         def _format_current_edge() -> str:
-            to_state_display = self.target_state or "?"
+            target_state = self.target_state or "?"
             accumulated_value = self.raw_value or self.current_value or ""
             return (
                 f"Current edge: ({self.current_state}) "
-                f"--{repr(accumulated_value)}--> ({to_state_display})"
+                f"--{repr(accumulated_value) if accumulated_value else ''}--> "
+                f"({'✅' if target_state == "$" else target_state})"
             )
 
         def _format_transition_info() -> str:

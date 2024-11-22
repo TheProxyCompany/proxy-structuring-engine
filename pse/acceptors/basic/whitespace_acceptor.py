@@ -54,6 +54,7 @@ class WhitespaceWalker(Walker):
             text (str, optional): Accumulated whitespace text. Defaults to "".
         """
         super().__init__(acceptor)
+        self.target_state = "$"
         self.acceptor: WhitespaceAcceptor = acceptor
         self._raw_value = value or ""
         self.consumed_character_count = len(self._raw_value)

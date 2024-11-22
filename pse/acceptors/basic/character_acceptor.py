@@ -68,6 +68,7 @@ class CharacterWalker(StateMachineWalker):
             value (Optional[str]): The current input value. Defaults to None.
         """
         super().__init__(acceptor)
+        self.target_state = "$"
         self.acceptor: CharacterAcceptor = acceptor
         self._raw_value = value
 

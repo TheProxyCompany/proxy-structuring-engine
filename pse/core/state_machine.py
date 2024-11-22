@@ -219,7 +219,7 @@ class StateMachine(Acceptor):
            against the vocab and yields valid partial matches
         """
         for walker in walkers:
-            logger.debug(f"⚪️ Processing walker with token: {token}")
+            logger.debug(f"⚪️ Processing walker with token: {repr(token)}")
             for advanced_walker in walker.consume_token(token):
                 if not advanced_walker.remaining_input:
                     logger.debug(f"🟢 Full match for token: {repr(token)}")

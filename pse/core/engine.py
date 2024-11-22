@@ -244,6 +244,8 @@ class StructuringEngine(LogitsProcessor):
         # Process each token of the raw string input
         for token_id in self.tokenizer.encode(raw_input, add_special_tokens=False):
             token = self.tokenizer.decode([token_id])
+            if not token:
+                continue
 
             # Get walkers that accept this exact token
             new_walkers = [
