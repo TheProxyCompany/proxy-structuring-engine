@@ -63,7 +63,7 @@ def test_partial_delimiters(engine: StructuringEngine) -> None:
     assert engine._waiting_for_trigger()
     engine.consume_raw_input("python")
     assert engine._waiting_for_trigger()
-    engine.consume_raw_input("json")
+    engine.consume_raw_input("```json")
     assert engine._waiting_for_trigger()
     engine.consume_raw_input("\n")
     assert not engine._waiting_for_trigger()

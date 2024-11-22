@@ -1,11 +1,10 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable, Tuple, Type
-import logging
+from typing import Iterable, Optional, Callable, Tuple
 
 from pse.acceptors.basic.acceptor import Acceptor
 from pse.core.state_machine import StateMachine, State
 from pse.core.walker import Walker
-
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +20,7 @@ class WaitForAcceptor(StateMachine):
     def __init__(
         self,
         wait_for_acceptor: Acceptor,
+        allow_break: bool = False,
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
     ):
@@ -33,13 +33,10 @@ class WaitForAcceptor(StateMachine):
         """
         super().__init__()
         self.wait_for_acceptor = wait_for_acceptor
+        self.allow_break = allow_break
         self.start_hook = start_hook
         self.end_hook = end_hook
         self.triggered = False
-
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return WaitForWalker
 
     def get_transitions(
         self, walker: Walker, state: Optional[State] = None
@@ -118,6 +115,11 @@ class WaitForWalker(Walker):
         ):
             # wait for acceptor blindly accepts all tokens while
             # trying to advance the trigger acceptor
+            if not self.acceptor.allow_break:
+                self.transition_walker = None
+                yield from self.branch()
+                return
+
             yield self
             return
 
