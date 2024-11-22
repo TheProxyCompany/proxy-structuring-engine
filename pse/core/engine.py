@@ -16,7 +16,6 @@ from pse.util.errors import TokenRejected
 from pse.util.state_machine.get_acceptor import get_acceptor
 from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_top_logits import get_top_logits
-from pse.util.pydantic_to_json import pydantic_to_json
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ class StructuringEngine(LogitsProcessor):
 
     def set_schema(
         self,
-        schema: BaseModel | List[BaseModel] | Dict[str, Any] | List[Dict[str, Any]],
+        schema: type[BaseModel] | List[type[BaseModel]] | Dict[str, Any] | List[Dict[str, Any]],
         use_delimiters: bool = True,
         delimiters: Optional[Tuple[str, str]] = None,
     ) -> None:
@@ -126,11 +125,17 @@ class StructuringEngine(LogitsProcessor):
 
         def get_schema(schema: Any) -> Dict[str, Any]:
             if isinstance(schema, list):
-                if schema and isinstance(schema[0], BaseModel):
-                    return {"anyOf": [pydantic_to_json(type(s)) for s in schema]}
+                if schema and all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
+                    return {
+                        "anyOf": [
+                            s.model_json_schema()
+                            for s in schema
+                            if isinstance(s, type) and issubclass(s, BaseModel)
+                        ]
+                    }
                 return {"anyOf": schema}
-            if isinstance(schema, BaseModel):
-                return pydantic_to_json(type(schema))
+            if isinstance(schema, type) and issubclass(schema, BaseModel):
+                return schema.model_json_schema()
             if isinstance(schema, dict):
                 if "schema" in schema:
                     logger.warning(
