@@ -53,6 +53,10 @@ class PropertySchemaAcceptor(PropertyAcceptor):
     def walker_class(self) -> Type[Walker]:
         return PropertySchemaWalker
 
+    @property
+    def is_optional(self) -> bool:
+        return super().is_optional or self.prop_schema.get("nullable", False)
+
 
 class PropertySchemaWalker(PropertyWalker):
     """

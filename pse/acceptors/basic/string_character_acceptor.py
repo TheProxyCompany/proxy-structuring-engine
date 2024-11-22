@@ -39,6 +39,7 @@ class StringCharacterWalker(Walker):
             value (Optional[str]): The accumulated string value. Defaults to None.
         """
         super().__init__(acceptor)
+        self.target_state = "$"
         self.acceptor: StringCharacterAcceptor = acceptor
         self._accepts_more_input = True
         self._raw_value = value

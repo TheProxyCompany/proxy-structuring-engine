@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable, Type
+from typing import Iterable, Optional, Callable, Tuple, Type
 import logging
 
 from pse.acceptors.basic.acceptor import Acceptor
-from pse.core.state_machine import StateMachine
+from pse.core.state_machine import StateMachine, State
 from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,21 @@ class WaitForAcceptor(StateMachine):
     def walker_class(self) -> Type[Walker]:
         return WaitForWalker
 
-    def advance(self, walker: Walker, token: str) -> Iterable[Walker]:
-        return self.wait_for_acceptor.advance(walker, token)
+    def get_transitions(
+        self, walker: Walker, state: Optional[State] = None
+    ) -> Iterable[Tuple[Walker, State, State]]:
+        """
+        Get transitions for the WaitForAcceptor.
+        """
+        for transition in self.wait_for_acceptor.get_walkers():
+            yield transition, 0, "$"
 
-    def __repr__(self) -> str:
-        return f"WaitForAcceptor({repr(self.wait_for_acceptor)})"
+    def get_walkers(self) -> Iterable[Walker]:
+        """
+        Yields:
+            Walkers for the WaitForAcceptor.
+        """
+        yield from self.branch_walker(WaitForWalker(self))
 
 
 class WaitForWalker(Walker):
@@ -54,39 +64,19 @@ class WaitForWalker(Walker):
     Manages internal walkers that monitor for the triggering acceptor.
     """
 
-    def __init__(
-        self,
-        acceptor: WaitForAcceptor,
-        walkers: Optional[Iterable[Walker]] = None,
-    ):
+    def __init__(self, acceptor: WaitForAcceptor):
         """
         Initialize the WaitForAcceptor Walker.
 
         Args:
             acceptor (WaitForAcceptor): The parent WaitForAcceptor.
-            walkers (Optional[Iterable[StateMachineAcceptor.Walker]], optional):
-                Existing walkers to manage. Defaults to those from the wait_for_acceptor.
         """
         super().__init__(acceptor)
+        self.target_state = "$"
         self.acceptor = acceptor
-        if walkers:
-            self.walkers = list(walkers)
-        else:
-            self.walkers = list(self.acceptor.wait_for_acceptor.get_walkers())
 
     def should_start_transition(self, token: str) -> bool:
-        for walker in self.walkers:
-            if walker.should_start_transition(token):
-                return True
-
-        return False
-
-    def should_complete_transition(self) -> bool:
-        for walker in self.walkers:
-            if walker.should_complete_transition():
-                return True
-
-        return False
+        return True
 
     def accepts_any_token(self) -> bool:
         """
@@ -107,8 +97,9 @@ class WaitForWalker(Walker):
         Returns:
             bool: True if in a value, False otherwise.
         """
-        return self.acceptor.triggered or any(
-            walker.is_within_value() for walker in self.walkers
+        return (
+            self.transition_walker is not None
+            and self.transition_walker.is_within_value()
         )
 
     def consume_token(self, token: str) -> Iterable[Walker]:
@@ -121,26 +112,13 @@ class WaitForWalker(Walker):
         Returns:
             Iterable[TokenAcceptor.Walker]: Updated walkers after processing.
         """
-        new_walkers = []
+        if (
+            not self.transition_walker
+            or not self.transition_walker.should_start_transition(token)
+        ):
+            # wait for acceptor blindly accepts all tokens while
+            # trying to advance the trigger acceptor
+            yield self
+            return
 
-        for advanced_token, walker in self.acceptor.advance_all(self.walkers, token):
-            if walker.has_reached_accept_state():
-                self.acceptor.triggered = True
-                if self.acceptor.end_hook:
-                    self.acceptor.end_hook()
-                yield walker
-                return
-            else:
-                new_walkers.append(walker)
-
-        yield WaitForWalker(self.acceptor, new_walkers)
-
-    @property
-    def current_value(self) -> str:
-        """
-        Retrieve the current value indicating the wait state.
-
-        Returns:
-            str: Description of the waiting state.
-        """
-        return "\n".join(repr(walker) for walker in self.walkers)
+        yield from self.acceptor.advance(self, token)

@@ -81,6 +81,7 @@ class TextWalker(StateMachineWalker):
             consumed_character_count (int, optional): The initial position in the text. Defaults to 0.
         """
         super().__init__(acceptor)
+        self.target_state = "$"
         self.acceptor = acceptor
         self.consumed_character_count = consumed_character_count or 0
 
