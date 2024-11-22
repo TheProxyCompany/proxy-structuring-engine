@@ -1,5 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, Callable, Type, Optional, Iterable, Tuple
+from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.core.walker import Walker
 from pse.util.errors import InvalidSchemaError
@@ -43,8 +46,9 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
 
     def get_edges(self, state, value: Dict[str, Any] = {}):
         if state == 2:
-            return [
-                (
+            for prop_name, prop_schema in self.properties.items():
+                if prop_name not in value:
+                    yield (
                     PropertySchemaAcceptor(
                         prop_name,
                         prop_schema,
@@ -54,11 +58,16 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                     ),
                     3,
                 )
-                for prop_name, prop_schema in self.properties.items()
-                if prop_name not in value
-            ]
+        elif state == 4:
+            has_all_required_properties = all(
+                prop_name in value
+                for prop_name in self.required_property_names
+            )
+            yield (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2)
+            if has_all_required_properties:
+                yield (TextAcceptor("}"), "$")
         else:
-            return super().get_edges(state)
+            yield from super().get_edges(state)
 
     def get_transitions(
         self, walker: Walker, state: Optional[State] = None
@@ -99,13 +108,14 @@ class ObjectSchemaWalker(ObjectWalker):
 
     def should_start_transition(self, token: str) -> bool:
         if self.target_state == "$":
-            return all(
+            has_all_required_properties = all(
                 prop_name in self.value
                 for prop_name in self.acceptor.required_property_names
             )
-        if self.current_state == 2 and self.target_state == 3:
-            # Check if the property name is already in the object
-            return token not in self.value
+            return has_all_required_properties
+        # if self.current_state == 2 and self.target_state == 3:
+        #     # Check if the property name is already in the object
+        #     return token not in self.value
         if self.current_state == 4 and self.target_state == 2:
             # Are all allowed properties already set?
             return len(self.value.keys()) < len(self.acceptor.properties)

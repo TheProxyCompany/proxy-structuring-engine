@@ -184,7 +184,6 @@ class StateMachine(Acceptor):
                 continue
 
             # Handle active transition
-            logger.debug(f"⚪️ Parsing {repr(current_token)} via {repr(current_walker)}")
             for transition in current_walker.transition_walker.consume_token(current_token):
                 if new_walker := current_walker.complete_transition(transition):
                     if new_walker.remaining_input:
@@ -219,7 +218,6 @@ class StateMachine(Acceptor):
            against the vocab and yields valid partial matches
         """
         for walker in walkers:
-            logger.debug(f"⚪️ Processing walker with token: {repr(token)}")
             for advanced_walker in walker.consume_token(token):
                 if not advanced_walker.remaining_input:
                     logger.debug(f"🟢 Full match for token: {repr(token)}")

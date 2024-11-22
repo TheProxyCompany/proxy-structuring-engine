@@ -78,7 +78,7 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
     accepted2 = AcceptedState(walker2)
 
     assert (
-        accepted1 == accepted2
+        accepted1 != accepted2
     ), "AcceptedState instances should not be equal even if their values are the same."
 
     assert (

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set, Type
+from typing import Iterable, Optional, Type
 
 from lexpy import DAWG
 from pse.core.state_machine import StateMachine
@@ -67,15 +67,12 @@ class WhitespaceWalker(Walker):
 
         return True
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        valid_tokens = set()
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
         if self.length_exceeded:
-            return valid_tokens
+            return []
 
         for char in WHITESPACE_CHARS:
-            valid_tokens.update(dawg.search_with_prefix(char))
-
-        return valid_tokens
+            yield char
 
     def can_accept_more_input(self) -> bool:
         return (

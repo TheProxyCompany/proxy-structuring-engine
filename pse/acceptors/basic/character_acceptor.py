@@ -72,12 +72,10 @@ class CharacterWalker(StateMachineWalker):
         self.acceptor: CharacterAcceptor = acceptor
         self._raw_value = value
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        valid_tokens = set()
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
         for char in self.acceptor.charset:
-            valid_tokens.update(dawg.search_with_prefix(char))
+            yield char
 
-        return valid_tokens
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string."""
@@ -142,11 +140,11 @@ class CharacterWalker(StateMachineWalker):
         """
         return self._raw_value
 
-    # def is_within_value(self) -> bool:
-    #     """
-    #     Check if the walker has a value.
+    def is_within_value(self) -> bool:
+        """
+        Check if the walker has a value.
 
-    #     Returns:
-    #         bool: True if the walker has a value, False otherwise.
-    #     """
-    #     return self.consumed_character_count > 0
+        Returns:
+            bool: True if the walker has a value, False otherwise.
+        """
+        return self.consumed_character_count > 0

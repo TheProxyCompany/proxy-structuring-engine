@@ -20,7 +20,8 @@ except ImportError:
 @pytest.fixture(scope="module")
 def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    model, tokenizer = load("meta-llama/Llama-3.2-3B-Instruct")
+    model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
+    model, tokenizer = load(model_path_hf)
     engine = StructuringEngine(tokenizer._tokenizer)
     return model, engine
 
@@ -96,71 +97,67 @@ def test_complex_json_structure(model_and_engine: Tuple[nn.Module, StructuringEn
     assert isinstance(output["arguments"]["chain_of_thought"], list)
     # assert len(output["arguments"]["chain_of_thought"]) == 3
 
-# def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
-#     """Test that OpenAI sucks."""
-#     # openAI's structured output blog post said:
-#     #
-#     #   "The following is a sample recursive schema that is supported on
-#     #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
-#     #
-#     # let's test that.
-#     model, engine = model_and_engine
-#     schema = {
-#         "name": "ui",
-#         "description": "Dynamically generated UI",
-#         "strict": True,
-#         "schema": {
-#             "type": "object",
-#             "properties": {
-#                 "type": {
-#                     "type": "string",
-#                     "description": "The type of the UI component",
-#                     "enum": ["div", "button", "header", "section", "field", "form"],
-#                 },
-#                 "label": {
-#                     "type": "string",
-#                     "description": "The label of the UI component, used for buttons or form fields",
-#                 },
-#                 "children": {
-#                     "type": "array",
-#                     "description": "Nested UI components",
-#                     "items": {"$ref": "#"},
-#                 },
-#                 "attributes": {
-#                     "type": "array",
-#                     "description": "Arbitrary attributes for the UI component, suitable for any element",
-#                     "items": {
-#                         "type": "object",
-#                         "properties": {
-#                             "name": {
-#                                 "type": "string",
-#                                 "description": "The name of the attribute, for example onClick or className",
-#                             },
-#                             "value": {
-#                                 "type": "string",
-#                                 "description": "The value of the attribute",
-#                             },
-#                         },
-#                     },
-#                 },
-#             },
-#             "required": ["type", "label", "children", "attributes"],
-#             "additionalProperties": False,
-#         },
-#     }
-#     engine.set_schema(schema, use_delimiters=False)
-#     messages = [
-#         {
-#             "role": "user",
-#             "content": f"Please generate a simple UI with a div that has a label that says 'Hello, world!'. Follow this schema: {str(schema)}",
-#         }
-#     ]
-#     prompt = engine.tokenizer.apply_chat_template(messages, add_generation_prompt=True)
-#     assert isinstance(prompt, list)
-#     prompt = mx.array(prompt)
+def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine]) -> None:
+    """Test that OpenAI sucks."""
+    # openAI's structured output blog post said:
+    #
+    #   "The following is a sample recursive schema that is supported on
+    #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
+    #
+    # let's test that.
+    model, engine = model_and_engine
+    schema = {
+        "name": "ui",
+        "description": "Dynamically generated UI",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "The type of the UI component",
+                    "enum": ["div", "button", "header", "section", "field", "form"],
+                },
+                "label": {
+                    "type": "string",
+                    "description": "The label of the UI component, used for buttons or form fields",
+                },
+                "children": {
+                    "type": "array",
+                    "description": "Nested UI components",
+                    "items": {"$ref": "#"},
+                },
+                "attributes": {
+                    "type": "array",
+                    "description": "Arbitrary attributes for the UI component, suitable for any element",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the attribute, for example onClick or className",
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The value of the attribute",
+                            },
+                        },
+                    },
+                },
+            },
+            "required": ["type", "label", "children", "attributes"],
+            "additionalProperties": False,
+        },
+    }
+    raw_prompt = (
+        f"Please return a div that has a child button that says 'Hello, World!'."
+        f"Please format your response to follow the following schema: {schema}."
+    )
+    engine.set_schema(schema, use_delimiters=False)
+    completed_generation = generate_response(raw_prompt, model, engine)
+    try:
+        output = json.loads(completed_generation.output)
+    except json.JSONDecodeError:
+        pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
 
-#     tokens = []
-
-#     for token_id, log_probs in generate_step(prompt=prompt, model=model, engine=engine):
-#         token_id = cast(mx.array, token_id)
-#         tokens.append(token_id)
+    assert output["type"] == "div"

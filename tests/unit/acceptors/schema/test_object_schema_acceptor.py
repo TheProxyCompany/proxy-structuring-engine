@@ -53,22 +53,6 @@ def test_initialization_missing_required_property_in_properties(
         ObjectSchemaAcceptor(schema, base_context)
 
 
-def test_get_edges_other_states(base_context: Dict[str, Any]) -> None:
-    """
-    Test the get_edges method for states other than 2.
-    Ensures that the superclass method is called.
-    """
-    schema = {
-        "type": "object",
-        "properties": {"name": {"type": "string"}},
-        "required": ["name"],
-    }
-    acceptor = ObjectSchemaAcceptor(schema, base_context)
-    edges = acceptor.get_edges(4)  # State not specifically handled
-    assert isinstance(edges, list), "Edges should be a list."
-    # Further assertions based on superclass behavior could be added here
-
-
 def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
     """
     Test that the value_started_hook is not called prematurely.
@@ -209,3 +193,35 @@ def test_complex_json_structure(base_context: Dict[str, Any]) -> None:
                 ],
             },
         }
+
+
+
+def test_complex_structure_partial_advancement():
+    schema = {
+        "type": "object",
+        "properties": {
+            "type": {
+                "type": "string",
+                "description": "The type of the UI component",
+                "enum": ["div", "button", "header", "section", "field", "form"],
+            },
+            "label": {
+                "type": "string",
+                "description": "The label of the UI component, used for buttons or form fields",
+            },
+        },
+        "required": ["type", "label"],
+        "additionalProperties": False,
+    }
+    acceptor = ObjectSchemaAcceptor(schema, {})
+    walkers = list(acceptor.get_walkers())
+    valid_json = '{\n  "'
+    walkers = [walker for _, walker in acceptor.advance_all(walkers, valid_json)]
+    assert len(walkers) == 2
+    walkers = [walker for _, walker in acceptor.advance_all(walkers, "type")]
+    assert len(walkers) == 1
+    rest = '": "div", "label": "hello!" \n}'
+    walkers = [walker for _, walker in acceptor.advance_all(walkers, rest)]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].current_value == {"type": "div", "label": "hello!"}

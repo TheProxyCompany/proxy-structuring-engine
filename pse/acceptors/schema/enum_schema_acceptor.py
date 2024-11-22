@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import List, Optional
+
+import json
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.core.state_machine import StateMachine
 
@@ -22,7 +26,7 @@ class EnumSchemaAcceptor(StateMachine):
             KeyError: If the 'enum' key is not present in the schema.
             TypeError: If the 'enum' value is not a list.
         """
-        enum_values = schema.get("enum")
+        enum_values: Optional[List[str]] = schema.get("enum")
 
         if enum_values is None:
             raise KeyError("Schema must contain 'enum' key.")
@@ -33,7 +37,7 @@ class EnumSchemaAcceptor(StateMachine):
         super().__init__(
             {
                 0: [
-                    (TextAcceptor(value), "$") for value in enum_values
+                    (TextAcceptor(json.dumps(value)), "$") for value in enum_values
                 ],
             },
         )

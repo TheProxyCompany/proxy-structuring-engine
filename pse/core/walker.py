@@ -292,7 +292,7 @@ class Walker(ABC):
         """
         return False
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
         """Return the set of strings that allow valid continuation from current state.
 
         The walker uses these strings to determine valid paths forward in the state
@@ -306,9 +306,13 @@ class Walker(ABC):
             A set of strings that represent valid continuations from current state.
         """
         if not self.transition_walker or depth > 10:
-            return set()
+            return []
 
-        return self.transition_walker.get_valid_continuations(dawg, depth + 1)
+        yield from self.transition_walker.get_valid_continuations(dawg, depth + 1)
+
+        if self.transition_walker.acceptor.is_optional:
+            for next_walker in self.acceptor.branch_walker(self):
+                yield from next_walker.get_valid_continuations(dawg, depth + 1)
 
     def find_valid_prefixes(self, dawg: DAWG) -> Set[str]:
         """Identify complete tokens that can advance the acceptor to a valid state.
@@ -321,8 +325,13 @@ class Walker(ABC):
         """
 
         valid_prefixes: Set[str] = set()
+        seen = set()
 
         for continuation in self.get_valid_continuations(dawg):
+            if continuation in seen:
+                continue
+            seen.add(continuation)
+
             logger.debug("Getting tokens with prefix: %r", continuation)
             tokens = dawg.search_with_prefix(continuation)
             valid_prefixes.update(token for token in tokens if isinstance(token, str))
@@ -374,26 +383,6 @@ class Walker(ABC):
         # Return the original string if all parsing attempts fail
         return value
 
-    def _format_explored_edges(self) -> str:
-        """Format the explored edges for logging purposes.
-
-        Returns:
-            A string representation of the explored edges.
-        """
-        edge_lines = []
-        for from_state, to_state, edge_value in sorted(
-            self.explored_edges,
-            key=lambda x: (
-                x[2],
-                str(x[0]) if x[0] != "$" else "$",
-                str(x[1]) if x[1] != "$" else "$",
-            ),
-        ):
-            to_state_display = "✅" if to_state == "$" else to_state
-            edge_line = f"({from_state}) --{repr(edge_value)}--> ({to_state_display})"
-            edge_lines.append(edge_line)
-        return f"Explored edges:\n  {'\n  '.join(edge_lines)}"
-
     # -------- Dunder Methods --------
 
     def __hash__(self) -> int:
@@ -407,6 +396,7 @@ class Walker(ABC):
                 self.current_state,
                 self.target_state,
                 self.raw_value,
+                self.transition_walker,
             )
         )
 
@@ -424,13 +414,27 @@ class Walker(ABC):
         return (
             self.current_state == other.current_state
             and self.target_state == other.target_state
-            and self.current_value == other.current_value
+            and self.raw_value == other.raw_value
+            and self.transition_walker == other.transition_walker
         )
 
     def __str__(self) -> str:
         if self.transition_walker:
             return f"{self.acceptor}.Walker({self.transition_walker})"
         return self.__repr__()
+
+    def _format_current_edge(self) -> str:
+        target_state = (
+            f"--> ({'✅' if self.target_state == "$" else self.target_state})"
+            if self.target_state is not None
+            else ""
+        )
+        accumulated_value = self.raw_value or self.current_value
+        return (
+            f"Current edge: ({self.current_state}) "
+            f"--{repr(accumulated_value) if accumulated_value else ''}"
+            + target_state
+        )
 
     def __repr__(self) -> str:
         """Return a structured string representation of the walker.
@@ -444,6 +448,9 @@ class Walker(ABC):
         """
 
         def _format_state_info() -> str:
+            if self.current_state == 0:
+                return ""
+
             state_info = f"State: {self.current_state}"
             return (
                 f"{state_info} ➔ {self.target_state if self.target_state != '$' else '✅'}"
@@ -469,15 +476,6 @@ class Walker(ABC):
                 else ""
             )
 
-        def _format_current_edge() -> str:
-            target_state = self.target_state or "?"
-            accumulated_value = self.raw_value or self.current_value or ""
-            return (
-                f"Current edge: ({self.current_state}) "
-                f"--{repr(accumulated_value) if accumulated_value else ''}--> "
-                f"({'✅' if target_state == "$" else target_state})"
-            )
-
         def _format_transition_info() -> str:
             if not self.transition_walker:
                 return ""
@@ -497,7 +495,7 @@ class Walker(ABC):
             for part in [
                 _format_state_info(),
                 _format_history_info(),
-                _format_current_edge(),
+                self._format_current_edge(),
                 _format_remaining_input(),
                 _format_transition_info(),
             ]

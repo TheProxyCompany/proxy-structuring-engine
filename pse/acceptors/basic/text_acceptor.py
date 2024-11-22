@@ -5,7 +5,7 @@ from lexpy import DAWG
 from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
-from typing import Iterable, Optional, Set, Type
+from typing import Iterable, Optional, Type
 import logging
 
 logger = logging.getLogger(__name__)
@@ -103,25 +103,22 @@ class TextWalker(StateMachineWalker):
         remaining_text = self.acceptor.text[self.consumed_character_count :]
         return remaining_text.startswith(token) or token.startswith(remaining_text)
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Set[str]:
-        results = set()
+    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
         if self.consumed_character_count >= len(self.acceptor.text):
-            return results
+            return []
 
         remaining_text = self.acceptor.text[self.consumed_character_count :]
         # Only check if the exact partial text exists in the DAWG
         if remaining_text in dawg:
-            results.add(remaining_text)
+            yield remaining_text
 
         # Check if the exact partial prefixes exist in the DAWG
         max_possible_match_len = min(len(remaining_text), 8)
         for i in range(1, max_possible_match_len):
             partial = remaining_text[:i]
             if partial in dawg:
-                # if partial is a token (exists in DAWG), add it to the results
-                results.add(partial)
+                yield partial
 
-        return results
 
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
@@ -174,3 +171,27 @@ class TextWalker(StateMachineWalker):
             self.consumed_character_count > 0
             and self.consumed_character_count < len(self.acceptor.text)
         )
+
+    def _format_current_edge(self) -> str:
+        target_state = (
+            f"--> ({'✅' if self.target_state == "$" else self.target_state})"
+            if self.target_state is not None
+            else ""
+        )
+        seen = self.acceptor.text[:self.consumed_character_count]
+        remaining = self.acceptor.text[self.consumed_character_count:]
+        accumulated_value = seen + (f"👉{remaining}" if remaining else "")
+        return (
+            f"Current edge: ({self.current_state}) --"
+            + repr(accumulated_value)
+            + target_state
+        )
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TextWalker):
+            return False
+
+        return super().__eq__(other) and self.acceptor.text == other.acceptor.text

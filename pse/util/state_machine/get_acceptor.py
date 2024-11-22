@@ -52,7 +52,7 @@ def get_acceptor(
     if context is None:
         context = {"defs": defaultdict(dict), "path": ""}
 
-    context["defs"]["#"] = schema
+        context["defs"]["#"] = schema
 
     if schema.get("nullable"):
         non_nullable_schema: Dict[str, Any] = schema.copy()
@@ -75,8 +75,7 @@ def get_acceptor(
         return AnySchemaAcceptor(schemas, context)
 
     if "not" in schema:
-        # The "not" keyword is not supported due to limitations with autoregressive generation.
-        raise SchemaNotImplementedError("not")
+        raise SchemaNotImplementedError("The 'not' keyword is not supported due to limitations with autoregressive generation.")
 
     schema_type: Optional[Any] = schema.get("type")
 
