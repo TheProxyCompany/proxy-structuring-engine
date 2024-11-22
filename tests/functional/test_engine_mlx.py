@@ -161,3 +161,6 @@ def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine
         pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
 
     assert output["type"] == "div"
+    assert len(output["children"]) == 1
+    assert output["children"][0]["type"] == "button"
+    assert output["children"][0]["label"] == "Hello, World!"
