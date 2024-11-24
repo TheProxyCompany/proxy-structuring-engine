@@ -46,6 +46,7 @@ dependencies = [
     "protobuf",
     "lexpy",
     "pydantic",
+    "flake8"
 ]
 
 [project.urls]
