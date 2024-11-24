@@ -195,10 +195,7 @@ class StateMachine(Acceptor):
     def advance_all(
         walkers: Iterable[Walker], token: str, vocab: Optional[DAWG] = None
     ) -> Iterable[Tuple[str, Walker]]:
-        """Advance all walkers in parallel to find valid token matches.
-
-        Processes multiple walkers concurrently to find valid token matches and partial matches.
-        Uses a thread pool to parallelize walker advancement for better performance.
+        """Advance all walkers find valid token matches.
 
         Args:
             walkers: Collection of walker instances to advance in parallel

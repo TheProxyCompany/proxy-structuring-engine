@@ -76,7 +76,6 @@ class CharacterWalker(StateMachineWalker):
         for char in self.acceptor.charset:
             yield char
 
-
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string."""
         token = token.lower() if not self.acceptor.is_case_sensitive else token

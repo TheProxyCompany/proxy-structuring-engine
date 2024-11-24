@@ -115,7 +115,10 @@ class StructuringEngine(LogitsProcessor):
 
     def set_schema(
         self,
-        schema: type[BaseModel] | List[type[BaseModel]] | Dict[str, Any] | List[Dict[str, Any]],
+        schema: type[BaseModel]
+        | List[type[BaseModel]]
+        | Dict[str, Any]
+        | List[Dict[str, Any]],
         use_delimiters: bool = True,
         delimiters: Optional[Tuple[str, str]] = None,
     ) -> None:
@@ -125,7 +128,9 @@ class StructuringEngine(LogitsProcessor):
 
         def get_schema(schema: Any) -> Dict[str, Any]:
             if isinstance(schema, list):
-                if schema and all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
+                if schema and all(
+                    isinstance(s, type) and issubclass(s, BaseModel) for s in schema
+                ):
                     return {
                         "anyOf": [
                             s.model_json_schema()
@@ -161,7 +166,12 @@ class StructuringEngine(LogitsProcessor):
 
         self.walkers = list(self.acceptor.get_walkers())
 
-    def get_next_token(self, logprobs, top_k: int = 64) -> int:
+    def get_next_token(
+        self,
+        logprobs,
+        top_logprobs: Optional[List[Tuple[int, float]]] = None,
+        top_k: int = 64,
+    ) -> int:
         """
         Advances the acceptor's state using the provided logits.
 
@@ -175,8 +185,7 @@ class StructuringEngine(LogitsProcessor):
         seen: Dict[str, Set[Walker]] = {}
         longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
 
-        top_logits = get_top_logits(logprobs, top_k)
-        for token_id, score in sorted(top_logits, key=lambda x: x[1], reverse=True):
+        for token_id, score in top_logprobs or get_top_logits(logprobs, top_k):
             # Get token from token_id using reverse vocabulary map
             if not (token := self.reverse_vocabulary.get(token_id)):
                 logger.warning(f"Unknown token ID: {token_id}")

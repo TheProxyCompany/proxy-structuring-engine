@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import cast
 from pse.core.engine import StructuringEngine
+from pse.util.get_top_logits import get_top_logits
 import mlx.core as mx
 import mlx.nn as nn
 from mlx_lm.sample_utils import categorical_sampling
@@ -10,6 +11,7 @@ import logging
 from pse.util.errors import TokenRejected
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class GenerateStepResult:
@@ -27,6 +29,7 @@ class CompletedGeneration:
     average_mask_latency: float
     average_time_to_get_next_token: float
     average_total_time: float
+
 
 def generate_step(
     prompt: mx.array,
@@ -60,11 +63,15 @@ def generate_step(
     logits += engine.generate_logit_bias_mask(logits)
     end_bias_mask = timeit.default_timer()
 
+    logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
     # Time the process of getting the next token
     choose_token_time = None
     if engine.acceptor and not engine.has_reached_accept_state():
+        top_logits = get_top_logits(logprobs[0, :], top_k=8)
         start_next_token = timeit.default_timer()
-        valid_token_id = engine.get_next_token(logits[0, :], top_k=4)
+        valid_token_id = engine.get_next_token(
+            logprobs=logprobs[0, :], top_logprobs=top_logits
+        )
         choose_token_time = timeit.default_timer() - start_next_token
         token = mx.array([valid_token_id])
     else:
@@ -75,7 +82,6 @@ def generate_step(
         )
 
     # Calculate log probabilities
-    logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
 
     # Async evaluation
     mx.async_eval(token)
@@ -112,20 +118,20 @@ def generate_response(
             break
 
     output = engine.tokenizer.decode([result.token_id for result in generation_results])
-    sum_mask_latency = sum(
+    mask_latencies = [
         mask_time
         for result in generation_results
         if (mask_time := result.time_to_generate_mask) is not None
-    )
-    average_mask_latency = sum_mask_latency / len(generation_results)
-    sum_time_to_next_token = sum(
+    ]
+    average_mask_latency = sum(mask_latencies) / len(mask_latencies)
+    time_to_next_tokens = [
         time_to_next_token
         for result in generation_results
         if (time_to_next_token := result.time_to_next_token) is not None
-    )
-    average_time_to_next_token = sum_time_to_next_token / len(generation_results)
-    sum_total_time = sum(result.total_time for result in generation_results)
-    average_total_time = sum_total_time / len(generation_results)
+    ]
+    average_time_to_next_token = sum(time_to_next_tokens) / len(time_to_next_tokens)
+    total_times = [result.total_time for result in generation_results]
+    average_total_time = sum(total_times) / len(total_times)
 
     # Log performance metrics
     logger.info(
@@ -133,8 +139,7 @@ def generate_response(
         f"{average_time_to_next_token:.6f} seconds"
     )
     logger.info(
-        f"Average time to get next token: "
-        f"{average_time_to_next_token:.6f} seconds"
+        f"Average time to get next token: " f"{average_time_to_next_token:.6f} seconds"
     )
     logger.info(f"Average total time: {average_total_time:.6f} seconds")
 

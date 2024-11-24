@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 try:
     import mlx.nn as nn
     from mlx_lm.utils import load
-    from tests.util import generate_response
+    from pse.util.generate.mlx import generate_response
 except ImportError:
     pytest.skip(
         "mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True
@@ -149,7 +149,7 @@ def test_better_than_openai(model_and_engine: Tuple[nn.Module, StructuringEngine
         },
     }
     raw_prompt = (
-        f"Please return a div that has a child button that says 'Hello, World!'."
+        f"Please return a div that has one child - a button that says 'Hello, World!'."
         f"Please format your response to follow the following schema: {schema}."
     )
     engine.set_schema(schema, use_delimiters=False)

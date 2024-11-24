@@ -6,8 +6,8 @@ build-backend = "hatchling.build"
 name = "pse"
 version = "1.5.0"
 authors = [
-  { name = "Jack Wind", email = "jckwind11@gmail.com" },
-  { name = "The Proxy Company", email = "contact@theproxy.company" },
+    { name = "Jack Wind", email = "jckwind11@gmail.com" },
+    { name = "The Proxy Company", email = "contact@theproxy.company" }
 ]
 description = "Proxy Structuring Engine: Ensures AI-generated output adheres to predefined schemas without compromising creativity, speed, or context."
 readme = "README.md"
@@ -20,9 +20,8 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
-
 keywords = [
     "LLM",
     "large-action-models",
@@ -33,21 +32,10 @@ keywords = [
     "schema-guided-sampling",
     "AI-automation",
     "JSON-schema",
-    "tool-integration",
+    "tool-integration"
 ]
-
 dependencies = [
-    "certifi",
-    "charset-normalizer",
-    "filelock",
-    "fsspec",
-    "huggingface-hub",
-    "idna",
-    "packaging",
-    "PyYAML",
     "regex",
-    "requests",
-    "safetensors",
     "setuptools",
     "tokenizers",
     "tqdm",
@@ -55,61 +43,62 @@ dependencies = [
     "typing_extensions",
     "urllib3",
     "wheel",
-    "sentencepiece",
     "protobuf",
     "lexpy",
     "pydantic",
-    "docstring_parser"
 ]
 
 [project.urls]
-Homepage = "https://github.com/TheProxyCompany/proxy-structuring-engine"
-Documentation = "https://github.com/TheProxyCompany/proxy-structuring-engine#readme"
-Source = "https://github.com/TheProxyCompany/proxy-structuring-engine"
+homepage = "https://github.com/TheProxyCompany/proxy-structuring-engine"
+documentation = "https://github.com/TheProxyCompany/proxy-structuring-engine#readme"
+source = "https://github.com/TheProxyCompany/proxy-structuring-engine"
 
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "pytest-cov",
     "ruff",
     "coverage",
     "numpy",
-    "flake8",
+    "flake8"
 ]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
 jax = ["jax", "jaxlib"]
 benchmark = [
-    "asv",
-    "outlines-core",
+    "outlines @ git+https://github.com/cmcmaster1/outlines.git@5bdfb9e9f6eba3353c978b4be82fdee35ab2fab5",
     "lm-format-enforcer",
+    "openai",
+    "instructor"
 ]
 all = [
-    "torch",
+    "pytest",
     "jax",
     "jaxlib",
     "mlx",
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "coverage",
-    "numpy",
-    "flake8",
+    "mlx-lm",
+    "torch",
+    "outlines @ git+https://github.com/cmcmaster1/outlines.git@5bdfb9e9f6eba3353c978b4be82fdee35ab2fab5",
+    "lm-format-enforcer",
+    "openai",
+    "instructor"
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "LICENSE",
-  "README.md",
-  "pyproject.toml",
-  "pse",
+    "LICENSE",
+    "README.md",
+    "pyproject.toml",
+    "pse"
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pse"]
 
 [tool.pytest.ini_options]
-log_cli = false
-log_cli_level = "INFO"
+log_cli = true
+log_cli_level = "DEBUG"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
