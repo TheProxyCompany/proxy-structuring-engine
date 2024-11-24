@@ -1,4 +1,3 @@
-from openai import OpenAI
 import pytest
 import json
 from pydantic import BaseModel, Field
@@ -7,6 +6,7 @@ from enum import Enum
 from pse.core.engine import StructuringEngine
 import timeit
 from outlines import models, generate
+from openai import OpenAI
 
 import logging
 
@@ -89,7 +89,11 @@ def generate_openai_instructor(prompt: str, schema: Any) -> Tuple[Dict[str, Any]
     import instructor
 
     # Patch the OpenAI client
-    client = instructor.from_openai(OpenAI())
+    try:
+        client = OpenAI()
+    except Exception as e:
+        pytest.skip(f"OpenAI client failed to initialize: {e}")
+    client = instructor.from_openai(client)
 
     if isinstance(schema, Dict):
         pytest.skip("OpenAI Instructor does not support Dict schema")
@@ -109,7 +113,11 @@ def generate_openai_instructor(prompt: str, schema: Any) -> Tuple[Dict[str, Any]
 def generate_openai_structured_output(prompt: str, schema: Any) -> Tuple[Dict[str, Any], float]:
 
     # Initialize the OpenAI client
-    client = OpenAI()
+    try:
+        client = OpenAI()
+    except Exception as e:
+        pytest.skip(f"{e}")
+
     start_time = timeit.default_timer()
 
     if isinstance(schema, Dict):

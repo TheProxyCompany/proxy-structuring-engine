@@ -67,7 +67,7 @@ def generate_step(
     # Time the process of getting the next token
     choose_token_time = None
     if engine.acceptor and not engine.has_reached_accept_state():
-        top_logits = get_top_logits(logprobs[0, :], top_k=8)
+        top_logits = get_top_logits(logprobs[0, :])
         start_next_token = timeit.default_timer()
         valid_token_id = engine.get_next_token(
             logprobs=logprobs[0, :], top_logprobs=top_logits
