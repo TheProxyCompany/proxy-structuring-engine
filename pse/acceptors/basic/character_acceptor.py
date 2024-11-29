@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import Iterable, Optional, Set, Type
 
-from lexpy import DAWG
-
 from pse.util.state_machine.accepted_state import AcceptedState
 from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine, StateMachineWalker
@@ -72,7 +70,7 @@ class CharacterWalker(StateMachineWalker):
         self.acceptor: CharacterAcceptor = acceptor
         self._raw_value = value
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
         for char in self.acceptor.charset:
             yield char
 

@@ -217,7 +217,7 @@ def test_dynamic_UI(generator_name: str, generator_func: Callable) -> None:
     adhering to a specified schema using real LLM output.
     """
     prompt = (
-        f"Please return a div that has one child - a button that says 'Hello, World!'."
+        f"Please return a div that has one child element - a button that says 'Hello, World!'."
         f"Please format your response to follow the following schema: {DynamicUI.model_json_schema()}."
     )
 

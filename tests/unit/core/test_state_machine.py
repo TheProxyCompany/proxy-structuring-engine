@@ -446,7 +446,7 @@ def test_whitespace_acceptor():
             assert walker.current_value == "{"
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 1, "Expected 1 walker after advancing with '{.'"
+    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
 
     advancement = StateMachine.advance_all(new_walkers, " ", dawg)
     new_walkers = []

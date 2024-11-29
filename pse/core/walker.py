@@ -292,7 +292,7 @@ class Walker(ABC):
         """
         return False
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
         """Return the set of strings that allow valid continuation from current state.
 
         The walker uses these strings to determine valid paths forward in the state
@@ -308,11 +308,7 @@ class Walker(ABC):
         if not self.transition_walker or depth > 10:
             return []
 
-        yield from self.transition_walker.get_valid_continuations(dawg, depth + 1)
-
-        if self.transition_walker.acceptor.is_optional:
-            for next_walker in self.acceptor.branch_walker(self):
-                yield from next_walker.get_valid_continuations(dawg, depth + 1)
+        yield from self.transition_walker.get_valid_continuations(depth + 1)
 
     def find_valid_prefixes(self, dawg: DAWG) -> Set[str]:
         """Identify complete tokens that can advance the acceptor to a valid state.
@@ -328,11 +324,11 @@ class Walker(ABC):
         valid_prefixes: Set[str] = set()
         seen = set()
 
-        for continuation in self.get_valid_continuations(dawg):
+        for continuation in self.get_valid_continuations():
             if continuation in seen:
                 continue
-            seen.add(continuation)
 
+            seen.add(continuation)
             logger.debug("Getting tokens with prefix: %r", continuation)
             tokens = dawg.search_with_prefix(continuation)
             valid_prefixes.update(token for token in tokens if isinstance(token, str))
@@ -464,7 +460,7 @@ class Walker(ABC):
             if not self.accepted_history:
                 return ""
             history_values = [
-                repr(w.current_value)
+                repr(w.current_value)[1:-1]
                 for w in self.accepted_history
                 if w.current_value is not None
             ]
@@ -472,7 +468,7 @@ class Walker(ABC):
 
         def _format_remaining_input() -> str:
             return (
-                f"Remaining input: {repr(self.remaining_input)}"
+                f"Remaining input: {repr(self.remaining_input)[1:-1]}"
                 if self.remaining_input
                 else ""
             )

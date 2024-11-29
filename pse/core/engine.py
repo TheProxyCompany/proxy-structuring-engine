@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from lexpy import DAWG
+from lexpy import DAWG, Trie
+
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
@@ -12,10 +13,9 @@ from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.errors import TokenRejected
 from pse.util.state_machine.get_acceptor import get_acceptor
-from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_top_logits import get_top_logits
+from pse.util.get_logit_bias import get_logit_bias
 
 logger = logging.getLogger(__name__)
 
@@ -48,39 +48,53 @@ class StructuringEngine(LogitsProcessor):
         self.walkers: List[Walker] = []
         self.within_json_value: bool = False
 
-    @classmethod
-    def build_vocabulary(
-        cls,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-        vocabulary: Optional[Dict[str, int]] = None,
-    ) -> None:
+    def __call__(self, input_ids: Any, scores: Any) -> Any:
         """
-        Builds a vocabulary mapping for the tokenizer.
-
-        Args:
-            tokenizer: The tokenizer to build vocabulary from
-            vocabulary: Optional custom vocabulary mapping. If not provided,
-                       uses tokenizer's vocabulary.
+        scores are logits
         """
-        cls.dawg = DAWG()
-        cls.vocabulary: Dict[str, int] = {}
-        cls.reverse_vocabulary: Dict[int, str] = {}
+        # Generate rows for each token
+        rows = []
+        top_logits = get_top_logits(scores, 20)
+        valid_tokens, reversed_valid_tokens = self.get_valid_tokens()
+        if not valid_tokens:
+            return scores
 
-        # Get token IDs and decoded tokens
-        vocab = vocabulary if vocabulary else tokenizer.get_vocab()
-        token_ids = list(vocab.values())
-        decoded_tokens = (
-            list(vocab.keys()) if vocabulary else tokenizer.batch_decode(token_ids)
-        )
+        for token_id, score in top_logits.items():
+            # Get token from token_id using reverse vocabulary map
+            if not (token := self.reverse_vocabulary.get(token_id)):
+                logger.warning(f"Unknown token ID: {token_id}")
+                continue
 
-        # Build DAWG from sorted tokens
-        cls.dawg.add_all(sorted(decoded_tokens))
-        cls.dawg.reduce()
+            if token in valid_tokens:
+                rows.append(f"{token_id:<8} | 🟢 {score:>9.4f} | {repr(token)[1:-1]}")
+                continue
 
-        # Create token to ID mapping
-        for token, id in zip(decoded_tokens, token_ids):
-            cls.vocabulary[token] = id
-            cls.reverse_vocabulary[id] = token
+            if token not in valid_tokens:
+                scores[token_id] = float("-inf")
+                fixed_tokens = [
+                    t[::-1]
+                    for t in reversed_valid_tokens.search_with_prefix(token[::-1])
+                    if isinstance(t, str)
+                ]
+
+                for fixed_token in fixed_tokens:
+                    fixed_token_id = self.vocabulary[fixed_token]
+                    scores[fixed_token_id] = score
+                    rows.append(
+                        f"{fixed_token_id:<8} | 🟢 {score:>9.4f} | {repr(fixed_token)[1:-1]}"
+                    )
+
+        header = f"{'Token ID':<8} | {'Score':>10} | Token"
+        separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
+        chart = "\n".join([header, separator] + rows[:10])
+        if rows:
+            logger.info(f"🔵 Top logits:\n{chart}")
+        else:
+            logger.info("🔴 No valid tokens found")
+
+
+        valid_token_ids = set(self.vocabulary[t] for t in valid_tokens)
+        return scores + get_logit_bias(scores, valid_token_ids)
 
     @property
     def in_structured_state(self) -> bool:
@@ -101,6 +115,7 @@ class StructuringEngine(LogitsProcessor):
 
         return not self._waiting_for_trigger() and not self.within_json_value
 
+    @property
     def has_reached_accept_state(self) -> bool:
         """
         Checks whether the acceptor has reached a valid final state.
@@ -119,7 +134,7 @@ class StructuringEngine(LogitsProcessor):
         | List[type[BaseModel]]
         | Dict[str, Any]
         | List[Dict[str, Any]],
-        use_delimiters: bool = True,
+        use_delimiters: bool,
         delimiters: Optional[Tuple[str, str]] = None,
     ) -> None:
         """
@@ -166,64 +181,38 @@ class StructuringEngine(LogitsProcessor):
 
         self.walkers = list(self.acceptor.get_walkers())
 
-    def get_next_token(
-        self,
-        logprobs,
-        top_logprobs: Optional[List[Tuple[int, float]]] = None,
-        top_k: int = 64,
-    ) -> int:
+    def advance_token(self, token_id: int) -> Optional[int]:
         """
-        Advances the acceptor's state using the provided logits.
-
-        Args:
-            logprobs: The log probabilities from the language model.
-
-        Returns:
-            int: The next token ID to generate.
+        Advances the acceptor's state using the provided token ID.
         """
-        # Single dict for both full and partial matches
+        if not (token := self.reverse_vocabulary.get(token_id)):
+            logger.warning(f"Unknown token ID: {token_id}")
+            return
+
         seen: Dict[str, Set[Walker]] = {}
         longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
+        for valid_token, walker in StateMachine.advance_all(
+            self.walkers, token, self.dawg
+        ):
+            seen.setdefault(valid_token, set()).add(walker)
 
-        for token_id, score in top_logprobs or get_top_logits(logprobs, top_k):
-            # Get token from token_id using reverse vocabulary map
-            if not (token := self.reverse_vocabulary.get(token_id)):
-                logger.warning(f"Unknown token ID: {token_id}")
-                continue
+            if valid_token != token:
+                # Track longest partial (avoid sort operation later)
+                if len(valid_token) > len(longest_partial[0]):
+                    if valid_id := self.vocabulary.get(valid_token):
+                        longest_partial = (valid_token, valid_id)
 
-            logger.debug(f"⚪️ LLM predicted token: {repr(token)}, Score: {score}")
-            # Check if we've already seen this token (full match or partial match)
-            if walkers := seen.get(token):
-                self.walkers = list(walkers)
-                return token_id
+        if walkers := seen.get(token):
+            self.walkers = list(walkers)
+            return token_id
 
-            # Advance state machine for this token
-            for valid_token, walker in StateMachine.advance_all(
-                self.walkers, token, self.dawg
-            ):
-                seen.setdefault(valid_token, set()).add(walker)
-
-                if valid_token != token:
-                    # Track longest partial (avoid sort operation later)
-                    if len(valid_token) > len(longest_partial[0]):
-                        if valid_id := self.vocabulary.get(valid_token):
-                            longest_partial = (valid_token, valid_id)
-
-            # If we advanced walkers for this token, return the token id
-            if walkers := seen.get(token):
-                self.walkers = list(walkers)
-                return token_id
-
-        # Fallback to the longest partial match
         if longest_partial[1] != -1:
             self.walkers = list(seen[longest_partial[0]])
             return longest_partial[1]
 
-        raise TokenRejected("No valid token found")
-
-    def generate_logit_bias_mask(self, logits):
+    def get_valid_tokens(self) -> Tuple[Set[str], Trie]:
         """
-        Masks invalid tokens in logits based on the current state of the acceptor. Returns a bias.
+        Returns a list of valid token IDs based on the current state of the acceptor.
 
         Args:
             logits: The logits tensor to mask. Just used for dimensionality.
@@ -231,20 +220,17 @@ class StructuringEngine(LogitsProcessor):
         Returns:
             The bias, of the same type as `logits`.
         """
-        valid_prefixes = set()
+        all_valid_prefixes = set()
+        trie = Trie()
         for walker in self.walkers:
             if walker.accepts_any_token():
-                return get_logit_bias(logits, set())
+                return set(), trie
 
-            valid_prefixes.update(walker.find_valid_prefixes(self.dawg))
+            valid_prefixes = walker.find_valid_prefixes(self.dawg)
+            all_valid_prefixes.update(valid_prefixes)
 
-        token_ids = [
-            token_id
-            for prefix in valid_prefixes
-            if (token_id := self.vocabulary.get(prefix)) is not None
-        ]
-
-        return get_logit_bias(logits, set(token_ids))
+        trie.add_all({s[::-1] for s in all_valid_prefixes})
+        return all_valid_prefixes, trie
 
     def consume_raw_input(self, raw_input: str) -> None:
         """Advances the acceptor using the provided raw input.
@@ -273,6 +259,40 @@ class StructuringEngine(LogitsProcessor):
             # Update walkers if we found valid transitions
             if new_walkers:
                 self.walkers = new_walkers
+
+    @classmethod
+    def build_vocabulary(
+        cls,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        vocabulary: Optional[Dict[str, int]] = None,
+    ) -> None:
+        """
+        Builds a vocabulary mapping for the tokenizer.
+
+        Args:
+            tokenizer: The tokenizer to build vocabulary from
+            vocabulary: Optional custom vocabulary mapping. If not provided,
+                       uses tokenizer's vocabulary.
+        """
+        cls.dawg = DAWG()
+        cls.vocabulary: Dict[str, int] = {}
+        cls.reverse_vocabulary: Dict[int, str] = {}
+
+        # Get token IDs and decoded tokens
+        vocab = vocabulary if vocabulary else tokenizer.get_vocab()
+        token_ids = list(vocab.values())
+        decoded_tokens = (
+            list(vocab.keys()) if vocabulary else tokenizer.batch_decode(token_ids)
+        )
+
+        # Build DAWG from sorted tokens
+        cls.dawg.add_all(sorted(decoded_tokens))
+        cls.dawg.reduce()
+
+        # Create token to ID mapping
+        for token, id in zip(decoded_tokens, token_ids):
+            cls.vocabulary[token] = id
+            cls.reverse_vocabulary[id] = token
 
     # -------- Private Methods --------
 

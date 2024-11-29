@@ -62,7 +62,7 @@ def test_handle_logits_top_k(array_type):
     logits = array_constructor([0.1, 0.4, 0.2, 0.5, 0.3])
 
     top_k = 3
-    token_ids_and_scores = get_top_logits(logits, top_k=top_k)
+    token_ids_and_scores = list(get_top_logits(logits, top_k=top_k).items())
 
     expected_indices = [3, 1, 4]
     expected_values = [0.5, 0.4, 0.3]
@@ -91,7 +91,7 @@ def test_handle_logits_top_k_equals_vocab_size(array_type):
     logits = array_constructor([0.5, 0.2, 0.4, 0.1, 0.3])
 
     top_k = len(logits)  # Equal to vocab size
-    token_ids_and_scores = get_top_logits(logits, top_k=top_k)
+    token_ids_and_scores = list(get_top_logits(logits, top_k=top_k).items())
 
     expected_indices = [0, 2, 4, 1, 3]
     expected_values = [0.5, 0.4, 0.3, 0.2, 0.1]
@@ -121,7 +121,7 @@ def test_handle_logits_top_k_greater_than_vocab_size(array_type):
     logits = array_constructor([0.5, 0.2, 0.4])
 
     top_k = 5  # Greater than vocab size
-    token_ids_and_scores = get_top_logits(logits, top_k=top_k)
+    token_ids_and_scores = list(get_top_logits(logits, top_k=top_k).items())
 
     expected_indices = [0, 2, 1]
     expected_values = [0.5, 0.4, 0.2]
@@ -150,7 +150,7 @@ def test_handle_logits_with_duplicate_values(array_type):
     logits = array_constructor([0.3, 0.2, 0.3, 0.1, 0.2])
 
     top_k = 4
-    token_ids_and_scores = get_top_logits(logits, top_k=top_k)
+    token_ids_and_scores = list(get_top_logits(logits, top_k=top_k).items())
 
     expected_values = [0.3, 0.3, 0.2, 0.2]
 
@@ -184,7 +184,7 @@ def test_handle_logits_empty_logits(array_type):
     logits = array_constructor([])
 
     top_k = 5
-    token_ids_and_scores = get_top_logits(logits, top_k=top_k)
+    token_ids_and_scores = list(get_top_logits(logits, top_k=top_k).items())
 
     assert isinstance(token_ids_and_scores, list)
     assert len(token_ids_and_scores) == 0, "Expected empty list when logits is empty"

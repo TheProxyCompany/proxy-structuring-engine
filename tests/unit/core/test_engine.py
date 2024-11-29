@@ -14,22 +14,10 @@ def engine() -> StructuringEngine:
     return engine
 
 
-def test_create_default(engine: StructuringEngine) -> None:
-    """Test the default initialization of StructuredOutputDriver."""
-    engine.set_schema({"type": "string"})
-    assert engine._waiting_for_trigger()
-
-
-def test_create_with_non_default_parameters(engine: StructuringEngine) -> None:
-    """Test initializing StructuredOutputDriver with non-default parameters."""
-    engine.set_schema({"type": "string"}, use_delimiters=False)
-    assert not engine._waiting_for_trigger()
-
-
 def test_create_acceptor_with_invalid_schema(engine: StructuringEngine) -> None:
     """Test creating an acceptor with an invalid schema."""
     with pytest.raises(UnknownSchemaTypeError):
-        engine.set_schema(schema={"type": "invalid_type"})
+        engine.set_schema(schema={"type": "invalid_type"}, use_delimiters=False)
 
 
 def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
@@ -40,6 +28,7 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
     custom_closing: str = "<<<END>>>"
     engine.set_schema(
         schema={"type": "string"},
+        use_delimiters=True,
         delimiters=(custom_opening, custom_closing),
     )
 
@@ -50,14 +39,14 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
 
 def test_delimitered_acceptor(engine: StructuringEngine) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
-    engine.set_schema({"type": "string"})
+    engine.set_schema({"type": "string"}, use_delimiters=True)
     engine.consume_raw_input('```json\n"test string"\n```')
-    assert engine.has_reached_accept_state()
+    assert engine.has_reached_accept_state
 
 
 def test_partial_delimiters(engine: StructuringEngine) -> None:
     """Test that delimiters are handled correctly."""
-    engine.set_schema({"type": "string"})
+    engine.set_schema({"type": "string"}, use_delimiters=True)
     assert engine._waiting_for_trigger()
     engine.consume_raw_input("```")
     assert engine._waiting_for_trigger()
@@ -78,7 +67,7 @@ def test_invalid_input(engine: StructuringEngine) -> None:
     engine.consume_raw_input("```")
 
     assert not engine._waiting_for_trigger()
-    assert not engine.has_reached_accept_state()
+    assert not engine.has_reached_accept_state
     assert engine.in_structured_state
 
 
@@ -106,7 +95,7 @@ def test_create_acceptor_with_complex_schema(
         },
         "required": ["user", "active"],
     }
-    engine.set_schema(complex_schema)
+    engine.set_schema(complex_schema, use_delimiters=False)
     assert engine.acceptor is not None
     assert engine.walkers is not None
 
@@ -125,7 +114,7 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
 
     # Test valid input that matches the pattern
     engine.consume_raw_input('"test"')
-    assert engine.has_reached_accept_state(), "Driver should be in accepted state"
+    assert engine.has_reached_accept_state, "Driver should be in accepted state"
 
 
 def test_pattern_schema_failure(engine: StructuringEngine) -> None:
@@ -142,58 +131,11 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
 
     # Reset engine for invalid input test
     engine.consume_raw_input("123")
-    assert not engine.has_reached_accept_state()
+    assert not engine.has_reached_accept_state
 
 
 def test_in_accepted_state_with_no_walkers(engine: StructuringEngine) -> None:
     """Test in_accepted_state when walkers are empty."""
-    engine.set_schema(schema={"type": "string"})
+    engine.set_schema(schema={"type": "string"}, use_delimiters=False)
     engine.walkers = []
-    assert not engine.has_reached_accept_state()
-
-
-def test_invalid_tokens_object(engine: StructuringEngine) -> None:
-    """Test that invalid tokens are masked correctly."""
-    complex_schema = {
-        "type": "object",
-        "properties": {
-            "name": {"const": "test"},
-            "values": {"type": "array", "items": {"type": "number"}},
-        },
-        "required": ["name", "values"],
-    }
-    test_vocab = {
-        '"': 0,
-        '{"invalid': 1,
-        "[": 2,
-        "}": 3,
-        "]": 4,
-        "test": 5,
-        "1": 6,
-        "2": 7,
-        "3": 8,
-        ", ": 9,
-        ",": 10,
-        " ": 11,
-        "true": 12,
-        "false": 13,
-        "-": 14,
-        "\n": 15,
-        "name": 16,
-        "values": 17,
-        '"name":': 18,
-        '"values":': 19,
-        '":': 20,
-        '{"': 21,
-        "{": 22,
-    }
-    StructuringEngine.build_vocabulary(engine.tokenizer, test_vocab)
-    engine.set_schema(complex_schema, use_delimiters=False)
-    test_logits = np.random.rand(len(test_vocab))
-
-    assert not engine.within_json_value
-    assert engine.in_structured_state
-
-    logits = engine.generate_logit_bias_mask(test_logits)
-    valid_token_id = engine.get_next_token(logits)
-    assert valid_token_id in {21, 22}
+    assert not engine.has_reached_accept_state

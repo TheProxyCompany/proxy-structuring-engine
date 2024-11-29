@@ -113,6 +113,7 @@ def test_character_acceptor_char_limit(
     walkers = list(sm.get_walkers())
     advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
 
+    assert len(advanced) == 1, "Expected 1 walker after advancing"
     assert any(walker.has_reached_accept_state() for _, walker in advanced)
     for _, walker in advanced:
         if walker.has_reached_accept_state():
@@ -129,5 +130,5 @@ def test_character_acceptor_select() -> None:
     for char in charset:
         dawg.add(char)
 
-    selections = walker.get_valid_continuations(dawg)
+    selections = walker.get_valid_continuations()
     assert set(selections) == set(charset)
