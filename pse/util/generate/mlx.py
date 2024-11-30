@@ -30,7 +30,7 @@ class CompletedGeneration:
     average_total_time: float
 
 
-def generate_step(
+def sample(
     prompt: str | mx.array,
     model: nn.Module,
     engine: StructuringEngine,
@@ -100,7 +100,8 @@ def generate_step(
         end_token - start_total,
     )
 
-def generate_response(
+
+def generate(
     prompt: str,
     model: nn.Module,
     engine: StructuringEngine,
@@ -113,7 +114,7 @@ def generate_response(
     generation_results: list[GenerateStepResult] = []
     while not engine.has_reached_accept_state:
         try:
-            generation_result = generate_step(encoded_prompt, model, engine)
+            generation_result = sample(encoded_prompt, model, engine)
             encoded_prompt = mx.concatenate([encoded_prompt, generation_result.token])
             generation_results.append(generation_result)
         except TokenRejected:
@@ -140,9 +141,7 @@ def generate_response(
         else 0.0
     )
     total_times = [result.total_time for result in generation_results]
-    average_total_time = (
-        sum(total_times) / len(total_times) if total_times else 0.0
-    )
+    average_total_time = sum(total_times) / len(total_times) if total_times else 0.0
 
     # Log performance metrics
     logger.info(

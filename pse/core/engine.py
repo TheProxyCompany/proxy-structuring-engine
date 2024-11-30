@@ -141,19 +141,22 @@ class StructuringEngine(LogitsProcessor):
         Adds a schema with delimiters to the engine.
         """
 
-        def get_schema(schema: Any) -> Dict[str, Any]:
+        def get_schema(schema: Any | None) -> Dict[str, Any]:
+            if schema is None:
+                return {}
+
             if isinstance(schema, list):
                 if schema and all(
                     isinstance(s, type) and issubclass(s, BaseModel) for s in schema
                 ):
                     return {
-                        "anyOf": [
+                        "oneOf": [
                             s.model_json_schema()
                             for s in schema
                             if isinstance(s, type) and issubclass(s, BaseModel)
                         ]
                     }
-                return {"anyOf": schema}
+                return {"oneOf": schema}
             if isinstance(schema, type) and issubclass(schema, BaseModel):
                 return schema.model_json_schema()
             if isinstance(schema, dict):
@@ -163,6 +166,7 @@ class StructuringEngine(LogitsProcessor):
                     )
                     return schema["schema"]
                 return schema
+
             return {}
 
         acceptor = get_acceptor(

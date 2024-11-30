@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from transformers import LlamaTokenizer
 from pse.core.engine import StructuringEngine
 from pse.util.errors import UnknownSchemaTypeError
@@ -139,3 +138,52 @@ def test_in_accepted_state_with_no_walkers(engine: StructuringEngine) -> None:
     engine.set_schema(schema={"type": "string"}, use_delimiters=False)
     engine.walkers = []
     assert not engine.has_reached_accept_state
+
+
+def test_multiple_schemas(engine: StructuringEngine) -> None:
+    """Test AnyOfAcceptor with complex nested schemas."""
+    schema1 = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "const", "const": "send_message"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
+                    }
+                },
+                "required": ["message"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    schema2 = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "const", "const": "metacognition"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "chain_of_thought": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "A sequence of high-level thoughts, reasoning, and internal dialogue.\nIncludes complex ideas, strategic considerations, and conceptual frameworks.\nSupports all Unicode characters, including emojis.",
+                    },
+                    "feelings": {
+                        "type": ["string"],
+                        "description": "A reflection of the agent's emotional state.\nSupports all Unicode characters, including emojis.",
+                        "nullable": True,
+                        "default": None,
+                    },
+                },
+                "required": ["chain_of_thought"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    schema = {"anyOf": [schema1, schema2]}
+    engine.set_schema(schema, use_delimiters=True)
+    engine.consume_raw_input('Here is the response: ```json\n{\n')
+    assert len(engine.walkers) == 2

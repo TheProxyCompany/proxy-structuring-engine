@@ -413,6 +413,7 @@ class Walker(ABC):
             and self.target_state == other.target_state
             and self.raw_value == other.raw_value
             and self.transition_walker == other.transition_walker
+            and self.acceptor == other.acceptor
         )
 
     def __str__(self) -> str:

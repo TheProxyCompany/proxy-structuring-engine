@@ -96,6 +96,11 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             ):
                 yield from self.get_transitions(walker, target_state)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ObjectSchemaAcceptor):
+            return NotImplemented
+        return super().__eq__(other) and self.schema == other.schema
+
 
 class ObjectSchemaWalker(ObjectWalker):
     """

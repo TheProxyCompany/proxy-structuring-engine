@@ -137,6 +137,12 @@ class Acceptor(ABC):
     # String representations
     #
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Acceptor):
+            return NotImplemented
+
+        return self.state_graph == other.state_graph
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}()"
 
