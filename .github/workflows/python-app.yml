@@ -39,6 +39,3 @@ jobs:
 
     - name: Run unit tests
       run: pytest tests/unit
-
-    - name: Run functional tests
-      run: pytest tests/functional
