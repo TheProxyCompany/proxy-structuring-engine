@@ -10,12 +10,11 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from copy import copy as shallow_copy
-from typing import Any, Iterable, List, Optional, Self, Set
+from typing import Any, Iterable, List, Optional, Self, Set, Tuple
 
 from lexpy import DAWG
 
-from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.types import State, VisitedEdge
+from pse.core.acceptor import Acceptor, State, VisitedEdge
 
 logger = logging.getLogger(__name__)
 
@@ -190,10 +189,7 @@ class Walker(ABC):
     ) -> Optional[Walker]:
         """Start a new transition with the given token."""
 
-        if (
-            token is not None
-            and not transition_walker.should_start_transition(token)
-        ):
+        if token is not None and not transition_walker.should_start_transition(token):
             return None
 
         if (
@@ -220,7 +216,7 @@ class Walker(ABC):
     def complete_transition(
         self,
         transition_walker: Walker,
-    ) -> Optional[Walker]:
+    ) -> Tuple[Optional[Walker], bool]:
         """Advance the walker to the next state.
 
         Args:
@@ -239,7 +235,7 @@ class Walker(ABC):
         clone.explored_edges.add(clone.current_edge)
 
         if not clone.should_complete_transition():
-            return clone if clone.can_accept_more_input() else None
+            return clone if clone.can_accept_more_input() else None, False
 
         if (
             clone.target_state is not None
@@ -253,11 +249,9 @@ class Walker(ABC):
                 clone.target_state = None
 
             if clone.current_state in clone.acceptor.end_states:
-                from pse.util.state_machine.accepted_state import AcceptedState
+                return clone, True
 
-                return AcceptedState(clone)
-
-        return clone
+        return clone, False
 
     def branch(self, token: Optional[str] = None) -> Iterable[Walker]:
         """Branch the current walker or transition walker to explore all possible
@@ -292,7 +286,7 @@ class Walker(ABC):
         """
         return False
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
         """Return the set of strings that allow valid continuation from current state.
 
         The walker uses these strings to determine valid paths forward in the state
@@ -308,11 +302,7 @@ class Walker(ABC):
         if not self.transition_walker or depth > 10:
             return []
 
-        yield from self.transition_walker.get_valid_continuations(dawg, depth + 1)
-
-        if self.transition_walker.acceptor.is_optional:
-            for next_walker in self.acceptor.branch_walker(self):
-                yield from next_walker.get_valid_continuations(dawg, depth + 1)
+        yield from self.transition_walker.get_valid_continuations(depth + 1)
 
     def find_valid_prefixes(self, dawg: DAWG) -> Set[str]:
         """Identify complete tokens that can advance the acceptor to a valid state.
@@ -328,11 +318,11 @@ class Walker(ABC):
         valid_prefixes: Set[str] = set()
         seen = set()
 
-        for continuation in self.get_valid_continuations(dawg):
+        for continuation in self.get_valid_continuations():
             if continuation in seen:
                 continue
-            seen.add(continuation)
 
+            seen.add(continuation)
             logger.debug("Getting tokens with prefix: %r", continuation)
             tokens = dawg.search_with_prefix(continuation)
             valid_prefixes.update(token for token in tokens if isinstance(token, str))
@@ -417,6 +407,7 @@ class Walker(ABC):
             and self.target_state == other.target_state
             and self.raw_value == other.raw_value
             and self.transition_walker == other.transition_walker
+            and self.acceptor == other.acceptor
         )
 
     def __str__(self) -> str:
@@ -433,8 +424,7 @@ class Walker(ABC):
         accumulated_value = self.raw_value or self.current_value
         return (
             f"Current edge: ({self.current_state}) "
-            f"--{repr(accumulated_value) if accumulated_value else ''}"
-            + target_state
+            f"--{repr(accumulated_value) if accumulated_value else ''}" + target_state
         )
 
     def __repr__(self) -> str:
@@ -464,7 +454,7 @@ class Walker(ABC):
             if not self.accepted_history:
                 return ""
             history_values = [
-                repr(w.current_value)
+                repr(w.current_value)[1:-1]
                 for w in self.accepted_history
                 if w.current_value is not None
             ]
@@ -472,7 +462,7 @@ class Walker(ABC):
 
         def _format_remaining_input() -> str:
             return (
-                f"Remaining input: {repr(self.remaining_input)}"
+                f"Remaining input: {repr(self.remaining_input)[1:-1]}"
                 if self.remaining_input
                 else ""
             )

@@ -60,7 +60,9 @@ dev = [
     "ruff",
     "coverage",
     "numpy",
-    "flake8"
+    "flake8",
+    "torch",
+    "sentencepiece"
 ]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]

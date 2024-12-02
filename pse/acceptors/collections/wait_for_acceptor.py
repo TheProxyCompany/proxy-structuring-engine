@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, Optional, Callable, Tuple
 
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 from pse.core.state_machine import StateMachine, State
 from pse.core.walker import Walker
 import logging
@@ -86,6 +86,7 @@ class WaitForWalker(Walker):
         """
         if self.transition_walker and self.transition_walker.is_within_value():
             return False
+
         return True
 
     def can_accept_more_input(self) -> bool:

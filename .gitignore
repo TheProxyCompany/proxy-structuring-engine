@@ -7,3 +7,5 @@ __pycache__
 .env
 .venv
 .pytest_cache
+Cargo.lock
+target

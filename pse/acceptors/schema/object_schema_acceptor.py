@@ -6,7 +6,7 @@ from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
 from pse.core.walker import Walker
 from pse.util.errors import InvalidSchemaError
-from pse.util.state_machine.types import State
+from pse.core.acceptor import State
 from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
 
 class ObjectSchemaAcceptor(ObjectAcceptor):
@@ -95,6 +95,11 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                 and walker.can_accept_more_input()
             ):
                 yield from self.get_transitions(walker, target_state)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ObjectSchemaAcceptor):
+            return NotImplemented
+        return super().__eq__(other) and self.schema == other.schema
 
 
 class ObjectSchemaWalker(ObjectWalker):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Type
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.core.walker import Walker

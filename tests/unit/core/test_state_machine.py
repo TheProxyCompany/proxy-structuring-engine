@@ -4,7 +4,7 @@ from lexpy import DAWG
 from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
+from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, IntegerAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -446,7 +446,7 @@ def test_whitespace_acceptor():
             assert walker.current_value == "{"
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 1, "Expected 1 walker after advancing with '{.'"
+    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
 
     advancement = StateMachine.advance_all(new_walkers, " ", dawg)
     new_walkers = []

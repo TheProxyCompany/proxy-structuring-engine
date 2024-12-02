@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from lexpy import DAWG
-
 from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
@@ -56,7 +54,7 @@ class TextAcceptor(StateMachine):
         Returns:
             str: A string representation of the TextAcceptor.
         """
-        return f"TextAcceptor({repr(self.text)})"
+        return f"TextAcceptor({repr(self.text)[1:-1]})"
 
 
 class TextWalker(StateMachineWalker):
@@ -103,21 +101,18 @@ class TextWalker(StateMachineWalker):
         remaining_text = self.acceptor.text[self.consumed_character_count :]
         return remaining_text.startswith(token) or token.startswith(remaining_text)
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
         if self.consumed_character_count >= len(self.acceptor.text):
             return []
 
         remaining_text = self.acceptor.text[self.consumed_character_count :]
-        # Only check if the exact partial text exists in the DAWG
-        if remaining_text in dawg:
-            yield remaining_text
+        yield remaining_text
 
         # Check if the exact partial prefixes exist in the DAWG
-        max_possible_match_len = min(len(remaining_text), 8)
+        max_possible_match_len = len(remaining_text)
         for i in range(1, max_possible_match_len):
             partial = remaining_text[:i]
-            if partial in dawg:
-                yield partial
+            yield partial
 
 
     def consume_token(self, token: str) -> Iterable[Walker]:
@@ -183,7 +178,7 @@ class TextWalker(StateMachineWalker):
         accumulated_value = seen + (f"👉{remaining}" if remaining else "")
         return (
             f"Current edge: ({self.current_state}) --"
-            + repr(accumulated_value)
+            + repr(accumulated_value)[1:-1]
             + target_state
         )
 

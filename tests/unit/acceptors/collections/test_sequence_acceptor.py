@@ -1,7 +1,7 @@
 import pytest
 from typing import List
 
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor

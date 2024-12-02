@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Iterable, Optional, Type
 
-from lexpy import DAWG
 from pse.core.state_machine import StateMachine
 from pse.util.state_machine.accepted_state import AcceptedState
 from pse.core.walker import Walker
@@ -67,7 +66,7 @@ class WhitespaceWalker(Walker):
 
         return True
 
-    def get_valid_continuations(self, dawg: DAWG, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
         if self.length_exceeded:
             return []
 

@@ -21,10 +21,9 @@ from typing import Iterable, Optional, Tuple, Type
 
 from lexpy import DAWG
 
-from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.types import Edge, State
 from pse.util.state_machine.accepted_state import AcceptedState
 from pse.core.walker import Walker
+from pse.core.acceptor import Acceptor, Edge, State
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +124,7 @@ class StateMachine(Acceptor):
             if (
                 transition.acceptor.is_optional
                 and target_state in self.end_states
-                and (walker.remaining_input or token)
+                and input_token
             ):
                 logger.debug(f"🟠 {transition} is optional; yielding accepted state")
                 if not walker.remaining_input:
@@ -170,7 +169,9 @@ class StateMachine(Acceptor):
                 logger.debug(f"🟠 Walker has remaining input: {repr(blocked_walker)}")
                 yield blocked_walker
             elif not branched_walkers:
-                logger.debug(f"🔴 {repr(blocked_walker)} cannot parse {repr(token)}.")
+                logger.debug(
+                    f"🔴 {repr(blocked_walker)} cannot parse {repr(token)[1:-1]}."
+                )
 
         while queue:
             current_walker, current_token = queue.popleft()
@@ -185,11 +186,17 @@ class StateMachine(Acceptor):
 
             # Handle active transition
             for transition in current_walker.transition_walker.consume_token(current_token):
-                if new_walker := current_walker.complete_transition(transition):
-                    if new_walker.remaining_input:
-                        queue.append((new_walker, new_walker.remaining_input))
-                    else:
-                        yield new_walker
+                new_walker, is_accepted = current_walker.complete_transition(transition)
+                if not new_walker:
+                    continue
+
+                if is_accepted:
+                    new_walker = AcceptedState(new_walker)
+
+                if new_walker.remaining_input:
+                    queue.append((new_walker, new_walker.remaining_input))
+                else:
+                    yield new_walker
 
     @staticmethod
     def advance_all(
@@ -217,7 +224,7 @@ class StateMachine(Acceptor):
         for walker in walkers:
             for advanced_walker in walker.consume_token(token):
                 if not advanced_walker.remaining_input:
-                    logger.debug(f"🟢 Full match for token: {repr(token)}")
+                    logger.debug(f"🟢 Full match for token: {repr(token)[1:-1]}")
                     yield token, advanced_walker
                     continue
 
@@ -228,9 +235,16 @@ class StateMachine(Acceptor):
                 # Extract the valid prefix by removing remaining input
                 prefix = token[: -len(advanced_walker.remaining_input)]
                 if prefix and prefix in vocab:
-                    logger.debug(f"🟢 Valid partial match: {repr(prefix)}")
+                    logger.debug(f"🟢 Valid partial match: {repr(prefix)[1:-1]}")
                     advanced_walker.remaining_input = None
-                    yield prefix, advanced_walker
+                    if (
+                        not advanced_walker.transition_walker
+                        and advanced_walker.can_accept_more_input()
+                    ):
+                        for next_walker in advanced_walker.branch():
+                            yield prefix, next_walker
+                    else:
+                        yield prefix, advanced_walker
 
 
 class StateMachineWalker(Walker):
