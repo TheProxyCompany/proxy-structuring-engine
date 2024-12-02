@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Any, Type, Optional
-from pse.util.state_machine.types import StateGraph
+from pse.core.acceptor import StateGraph
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.core.walker import Walker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor

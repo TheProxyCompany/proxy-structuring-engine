@@ -2,8 +2,7 @@ from collections import defaultdict
 import json
 from typing import Any, Callable, Dict, List, Optional
 
-from pse_core import Acceptor
-
+from pse.core.acceptor import Acceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor

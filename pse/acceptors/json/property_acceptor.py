@@ -3,7 +3,7 @@ from typing import Tuple, Optional, Any, Type
 import logging
 import json
 
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor

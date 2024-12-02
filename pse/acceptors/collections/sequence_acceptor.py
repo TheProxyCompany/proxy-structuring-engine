@@ -4,7 +4,7 @@ import logging
 from typing import List, Type
 
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)

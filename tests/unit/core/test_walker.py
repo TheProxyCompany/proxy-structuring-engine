@@ -4,7 +4,7 @@ from typing import Any, Iterable
 from pse.util.state_machine.accepted_state import AcceptedState
 from pse.core.state_machine import StateMachine
 from pse.core.walker import Walker
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 
 
 class Concretewalker(Walker):

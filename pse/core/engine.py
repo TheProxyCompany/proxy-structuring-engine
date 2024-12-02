@@ -12,7 +12,7 @@ from transformers.generation.logits_process import LogitsProcessor
 from pse.core.walker import Walker
 from pse.core.state_machine import StateMachine
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.acceptors.basic.acceptor import Acceptor
+from pse.core.acceptor import Acceptor
 from pse.util.state_machine.get_acceptor import get_acceptor
 from pse.util.get_top_logits import get_top_logits
 from pse.util.get_logit_bias import get_logit_bias

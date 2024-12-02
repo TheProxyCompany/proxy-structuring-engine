@@ -92,7 +92,7 @@ class AcceptedState(Walker):
         """
         if not self.can_accept_more_input():
             return
-        
+
         yield from self.accepted_walker.consume_token(token)
 
     def __eq__(self, other: Any) -> bool:

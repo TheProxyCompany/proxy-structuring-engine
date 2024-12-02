@@ -22,8 +22,8 @@ from typing import Iterable, Optional, Tuple, Type
 from lexpy import DAWG
 
 from pse.util.state_machine.accepted_state import AcceptedState
-from pse_core import Acceptor, Edge, State
 from pse.core.walker import Walker
+from pse.core.acceptor import Acceptor, Edge, State
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable, Type
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.util.state_machine.types import Edge, State
+from pse.core.acceptor import Edge, State
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
