@@ -5,43 +5,46 @@ from pse.util.get_logit_bias import get_logit_bias
 
 try:
     import mlx.core as mx
-
     _has_mlx = True
+    mx_array = mx.array
 except ImportError:
     _has_mlx = False
+    mx_array = None
 
 try:
     import jax.numpy as jnp
-
     _has_jax = True
+    jnp_array = jnp.array
 except ImportError:
     _has_jax = False
+    jnp_array = None
 
 try:
     import torch
-
+    torch_tensor = torch.tensor
     _has_torch = True
 except ImportError:
     _has_torch = False
+    torch_tensor = None
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(
     params=[
-        pytest.param(("numpy", np.array, np), id="numpy"),
+        pytest.param(("numpy", np.array), id="numpy"),
         pytest.param(
-            ("mlx", mx.array, mx),
+            ("mlx", mx_array),
             id="mlx",
             marks=pytest.mark.skipif(not _has_mlx, reason="mlx not installed"),
         ),
         pytest.param(
-            ("jax", jnp.array, jnp),
+            ("jax", jnp_array),
             id="jax",
             marks=pytest.mark.skipif(not _has_jax, reason="jax not installed"),
         ),
         pytest.param(
-            ("torch", torch.tensor, torch),
+            ("torch", torch_tensor),
             id="torch",
             marks=pytest.mark.skipif(not _has_torch, reason="torch not installed"),
         ),
@@ -59,7 +62,7 @@ def test_bias_logits_empty_accepted_tokens(array_type):
     Test bias_logits with an empty set of accepted tokens.
     Should return the original logits without modification.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([0.1, 0.2, 0.3, 0.4, 0.5])
 
     accepted_token_ids = set()
@@ -91,7 +94,7 @@ def test_bias_logits_all_accepted_tokens(array_type):
     Test bias_logits with all tokens accepted.
     The biased logits should be equal to the original logits.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([0.1, 0.2, 0.3, 0.4, 0.5])
 
     accepted_token_ids = set(range(len(logits)))
@@ -124,7 +127,7 @@ def test_bias_logits_some_accepted_tokens(array_type):
     Test bias_logits with some tokens accepted.
     Tokens not in accepted_token_ids should be set to -inf.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([0.1, 0.2, 0.3, 0.4, 0.5])
 
     accepted_token_ids = {0, 2, 4}
@@ -160,7 +163,7 @@ def test_bias_logits_empty_logits(array_type):
     Test bias_logits with an empty logits array.
     Should return an empty biased logits array.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([])
 
     accepted_token_ids = set()
@@ -177,7 +180,7 @@ def test_bias_logits_logits_with_inf(array_type):
     Test bias_logits when logits contains inf values.
     The inf values should remain unaffected if they are accepted.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([0.1, float("inf"), 0.3, float("-inf"), 0.5])
 
     accepted_token_ids = {0, 1, 4}
@@ -213,7 +216,7 @@ def test_bias_logits_empty_logits_and_empty_accepted_token_ids(array_type):
     Test bias_logits with empty logits and empty accepted_token_ids.
     Should return an empty array.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     logits = array_constructor([])
 
     accepted_token_ids = set()
@@ -227,7 +230,7 @@ def test_bias_logits_logits_with_different_dtypes(array_type):
     """
     Test bias_logits with logits of different dtypes.
     """
-    lib_name, array_constructor, lib_module = array_type
+    lib_name, array_constructor = array_type
     dtypes = []
     if lib_name == "torch":
         dtypes = [torch.float32, torch.bfloat16]

@@ -5,43 +5,46 @@ from pse.util.get_top_logits import get_top_logits
 
 try:
     import mlx.core as mx
-
     _has_mlx = True
+    mx_array = mx.array
 except ImportError:
     _has_mlx = False
+    mx = None
+    mx_array = None
 
 try:
     import jax.numpy as jnp
-
     _has_jax = True
+    jnp_array = jnp.array
 except ImportError:
     _has_jax = False
+    jnp_array = None
 
 try:
     import torch
-
+    torch_tensor = torch.tensor
     _has_torch = True
 except ImportError:
     _has_torch = False
-
+    torch_tensor = None
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(
     params=[
-        pytest.param(("numpy", np.array, np), id="numpy"),
+        pytest.param(("numpy", np.array), id="numpy"),
         pytest.param(
-            ("mlx", mx.array, mx),
+            ("mlx", mx_array),
             id="mlx",
             marks=pytest.mark.skipif(not _has_mlx, reason="mlx not installed"),
         ),
         pytest.param(
-            ("jax", jnp.array, jnp),
+            ("jax", jnp_array),
             id="jax",
             marks=pytest.mark.skipif(not _has_jax, reason="jax not installed"),
         ),
         pytest.param(
-            ("torch", torch.tensor, torch),
+            ("torch", torch_tensor),
             id="torch",
             marks=pytest.mark.skipif(not _has_torch, reason="torch not installed"),
         ),
@@ -58,7 +61,7 @@ def test_handle_logits_top_k(array_type):
     """
     Test handle_logits with a simple logits array and positive top_k.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([0.1, 0.4, 0.2, 0.5, 0.3])
 
     top_k = 3
@@ -87,7 +90,7 @@ def test_handle_logits_top_k_equals_vocab_size(array_type):
     """
     Test handle_logits when top_k equals the size of the vocabulary.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([0.5, 0.2, 0.4, 0.1, 0.3])
 
     top_k = len(logits)  # Equal to vocab size
@@ -117,7 +120,7 @@ def test_handle_logits_top_k_greater_than_vocab_size(array_type):
     Test handle_logits when top_k is greater than the size of the vocabulary.
     Should cap top_k at vocab size.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([0.5, 0.2, 0.4])
 
     top_k = 5  # Greater than vocab size
@@ -146,7 +149,7 @@ def test_handle_logits_with_duplicate_values(array_type):
     """
     Test handle_logits when there are duplicate values in logits.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([0.3, 0.2, 0.3, 0.1, 0.2])
 
     top_k = 4
@@ -180,7 +183,7 @@ def test_handle_logits_empty_logits(array_type):
     Test handle_logits when logits array is empty.
     Should return an empty list.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([])
 
     top_k = 5
@@ -195,7 +198,7 @@ def test_handle_logits_invalid_top_k(array_type):
     Test handle_logits when top_k is negative or not an integer.
     Should raise ValueError.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([0.3, 0.2, 0.1])
 
     with pytest.raises(ValueError):
@@ -207,7 +210,7 @@ def test_handle_logits_invalid_logits(array_type):
     Test handle_logits when logits is not 1-dimensional.
     Should raise ValueError.
     """
-    _, array_constructor, _ = array_type
+    _, array_constructor = array_type
     logits = array_constructor([[0.1, 0.2], [0.3, 0.4]])
 
     with pytest.raises(ValueError):
