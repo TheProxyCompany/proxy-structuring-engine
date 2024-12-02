@@ -43,7 +43,6 @@ class StructuringEngine(LogitsProcessor):
         """
         StructuringEngine.build_vocabulary(tokenizer, vocabulary)
         self.tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = tokenizer
-        self.eos_id: int = tokenizer.eos_token_id or 0
         self.acceptor: Optional[Acceptor] = None
         self.walkers: List[Walker] = []
         self.within_json_value: bool = False
@@ -91,7 +90,6 @@ class StructuringEngine(LogitsProcessor):
             logger.info(f"🔵 Top logits:\n{chart}")
         else:
             logger.info("🔴 No valid tokens found")
-
 
         valid_token_ids = set(self.vocabulary[t] for t in valid_tokens)
         return scores + get_logit_bias(scores, valid_token_ids)

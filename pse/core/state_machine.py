@@ -21,9 +21,8 @@ from typing import Iterable, Optional, Tuple, Type
 
 from lexpy import DAWG
 
-from pse.acceptors.basic.acceptor import Acceptor
-from pse.util.state_machine.types import Edge, State
 from pse.util.state_machine.accepted_state import AcceptedState
+from pse_core import Acceptor, Edge, State
 from pse.core.walker import Walker
 
 logger = logging.getLogger(__name__)
@@ -187,11 +186,17 @@ class StateMachine(Acceptor):
 
             # Handle active transition
             for transition in current_walker.transition_walker.consume_token(current_token):
-                if new_walker := current_walker.complete_transition(transition):
-                    if new_walker.remaining_input:
-                        queue.append((new_walker, new_walker.remaining_input))
-                    else:
-                        yield new_walker
+                new_walker, is_accepted = current_walker.complete_transition(transition)
+                if not new_walker:
+                    continue
+
+                if is_accepted:
+                    new_walker = AcceptedState(new_walker)
+
+                if new_walker.remaining_input:
+                    queue.append((new_walker, new_walker.remaining_input))
+                else:
+                    yield new_walker
 
     @staticmethod
     def advance_all(

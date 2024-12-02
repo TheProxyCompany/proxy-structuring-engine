@@ -29,9 +29,7 @@ class AcceptedState(Walker):
         self.transition_walker = walker.transition_walker
         self.consumed_character_count = walker.consumed_character_count
         self.remaining_input = walker.remaining_input
-
         self._raw_value = walker.raw_value
-        self._accepts_more_input = walker._accepts_more_input
 
     def clone(self) -> Walker:
         return self.accepted_walker.clone()
@@ -94,7 +92,7 @@ class AcceptedState(Walker):
         """
         if not self.can_accept_more_input():
             return
-
+        
         yield from self.accepted_walker.consume_token(token)
 
     def __eq__(self, other: Any) -> bool:

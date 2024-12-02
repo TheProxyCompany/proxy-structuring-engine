@@ -4,7 +4,7 @@ from lexpy import DAWG
 from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
+from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, IntegerAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor

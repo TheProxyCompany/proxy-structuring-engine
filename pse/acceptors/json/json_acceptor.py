@@ -29,7 +29,7 @@ class JsonAcceptor(StateMachine):
         """
         if state == 0:
             from pse.acceptors.basic.text_acceptor import TextAcceptor as NullAcceptor
-            from pse.acceptors.basic.boolean_acceptors import BooleanAcceptor
+            from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
             from pse.acceptors.basic.string_acceptor import StringAcceptor
             from pse.acceptors.basic.number_acceptor import NumberAcceptor
             from pse.acceptors.collections.array_acceptor import ArrayAcceptor
