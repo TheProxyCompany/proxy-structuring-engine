@@ -1,14 +1,17 @@
 from __future__ import annotations
-from typing import Any, Dict, Type
-from pse.core.walker import Walker
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
+
+from typing import Any
+
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 
-class ArraySchemaAcceptor(ArrayAcceptor):
 
-    def __init__(self, schema: Dict[str, Any], context):
+class ArraySchemaAcceptor(ArrayAcceptor):
+    def __init__(self, schema: dict[str, Any], context: dict[str, Any]) -> None:
         from pse.util.state_machine.get_acceptor import (
             get_acceptor,
         )
@@ -38,7 +41,7 @@ class ArraySchemaAcceptor(ArrayAcceptor):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return ArraySchemaWalker
 
     def min_items(self) -> int:
@@ -61,14 +64,12 @@ class ArraySchemaWalker(ArrayWalker):
 
     def __init__(self, acceptor: ArraySchemaAcceptor, current_state: int = 0):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: ArraySchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
         if (
-            self.current_state == 2
-            and self.target_state == 3
-            or self.current_state == 4
-            and self.target_state == 2
+            (self.current_state == 2 and self.target_state == 3)
+            or (self.current_state == 4 and self.target_state == 2)
         ):
             return len(self.value) < self.acceptor.max_items()
         if self.target_state == "$":

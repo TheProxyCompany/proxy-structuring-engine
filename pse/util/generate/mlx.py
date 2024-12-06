@@ -1,16 +1,14 @@
+import logging
 from dataclasses import dataclass
 from typing import cast
-from pse.core.engine import StructuringEngine
+
 import mlx.core as mx
 import mlx.nn as nn
 from mlx_lm.sample_utils import categorical_sampling
 
-import logging
-
-from pse.util.errors import TokenRejected
+from pse.core.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class GenerateStepResult:
@@ -117,7 +115,7 @@ def generate(
             generation_result = sample(encoded_prompt, model, engine)
             encoded_prompt = mx.concatenate([encoded_prompt, generation_result.token])
             generation_results.append(generation_result)
-        except TokenRejected:
+        except Exception:
             logger.warning("Token rejected.")
             break
 

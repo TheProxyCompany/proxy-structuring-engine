@@ -1,12 +1,16 @@
 from __future__ import annotations
-from typing import List, Any, Type, Optional
-from pse.core.acceptor import StateGraph
-from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.walker import Walker
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+
+from typing import Any
+
+from pse_core import StateGraph
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.core.state_machine import StateMachine, StateMachineWalker
+
 
 class ArrayAcceptor(StateMachine):
     """
@@ -16,7 +20,7 @@ class ArrayAcceptor(StateMachine):
     and maintaining the current array values being parsed.
     """
 
-    def __init__(self, state_graph: Optional[StateGraph] = None) -> None:
+    def __init__(self, state_graph: StateGraph | None = None) -> None:
         """
         Initialize the ArrayAcceptor with a state transition graph.
 
@@ -35,12 +39,12 @@ class ArrayAcceptor(StateMachine):
             4: [
                 (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
                 (TextAcceptor("]"), "$"),
-            ]
+            ],
         }
         super().__init__(state_graph or base_array_state_graph)
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return ArrayWalker
 
 
@@ -57,18 +61,18 @@ class ArrayWalker(StateMachineWalker):
             acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
         super().__init__(acceptor, current_state)
-        self.value: List[Any] = []
+        self.value: list[Any] = []
 
-    def clone(self) -> ArrayWalker:
-        """
-        Clone the current walker, duplicating its state and accumulated values.
+    # def clone(self) -> ArrayWalker:
+    #     """
+    #     Clone the current walker, duplicating its state and accumulated values.
 
-        Returns:
-            ArrayAcceptor.Walker: A new instance of the cloned walker.
-        """
-        cloned_walker = super().clone()
-        cloned_walker.value = self.value[:]
-        return cloned_walker
+    #     Returns:
+    #         ArrayAcceptor.Walker: A new instance of the cloned walker.
+    #     """
+    #     cloned_walker = super().clone()
+    #     cloned_walker.value = self.value[:]
+    #     return cloned_walker
 
     def should_complete_transition(self) -> bool:
         """

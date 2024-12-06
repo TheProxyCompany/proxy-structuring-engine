@@ -1,7 +1,9 @@
-from typing import Any, Dict, Type
+from typing import Any
+
 from pydantic import BaseModel
 
-def pydantic_to_json(model: Type[BaseModel]) -> Dict[str, Any]:
+
+def pydantic_to_json(model: type[BaseModel]) -> dict[str, Any]:
     """
     Convert a Pydantic model class to a standardized schema format.
 

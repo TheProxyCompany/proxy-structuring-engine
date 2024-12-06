@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Type
+from pse_core.acceptor import Acceptor
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.acceptor import Acceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
 from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.walker import Walker
 
 
 class EncapsulatedAcceptor(StateMachine):
@@ -46,12 +46,10 @@ class EncapsulatedAcceptor(StateMachine):
         self.wait_for_acceptor = acceptor
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return EncapsulatedWalker
 
 
 class EncapsulatedWalker(StateMachineWalker):
-
-
     def is_within_value(self) -> bool:
         return self.current_state == 1

@@ -1,29 +1,25 @@
-from collections import defaultdict
 import json
-from typing import Any, Callable, Dict, List, Optional
+from collections import defaultdict
+from collections.abc import Callable
+from typing import Any
 
-from pse.core.acceptor import Acceptor
+from pse_core.acceptor import Acceptor
+
+from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
 
-from pse.util.errors import (
-    DefinitionNotFoundError,
-    SchemaNotImplementedError,
-    UnknownSchemaTypeError,
-)
-
 
 def get_acceptor(
-    schema: Dict[str, Any],
-    context: Optional[Dict[str, Any]] = None,
-    start_hook: Optional[Callable] = None,
-    end_hook: Optional[Callable] = None,
+    schema: dict[str, Any],
+    context: dict[str, Any] | None = None,
+    start_hook: Callable | None = None,
+    end_hook: Callable | None = None,
 ) -> Acceptor:
     """
     Create an acceptor to validate JSON input based on the provided schema.
@@ -55,32 +51,32 @@ def get_acceptor(
         context["defs"]["#"] = schema
 
     if schema.get("nullable"):
-        non_nullable_schema: Dict[str, Any] = schema.copy()
+        non_nullable_schema: dict[str, Any] = schema.copy()
         del non_nullable_schema["nullable"]
         return AnySchemaAcceptor([{"type": "null"}, non_nullable_schema], context)
 
     if "$defs" in schema:
-        schema_defs: Dict[str, Any] = schema["$defs"]
+        schema_defs: dict[str, Any] = schema["$defs"]
         if "$id" in schema_defs:
-            raise SchemaNotImplementedError("$defs.$id")
+            raise ValueError("$defs.$id is not supported")
         for def_name, def_schema in schema_defs.items():
             # Handle both relative and absolute definition paths
             context["defs"][f"#/$defs{context['path']}/{def_name}"] = def_schema
             context["defs"][f"#/$defs/{def_name}"] = def_schema
 
-    schemas: List[Dict[str, Any]] = resolve_subschemas(schema, context["defs"], {})
+    schemas: list[dict[str, Any]] = resolve_subschemas(schema, context["defs"], {})
     if len(schemas) == 1:
         schema = schemas[0]
     else:
         return AnySchemaAcceptor(schemas, context)
 
     if "not" in schema:
-        raise SchemaNotImplementedError("The 'not' keyword is not supported due to limitations with autoregressive generation.")
+        raise ValueError("The 'not' keyword is not supported due to limitations with autoregressive generation.")
 
-    schema_type: Optional[Any] = schema.get("type")
+    schema_type: Any | None = schema.get("type")
 
     if isinstance(schema_type, list):
-        merged_schemas: List[Dict[str, Any]] = [
+        merged_schemas: list[dict[str, Any]] = [
             {**schema, "type": type_} for type_ in schema_type
         ]
         return AnySchemaAcceptor(merged_schemas, context)
@@ -122,16 +118,16 @@ def get_acceptor(
         else:
             acceptor = ArrayAcceptor()
     else:
-        raise UnknownSchemaTypeError(f"unknown schema type: {str(schema)}")
+        raise ValueError(f"unknown schema type: {schema}")
 
     return acceptor
 
 
 def resolve_subschemas(
-    schema: Dict[str, Any],
-    defs: Dict[str, Any],
-    visited_refs: Dict[str, Any],
-) -> List[Dict[str, Any]]:
+    schema: dict[str, Any],
+    defs: dict[str, Any],
+    visited_refs: dict[str, Any],
+) -> list[dict[str, Any]]:
     """
     Resolve references and combine subschemas within a JSON schema.
 
@@ -140,8 +136,8 @@ def resolve_subschemas(
 
     Args:
         schema (Dict[str, Any]): The JSON schema to resolve.
-        defs (Dict[str, Any]): Definitions available for resolving "$ref" references.
-        visited_refs (Dict[str, Any]): Tracks visited references to prevent infinite recursion.
+        defs (dict[str, Any]): Definitions available for resolving "$ref" references.
+        visited_refs (dict[str, Any]): Tracks visited references to prevent infinite recursion.
 
     Returns:
         List[Dict[str, Any]]: A list of resolved subschemas.
@@ -153,23 +149,23 @@ def resolve_subschemas(
         schema_ref: str = schema["$ref"]
         if schema_ref in visited_refs:
             return visited_refs[schema_ref]
-        schema_def: Optional[Dict[str, Any]] = defs.get(schema_ref)
+        schema_def: dict[str, Any] | None = defs.get(schema_ref)
         if schema_def is None:
-            raise DefinitionNotFoundError(schema_ref)
+            raise ValueError(f"definition not found: {schema_ref}")
         visited_refs[schema_ref] = []
-        resolved: List[Dict[str, Any]] = resolve_subschemas(
+        resolved: list[dict[str, Any]] = resolve_subschemas(
             schema_def, defs, visited_refs
         )
         visited_refs[schema_ref].extend(resolved)
         return resolved
 
     if "allOf" in schema:
-        base_schema: Dict[str, Any] = {k: v for k, v in schema.items() if k != "allOf"}
-        schemas: List[Dict[str, Any]] = resolve_subschemas(
+        base_schema: dict[str, Any] = {k: v for k, v in schema.items() if k != "allOf"}
+        schemas: list[dict[str, Any]] = resolve_subschemas(
             base_schema, defs, visited_refs
         )
         for subschema in schema["allOf"]:
-            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(
+            resolved_subschemas: list[dict[str, Any]] = resolve_subschemas(
                 subschema, defs, visited_refs
             )
             schemas = [{**ms, **rs} for ms in schemas for rs in resolved_subschemas]
@@ -177,13 +173,13 @@ def resolve_subschemas(
 
     if "anyOf" in schema or "oneOf" in schema:
         key: str = "anyOf" if "anyOf" in schema else "oneOf"
-        base_schema: Dict[str, Any] = {k: v for k, v in schema.items() if k != key}
-        base_schemas: List[Dict[str, Any]] = resolve_subschemas(
+        base_schema: dict[str, Any] = {k: v for k, v in schema.items() if k != key}
+        base_schemas: list[dict[str, Any]] = resolve_subschemas(
             base_schema, defs, visited_refs
         )
-        combined_schemas: List[Dict[str, Any]] = []
+        combined_schemas: list[dict[str, Any]] = []
         for subschema in schema[key]:
-            resolved_subschemas: List[Dict[str, Any]] = resolve_subschemas(
+            resolved_subschemas: list[dict[str, Any]] = resolve_subschemas(
                 subschema, defs, visited_refs
             )
             combined_schemas.extend(

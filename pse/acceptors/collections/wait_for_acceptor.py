@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable, Tuple
 
-from pse.core.acceptor import Acceptor
-from pse.core.state_machine import StateMachine, State
-from pse.core.walker import Walker
 import logging
+from collections.abc import Callable, Iterable
+
+from pse_core.acceptor import Acceptor
+from pse_core.walker import Walker
+
+from pse.core.state_machine import State, StateMachine
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,8 +42,8 @@ class WaitForAcceptor(StateMachine):
         self.triggered = False
 
     def get_transitions(
-        self, walker: Walker, state: Optional[State] = None
-    ) -> Iterable[Tuple[Walker, State, State]]:
+        self, walker: Walker, state: State | None = None
+    ) -> Iterable[tuple[Walker, State, State]]:
         """
         Get transitions for the WaitForAcceptor.
         """
@@ -70,7 +73,7 @@ class WaitForWalker(Walker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor = acceptor
+        self.acceptor: WaitForAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
         if self.transition_walker and self.transition_walker.is_within_value():

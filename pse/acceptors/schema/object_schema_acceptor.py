@@ -1,67 +1,69 @@
 from __future__ import annotations
-from typing import Dict, Any, Callable, Type, Optional, Iterable, Tuple
+
+from collections.abc import Callable, Iterable
+from typing import Any
+
+from pse_core import Edge, State
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
-from pse.core.walker import Walker
-from pse.util.errors import InvalidSchemaError
-from pse.core.acceptor import State
 from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
 
-class ObjectSchemaAcceptor(ObjectAcceptor):
 
+class ObjectSchemaAcceptor(ObjectAcceptor):
     def __init__(
         self,
-        schema: Dict[str, Any],
-        context: Dict[str, Any],
+        schema: dict[str, Any],
+        context: dict[str, Any],
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
     ):
         super().__init__()
         self.schema = schema
         self.context = context
-        self.properties: Dict[str, Any] = schema.get("properties", {})
+        self.properties: dict[str, Any] = schema.get("properties", {})
         self.start_hook = start_hook
         self.end_hook = end_hook
 
         # Determine if additional properties are allowed based on the schema
-        self.allow_additional_properties = schema.get("additionalProperties", True) is not False
+        self.allow_additional_properties = (
+            schema.get("additionalProperties", True) is not False
+        )
 
         # Validate required properties
         self.required_property_names = schema.get("required", [])
         undefined_required_properties = [
-            prop
-            for prop in self.required_property_names
-            if prop not in self.properties
+            prop for prop in self.required_property_names if prop not in self.properties
         ]
         if undefined_required_properties:
-            raise InvalidSchemaError(
+            raise ValueError(
                 f"Required properties not defined in schema: {', '.join(undefined_required_properties)}"
             )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return ObjectSchemaWalker
 
-    def get_edges(self, state, value: Dict[str, Any] = {}):
+    def get_edges(self, state: State, value: dict[str, Any]) -> Iterable[Edge]:
         if state == 2:
             for prop_name, prop_schema in self.properties.items():
                 if prop_name not in value:
                     yield (
-                    PropertySchemaAcceptor(
-                        prop_name,
-                        prop_schema,
-                        self.context,
-                        self.start_hook,
-                        self.end_hook,
-                    ),
-                    3,
-                )
+                        PropertySchemaAcceptor(
+                            prop_name,
+                            prop_schema,
+                            self.context,
+                            self.start_hook,
+                            self.end_hook,
+                        ),
+                        3,
+                    )
         elif state == 4:
             has_all_required_properties = all(
-                prop_name in value
-                for prop_name in self.required_property_names
+                prop_name in value for prop_name in self.required_property_names
             )
             yield (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2)
             if has_all_required_properties:
@@ -70,8 +72,8 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             yield from super().get_edges(state)
 
     def get_transitions(
-        self, walker: Walker, state: Optional[State] = None
-    ) -> Iterable[Tuple[Walker, State, State]]:
+        self, walker: Walker, state: State | None = None
+    ) -> Iterable[tuple[Walker, State, State]]:
         """Retrieve transition walkers from the current state.
 
         For each edge from the current state, yields walkers that can traverse that edge.
@@ -85,7 +87,9 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             Iterable of tuples (transition_walker, source_state, target_state).
         """
         current_state = state or walker.current_state
-        for acceptor, target_state in self.get_edges(current_state, walker.current_value):
+        for acceptor, target_state in self.get_edges(
+            current_state, walker.current_value
+        ):
             for transition in acceptor.get_walkers():
                 yield transition, current_state, target_state
 
@@ -109,7 +113,7 @@ class ObjectSchemaWalker(ObjectWalker):
 
     def __init__(self, acceptor: ObjectSchemaAcceptor, current_state: int = 0):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: ObjectSchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
         if self.target_state == "$":

@@ -1,16 +1,17 @@
 from __future__ import annotations
-from typing import Tuple, Optional, Any, Type
-import logging
+
 import json
+import logging
+from typing import Any
 
-from pse.core.acceptor import Acceptor
+from pse_core.acceptor import Acceptor
+from pse_core.walker import Walker
 
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
+from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.basic.string_acceptor import StringAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.core.walker import Walker
 
 logger = logging.getLogger()
 
@@ -23,13 +24,14 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: Optional[list[Acceptor]] = None) -> None:
+    def __init__(self, sequence: list[Acceptor] | None = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """
 
         super().__init__(
-            sequence or [
+            sequence
+            or [
                 StringAcceptor(),
                 WhitespaceAcceptor(),
                 TextAcceptor(":"),
@@ -39,7 +41,7 @@ class PropertyAcceptor(SequenceAcceptor):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return PropertyWalker
 
 
@@ -61,7 +63,7 @@ class PropertyWalker(SequenceWalker):
         """
         super().__init__(acceptor, current_acceptor_index)
         self.prop_name = ""
-        self.prop_value: Optional[Any] = None
+        self.prop_value: Any | None = None
 
     def should_complete_transition(self) -> bool:
         """
@@ -99,7 +101,7 @@ class PropertyWalker(SequenceWalker):
         return False
 
     @property
-    def current_value(self) -> Tuple[str, Any]:
+    def current_value(self) -> tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 

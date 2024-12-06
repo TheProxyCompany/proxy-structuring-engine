@@ -1,13 +1,15 @@
 from __future__ import annotations
-import json
-import re
-from typing import Callable, Optional, Any, Type
 
-from pse.util.errors import SchemaNotImplementedError
-from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
-from pse.core.walker import Walker
+import json
 import logging
-import regex  # Note: This is a third-party module
+import re
+from collections.abc import Callable
+from typing import Any
+
+import regex
+from pse_core.walker import Walker
+
+from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +22,16 @@ class StringSchemaAcceptor(StringAcceptor):
     def __init__(
         self,
         schema: dict,
-        start_hook: Optional[Callable] = None,
-        end_hook: Optional[Callable] = None,
+        start_hook: Callable | None = None,
+        end_hook: Callable | None = None,
     ):
         super().__init__()
         self.schema = schema or {}
         self.start_hook = start_hook
         self.end_hook = end_hook
 
-        self.pattern: Optional[re.Pattern] = None
-        self.format: Optional[str] = None
+        self.pattern: re.Pattern | None = None
+        self.format: str | None = None
 
         if "pattern" in self.schema:
             pattern_str = self.schema["pattern"]
@@ -38,12 +40,12 @@ class StringSchemaAcceptor(StringAcceptor):
             self.format = self.schema["format"]
             # support 'email', 'date-time', 'uri' formats
             if self.format not in ["email", "date-time", "uri"]:
-                raise SchemaNotImplementedError(
+                raise ValueError(
                     f"Format '{self.format}' not implemented"
                 )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return StringSchemaWalker
 
     def min_length(self) -> int:
@@ -77,7 +79,7 @@ class StringSchemaAcceptor(StringAcceptor):
             if format_validator and not format_validator(value):
                 return False
             elif not format_validator:
-                raise SchemaNotImplementedError(
+                raise ValueError(
                     f"Format '{self.format}' not implemented"
                 )
         return True
@@ -118,7 +120,7 @@ class StringSchemaWalker(StringWalker):
 
     def __init__(self, acceptor: StringSchemaAcceptor, current_state: int = 0):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: StringSchemaAcceptor = acceptor
         self.is_escaping = False
 
     def should_start_transition(self, token: str) -> bool:

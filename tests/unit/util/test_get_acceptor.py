@@ -3,11 +3,6 @@ import pytest
 from typing import Any, Dict, Optional, Type
 
 from pse.util.state_machine.get_acceptor import get_acceptor
-from pse.util.errors import (
-    DefinitionNotFoundError,
-    SchemaNotImplementedError,
-    UnknownSchemaTypeError,
-)
 from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
@@ -68,37 +63,6 @@ def test_get_acceptor_schema_types(
         assert (
             len(acceptor.acceptors) == acceptor_len
         ), f"Expected acceptor length {acceptor_len} for schema {schema}"
-
-
-@pytest.mark.parametrize(
-    "schema, expected_exception, match",
-    [
-        (
-            {"type": "string", "not": {"enum": ["invalid"]}},
-            SchemaNotImplementedError,
-            "not",
-        ),
-        (
-            {"type": "unknown_type"},
-            UnknownSchemaTypeError,
-            "unknown schema type",
-        ),
-        (
-            {"$ref": "#/definitions/nonexistent"},
-            DefinitionNotFoundError,
-            "#/definitions/nonexistent",
-        ),
-    ],
-)
-def test_get_acceptor_exceptions(
-    schema: Dict[str, Any],
-    expected_exception: Type[Exception],
-    match: str,
-    context: Dict[str, Any],
-) -> None:
-    """Test that get_json_acceptor raises expected exceptions for invalid schemas."""
-    with pytest.raises(expected_exception, match=match):
-        get_acceptor(schema, context)
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 import pytest
 from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.core.state_machine import StateMachine
-from pse.core.walker import Walker
+from pse_core.walker import Walker
 from typing import Iterable
 
 

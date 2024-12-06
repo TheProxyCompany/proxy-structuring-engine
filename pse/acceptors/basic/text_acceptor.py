@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from pse.core.walker import Walker
+import logging
+from collections.abc import Iterable
+
+from pse_core.walker import Walker
+
 from pse.core.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
-from typing import Iterable, Optional, Type
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,7 @@ class TextAcceptor(StateMachine):
     """
 
     def __init__(
-        self,
-        text: str,
-        is_optional: bool = False,
-        is_case_sensitive: bool = True
+        self, text: str, is_optional: bool = False, is_case_sensitive: bool = True
     ):
         """
         Initialize a new TextAcceptor instance with the specified text.
@@ -41,7 +40,7 @@ class TextAcceptor(StateMachine):
         self.text = text
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return TextWalker
 
     def __str__(self) -> str:
@@ -69,7 +68,7 @@ class TextWalker(StateMachineWalker):
     def __init__(
         self,
         acceptor: TextAcceptor,
-        consumed_character_count: Optional[int] = None,
+        consumed_character_count: int | None = None,
     ):
         """
         Initialize a new Walker instance.
@@ -80,7 +79,7 @@ class TextWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor = acceptor
+        self.acceptor: TextAcceptor = acceptor
         self.consumed_character_count = consumed_character_count or 0
 
     def can_accept_more_input(self) -> bool:
@@ -114,7 +113,6 @@ class TextWalker(StateMachineWalker):
             partial = remaining_text[:i]
             yield partial
 
-
     def consume_token(self, token: str) -> Iterable[Walker]:
         """
         Advances the walker if the token matches the expected text at the current position.
@@ -130,7 +128,9 @@ class TextWalker(StateMachineWalker):
         if self.acceptor.text[pos : pos + match_len] == token[:match_len]:
             next_walker = self.__class__(self.acceptor, pos + match_len)
             next_walker.remaining_input = token[match_len:] or None
-            next_walker._accepts_more_input = (pos + match_len) < len(self.acceptor.text)
+            next_walker._accepts_more_input = (pos + match_len) < len(
+                self.acceptor.text
+            )
 
             if pos + match_len == len(self.acceptor.text):
                 yield AcceptedState(next_walker)
@@ -173,17 +173,14 @@ class TextWalker(StateMachineWalker):
             if self.target_state is not None
             else ""
         )
-        seen = self.acceptor.text[:self.consumed_character_count]
-        remaining = self.acceptor.text[self.consumed_character_count:]
+        seen = self.acceptor.text[: self.consumed_character_count]
+        remaining = self.acceptor.text[self.consumed_character_count :]
         accumulated_value = seen + (f"👉{remaining}" if remaining else "")
         return (
             f"Current edge: ({self.current_state}) --"
             + repr(accumulated_value)[1:-1]
             + target_state
         )
-
-    def __hash__(self) -> int:
-        return super().__hash__()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TextWalker):

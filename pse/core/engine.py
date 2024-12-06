@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 from lexpy import DAWG, Trie
-
+from pse_core.acceptor import Acceptor
+from pse_core.walker import Walker
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
-from pse.core.walker import Walker
-from pse.core.state_machine import StateMachine
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.core.acceptor import Acceptor
-from pse.util.state_machine.get_acceptor import get_acceptor
-from pse.util.get_top_logits import get_top_logits
+from pse.core.state_machine import StateMachine
 from pse.util.get_logit_bias import get_logit_bias
+from pse.util.get_top_logits import get_top_logits
+from pse.util.state_machine.get_acceptor import get_acceptor
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +30,20 @@ class StructuringEngine(LogitsProcessor):
 
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-        vocabulary: Optional[Dict[str, int]] = None,
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
+        vocabulary: dict[str, int] | None = None,
     ) -> None:
         """
         Initializes the StructuredOutputDriver with the provided tokenizer.
 
         Args:
-            tokenizer (Union[PreTrainedTokenizer, PreTrainedTokenizerFast]): The tokenizer used to convert tokens to strings.
-            vocabulary (Optional[Dict[str, int]]): A dictionary mapping tokens to their IDs. Defaults to tokenizer's vocabulary.
+            tokenizer (PreTrainedTokenizer | PreTrainedTokenizerFast): The tokenizer used to convert tokens to strqings.
+            vocabulary (dict[str, int] | None): A dictionary mapping tokens to their IDs. Defaults to tokenizer's vocabulary.
         """
         StructuringEngine.build_vocabulary(tokenizer, vocabulary)
-        self.tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = tokenizer
-        self.acceptor: Optional[Acceptor] = None
-        self.walkers: List[Walker] = []
+        self.tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast = tokenizer
+        self.acceptor: Acceptor | None = None
+        self.walkers: list[Walker] = []
         self.within_json_value: bool = False
 
     def __call__(self, input_ids: Any, scores: Any) -> Any:
@@ -94,52 +93,42 @@ class StructuringEngine(LogitsProcessor):
         valid_token_ids = set(self.vocabulary[t] for t in valid_tokens)
         return scores + get_logit_bias(scores, valid_token_ids)
 
-    @property
-    def in_structured_state(self) -> bool:
+    def get_valid_tokens(self) -> tuple[set[str], Trie]:
         """
-        Checks whether the driver is in a structured state.
+        Returns a list of valid token IDs based on the current state of the acceptor.
 
-        If the acceptor is encapsulated, then the driver is not structured until the opening delimiter is triggered.
-        If the acceptor is not encapsulated, then the driver is structured as soon as the first token is accepted.
-
-        When processing input, if the driver is within a JSON value (i.e., has consumed the `"` character when processing
-        a JSON string), then the driver is not structured until the closing delimiter is triggered. This allows us to
-        enable/disable creativity sampling when inside JSON values within the JSON output, without having the creativity
-        sampling affect the structured output generation.
+        Args:
+            logits: The logits tensor to mask. Just used for dimensionality.
 
         Returns:
-            bool: True if in a structured state, False otherwise.
+            The bias, of the same type as `logits`.
         """
+        all_valid_prefixes = set()
+        trie = Trie()
+        for walker in self.walkers:
+            if walker.accepts_any_token():
+                return set(), trie
 
-        return not self._waiting_for_trigger() and not self.within_json_value
+            # valid_prefixes = walker.find_valid_prefixes(self.dawg)
+            all_valid_prefixes.update([])
 
-    @property
-    def has_reached_accept_state(self) -> bool:
-        """
-        Checks whether the acceptor has reached a valid final state.
-
-        Returns:
-            bool: True if in an accepted state, False otherwise.
-        """
-        if not self.acceptor:
-            return False
-
-        return any(walker.has_reached_accept_state() for walker in self.walkers)
+        trie.add_all({s[::-1] for s in all_valid_prefixes})
+        return all_valid_prefixes, trie
 
     def set_schema(
         self,
         schema: type[BaseModel]
-        | List[type[BaseModel]]
-        | Dict[str, Any]
-        | List[Dict[str, Any]],
+        | list[type[BaseModel]]
+        | dict[str, Any]
+        | list[dict[str, Any]],
         use_delimiters: bool,
-        delimiters: Optional[Tuple[str, str]] = None,
+        delimiters: tuple[str, str] | None = None,
     ) -> None:
         """
         Adds a schema with delimiters to the engine.
         """
 
-        def get_schema(schema: Any | None) -> Dict[str, Any]:
+        def get_schema(schema: Any | None) -> dict[str, Any]:
             if schema is None:
                 return {}
 
@@ -181,18 +170,18 @@ class StructuringEngine(LogitsProcessor):
         else:
             self.acceptor = acceptor
 
-        self.walkers = list(self.acceptor.get_walkers())
+        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
 
-    def advance_token(self, token_id: int) -> Optional[int]:
+    def advance_token(self, token_id: int) -> int | None:
         """
         Advances the acceptor's state using the provided token ID.
         """
         if not (token := self.reverse_vocabulary.get(token_id)):
             logger.warning(f"Unknown token ID: {token_id}")
-            return
+            return None
 
-        seen: Dict[str, Set[Walker]] = {}
-        longest_partial: Tuple[str, int] = ("", -1)  # (partial_token, token_id)
+        seen: dict[str, set[Walker]] = {}
+        longest_partial: tuple[str, int] = ("", -1)  # (partial_token, token_id)
         for valid_token, walker in StateMachine.advance_all(
             self.walkers, token, self.dawg
         ):
@@ -211,28 +200,6 @@ class StructuringEngine(LogitsProcessor):
         if longest_partial[1] != -1:
             self.walkers = list(seen[longest_partial[0]])
             return longest_partial[1]
-
-    def get_valid_tokens(self) -> Tuple[Set[str], Trie]:
-        """
-        Returns a list of valid token IDs based on the current state of the acceptor.
-
-        Args:
-            logits: The logits tensor to mask. Just used for dimensionality.
-
-        Returns:
-            The bias, of the same type as `logits`.
-        """
-        all_valid_prefixes = set()
-        trie = Trie()
-        for walker in self.walkers:
-            if walker.accepts_any_token():
-                return set(), trie
-
-            valid_prefixes = walker.find_valid_prefixes(self.dawg)
-            all_valid_prefixes.update(valid_prefixes)
-
-        trie.add_all({s[::-1] for s in all_valid_prefixes})
-        return all_valid_prefixes, trie
 
     def consume_raw_input(self, raw_input: str) -> None:
         """Advances the acceptor using the provided raw input.
@@ -262,11 +229,43 @@ class StructuringEngine(LogitsProcessor):
             if new_walkers:
                 self.walkers = new_walkers
 
+    @property
+    def in_structured_state(self) -> bool:
+        """
+        Checks whether the driver is in a structured state.
+
+        If the acceptor is encapsulated, then the driver is not structured until the opening delimiter is triggered.
+        If the acceptor is not encapsulated, then the driver is structured as soon as the first token is accepted.
+
+        When processing input, if the driver is within a JSON value (i.e., has consumed the `"` character when processing
+        a JSON string), then the driver is not structured until the closing delimiter is triggered. This allows us to
+        enable/disable creativity sampling when inside JSON values within the JSON output, without having the creativity
+        sampling affect the structured output generation.
+
+        Returns:
+            bool: True if in a structured state, False otherwise.
+        """
+
+        return not self._waiting_for_trigger() and not self.within_json_value
+
+    @property
+    def has_reached_accept_state(self) -> bool:
+        """
+        Checks whether the acceptor has reached a valid final state.
+
+        Returns:
+            bool: True if in an accepted state, False otherwise.
+        """
+        if not self.acceptor:
+            return False
+
+        return any(walker.has_reached_accept_state() for walker in self.walkers)
+
     @classmethod
     def build_vocabulary(
         cls,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-        vocabulary: Optional[Dict[str, int]] = None,
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
+        vocabulary: dict[str, int] | None = None,
     ) -> None:
         """
         Builds a vocabulary mapping for the tokenizer.
@@ -277,8 +276,8 @@ class StructuringEngine(LogitsProcessor):
                        uses tokenizer's vocabulary.
         """
         cls.dawg = DAWG()
-        cls.vocabulary: Dict[str, int] = {}
-        cls.reverse_vocabulary: Dict[int, str] = {}
+        cls.vocabulary: dict[str, int] = {}
+        cls.reverse_vocabulary: dict[int, str] = {}
 
         # Get token IDs and decoded tokens
         vocab = vocabulary if vocabulary else tokenizer.get_vocab()
@@ -292,7 +291,7 @@ class StructuringEngine(LogitsProcessor):
         cls.dawg.reduce()
 
         # Create token to ID mapping
-        for token, id in zip(decoded_tokens, token_ids):
+        for token, id in zip(decoded_tokens, token_ids, strict=True):
             cls.vocabulary[token] = id
             cls.reverse_vocabulary[id] = token
 

@@ -1,13 +1,11 @@
 from __future__ import annotations
-from typing import Type
-from pse.core.state_machine import (
-    StateMachine,
-    StateMachineWalker,
-)
+
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.core.walker import Walker
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.core.state_machine import StateMachine, StateMachineWalker
 
 
 class StringAcceptor(StateMachine):
@@ -64,7 +62,7 @@ class StringAcceptor(StateMachine):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return StringWalker
 
 
@@ -87,4 +85,4 @@ class StringWalker(StateMachineWalker):
             acceptor (StringAcceptor): The parent acceptor.
         """
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: StringAcceptor = acceptor

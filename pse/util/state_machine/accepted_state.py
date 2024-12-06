@@ -1,6 +1,8 @@
 import logging
-from typing import Any, Iterable
-from pse.core.walker import Walker
+from collections.abc import Iterable
+from typing import Any
+
+from pse_core.walker import Walker
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +98,10 @@ class AcceptedState(Walker):
         yield from self.accepted_walker.consume_token(token)
 
     def __eq__(self, other: Any) -> bool:
-        return self.accepted_walker.__eq__(other)
+        return self.accepted_walker == other
 
     def __hash__(self) -> int:
-        return self.accepted_walker.__hash__()
+        return hash(self.accepted_walker)
 
     def __repr__(self) -> str:
         """Return a string representation of the accepted state.
@@ -107,4 +109,4 @@ class AcceptedState(Walker):
         Returns:
             A string representing the accepted state.
         """
-        return f"✅ {repr(self.accepted_walker)}"
+        return f"✅ {self.accepted_walker!r}"

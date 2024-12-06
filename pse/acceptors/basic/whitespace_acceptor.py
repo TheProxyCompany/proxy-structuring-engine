@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Type
+
+import logging
+from collections.abc import Iterable
+
+from pse_core.walker import Walker
 
 from pse.core.state_machine import StateMachine
 from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker
-import logging
 
 logger = logging.getLogger()
 
@@ -32,8 +34,9 @@ class WhitespaceAcceptor(StateMachine):
         super().__init__(is_optional=(min_whitespace == 0))
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return WhitespaceWalker
+
 
 class WhitespaceWalker(Walker):
     """
@@ -43,7 +46,7 @@ class WhitespaceWalker(Walker):
     def __init__(
         self,
         acceptor: WhitespaceAcceptor,
-        value: Optional[str] = None,
+        value: str | None = None,
     ):
         """
         Initialize the walker.
@@ -70,8 +73,7 @@ class WhitespaceWalker(Walker):
         if self.length_exceeded:
             return []
 
-        for char in WHITESPACE_CHARS:
-            yield char
+        yield from WHITESPACE_CHARS
 
     def can_accept_more_input(self) -> bool:
         return (

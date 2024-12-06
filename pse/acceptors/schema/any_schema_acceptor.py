@@ -1,12 +1,14 @@
+from typing import Any
+
 from pse.core.state_machine import StateMachine
-from typing import List, Dict, Any
+
 
 class AnySchemaAcceptor(StateMachine):
     """
     Accepts JSON input that complies with any of several provided JSON schemas
     """
 
-    def __init__(self, schemas: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
+    def __init__(self, schemas: list[dict[str, Any]], context: dict[str, Any]) -> None:
         """
         Initialize the AnyOfAcceptor with multiple JSON schemas.
 

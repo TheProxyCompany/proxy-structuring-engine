@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import Type
+
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
-from pse.core.walker import Walker
+
 
 class NumberSchemaAcceptor(NumberAcceptor):
     """
@@ -24,10 +26,10 @@ class NumberSchemaAcceptor(NumberAcceptor):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return NumberSchemaWalker
 
-    def validate_value(self, value):
+    def validate_value(self, value: float) -> bool:
         """
         Validate the number value according to the schema
         """
@@ -62,7 +64,7 @@ class NumberSchemaWalker(NumberWalker):
 
     def __init__(self, acceptor: NumberSchemaAcceptor, current_state: int = 0):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: NumberSchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
         if self.acceptor.is_integer and self.target_state == 3:

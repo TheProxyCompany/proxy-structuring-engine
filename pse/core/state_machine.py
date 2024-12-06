@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from typing import Iterable, Optional, Tuple, Type
+from collections.abc import Iterable
 
 from lexpy import DAWG
+from pse_core import Edge, State
+from pse_core.acceptor import Acceptor
+from pse_core.walker import Walker
 
 from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker
-from pse.core.acceptor import Acceptor, Edge, State
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class StateMachine(Acceptor):
     """
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         """The walker class for this state machine."""
         return StateMachineWalker
 
@@ -50,7 +51,7 @@ class StateMachine(Acceptor):
         """
         return self.state_graph.get(state, [])
 
-    def get_walkers(self, state: Optional[State] = None) -> Iterable[Walker]:
+    def get_walkers(self, state: State | None = None) -> Iterable[Walker]:
         """Initialize walkers at the specified start state.
 
         If no graph is provided, only the initial walker is yielded.
@@ -68,8 +69,8 @@ class StateMachine(Acceptor):
             yield initial_walker
 
     def get_transitions(
-        self, walker: Walker, state: Optional[State] = None
-    ) -> Iterable[Tuple[Walker, State, State]]:
+        self, walker: Walker, state: State | None = None
+    ) -> Iterable[tuple[Walker, State, State]]:
         """Retrieve transition walkers from the current state.
 
         For each edge from the current state, yields walkers that can traverse that edge.
@@ -96,7 +97,7 @@ class StateMachine(Acceptor):
                 yield from self.get_transitions(walker, target_state)
 
     def branch_walker(
-        self, walker: Walker, token: Optional[str] = None
+        self, walker: Walker, token: str | None = None
     ) -> Iterable[Walker]:
         """
         Branch the walker into multiple paths for parallel exploration.
@@ -108,7 +109,7 @@ class StateMachine(Acceptor):
         Yields:
             New walker instances, each representing a different path.
         """
-        logger.debug(f"🔵 Branching {repr(walker)}")
+        logger.debug(f"🔵 Branching {walker!r}")
         input_token = token or walker.remaining_input
 
         for transition, start_state, target_state in self.get_transitions(walker):
@@ -151,7 +152,7 @@ class StateMachine(Acceptor):
                 - Partial matches
                 - Valid branches
         """
-        queue: deque[Tuple[Walker, str]] = deque([(walker, input_token)])
+        queue: deque[tuple[Walker, str]] = deque([(walker, input_token)])
 
         def handle_blocked_transition(blocked_walker: Walker, token: str) -> Iterable[Walker]:
             """Handle blocked transitions."""
@@ -160,17 +161,19 @@ class StateMachine(Acceptor):
                 if branched_walker.should_start_transition(token):
                     branched_walkers.append(branched_walker)
                 elif branched_walker.has_reached_accept_state():
-                    logger.debug(f"🟠 Walker has reached accept state: {repr(branched_walker)}")
+                    logger.debug(
+                        f"🟠 Walker has reached accept state: {branched_walker!r}"
+                    )
                     yield branched_walker
                     return
 
             queue.extend((new_walker, token) for new_walker in branched_walkers)
             if not branched_walkers and blocked_walker.remaining_input:
-                logger.debug(f"🟠 Walker has remaining input: {repr(blocked_walker)}")
+                logger.debug(f"🟠 Walker has remaining input: {blocked_walker!r}")
                 yield blocked_walker
             elif not branched_walkers:
                 logger.debug(
-                    f"🔴 {repr(blocked_walker)} cannot parse {repr(token)[1:-1]}."
+                    f"🔴 {blocked_walker!r} cannot parse {token!r}."
                 )
 
         while queue:
@@ -200,8 +203,8 @@ class StateMachine(Acceptor):
 
     @staticmethod
     def advance_all(
-        walkers: Iterable[Walker], token: str, vocab: Optional[DAWG] = None
-    ) -> Iterable[Tuple[str, Walker]]:
+        walkers: Iterable[Walker], token: str, vocab: DAWG | None = None
+    ) -> Iterable[tuple[str, Walker]]:
         """Advance all walkers find valid token matches.
 
         Args:
@@ -266,7 +269,10 @@ class StateMachineWalker(Walker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return self._accepts_more_input or bool(self.acceptor.state_graph.get(self.current_state))
+        return (
+            self._accepts_more_input or
+            bool(self.acceptor.state_graph.get(self.current_state))
+        )
 
     def accepts_any_token(self) -> bool:
         """Check if current transition matches all characters.

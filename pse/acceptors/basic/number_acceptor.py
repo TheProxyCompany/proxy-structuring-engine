@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Iterable, Type
-from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.acceptor import Edge, State
+import logging
+from collections.abc import Iterable
+
+from pse_core import Edge, State
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-import logging
-
-from pse.core.walker import Walker
+from pse.core.state_machine import StateMachine, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class NumberAcceptor(StateMachine):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return NumberWalker
 
     def get_edges(self, state: State) -> Iterable[Edge]:

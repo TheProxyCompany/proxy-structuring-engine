@@ -1,13 +1,13 @@
 """
 Acceptors for JSON parsing or constraining LLM generation to JSON outputs.
 """
+from collections.abc import Iterable
 
-from typing import (
-    Iterable,
-    Optional,
-)
-from pse.core.state_machine import StateMachine, State, Edge
-from pse.core.walker import Walker
+from pse_core import Edge, State
+from pse_core.walker import Walker
+
+from pse.core.state_machine import StateMachine
+
 
 class JsonAcceptor(StateMachine):
     """
@@ -28,10 +28,10 @@ class JsonAcceptor(StateMachine):
             by tuples of TokenAcceptors and their corresponding target states.
         """
         if state == 0:
-            from pse.acceptors.basic.text_acceptor import TextAcceptor as NullAcceptor
             from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-            from pse.acceptors.basic.string_acceptor import StringAcceptor
             from pse.acceptors.basic.number_acceptor import NumberAcceptor
+            from pse.acceptors.basic.string_acceptor import StringAcceptor
+            from pse.acceptors.basic.text_acceptor import TextAcceptor as NullAcceptor
             from pse.acceptors.collections.array_acceptor import ArrayAcceptor
             from pse.acceptors.json.object_acceptor import ObjectAcceptor
 
@@ -45,6 +45,6 @@ class JsonAcceptor(StateMachine):
             ]
         return []
 
-    def get_walkers(self, state: Optional[State] = None) -> Iterable[Walker]:
+    def get_walkers(self, state: State | None = None) -> Iterable[Walker]:
         for edge, _ in self.get_edges(state or 0):
             yield from edge.get_walkers()

@@ -1,10 +1,12 @@
-from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
+import json
+from collections.abc import Callable
+from typing import Any
+
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from typing import Dict, Any, Callable, Type
-import json
-
-from pse.core.walker import Walker
+from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
 from pse.util.state_machine.get_acceptor import get_acceptor
 
 
@@ -23,8 +25,8 @@ class PropertySchemaAcceptor(PropertyAcceptor):
     def __init__(
         self,
         prop_name: str,
-        prop_schema: Dict[str, Any],
-        context: Dict[str, Any],
+        prop_schema: dict[str, Any],
+        context: dict[str, Any],
         value_started_hook: Callable | None = None,
         value_ended_hook: Callable | None = None,
     ):
@@ -50,7 +52,7 @@ class PropertySchemaAcceptor(PropertyAcceptor):
         )
 
     @property
-    def walker_class(self) -> Type[Walker]:
+    def walker_class(self) -> type[Walker]:
         return PropertySchemaWalker
 
     @property
@@ -65,13 +67,13 @@ class PropertySchemaWalker(PropertyWalker):
 
     def __init__(self, acceptor: PropertySchemaAcceptor, current_state: int = 0):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.acceptor: PropertySchemaAcceptor = acceptor
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():
             return False
 
-        hooks: Dict[str, Callable] = self.acceptor.prop_schema.get("__hooks", {})
+        hooks: dict[str, Callable] = self.acceptor.prop_schema.get("__hooks", {})
         prop_name = self.acceptor.prop_name
         if self.target_state == 4:
             if "value_start" in hooks:
