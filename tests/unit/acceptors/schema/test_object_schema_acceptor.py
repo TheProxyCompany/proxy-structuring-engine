@@ -1,17 +1,18 @@
-import pytest
-from typing import Any, Dict
-from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
-from pse.util.errors import InvalidSchemaError
+from typing import Any
 from unittest.mock import MagicMock
+
+import pytest
+
+from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
 
 
 @pytest.fixture
-def base_context() -> Dict[str, Any]:
+def base_context() -> dict[str, Any]:
     """Fixture to initialize the common test variables before each test."""
     return {"defs": {}, "path": "root"}
 
 
-def test_initialization_valid_schema(base_context: Dict[str, Any]) -> None:
+def test_initialization_valid_schema(base_context: dict[str, Any]) -> None:
     """
     Test initializing ObjectSchemaAcceptor with a valid schema.
     Ensures that the instance is created without errors.
@@ -36,7 +37,7 @@ def test_initialization_valid_schema(base_context: Dict[str, Any]) -> None:
 
 
 def test_initialization_missing_required_property_in_properties(
-    base_context: Dict[str, Any],
+    base_context: dict[str, Any],
 ) -> None:
     """
     Test initializing ObjectSchemaAcceptor where a required property is not defined in properties.
@@ -49,11 +50,11 @@ def test_initialization_missing_required_property_in_properties(
         },
         "required": ["name"],
     }
-    with pytest.raises(InvalidSchemaError):
+    with pytest.raises(ValueError):
         ObjectSchemaAcceptor(schema, base_context)
 
 
-def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
+def test_value_started_hook_not_string(base_context: dict[str, Any]) -> None:
     """
     Test that the value_started_hook is not called prematurely.
     """
@@ -84,7 +85,7 @@ def test_value_started_hook_not_string(base_context: Dict[str, Any]) -> None:
     started_hook.assert_not_called()
 
 
-def test_value_started_hook(base_context: Dict[str, Any]) -> None:
+def test_value_started_hook(base_context: dict[str, Any]) -> None:
     """
     Test that the value_started_hook is called with the correct property name when a property's value starts.
     """
@@ -107,7 +108,7 @@ def test_value_started_hook(base_context: Dict[str, Any]) -> None:
     started_hook.assert_called_once()
 
 
-def test_value_ended_hook(base_context: Dict[str, Any]) -> None:
+def test_value_ended_hook(base_context: dict[str, Any]) -> None:
     """
     Test that the value_ended_hook is called with the correct property name and value when a property's value ends.
     """
@@ -136,7 +137,7 @@ def test_value_ended_hook(base_context: Dict[str, Any]) -> None:
     ended_hook.assert_called_once()
 
 
-def test_complex_json_structure(base_context: Dict[str, Any]) -> None:
+def test_complex_json_structure(base_context: dict[str, Any]) -> None:
     """Test parsing a complex JSON structure."""
     schema = {
         "type": "object",

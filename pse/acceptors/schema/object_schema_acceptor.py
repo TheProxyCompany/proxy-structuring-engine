@@ -43,9 +43,8 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                 f"Required properties not defined in schema: {', '.join(undefined_required_properties)}"
             )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return ObjectSchemaWalker
+    def get_new_walker(self, state: State | None = None) -> ObjectSchemaWalker:
+        return ObjectSchemaWalker(self, state)
 
     def get_edges(self, state: State, value: dict[str, Any]) -> Iterable[Edge]:
         if state == 2:
@@ -111,7 +110,7 @@ class ObjectSchemaWalker(ObjectWalker):
     Walker for ObjectAcceptor
     """
 
-    def __init__(self, acceptor: ObjectSchemaAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: ObjectSchemaAcceptor, current_state: State | None = None):
         super().__init__(acceptor, current_state)
         self.acceptor: ObjectSchemaAcceptor = acceptor
 

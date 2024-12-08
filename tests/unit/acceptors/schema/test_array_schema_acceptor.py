@@ -1,18 +1,19 @@
+from typing import Any
+
 import pytest
+
 from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
-from pse.util.errors import JSONParsingError
-from typing import Any, Dict, List
 
 
 @pytest.fixture
-def base_context() -> Dict[str, Any]:
+def base_context() -> dict[str, Any]:
     """
     Fixture to provide a common base context for all tests.
     """
     return {"defs": {}, "path": "root"}
 
 
-def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> List[Any]:
+def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> list[Any]:
     """
     Helper function to parse a JSON array string using the ArraySchemaAcceptor.
 
@@ -24,13 +25,13 @@ def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> List[Any]:
         List[Any]: The parsed array.
 
     Raises:
-        JSONParsingError: If the JSON array is invalid or does not meet schema constraints.
+        ValueError: If the JSON array is invalid or does not meet schema constraints.
     """
     walkers = list(acceptor.get_walkers())
     for char in json_string:
         walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
-        raise JSONParsingError(
+        raise ValueError(
             "Invalid JSON array or schema constraints not met.", len(json_string)
         )
     parsed_value = next(
@@ -130,8 +131,8 @@ def test_array_parsing_success(schema, json_array, expected, base_context):
 )
 def test_array_parsing_failure(schema, json_array, base_context):
     """
-    Test parsing arrays that do not meet the schema constraints and should raise JSONParsingError.
+    Test parsing arrays that do not meet the schema constraints and should raise ValueError.
     """
     acceptor = ArraySchemaAcceptor(schema, base_context)
-    with pytest.raises(JSONParsingError):
+    with pytest.raises(ValueError):
         parse_array(acceptor, json_array)

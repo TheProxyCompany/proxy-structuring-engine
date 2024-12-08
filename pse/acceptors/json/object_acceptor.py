@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 
 logger = logging.getLogger()
 
@@ -50,9 +50,9 @@ class ObjectAcceptor(StateMachine):
             }
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return ObjectWalker
+
+    def get_new_walker(self, state: State | None = None) -> ObjectWalker:
+        return ObjectWalker(self, state)
 
 
 class ObjectWalker(StateMachineWalker):
@@ -60,7 +60,7 @@ class ObjectWalker(StateMachineWalker):
     Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
     """
 
-    def __init__(self, acceptor: ObjectAcceptor, current_state: int = 0) -> None:
+    def __init__(self, acceptor: ObjectAcceptor, current_state: State | None = None) -> None:
         """
         Initialize the ObjectAcceptor.Walker with the parent acceptor and an empty dictionary.
 

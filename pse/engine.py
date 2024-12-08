@@ -4,14 +4,13 @@ import logging
 from typing import Any
 
 from lexpy import DAWG, Trie
-from pse_core.acceptor import Acceptor
 from pse_core.walker import Walker
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.core.state_machine import StateMachine
+from pse.state_machine import StateMachine
 from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_top_logits import get_top_logits
 from pse.util.state_machine.get_acceptor import get_acceptor
@@ -42,7 +41,7 @@ class StructuringEngine(LogitsProcessor):
         """
         StructuringEngine.build_vocabulary(tokenizer, vocabulary)
         self.tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast = tokenizer
-        self.acceptor: Acceptor | None = None
+        self.state_machine: StateMachine | None = None
         self.walkers: list[Walker] = []
         self.within_json_value: bool = False
 
@@ -164,13 +163,15 @@ class StructuringEngine(LogitsProcessor):
 
         if use_delimiters:
             open_delimiter, close_delimiter = delimiters or ("```json\n", "\n```")
-            self.acceptor = EncapsulatedAcceptor(
+            self.state_machine = EncapsulatedAcceptor(
                 acceptor, open_delimiter, close_delimiter
             )
         else:
-            self.acceptor = acceptor
+            self.state_machine = acceptor
 
-        self.walkers = list(self.acceptor.get_walkers()) if self.acceptor else []
+        self.walkers = (
+            list(self.state_machine.get_walkers()) if self.state_machine else []
+        )
 
     def advance_token(self, token_id: int) -> int | None:
         """
@@ -256,7 +257,7 @@ class StructuringEngine(LogitsProcessor):
         Returns:
             bool: True if in an accepted state, False otherwise.
         """
-        if not self.acceptor:
+        if not self.state_machine:
             return False
 
         return any(walker.has_reached_accept_state() for walker in self.walkers)
@@ -304,7 +305,9 @@ class StructuringEngine(LogitsProcessor):
         Returns:
             bool: True if waiting for trigger, False otherwise.
         """
-        if not self.acceptor or not isinstance(self.acceptor, EncapsulatedAcceptor):
+        if not self.state_machine or not isinstance(
+            self.state_machine, EncapsulatedAcceptor
+        ):
             return False
 
         return not any(walker.is_within_value() for walker in self.walkers)

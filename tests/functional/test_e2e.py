@@ -1,15 +1,16 @@
-import pytest
 import json
-from typing import Tuple
-from pse.core.engine import StructuringEngine
-
 import logging
+
+import pytest
+
+from pse.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 
 try:
     import mlx.nn as nn
     from mlx_lm.utils import load
+
     from pse.util.generate.mlx import generate, sample
 except ImportError:
     pytest.skip(
@@ -18,7 +19,7 @@ except ImportError:
 
 
 @pytest.fixture(scope="module")
-def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
+def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
@@ -27,7 +28,7 @@ def model_and_engine() -> Tuple[nn.Module, StructuringEngine]:
 
 
 def test_simple_json_structure(
-    model_and_engine: Tuple[nn.Module, StructuringEngine],
+    model_and_engine: tuple[nn.Module, StructuringEngine],
 ) -> None:
     """
     Validates that the engine can generate a simple JSON object
@@ -52,7 +53,7 @@ def test_simple_json_structure(
 
 
 def test_token_by_token_generation(
-    model_and_engine: Tuple[nn.Module, StructuringEngine],
+    model_and_engine: tuple[nn.Module, StructuringEngine],
 ) -> None:
     """Test that the engine can generate tokens one at a time."""
     model, engine = model_and_engine
@@ -65,7 +66,7 @@ def test_token_by_token_generation(
 
 
 def test_complex_json_structure(
-    model_and_engine: Tuple[nn.Module, StructuringEngine],
+    model_and_engine: tuple[nn.Module, StructuringEngine],
 ) -> None:
     """Test parsing a complex JSON structure."""
     model, engine = model_and_engine
@@ -85,7 +86,7 @@ def test_complex_json_structure(
                         "type": "string",
                     },
                 },
-                "required": ["chain_of_thought"],
+                "required": ["chain_of_thought", "feelings"],
             },
         },
         "required": ["name", "arguments"],
@@ -190,7 +191,7 @@ def test_complex_json_structure(
 
 
 def test_multiple_schemas(
-    model_and_engine: Tuple[nn.Module, StructuringEngine],
+    model_and_engine: tuple[nn.Module, StructuringEngine],
 ) -> None:
     """Test that the engine can generate multiple schemas."""
     model, engine = model_and_engine

@@ -18,6 +18,8 @@ from __future__ import annotations
 import logging
 from collections import deque
 from collections.abc import Iterable
+from copy import copy
+from typing import Self
 
 from lexpy import DAWG
 from pse_core import Edge, State
@@ -35,11 +37,6 @@ class StateMachine(Acceptor):
     Includes support for optional acceptors and pass-through transitions, and parallel parsing.
     """
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        """The walker class for this state machine."""
-        return StateMachineWalker
-
     def get_edges(self, state: State) -> Iterable[Edge]:
         """Retrieve outgoing transitions for a given state.
 
@@ -50,6 +47,10 @@ class StateMachine(Acceptor):
             An iterable of (acceptor, target_state) tuples representing possible transitions.
         """
         return self.state_graph.get(state, [])
+
+    def get_new_walker(self, state: State) -> StateMachineWalker:
+        """Get a new walker instance at the specified state."""
+        return StateMachineWalker(self, state)
 
     def get_walkers(self, state: State | None = None) -> Iterable[Walker]:
         """Initialize walkers at the specified start state.
@@ -62,7 +63,7 @@ class StateMachine(Acceptor):
         Yields:
             Walker instances positioned at the starting state.
         """
-        initial_walker = self.walker_class(self, state)
+        initial_walker = self.get_new_walker(state or self.start_state)
         if self.state_graph:
             yield from self.branch_walker(initial_walker)
         else:
@@ -260,6 +261,13 @@ class StateMachineWalker(Walker):
     - Value accumulation
     """
 
+    def clone(self) -> Self:
+        """Creates a shallow copy of the walker with copied history and explored edges."""
+        cloned_walker = copy(self)
+        cloned_walker.accepted_history = self.accepted_history.copy()
+        cloned_walker.explored_edges = self.explored_edges.copy()
+        return cloned_walker
+
     def can_accept_more_input(self) -> bool:
         """Check if walker can process more input.
 
@@ -309,3 +317,23 @@ class StateMachineWalker(Walker):
             Updated walkers after advancement.
         """
         yield from self.acceptor.advance(self, token)
+
+    def __getstate__(self):
+        return {
+            "acceptor": self.acceptor,
+            "current_state": self.current_state,
+            "target_state": self.target_state,
+            "remaining_input": self.remaining_input,
+            "_raw_value": self._raw_value,
+            "_accepts_more_input": self._accepts_more_input,
+            "transition_walker": self.transition_walker,
+        }
+
+    def __setstate__(self, state):
+        self.acceptor = state["acceptor"]
+        self.current_state = state["current_state"]
+        self.target_state = state["target_state"]
+        self.remaining_input = state["remaining_input"]
+        self._raw_value = state["_raw_value"]
+        self._accepts_more_input = state["_accepts_more_input"]
+        self.transition_walker = state["transition_walker"]

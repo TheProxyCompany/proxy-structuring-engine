@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import regex
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
 
@@ -44,9 +44,8 @@ class StringSchemaAcceptor(StringAcceptor):
                     f"Format '{self.format}' not implemented"
                 )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return StringSchemaWalker
+    def get_new_walker(self, state: State | None = None) -> StringSchemaWalker:
+        return StringSchemaWalker(self, state)
 
     def min_length(self) -> int:
         """
@@ -118,7 +117,7 @@ class StringSchemaWalker(StringWalker):
     Walker for StringSchemaAcceptor.
     """
 
-    def __init__(self, acceptor: StringSchemaAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: StringSchemaAcceptor, current_state: State | None = None):
         super().__init__(acceptor, current_state)
         self.acceptor: StringSchemaAcceptor = acceptor
         self.is_escaping = False

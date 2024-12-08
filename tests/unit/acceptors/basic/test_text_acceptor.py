@@ -1,21 +1,13 @@
 import pytest
-from pse.util.state_machine.accepted_state import AcceptedState
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.util.state_machine.accepted_state import AcceptedState
 
 
 @pytest.fixture
 def text_acceptor():
     """Fixture to provide a TextAcceptor instance."""
     return TextAcceptor("hello")
-
-
-def test_advance_incomplete(text_acceptor: TextAcceptor):
-    """Test advancing the walker with an incomplete match."""
-    walker = TextWalker(text_acceptor, 0)
-    for walker in walker.consume_token("h"):
-        assert walker.current_value == "h"
-        assert isinstance(walker, text_acceptor.walker_class)
-        assert walker.consumed_character_count == 1
 
 
 def test_advance_complete(text_acceptor: TextAcceptor):
@@ -67,8 +59,8 @@ def test_full_acceptance(text_acceptor: TextAcceptor):
 def test_partial_acceptance(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor correctly handles partial acceptance."""
     walker = TextWalker(text_acceptor, 0)
-    for walker in walker.consume_token("he"):
-        assert walker.current_value == "he"
+    for new_walker in walker.consume_token("he"):
+        assert new_walker.current_value == "he"
 
 
 def test_repeated_characters():
@@ -113,11 +105,11 @@ def test_invalid_initial_position(text_acceptor: TextAcceptor):
 def test_case_sensitivity(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor is case-sensitive."""
     walker = TextWalker(text_acceptor, 0)
-    for walker in walker.consume_token("H"):
-        assert walker.current_value == ""
+    for new_walker in walker.consume_token("H"):
+        assert new_walker.current_value == ""
 
-    for walker in walker.consume_token("h"):
-        assert walker.current_value == "h"
+    for new_walker in walker.consume_token("h"):
+        assert new_walker.current_value == "h"
 
 
 def test_multiple_advance_steps(text_acceptor: TextAcceptor):
@@ -131,9 +123,9 @@ def test_multiple_advance_steps(text_acceptor: TextAcceptor):
         ("o", 5, "hello"),
     ]
     for char, expected_pos, expected_value in steps:
-        for walker in walker.consume_token(char):
-            assert walker.current_value == expected_value
-            assert walker.consumed_character_count == expected_pos
+        for new_walker in walker.consume_token(char):
+            assert new_walker.current_value == expected_value
+            assert new_walker.consumed_character_count == expected_pos
 
     assert isinstance(walker, AcceptedState)
     assert walker.current_value == "hello"

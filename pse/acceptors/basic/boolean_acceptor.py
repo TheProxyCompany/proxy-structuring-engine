@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from pse_core.walker import Walker
-
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 
 
 class BooleanAcceptor(StateMachine):
@@ -24,9 +22,8 @@ class BooleanAcceptor(StateMachine):
             }
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return BooleanWalker
+    def get_new_walker(self, state: int | str) -> BooleanWalker:
+        return BooleanWalker(self, state)
 
 
 class BooleanWalker(StateMachineWalker):

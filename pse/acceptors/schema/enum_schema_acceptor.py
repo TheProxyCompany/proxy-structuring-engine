@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.state_machine import StateMachine
+from pse.state_machine import StateMachine
 
 
 class EnumSchemaAcceptor(StateMachine):

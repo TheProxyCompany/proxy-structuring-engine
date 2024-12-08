@@ -4,14 +4,14 @@ import json
 import logging
 from typing import Any
 
-from pse_core.acceptor import Acceptor
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.state_machine import StateMachine
 
 logger = logging.getLogger()
 
@@ -24,7 +24,7 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: list[Acceptor] | None = None) -> None:
+    def __init__(self, sequence: list[StateMachine] | None = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """
@@ -40,9 +40,9 @@ class PropertyAcceptor(SequenceAcceptor):
             ]
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return PropertyWalker
+
+    def get_new_walker(self, state: State | None = None) -> PropertyWalker:
+        return PropertyWalker(self, state)
 
 
 class PropertyWalker(SequenceWalker):
@@ -53,7 +53,7 @@ class PropertyWalker(SequenceWalker):
     def __init__(
         self,
         acceptor: PropertyAcceptor,
-        current_acceptor_index: int = 0,
+        current_acceptor_index: State | None = None,
     ) -> None:
         """
         Initialize the PropertyAcceptor

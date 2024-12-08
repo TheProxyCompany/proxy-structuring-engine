@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -40,9 +40,8 @@ class ArraySchemaAcceptor(ArrayAcceptor):
             }
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return ArraySchemaWalker
+    def get_new_walker(self, state: State | None = None) -> ArraySchemaWalker:
+        return ArraySchemaWalker(self, state)
 
     def min_items(self) -> int:
         """
@@ -62,7 +61,7 @@ class ArraySchemaWalker(ArrayWalker):
     Walker for ArrayAcceptor
     """
 
-    def __init__(self, acceptor: ArraySchemaAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: ArraySchemaAcceptor, current_state: State | None = None):
         super().__init__(acceptor, current_state)
         self.acceptor: ArraySchemaAcceptor = acceptor
 

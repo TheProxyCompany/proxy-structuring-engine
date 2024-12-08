@@ -1,7 +1,8 @@
 import pytest
 from pse_core.walker import Walker
-from pse.util.state_machine.accepted_state import AcceptedState
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.util.state_machine.accepted_state import AcceptedState
 
 
 @pytest.fixture
@@ -13,7 +14,7 @@ def test_acceptor() -> TextAcceptor:
 @pytest.fixture
 def mock_walker(test_acceptor: TextAcceptor) -> Walker:
     """Fixture to create a mock walker from the test_acceptor."""
-    return test_acceptor.walker_class(test_acceptor)
+    return test_acceptor.get_new_walker()
 
 
 def test_in_accepted_state_returns_true(mock_walker: TextWalker) -> None:
@@ -43,7 +44,7 @@ def test_repr_includes_checkmark_and_walker_repr(
     Test that the string representation of AcceptedState includes a checkmark and walker's repr.
     """
     accepted = AcceptedState(mock_walker)
-    expected_repr = f"✅ {repr(mock_walker)}"
+    expected_repr = f"✅ {mock_walker!r}"
     assert (
         repr(accepted) == expected_repr
     ), "String representation should include a checkmark and walker's repr."
@@ -54,9 +55,9 @@ def test_multiple_instances_operate_independently() -> None:
     Test that multiple instances of AcceptedState operate independently.
     """
     acceptor1 = TextAcceptor("first")
-    walker1 = acceptor1.walker_class(acceptor1)
+    walker1 = acceptor1.get_new_walker()
     acceptor2 = TextAcceptor("second")
-    walker2 = acceptor2.walker_class(acceptor2)
+    walker2 = acceptor2.get_new_walker()
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 
@@ -68,8 +69,8 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
     """
     Test that different AcceptedState instances with identical walker values are not equal.
     """
-    walker1 = test_acceptor.walker_class(test_acceptor)
-    walker2 = test_acceptor.walker_class(test_acceptor)
+    walker1 = test_acceptor.get_new_walker()
+    walker2 = test_acceptor.get_new_walker()
     accepted1 = AcceptedState(walker1)
     accepted2 = AcceptedState(walker2)
 

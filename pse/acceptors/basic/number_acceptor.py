@@ -4,13 +4,12 @@ import logging
 from collections.abc import Iterable
 
 from pse_core import Edge, State
-from pse_core.walker import Walker
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +58,8 @@ class NumberAcceptor(StateMachine):
             end_states=[2, 3, "$"],
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return NumberWalker
+    def get_new_walker(self, state: int | str) -> NumberWalker:
+        return NumberWalker(self, state)
 
     def get_edges(self, state: State) -> Iterable[Edge]:
         """

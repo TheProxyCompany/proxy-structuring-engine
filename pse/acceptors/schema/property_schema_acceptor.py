@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 from collections.abc import Callable
 from typing import Any
 
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
@@ -51,9 +53,8 @@ class PropertySchemaAcceptor(PropertyAcceptor):
             ],
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return PropertySchemaWalker
+    def get_new_walker(self, state: State | None = None) -> PropertySchemaWalker:
+        return PropertySchemaWalker(self, state)
 
     @property
     def is_optional(self) -> bool:
@@ -65,7 +66,7 @@ class PropertySchemaWalker(PropertyWalker):
     Walker for PropertySchemaAcceptor
     """
 
-    def __init__(self, acceptor: PropertySchemaAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: PropertySchemaAcceptor, current_state: State | None = None):
         super().__init__(acceptor, current_state)
         self.acceptor: PropertySchemaAcceptor = acceptor
 

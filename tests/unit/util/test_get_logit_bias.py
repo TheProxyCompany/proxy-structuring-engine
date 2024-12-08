@@ -1,6 +1,8 @@
-import pytest
-import numpy as np
 import logging
+
+import numpy as np
+import pytest
+
 from pse.util.get_logit_bias import get_logit_bias
 
 try:

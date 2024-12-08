@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from pse_core import Edge, State
 from pse_core.walker import Walker
 
-from pse.core.state_machine import StateMachine
+from pse.state_machine import StateMachine
 
 
 class JsonAcceptor(StateMachine):

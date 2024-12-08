@@ -1,19 +1,20 @@
 from collections import defaultdict
-import pytest
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
-from pse.util.state_machine.get_acceptor import get_acceptor
-from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
-from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
-from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
-from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
-from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
+import pytest
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
+from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
+from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
+from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
+from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
+from pse.util.state_machine.get_acceptor import get_acceptor
 
 
 @pytest.fixture
-def context() -> Dict[str, Any]:
+def context() -> dict[str, Any]:
     """Fixture providing the default context for tests."""
     return {"defs": defaultdict(dict), "path": ""}
 
@@ -48,10 +49,10 @@ def context() -> Dict[str, Any]:
     ],
 )
 def test_get_acceptor_schema_types(
-    schema: Dict[str, Any],
-    expected_acceptor_cls: Type[Any],
-    acceptor_len: Optional[int],
-    context: Dict[str, Any],
+    schema: dict[str, Any],
+    expected_acceptor_cls: type[Any],
+    acceptor_len: int | None,
+    context: dict[str, Any],
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
     acceptor = get_acceptor(schema, context)
@@ -66,7 +67,7 @@ def test_get_acceptor_schema_types(
 
 
 @pytest.fixture
-def context_with_definition() -> Dict[str, Any]:
+def context_with_definition() -> dict[str, Any]:
     """Fixture providing context with predefined definitions."""
     context = {"defs": defaultdict(dict), "path": ""}
     context["defs"]["#/definitions/address"] = {
@@ -77,7 +78,7 @@ def context_with_definition() -> Dict[str, Any]:
     return context
 
 
-def test_get_acceptor_with_ref_schema(context_with_definition: Dict[str, Any]) -> None:
+def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
     acceptor = get_acceptor(schema, context_with_definition)

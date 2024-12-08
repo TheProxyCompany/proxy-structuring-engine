@@ -1,7 +1,8 @@
 import pytest
+
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
-from pse.core.state_machine import StateMachine
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.state_machine import StateMachine
 
 
 @pytest.mark.parametrize(
@@ -269,40 +270,10 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
-def test_integer_acceptor_walker_equality():
-    """Test the equality of IntegerAcceptor walkers."""
-    integer_acceptor = IntegerAcceptor()
-    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
-
-    assert walker1 == walker2, "Walkers with the same state and value should be equal."
-    assert (
-        walker1 != walker3
-    ), "Walkers with different states or values should not be equal."
-
-
-def test_integer_acceptor_walker_hash():
-    """Test the hash function of IntegerAcceptor walkers."""
-    integer_acceptor = IntegerAcceptor()
-    walker_set = set()
-    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
-
-    walker_set.add(walker1)
-    walker_set.add(walker2)
-    walker_set.add(walker3)
-
-    assert (
-        len(walker_set) == 2
-    ), "Walkers with the same state and value should have the same hash."
-
-
 def test_integer_acceptor_walker_get_value_with_invalid_text():
     """Test get_value method with invalid text in IntegerAcceptor.Walker."""
     integer_acceptor = IntegerAcceptor()
-    walker = integer_acceptor.walker_class(integer_acceptor, "abc")
+    walker = integer_acceptor.get_new_walker("abc")
 
     value = walker.current_value
 

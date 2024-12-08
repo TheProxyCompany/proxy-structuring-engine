@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 from pse_core.walker import Walker
 
-from pse.core.state_machine import StateMachine
+from pse.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
 
 logger = logging.getLogger()
@@ -33,12 +33,11 @@ class WhitespaceAcceptor(StateMachine):
 
         super().__init__(is_optional=(min_whitespace == 0))
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return WhitespaceWalker
+    def get_new_walker(self, state: int | str) -> WhitespaceWalker:
+        return WhitespaceWalker(self)
 
 
-class WhitespaceWalker(Walker):
+class WhitespaceWalker(StateMachineWalker):
     """
     Walker for WhitespaceAcceptor utilizing TokenTrie.
     """

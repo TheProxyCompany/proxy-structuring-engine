@@ -1,7 +1,7 @@
 import pytest
 from transformers import LlamaTokenizer
-from pse.core.engine import StructuringEngine
-from pse.util.errors import UnknownSchemaTypeError
+
+from pse.engine import StructuringEngine
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +15,7 @@ def engine() -> StructuringEngine:
 
 def test_create_acceptor_with_invalid_schema(engine: StructuringEngine) -> None:
     """Test creating an acceptor with an invalid schema."""
-    with pytest.raises(UnknownSchemaTypeError):
+    with pytest.raises(ValueError):
         engine.set_schema(schema={"type": "invalid_type"}, use_delimiters=False)
 
 
@@ -31,9 +31,9 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
         delimiters=(custom_opening, custom_closing),
     )
 
-    assert isinstance(engine.acceptor, EncapsulatedAcceptor)
-    assert engine.acceptor.opening_delimiter == custom_opening
-    assert engine.acceptor.closing_delimiter == custom_closing
+    assert isinstance(engine.state_machine, EncapsulatedAcceptor)
+    assert engine.state_machine.opening_delimiter == custom_opening
+    assert engine.state_machine.closing_delimiter == custom_closing
 
 
 def test_delimitered_acceptor(engine: StructuringEngine) -> None:
@@ -95,7 +95,7 @@ def test_create_acceptor_with_complex_schema(
         "required": ["user", "active"],
     }
     engine.set_schema(complex_schema, use_delimiters=False)
-    assert engine.acceptor is not None
+    assert engine.state_machine is not None
     assert engine.walkers is not None
 
 
@@ -108,7 +108,7 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
         "maxLength": 10,
     }
     engine.set_schema(schema=pattern_schema, use_delimiters=False)
-    assert engine.acceptor is not None
+    assert engine.state_machine is not None
     assert engine.walkers is not None
 
     # Test valid input that matches the pattern
@@ -125,7 +125,7 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
         "maxLength": 10,
     }
     engine.set_schema(schema=pattern_schema, use_delimiters=False)
-    assert engine.acceptor is not None
+    assert engine.state_machine is not None
     assert engine.walkers is not None
 
     # Reset engine for invalid input test
@@ -185,5 +185,5 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     }
     schema = {"anyOf": [schema1, schema2]}
     engine.set_schema(schema, use_delimiters=True)
-    engine.consume_raw_input('Here is the response: ```json\n{\n')
+    engine.consume_raw_input("Here is the response: ```json\n{\n")
     assert len(engine.walkers) == 2

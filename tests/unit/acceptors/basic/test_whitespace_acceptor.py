@@ -5,7 +5,7 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.core.state_machine import StateMachine
+from pse.state_machine import StateMachine
 from pse_core.walker import Walker
 
 

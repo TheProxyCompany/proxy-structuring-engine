@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 from pse_core.walker import Walker
 
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
 
 logger = logging.getLogger(__name__)
@@ -39,9 +39,8 @@ class TextAcceptor(StateMachine):
 
         self.text = text
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return TextWalker
+    def get_new_walker(self, state: int | str | None = None) -> TextWalker:
+        return TextWalker(self)
 
     def __str__(self) -> str:
         return self.__repr__()

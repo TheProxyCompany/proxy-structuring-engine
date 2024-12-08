@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from pse_core.walker import Walker
 
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
 
 
@@ -36,9 +36,8 @@ class CharacterAcceptor(StateMachine):
             set(charset) if case_sensitive else set(char.lower() for char in charset)
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return CharacterWalker
+    def get_new_walker(self, state: int | str) -> CharacterWalker:
+        return CharacterWalker(self)
 
     def __str__(self) -> str:
         return self.__repr__()

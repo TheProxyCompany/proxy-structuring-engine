@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 
-from pse_core.acceptor import Acceptor
-from pse_core.walker import Walker
+from pse_core import State
 
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import StateMachine, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class SequenceAcceptor(StateMachine):
     sequence of acceptors provided during initialization.
     """
 
-    def __init__(self, acceptors: list[Acceptor]):
+    def __init__(self, acceptors: list[StateMachine]):
         """
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
@@ -35,9 +34,9 @@ class SequenceAcceptor(StateMachine):
             end_states=[len(acceptors)],
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return SequenceWalker
+
+    def get_new_walker(self, state: State | None = None) -> SequenceWalker:
+        return SequenceWalker(self, state)
 
 
 class SequenceWalker(StateMachineWalker):

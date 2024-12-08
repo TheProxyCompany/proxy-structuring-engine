@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pse_core.walker import Walker
+from pse_core import State
 
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
 
@@ -25,9 +25,8 @@ class NumberSchemaAcceptor(NumberAcceptor):
             ]
         )
 
-    @property
-    def walker_class(self) -> type[Walker]:
-        return NumberSchemaWalker
+    def get_new_walker(self, state: State | None = None) -> NumberSchemaWalker:
+        return NumberSchemaWalker(self, state)
 
     def validate_value(self, value: float) -> bool:
         """
@@ -62,7 +61,7 @@ class NumberSchemaWalker(NumberWalker):
     Walker for NumberAcceptor
     """
 
-    def __init__(self, acceptor: NumberSchemaAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: NumberSchemaAcceptor, current_state: State | None = None):
         super().__init__(acceptor, current_state)
         self.acceptor: NumberSchemaAcceptor = acceptor
 

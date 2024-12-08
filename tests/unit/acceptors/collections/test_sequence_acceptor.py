@@ -1,11 +1,9 @@
 import pytest
-from typing import List
 
-from pse.core.acceptor import Acceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.state_machine import StateMachine
+from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machine import StateMachine
 
 
 @pytest.fixture
@@ -65,7 +63,7 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
 
 def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
     """Test the state of the walker before and after processing a complete input sequence."""
-    initial_walker = list(sequence_acceptor.get_walkers())[0]
+    initial_walker = next(iter(sequence_acceptor.get_walkers()))
     assert (
         not initial_walker.has_reached_accept_state()
     ), "Initial walker should not be in an accepted state."
@@ -142,7 +140,7 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: List[Acceptor], token: str):
+def test_multiple_sequences(acceptors: list[StateMachine], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
     walkers = list(sequence.get_walkers())
