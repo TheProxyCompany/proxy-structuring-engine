@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class EncapsulatedAcceptor(HierarchicalStateMachine):
+class EncapsulatedAcceptor(StateMachine):
     """
     Accepts JSON data within a larger text, delimited by specific markers.
 
@@ -17,7 +18,7 @@ class EncapsulatedAcceptor(HierarchicalStateMachine):
 
     def __init__(
         self,
-        state_machine: HierarchicalStateMachine,
+        state_machine: StateMachine,
         open_delimiter: str,
         close_delimiter: str,
     ) -> None:
@@ -47,6 +48,6 @@ class EncapsulatedAcceptor(HierarchicalStateMachine):
         return EncapsulatedWalker(self, state)
 
 
-class EncapsulatedWalker(StateMachineWalker):
+class EncapsulatedWalker(Walker):
     def is_within_value(self) -> bool:
         return self.current_state == 1

@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 
 from pse_core import State
-
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 logger = logging.getLogger(__name__)
 
 
-class SequenceAcceptor(HierarchicalStateMachine):
+class SequenceAcceptor(StateMachine):
     """
     Chain multiple TokenAcceptors in a specific sequence.
 
@@ -17,7 +17,7 @@ class SequenceAcceptor(HierarchicalStateMachine):
     sequence of acceptors provided during initialization.
     """
 
-    def __init__(self, acceptors: list[HierarchicalStateMachine]):
+    def __init__(self, acceptors: list[StateMachine]):
         """
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
@@ -38,7 +38,7 @@ class SequenceAcceptor(HierarchicalStateMachine):
         return SequenceWalker(self, state)
 
 
-class SequenceWalker(StateMachineWalker):
+class SequenceWalker(Walker):
     """
     Walker for navigating through the SequenceAcceptor.
     Designed for inspectability and debugging purposes.

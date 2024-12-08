@@ -3,17 +3,16 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
-
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
-from pse.util.state_machine.accepted_state import AcceptedState
 
 logger = logging.getLogger()
 
 WHITESPACE_CHARS: str = " \n\r\t"
 
 
-class WhitespaceAcceptor(HierarchicalStateMachine):
+class WhitespaceAcceptor(StateMachine):
     """
     Optional whitespace acceptor using TokenTrie for efficient matching.
     """
@@ -37,7 +36,7 @@ class WhitespaceAcceptor(HierarchicalStateMachine):
         return WhitespaceWalker(self)
 
 
-class WhitespaceWalker(StateMachineWalker):
+class WhitespaceWalker(Walker):
     """
     Walker for WhitespaceAcceptor utilizing TokenTrie.
     """

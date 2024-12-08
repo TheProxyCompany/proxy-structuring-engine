@@ -5,14 +5,14 @@ from collections.abc import Callable, Iterable
 from copy import copy
 from typing import Self
 
+from pse_core import State
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
-
-from pse.state_machine import HierarchicalStateMachine, State, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
 
-class WaitForAcceptor(HierarchicalStateMachine):
+class WaitForAcceptor(StateMachine):
     """
     Accept all text until a segment triggers another specified acceptor.
 
@@ -23,7 +23,7 @@ class WaitForAcceptor(HierarchicalStateMachine):
 
     def __init__(
         self,
-        state_machine: HierarchicalStateMachine,
+        state_machine: StateMachine,
         allow_break: bool = False,
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
@@ -59,7 +59,7 @@ class WaitForAcceptor(HierarchicalStateMachine):
         yield from self.branch_walker(WaitForWalker(self))
 
 
-class WaitForWalker(StateMachineWalker):
+class WaitForWalker(Walker):
     """
     Walker for handling the WaitForAcceptor.
     Manages internal walkers that monitor for the triggering acceptor.

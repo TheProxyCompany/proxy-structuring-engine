@@ -1,8 +1,8 @@
 import pytest
+from pse_core.state_machine import StateMachine
 
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine import HierarchicalStateMachine
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     """Test IntegerAcceptor with multi-character advancement."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -50,7 +50,7 @@ def test_integer_acceptor(input_string, expected_value):
     """Test IntegerAcceptor with single-character advancement."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -73,7 +73,7 @@ def test_integer_acceptor_invalid_input():
     """Test IntegerAcceptor with invalid inputs."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -95,7 +95,7 @@ def test_integer_acceptor_empty_input():
     """Test IntegerAcceptor with empty input."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -115,7 +115,7 @@ def test_integer_acceptor_partial_input():
     """Test IntegerAcceptor with input containing invalid characters."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -135,7 +135,7 @@ def test_integer_acceptor_in_state_machine_sequence():
     """Test IntegerAcceptor within a StateMachine sequence along with other acceptors."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("Number: "), 1)],
             1: [(integer_acceptor, 2)],
@@ -165,7 +165,7 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     """Test IntegerAcceptor within a StateMachine sequence, advancing one character at a time."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(integer_acceptor, 2)],
@@ -194,7 +194,7 @@ def test_integer_acceptor_char_by_char_in_state_machine():
 def test_integer_acceptor_zero():
     """Test IntegerAcceptor with zero."""
     integer_acceptor = IntegerAcceptor()
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -217,7 +217,7 @@ def test_integer_acceptor_zero():
 def test_integer_acceptor_large_number():
     """Test IntegerAcceptor with a large number."""
     integer_acceptor = IntegerAcceptor()
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -252,7 +252,7 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
     """Test IntegerAcceptor handling of leading zeros."""
     integer_acceptor = IntegerAcceptor()
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
         start_state=0,
         end_states=[1],

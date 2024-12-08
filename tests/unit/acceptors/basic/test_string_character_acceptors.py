@@ -1,4 +1,5 @@
 import pytest
+
 from pse.acceptors.basic.string_character_acceptor import (
     StringCharacterAcceptor,
     StringCharacterWalker,

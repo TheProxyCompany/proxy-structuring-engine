@@ -5,12 +5,11 @@ Acceptors for JSON parsing or constraining LLM generation to JSON outputs.
 from collections.abc import Iterable
 
 from pse_core import Edge, State
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.state_machine import HierarchicalStateMachine
 
-
-class JsonAcceptor(HierarchicalStateMachine):
+class JsonAcceptor(StateMachine):
     """
     Acceptor for parsing any JSON value, delegating to specific acceptors based on the value type.
     """

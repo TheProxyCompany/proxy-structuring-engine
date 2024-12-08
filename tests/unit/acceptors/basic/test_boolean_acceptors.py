@@ -1,8 +1,10 @@
+from collections.abc import Iterable
+
 import pytest
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-from pse.state_machine import HierarchicalStateMachine
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
-from typing import Iterable
+
+from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 
 
 # Fixture for BooleanAcceptor
@@ -12,7 +14,7 @@ def boolean_acceptor():
 
 
 # Helper function to process input for BooleanAcceptor
-def process_input(acceptor: HierarchicalStateMachine, token: str) -> Iterable[Walker]:
+def process_input(acceptor: StateMachine, token: str) -> Iterable[Walker]:
     walkers = acceptor.get_walkers()
     return [walker for _, walker in acceptor.advance_all(walkers, token)]
 

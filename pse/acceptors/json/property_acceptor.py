@@ -5,13 +5,13 @@ import logging
 from typing import Any
 
 from pse_core import State
+from pse_core.state_machine import StateMachine
 
 from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.state_machine import HierarchicalStateMachine
 
 logger = logging.getLogger()
 
@@ -24,7 +24,7 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: list[HierarchicalStateMachine] | None = None) -> None:
+    def __init__(self, sequence: list[StateMachine] | None = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """

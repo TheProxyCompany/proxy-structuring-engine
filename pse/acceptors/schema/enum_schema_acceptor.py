@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine import HierarchicalStateMachine
+from pse_core.state_machine import StateMachine
 
 
-class EnumSchemaAcceptor(HierarchicalStateMachine):
+class EnumSchemaAcceptor(StateMachine):
     """
     Accept one of several constant strings.
     """

@@ -4,17 +4,18 @@ import logging
 from collections.abc import Iterable
 
 from pse_core import Edge, State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
 
-class NumberAcceptor(HierarchicalStateMachine):
+class NumberAcceptor(StateMachine):
     """
     Accepts a well-formed JSON number.
 
@@ -78,7 +79,7 @@ class NumberAcceptor(HierarchicalStateMachine):
             yield from super().get_edges(state)
 
 
-class NumberWalker(StateMachineWalker):
+class NumberWalker(Walker):
     """
     Walker for NumberAcceptor.
 

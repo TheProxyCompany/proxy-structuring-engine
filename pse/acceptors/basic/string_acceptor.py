@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class StringAcceptor(HierarchicalStateMachine):
+class StringAcceptor(StateMachine):
     """
     Accepts a well-formed JSON string.
 
@@ -65,7 +66,7 @@ class StringAcceptor(HierarchicalStateMachine):
         return StringWalker(self, state)
 
 
-class StringWalker(StateMachineWalker):
+class StringWalker(Walker):
     """
     Walker for StringAcceptor.
 

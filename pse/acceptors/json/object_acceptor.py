@@ -4,17 +4,18 @@ import logging
 from typing import Any
 
 from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 logger = logging.getLogger()
 
 
-class ObjectAcceptor(HierarchicalStateMachine):
+class ObjectAcceptor(StateMachine):
     """
     Accepts a well-formed JSON object and manages state transitions during parsing.
 
@@ -54,7 +55,7 @@ class ObjectAcceptor(HierarchicalStateMachine):
         return ObjectWalker(self, state)
 
 
-class ObjectWalker(StateMachineWalker):
+class ObjectWalker(Walker):
     """
     Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
     """

@@ -10,7 +10,7 @@ from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
 from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.util.state_machine.get_acceptor import get_acceptor
+from pse.util.get_state_machine import get_state_machine
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def test_get_acceptor_schema_types(
     context: dict[str, Any],
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
-    acceptor = get_acceptor(schema, context)
+    acceptor = get_state_machine(schema, context)
     assert isinstance(
         acceptor, expected_acceptor_cls
     ), f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
@@ -81,7 +81,7 @@ def context_with_definition() -> dict[str, Any]:
 def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
-    acceptor = get_acceptor(schema, context_with_definition)
+    acceptor = get_state_machine(schema, context_with_definition)
     assert isinstance(
         acceptor,
         ObjectSchemaAcceptor,

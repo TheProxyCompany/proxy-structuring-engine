@@ -3,15 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from pse_core import State, StateGraph
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class ArrayAcceptor(HierarchicalStateMachine):
+class ArrayAcceptor(StateMachine):
     """
     Accepts a well-formed JSON array and handles state transitions during parsing.
 
@@ -46,7 +47,7 @@ class ArrayAcceptor(HierarchicalStateMachine):
         return ArrayWalker(self, state)
 
 
-class ArrayWalker(StateMachineWalker):
+class ArrayWalker(Walker):
     """
     Walker for ArrayAcceptor that maintains the current state and accumulated values.
     """

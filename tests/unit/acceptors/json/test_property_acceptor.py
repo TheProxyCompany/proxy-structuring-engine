@@ -1,6 +1,7 @@
 import pytest
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
-from pse.state_machine import HierarchicalStateMachine
 
 
 @pytest.fixture
@@ -23,9 +24,7 @@ def test_property_parsing(
 ):
     walkers = list(property_acceptor.get_walkers())
     for char in input_string:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     accepted_walkers = [
         walker for walker in walkers if walker.has_reached_accept_state()
@@ -51,9 +50,7 @@ def test_property_parsing(
 def test_invalid_property_formats(property_acceptor: PropertyAcceptor, invalid_input):
     walkers = list(property_acceptor.get_walkers())
     for char in invalid_input:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert not any(
         walker.has_reached_accept_state() for walker in walkers

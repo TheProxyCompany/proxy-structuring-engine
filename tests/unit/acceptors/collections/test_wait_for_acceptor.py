@@ -1,5 +1,5 @@
-from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor, WaitForWalker
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor, WaitForWalker
 
 
 def test_default_wait_for_acceptor() -> None:

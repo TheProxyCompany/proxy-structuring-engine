@@ -1,5 +1,7 @@
 import pytest
 from lexpy import DAWG
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor
@@ -7,7 +9,6 @@ from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.acceptors.basic.number_acceptor import IntegerAcceptor, NumberAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.state_machine import HierarchicalStateMachine, Walker
 
 
 @pytest.mark.parametrize(
@@ -19,14 +20,14 @@ from pse.state_machine import HierarchicalStateMachine, Walker
 )
 def test_boolean_acceptor(token, expected_value):
     """Test StateMachine with BooleanAcceptor accepting 'true' or 'false'."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(BooleanAcceptor(), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -47,14 +48,14 @@ def test_boolean_acceptor(token, expected_value):
 )
 def test_text_acceptor(token, acceptor_args, expected_value):
     """Test StateMachine with TextAcceptor transitions."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(TextAcceptor(**acceptor_args), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -72,7 +73,7 @@ def test_text_acceptor(token, acceptor_args, expected_value):
 )
 def test_state_transitions(first, second, end, token):
     """Test StateMachine with multiple sequential transitions."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor(first), 1)],
             1: [(TextAcceptor(second), 2)],
@@ -83,7 +84,7 @@ def test_state_transitions(first, second, end, token):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -94,7 +95,7 @@ def test_state_transitions(first, second, end, token):
 
 def test_walker_clone():
     """Test cloning functionality of the StateMachine Walker."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(TextAcceptor("clone"), 1)]},
         start_state=0,
         end_states=[1],
@@ -106,9 +107,7 @@ def test_walker_clone():
         cloned_walker = original_walker.clone()
 
         # Advance the original walker
-        advanced = list(
-            HierarchicalStateMachine.advance_all([original_walker], "clone")
-        )
+        advanced = list(StateMachine.advance_all([original_walker], "clone"))
         new_walkers = [w for _, w in advanced]
 
         for new_walker in new_walkers:
@@ -119,7 +118,7 @@ def test_walker_clone():
 
 def test_invalid_input_characters():
     """Test StateMachine handling of invalid input characters."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(TextAcceptor("valid"), 1)]},
         start_state=0,
         end_states=[1],
@@ -127,7 +126,7 @@ def test_invalid_input_characters():
 
     invalid_input = "vali$d"  # '$' is an invalid character
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, invalid_input))
+    advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
     # The input contains an invalid character, so there should be no valid walkers
@@ -137,7 +136,7 @@ def test_invalid_input_characters():
 
 def test_partial_matches():
     """Test StateMachine handling of partial matches."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(TextAcceptor("complete"), 1)]},
         start_state=0,
         end_states=[1],
@@ -145,7 +144,7 @@ def test_partial_matches():
 
     partial_input = "comp"
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, partial_input))
+    advanced = list(StateMachine.advance_all(walkers, partial_input))
     walkers = [walker for _, walker in advanced]
 
     # No walkers should be in accepted state since the input is incomplete
@@ -163,7 +162,7 @@ def test_partial_matches():
 )
 def test_advance_all_multiple_states(token, expected_value):
     """Test StateMachine.advance_all_walkers with multiple current states and transitions."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [
                 (TextAcceptor("cat"), 1),
@@ -177,7 +176,7 @@ def test_advance_all_multiple_states(token, expected_value):
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, token))
+    advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -188,7 +187,7 @@ def test_advance_all_multiple_states(token, expected_value):
 
 def test_advance_all_invalid_input():
     """Test StateMachine.advance_all_walkers with invalid input characters."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(TextAcceptor("hello"), 1)]},
         start_state=0,
         end_states=[1],
@@ -196,7 +195,7 @@ def test_advance_all_invalid_input():
 
     invalid_input = "hell@"
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, invalid_input))
+    advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
     # The input contains an invalid character '@', so there should be no valid walkers
@@ -206,7 +205,7 @@ def test_advance_all_invalid_input():
 
 def test_complex_input():
     """Test StateMachine.advance_all_walkers with complex input."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(CharacterAcceptor("{"), 1)],
             1: [(CharacterAcceptor("\n"), 2)],
@@ -217,7 +216,7 @@ def test_complex_input():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "{\n["))
+    advanced = list(StateMachine.advance_all(walkers, "{\n["))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -229,14 +228,14 @@ def test_complex_input():
 def test_number_acceptor():
     """Test StateMachine with NumberAcceptor."""
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={0: [(NumberAcceptor(), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "123.456"))
+    advanced = list(StateMachine.advance_all(walkers, "123.456"))
     walkers = [walker for _, walker in advanced]
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -245,7 +244,7 @@ def test_number_acceptor():
 def test_number_acceptor_in_state_machine_sequence():
     """Test NumberAcceptor within a StateMachine sequence along with other acceptors."""
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(NumberAcceptor(), 2)],
@@ -256,7 +255,7 @@ def test_number_acceptor_in_state_machine_sequence():
 
     walkers = list(sm.get_walkers())
     input_string = "Value: 42"
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, input_string))
+    advanced = list(StateMachine.advance_all(walkers, input_string))
     walkers = [walker for _, walker in advanced]
 
     assert any(
@@ -268,7 +267,7 @@ def test_number_acceptor_in_state_machine_sequence():
                 walker.current_value == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
-    new_advanced = list(HierarchicalStateMachine.advance_all(walkers, ".0"))
+    new_advanced = list(StateMachine.advance_all(walkers, ".0"))
     walkers = [walker for _, walker in new_advanced]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
@@ -283,7 +282,7 @@ def test_number_acceptor_in_state_machine_sequence():
 def test_char_by_char_in_state_machine():
     """Test NumberAcceptor within a StateMachine sequence along with other acceptors."""
 
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(NumberAcceptor(), 2)],
@@ -295,7 +294,7 @@ def test_char_by_char_in_state_machine():
     walkers = list(sm.get_walkers())
     input_string = "Value: 42"
     for char in input_string:
-        advanced = list(HierarchicalStateMachine.advance_all(walkers, char))
+        advanced = list(StateMachine.advance_all(walkers, char))
         walkers = [walker for _, walker in advanced]
         if not walkers:
             break
@@ -316,7 +315,7 @@ def test_char_by_char_in_state_machine():
 
 def test_unexpected_input():
     """Test StateMachine with unexpected input."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("expected"), 1)],
         },
@@ -325,7 +324,7 @@ def test_unexpected_input():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "unexpected"))
+    advanced = list(StateMachine.advance_all(walkers, "unexpected"))
     walkers = [walker for _, walker in advanced]
 
     # Should not be in accepted state
@@ -335,7 +334,7 @@ def test_unexpected_input():
 
 def test_get_edges_nonexistent_state():
     """Test get_edges for a state that does not exist in the graph."""
-    sm = HierarchicalStateMachine(state_graph={}, start_state=0, end_states=[1])
+    sm = StateMachine(state_graph={}, start_state=0, end_states=[1])
     edges = sm.get_edges(99)  # State 99 does not exist
     assert edges == []
 
@@ -343,13 +342,13 @@ def test_get_edges_nonexistent_state():
 def test_state_machine_advance_all_with_no_walkers():
     """Test advance_all_walkers when there are no walkers to advance."""
     walkers = []
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "input"))
+    advanced = list(StateMachine.advance_all(walkers, "input"))
     assert advanced == []
 
 
 def test_state_machine_empty_transition():
     """Test StateMachine with an EmptyTransition."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("ignored", is_optional=True), 1)],
             1: [(TextAcceptor("test"), 2)],
@@ -359,7 +358,7 @@ def test_state_machine_empty_transition():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "test"))
+    advanced = list(StateMachine.advance_all(walkers, "test"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
@@ -369,7 +368,7 @@ def test_state_machine_empty_transition():
 
 def test_state_machine_with_loop():
     """Test StateMachine handling loop transitions."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [
                 (TextAcceptor("a"), 0),
@@ -381,7 +380,7 @@ def test_state_machine_with_loop():
     )
 
     walkers = list(sm.get_walkers())
-    advanced = list(HierarchicalStateMachine.advance_all(walkers, "aaab"))
+    advanced = list(StateMachine.advance_all(walkers, "aaab"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
@@ -391,7 +390,7 @@ def test_state_machine_with_loop():
 
 def test_state_machine_advance_walker_with_remaining_input():
     """Test advance_walker handling remaining input in transition_walker."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("ab"), 1)],
             1: [(TextAcceptor("cd"), 2)],
@@ -402,7 +401,7 @@ def test_state_machine_advance_walker_with_remaining_input():
 
     initial_walkers = list(sm.get_walkers())
     # Advance with partial input to create remaining input scenario
-    advanced = list(HierarchicalStateMachine.advance_all(initial_walkers, "abcde"))
+    advanced = list(StateMachine.advance_all(initial_walkers, "abcde"))
     walkers = [walker for _, walker in advanced]
     # Should handle remaining input 'e' after 'abcd'
     assert not any(walker.has_reached_accept_state() for walker in walkers)
@@ -423,7 +422,7 @@ def test_whitespace_acceptor():
     dawg.add("{")
     dawg.add("{.")
     dawg.add("}")
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         {
             0: [(TextAcceptor("{"), 1)],
             1: [
@@ -439,7 +438,7 @@ def test_whitespace_acceptor():
     assert first_walker.current_state == sm.start_state
     assert isinstance(first_walker.transition_walker, TextWalker)
 
-    advancement = HierarchicalStateMachine.advance_all(original_walkers, "{.", dawg)
+    advancement = StateMachine.advance_all(original_walkers, "{.", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "{"
@@ -451,7 +450,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
 
-    advancement = HierarchicalStateMachine.advance_all(new_walkers, " ", dawg)
+    advancement = StateMachine.advance_all(new_walkers, " ", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == " "
@@ -463,7 +462,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
 
-    advancement = HierarchicalStateMachine.advance_all(new_walkers, "\n}", dawg)
+    advancement = StateMachine.advance_all(new_walkers, "\n}", dawg)
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "\n}"
@@ -476,7 +475,7 @@ def test_whitespace_acceptor():
 
 def test_simple_number_acceptor():
     """Test StateMachine with NumberAcceptor."""
-    sm = HierarchicalStateMachine(
+    sm = StateMachine(
         {
             0: [
                 (TextAcceptor("-", is_optional=True), 1),
@@ -500,9 +499,7 @@ def test_simple_number_acceptor():
     assert isinstance(integer_acceptor_walker, Walker)
     assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)
 
-    for advanced_token, walker in HierarchicalStateMachine.advance_all(
-        walkers, "-1.2", dawg
-    ):
+    for advanced_token, walker in StateMachine.advance_all(walkers, "-1.2", dawg):
         assert advanced_token == "-1"
         assert walker.has_reached_accept_state()
         assert walker.current_value == -1

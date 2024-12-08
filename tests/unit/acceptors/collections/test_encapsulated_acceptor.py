@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import pytest
-from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.util.state_machine.accepted_state import AcceptedState
-from pse.state_machine import HierarchicalStateMachine
 
 
 @pytest.fixture
@@ -63,9 +65,7 @@ def test_accepting_valid_sequence(default_encapsulated_acceptor, default_delimit
     )
     walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -77,9 +77,7 @@ def test_rejecting_sequence_missing_open_delimiter(
     input_sequence = "content" + default_delimiters["close_delimiter"]
     walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert not any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -91,9 +89,7 @@ def test_rejecting_sequence_missing_close_delimiter(
     input_sequence = default_delimiters["open_delimiter"] + "content"
     walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert not any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -107,9 +103,7 @@ def test_rejecting_invalid_content(default_encapsulated_acceptor, default_delimi
     )
     walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert not any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -126,9 +120,7 @@ def test_accepting_custom_delimiters(content_acceptor):
     input_sequence = custom_open + "content" + custom_close
     walkers = list(encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -146,9 +138,7 @@ def test_nested_encapsulated_acceptors():
     input_sequence = "<outer><inner>inner_content</inner></outer>"
     walkers = list(outer_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -161,9 +151,7 @@ def test_no_acceptance_on_partial_delimiter(
     input_sequence = partial_open + "content" + default_delimiters["close_delimiter"]
     walkers = list(default_encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert not any(isinstance(walker, AcceptedState) for walker in walkers)
 
@@ -189,8 +177,6 @@ def test_acceptor_with_whitespace_content(default_delimiters):
     )
     walkers = list(encapsulated_acceptor.get_walkers())
     for char in input_sequence:
-        walkers = [
-            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
-        ]
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert any(isinstance(walker, AcceptedState) for walker in walkers)

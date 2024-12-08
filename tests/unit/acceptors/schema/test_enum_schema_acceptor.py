@@ -1,4 +1,5 @@
 import unittest
+
 from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 
 

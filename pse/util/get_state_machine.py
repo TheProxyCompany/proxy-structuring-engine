@@ -3,6 +3,8 @@ from collections import defaultdict
 from collections.abc import Callable
 from typing import Any
 
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
@@ -11,15 +13,14 @@ from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.state_machine import HierarchicalStateMachine
 
 
-def get_acceptor(
+def get_state_machine(
     schema: dict[str, Any],
     context: dict[str, Any] | None = None,
     start_hook: Callable | None = None,
     end_hook: Callable | None = None,
-) -> HierarchicalStateMachine:
+) -> StateMachine:
     """
     Create an acceptor to validate JSON input based on the provided schema.
 

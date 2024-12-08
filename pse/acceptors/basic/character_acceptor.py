@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
-from pse.util.state_machine.accepted_state import AcceptedState
 
-
-class CharacterAcceptor(HierarchicalStateMachine):
+class CharacterAcceptor(StateMachine):
     """
     Accept multiple characters at once if they are all in the charset.
     Will also prefix the walker with the valid characters if it's not in the
@@ -47,7 +46,7 @@ class CharacterAcceptor(HierarchicalStateMachine):
         return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
 
 
-class CharacterWalker(StateMachineWalker):
+class CharacterWalker(Walker):
     """
     Walker for navigating through characters in CharAcceptor.
     """

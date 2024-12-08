@@ -12,8 +12,8 @@ from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 
 class ArraySchemaAcceptor(ArrayAcceptor):
     def __init__(self, schema: dict[str, Any], context: dict[str, Any]) -> None:
-        from pse.util.state_machine.get_acceptor import (
-            get_acceptor,
+        from pse.util.get_state_machine import (
+            get_state_machine,
         )
 
         self.schema = schema
@@ -28,7 +28,7 @@ class ArraySchemaAcceptor(ArrayAcceptor):
                     (TextAcceptor("]"), "$"),
                 ],
                 2: [
-                    (get_acceptor(self.schema["items"], self.context), 3),
+                    (get_state_machine(self.schema["items"], self.context), 3),
                 ],
                 3: [
                     (WhitespaceAcceptor(), 4),

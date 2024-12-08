@@ -3,15 +3,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
-
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
-from pse.util.state_machine.accepted_state import AcceptedState
 
 logger = logging.getLogger(__name__)
 
 
-class TextAcceptor(HierarchicalStateMachine):
+class TextAcceptor(StateMachine):
     """
     Accepts a predefined sequence of characters, validating input against the specified text.
 
@@ -55,7 +54,7 @@ class TextAcceptor(HierarchicalStateMachine):
         return f"TextAcceptor({repr(self.text)[1:-1]})"
 
 
-class TextWalker(StateMachineWalker):
+class TextWalker(Walker):
     """
     Represents the current position within the TextAcceptor's text during validation.
 
