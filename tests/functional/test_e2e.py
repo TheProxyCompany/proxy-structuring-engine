@@ -11,7 +11,7 @@ try:
     import mlx.nn as nn
     from mlx_lm.utils import load
 
-    from pse.util.generate.mlx import generate, sample
+    from pse.util.generate_mlx import generate, sample
 except ImportError:
     pytest.skip(
         "mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True

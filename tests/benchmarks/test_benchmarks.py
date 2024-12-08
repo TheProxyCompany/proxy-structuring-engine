@@ -13,11 +13,11 @@ from pydantic import BaseModel, Field
 from pse.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
-    
+
 try:
     from mlx_lm.utils import load
 
-    from pse.util.generate.mlx import generate as generate_mlx
+    from pse.util.generate_mlx import generate as generate_mlx
 except ImportError:
     pytest.skip("mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True)
 
