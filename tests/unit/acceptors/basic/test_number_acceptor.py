@@ -2,7 +2,7 @@ import pytest
 from typing import Any
 
 from pse.acceptors.basic.number_acceptor import NumberAcceptor
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
 
@@ -260,7 +260,7 @@ def test_number_acceptor_with_state_machine_float(acceptor: NumberAcceptor) -> N
     Args:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -289,7 +289,7 @@ def test_number_acceptor_with_state_machine_exponential(
     Args:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -318,7 +318,7 @@ def test_number_acceptor_with_state_machine_sequence(
     Args:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={
             0: [(TextAcceptor("Value: "), 1)],
             1: [(acceptor, 2)],
@@ -370,7 +370,7 @@ def test_number_acceptor_multi_char_advancement(
         input_string (str): The number string to parse.
         expected_value (float): The expected parsed value.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -414,7 +414,7 @@ def test_number_acceptor_single_char_advancement(
         input_string (str): The number string to parse.
         expected_value (float): The expected parsed value.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -458,7 +458,7 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
     ]
 
     for input_string in invalid_inputs:
-        sm = StateMachine(
+        sm = HierarchicalStateMachine(
             state_graph={0: [(acceptor, 1)]},
             start_state=0,
             end_states=[1],
@@ -477,7 +477,7 @@ def test_number_acceptor_empty_input(acceptor: NumberAcceptor) -> None:
     Args:
         acceptor (NumberAcceptor): The NumberAcceptor instance.
     """
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -501,7 +501,7 @@ def test_number_acceptor_partial_invalid_input(acceptor: NumberAcceptor) -> None
     """
     input_string = "12.3a4"
 
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],
@@ -525,7 +525,7 @@ def test_number_acceptor_large_floating_point(acceptor: NumberAcceptor) -> None:
     input_string = "12345678901234567890.123456789"
     expected_value = 12345678901234567890.123456789
 
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={0: [(acceptor, 1)]},
         start_state=0,
         end_states=[1],

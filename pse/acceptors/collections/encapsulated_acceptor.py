@@ -4,10 +4,10 @@ from pse_core import State
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class EncapsulatedAcceptor(StateMachine):
+class EncapsulatedAcceptor(HierarchicalStateMachine):
     """
     Accepts JSON data within a larger text, delimited by specific markers.
 
@@ -17,7 +17,7 @@ class EncapsulatedAcceptor(StateMachine):
 
     def __init__(
         self,
-        state_machine: StateMachine,
+        state_machine: HierarchicalStateMachine,
         open_delimiter: str,
         close_delimiter: str,
     ) -> None:

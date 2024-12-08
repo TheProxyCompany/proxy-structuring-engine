@@ -10,7 +10,7 @@ from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
 from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_top_logits import get_top_logits
 from pse.util.state_machine.get_acceptor import get_acceptor
@@ -41,7 +41,7 @@ class StructuringEngine(LogitsProcessor):
         """
         StructuringEngine.build_vocabulary(tokenizer, vocabulary)
         self.tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast = tokenizer
-        self.state_machine: StateMachine | None = None
+        self.state_machine: HierarchicalStateMachine | None = None
         self.walkers: list[Walker] = []
         self.within_json_value: bool = False
 
@@ -183,7 +183,7 @@ class StructuringEngine(LogitsProcessor):
 
         seen: dict[str, set[Walker]] = {}
         longest_partial: tuple[str, int] = ("", -1)  # (partial_token, token_id)
-        for valid_token, walker in StateMachine.advance_all(
+        for valid_token, walker in HierarchicalStateMachine.advance_all(
             self.walkers, token, self.dawg
         ):
             seen.setdefault(valid_token, set()).add(walker)
@@ -220,7 +220,7 @@ class StructuringEngine(LogitsProcessor):
             # Get walkers that accept this exact token
             new_walkers = [
                 walker
-                for valid_token, walker in StateMachine.advance_all(
+                for valid_token, walker in HierarchicalStateMachine.advance_all(
                     self.walkers, token, self.dawg
                 )
                 if valid_token == token

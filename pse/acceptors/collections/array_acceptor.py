@@ -8,10 +8,10 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class ArrayAcceptor(StateMachine):
+class ArrayAcceptor(HierarchicalStateMachine):
     """
     Accepts a well-formed JSON array and handles state transitions during parsing.
 

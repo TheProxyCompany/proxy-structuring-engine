@@ -7,11 +7,11 @@ import pytest
 from lexpy import DAWG
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 
 
 @pytest.fixture
-def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
+def state_machine_factory() -> Callable[[CharacterAcceptor], HierarchicalStateMachine]:
     """
     Fixture providing a factory function to create StateMachines with CharacterAcceptors.
 
@@ -19,8 +19,8 @@ def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
         Callable that creates a StateMachine with the given CharacterAcceptor.
     """
 
-    def create(acceptor: CharacterAcceptor) -> StateMachine:
-        return StateMachine(
+    def create(acceptor: CharacterAcceptor) -> HierarchicalStateMachine:
+        return HierarchicalStateMachine(
             state_graph={0: [(acceptor, 1)]},
             start_state=0,
             end_states=[1],
@@ -46,7 +46,7 @@ def test_character_acceptor_basic(
     input_string: str,
     expected_value: Optional[str],
     should_accept: bool,
-    state_machine_factory: Callable[[CharacterAcceptor], StateMachine],
+    state_machine_factory: Callable[[CharacterAcceptor], HierarchicalStateMachine],
 ) -> None:
     """
     Test CharacterAcceptor with various charsets and input strings.
@@ -65,7 +65,7 @@ def test_character_acceptor_basic(
     dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
+    advanced = list(HierarchicalStateMachine.advance_all(walkers, input_string, dawg))
 
     if should_accept:
         assert any(
@@ -91,7 +91,7 @@ def test_character_acceptor_char_limit(
     char_limit: int,
     input_string: str,
     expected_value: str,
-    state_machine_factory: Callable[[CharacterAcceptor], StateMachine],
+    state_machine_factory: Callable[[CharacterAcceptor], HierarchicalStateMachine],
 ) -> None:
     """
     Test CharacterAcceptor with character limits.
@@ -111,7 +111,7 @@ def test_character_acceptor_char_limit(
     dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
+    advanced = list(HierarchicalStateMachine.advance_all(walkers, input_string, dawg))
 
     assert len(advanced) == 1, "Expected 1 walker after advancing"
     assert any(walker.has_reached_accept_state() for _, walker in advanced)

@@ -3,7 +3,7 @@ import pytest
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 
 
 @pytest.fixture
@@ -53,7 +53,9 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
     full_input = " Hello World"
     walkers = sequence_acceptor.get_walkers()
     for char in full_input:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        walkers = [
+            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
+        ]
 
     # Verify that at least one walker is in the accepted state
     assert any(
@@ -72,7 +74,9 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
     input_sequence = " Hello World"
     walkers = [initial_walker]
     for char in input_sequence:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        walkers = [
+            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
+        ]
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
@@ -84,7 +88,9 @@ def test_partial_match(sequence_acceptor: SequenceAcceptor):
     partial_input = " Hello "
     walkers = list(sequence_acceptor.get_walkers())
     for char in partial_input:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        walkers = [
+            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
+        ]
 
     # Ensure no walker has reached the accepted state with partial input
     assert not any(
@@ -123,7 +129,9 @@ def test_single_acceptor_sequence():
     single_acceptor = SequenceAcceptor([TextAcceptor(single_text)])
     walkers = list(single_acceptor.get_walkers())
     for char in single_text:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        walkers = [
+            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
+        ]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Single acceptor SequenceAcceptor should accept the input '{single_text}'."
@@ -140,12 +148,14 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: list[StateMachine], token: str):
+def test_multiple_sequences(acceptors: list[HierarchicalStateMachine], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
     walkers = list(sequence.get_walkers())
     for char in token:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        walkers = [
+            walker for _, walker in HierarchicalStateMachine.advance_all(walkers, char)
+        ]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
     ), f"Input '{token}' should be accepted by the given SequenceAcceptor."
@@ -153,7 +163,7 @@ def test_multiple_sequences(acceptors: list[StateMachine], token: str):
 
 def test_optional_acceptor():
     """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
-    sm = StateMachine(
+    sm = HierarchicalStateMachine(
         state_graph={
             0: [
                 (TextAcceptor("Hello"), 1),
@@ -179,7 +189,9 @@ def test_optional_acceptor():
     input_string_with_whitespace = "Hello, World."
     new_walkers_with_whitespace = [
         walker
-        for _, walker in StateMachine.advance_all(walkers, input_string_with_whitespace)
+        for _, walker in HierarchicalStateMachine.advance_all(
+            walkers, input_string_with_whitespace
+        )
     ]
     assert len(new_walkers_with_whitespace) == 1
     assert new_walkers_with_whitespace[0].current_value == input_string_with_whitespace
@@ -193,7 +205,9 @@ def test_optional_acceptor():
     # TODO: Fix this.
     new_walkers_no_whitespace = [
         walker
-        for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)
+        for _, walker in HierarchicalStateMachine.advance_all(
+            walkers, input_string_no_whitespace
+        )
     ]
     assert len(new_walkers_no_whitespace) == 1
     assert new_walkers_no_whitespace[0].current_value == input_string_no_whitespace

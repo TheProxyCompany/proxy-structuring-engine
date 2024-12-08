@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from pse_core.walker import Walker
 
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 from pse.util.state_machine.accepted_state import AcceptedState
 
 # INVALID_CHARS is a set containing characters that are not allowed in JSON strings.
@@ -13,7 +13,7 @@ from pse.util.state_machine.accepted_state import AcceptedState
 INVALID_CHARS: set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
 
 
-class StringCharacterAcceptor(StateMachine):
+class StringCharacterAcceptor(HierarchicalStateMachine):
     """
     Accepts one or more valid JSON unescaped string characters.
     """
@@ -41,7 +41,7 @@ class StringCharacterWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor: StringCharacterAcceptor = acceptor
+        self.state_machine: StringCharacterAcceptor = acceptor
         self._accepts_more_input = True
         self._raw_value = value
 

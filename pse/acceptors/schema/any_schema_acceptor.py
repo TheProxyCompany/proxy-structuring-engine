@@ -1,9 +1,9 @@
 from typing import Any
 
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 
 
-class AnySchemaAcceptor(StateMachine):
+class AnySchemaAcceptor(HierarchicalStateMachine):
     """
     Accepts JSON input that complies with any of several provided JSON schemas
     """

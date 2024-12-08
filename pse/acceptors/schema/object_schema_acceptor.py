@@ -110,15 +110,17 @@ class ObjectSchemaWalker(ObjectWalker):
     Walker for ObjectAcceptor
     """
 
-    def __init__(self, acceptor: ObjectSchemaAcceptor, current_state: State | None = None):
+    def __init__(
+        self, acceptor: ObjectSchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor: ObjectSchemaAcceptor = acceptor
+        self.state_machine: ObjectSchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
         if self.target_state == "$":
             has_all_required_properties = all(
                 prop_name in self.value
-                for prop_name in self.acceptor.required_property_names
+                for prop_name in self.state_machine.required_property_names
             )
             return has_all_required_properties
         # if self.current_state == 2 and self.target_state == 3:
@@ -126,6 +128,6 @@ class ObjectSchemaWalker(ObjectWalker):
         #     return token not in self.value
         if self.current_state == 4 and self.target_state == 2:
             # Are all allowed properties already set?
-            return len(self.value.keys()) < len(self.acceptor.properties)
+            return len(self.value.keys()) < len(self.state_machine.properties)
 
         return super().should_start_transition(token)

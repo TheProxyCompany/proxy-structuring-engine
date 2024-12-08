@@ -9,12 +9,12 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 logger = logging.getLogger()
 
 
-class ObjectAcceptor(StateMachine):
+class ObjectAcceptor(HierarchicalStateMachine):
     """
     Accepts a well-formed JSON object and manages state transitions during parsing.
 
@@ -50,7 +50,6 @@ class ObjectAcceptor(StateMachine):
             }
         )
 
-
     def get_new_walker(self, state: State | None = None) -> ObjectWalker:
         return ObjectWalker(self, state)
 
@@ -60,7 +59,9 @@ class ObjectWalker(StateMachineWalker):
     Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
     """
 
-    def __init__(self, acceptor: ObjectAcceptor, current_state: State | None = None) -> None:
+    def __init__(
+        self, acceptor: ObjectAcceptor, current_state: State | None = None
+    ) -> None:
         """
         Initialize the ObjectAcceptor.Walker with the parent acceptor and an empty dictionary.
 

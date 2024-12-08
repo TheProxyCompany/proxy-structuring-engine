@@ -7,12 +7,12 @@ from typing import Self
 
 from pse_core.walker import Walker
 
-from pse.state_machine import State, StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, State, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
 
-class WaitForAcceptor(StateMachine):
+class WaitForAcceptor(HierarchicalStateMachine):
     """
     Accept all text until a segment triggers another specified acceptor.
 
@@ -23,7 +23,7 @@ class WaitForAcceptor(StateMachine):
 
     def __init__(
         self,
-        state_machine: StateMachine,
+        state_machine: HierarchicalStateMachine,
         allow_break: bool = False,
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
@@ -74,7 +74,7 @@ class WaitForWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor: WaitForAcceptor = acceptor
+        self.state_machine: WaitForAcceptor = acceptor
 
     def clone(self) -> Self:
         """Creates a shallow copy of the walker with copied history and explored edges."""
@@ -131,7 +131,7 @@ class WaitForWalker(StateMachineWalker):
         ):
             # wait for acceptor blindly accepts all tokens while
             # trying to advance the trigger acceptor
-            if not self.acceptor.allow_break:
+            if not self.state_machine.allow_break:
                 self.transition_walker = None
                 yield from self.branch()
                 return
@@ -139,4 +139,4 @@ class WaitForWalker(StateMachineWalker):
             yield self
             return
 
-        yield from self.acceptor.advance(self, token)
+        yield from self.state_machine.advance(self, token)

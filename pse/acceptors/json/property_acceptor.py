@@ -11,7 +11,7 @@ from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 
 logger = logging.getLogger()
 
@@ -24,7 +24,7 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: list[StateMachine] | None = None) -> None:
+    def __init__(self, sequence: list[HierarchicalStateMachine] | None = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """
@@ -39,7 +39,6 @@ class PropertyAcceptor(SequenceAcceptor):
                 JsonAcceptor(),
             ]
         )
-
 
     def get_new_walker(self, state: State | None = None) -> PropertyWalker:
         return PropertyWalker(self, state)
@@ -82,7 +81,7 @@ class PropertyWalker(SequenceWalker):
         try:
             if self.target_state == 1:
                 self.prop_name = json.loads(self.transition_walker.raw_value)
-            elif self.target_state in self.acceptor.end_states:
+            elif self.target_state in self.state_machine.end_states:
                 self.prop_value = json.loads(self.transition_walker.raw_value)
         except Exception:
             return False
@@ -116,4 +115,4 @@ class PropertyWalker(SequenceWalker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return self.current_state not in self.acceptor.end_states
+        return self.current_state not in self.state_machine.end_states

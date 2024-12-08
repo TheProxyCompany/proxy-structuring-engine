@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 
-class BooleanAcceptor(StateMachine):
+class BooleanAcceptor(HierarchicalStateMachine):
     """
     Accepts a JSON boolean value: true, false.
     """
@@ -45,7 +45,7 @@ class BooleanWalker(StateMachineWalker):
         """
         if (
             self.target_state
-            and self.target_state in self.acceptor.end_states
+            and self.target_state in self.state_machine.end_states
             and self.transition_walker
         ):
             self._raw_value = self.transition_walker.raw_value

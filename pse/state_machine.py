@@ -23,7 +23,7 @@ from typing import Self
 
 from lexpy import DAWG
 from pse_core import Edge, State
-from pse_core.acceptor import Acceptor
+from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
 from pse.util.state_machine.accepted_state import AcceptedState
@@ -31,7 +31,7 @@ from pse.util.state_machine.accepted_state import AcceptedState
 logger = logging.getLogger(__name__)
 
 
-class StateMachine(Acceptor):
+class HierarchicalStateMachine(StateMachine):
     """
     Non-Deterministic Hierarchical State Machine for managing token acceptance based on a predefined state graph.
     Includes support for optional acceptors and pass-through transitions, and parallel parsing.
@@ -94,7 +94,9 @@ class StateMachine(Acceptor):
                 and target_state not in self.end_states
                 and walker.can_accept_more_input()
             ):
-                logger.debug(f"🟢 {acceptor} supports pass-through to state {target_state}")
+                logger.debug(
+                    f"🟢 {acceptor} supports pass-through to state {target_state}"
+                )
                 yield from self.get_transitions(walker, target_state)
 
     def branch_walker(
@@ -124,7 +126,7 @@ class StateMachine(Acceptor):
                 continue
 
             if (
-                transition.acceptor.is_optional
+                transition.state_machine.is_optional
                 and target_state in self.end_states
                 and input_token
             ):
@@ -155,7 +157,9 @@ class StateMachine(Acceptor):
         """
         queue: deque[tuple[Walker, str]] = deque([(walker, input_token)])
 
-        def handle_blocked_transition(blocked_walker: Walker, token: str) -> Iterable[Walker]:
+        def handle_blocked_transition(
+            blocked_walker: Walker, token: str
+        ) -> Iterable[Walker]:
             """Handle blocked transitions."""
             branched_walkers = []
             for branched_walker in blocked_walker.branch(token):
@@ -173,23 +177,23 @@ class StateMachine(Acceptor):
                 logger.debug(f"🟠 Walker has remaining input: {blocked_walker!r}")
                 yield blocked_walker
             elif not branched_walkers:
-                logger.debug(
-                    f"🔴 {blocked_walker!r} cannot parse {token!r}."
-                )
+                logger.debug(f"🔴 {blocked_walker!r} cannot parse {token!r}.")
 
         while queue:
             current_walker, current_token = queue.popleft()
 
             # Handle case where transition cannot be started
             if (
-                not current_walker.transition_walker or
-                not current_walker.should_start_transition(current_token)
+                not current_walker.transition_walker
+                or not current_walker.should_start_transition(current_token)
             ):
                 yield from handle_blocked_transition(current_walker, current_token)
                 continue
 
             # Handle active transition
-            for transition in current_walker.transition_walker.consume_token(current_token):
+            for transition in current_walker.transition_walker.consume_token(
+                current_token
+            ):
                 new_walker, is_accepted = current_walker.complete_transition(transition)
                 if not new_walker:
                     continue
@@ -277,9 +281,8 @@ class StateMachineWalker(Walker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return (
-            self._accepts_more_input or
-            bool(self.acceptor.state_graph.get(self.current_state))
+        return self._accepts_more_input or bool(
+            self.state_machine.state_graph.get(self.current_state)
         )
 
     def accepts_any_token(self) -> bool:
@@ -316,24 +319,4 @@ class StateMachineWalker(Walker):
         Yields:
             Updated walkers after advancement.
         """
-        yield from self.acceptor.advance(self, token)
-
-    def __getstate__(self):
-        return {
-            "acceptor": self.acceptor,
-            "current_state": self.current_state,
-            "target_state": self.target_state,
-            "remaining_input": self.remaining_input,
-            "_raw_value": self._raw_value,
-            "_accepts_more_input": self._accepts_more_input,
-            "transition_walker": self.transition_walker,
-        }
-
-    def __setstate__(self, state):
-        self.acceptor = state["acceptor"]
-        self.current_state = state["current_state"]
-        self.target_state = state["target_state"]
-        self.remaining_input = state["remaining_input"]
-        self._raw_value = state["_raw_value"]
-        self._accepts_more_input = state["_accepts_more_input"]
-        self.transition_walker = state["transition_walker"]
+        yield from self.state_machine.advance(self, token)

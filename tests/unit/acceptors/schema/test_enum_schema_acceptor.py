@@ -12,7 +12,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Set up the default schema acceptor before each test.
         """
         self.default_schema: dict = {"enum": ["value1", "value2", "value3"]}
-        self.acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(
+        self.state_machine: EnumSchemaAcceptor = EnumSchemaAcceptor(
             schema=self.default_schema
         )
 
@@ -21,7 +21,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Test that the acceptor correctly accepts a value present in the enum.
         """
         valid_value = "value1"
-        walkers = self.acceptor.get_walkers()
+        walkers = self.state_machine.get_walkers()
         for char in valid_value:
             walkers = [
                 walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)
@@ -35,7 +35,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Test that the acceptor correctly rejects a value not present in the enum.
         """
         invalid_value = "invalid_value"
-        walkers = list(self.acceptor.get_walkers())
+        walkers = list(self.state_machine.get_walkers())
         for char in invalid_value:
             walkers = [
                 walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)
@@ -53,7 +53,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         valid_values = ["value1", "value2", "value3"]
         for valid_value in valid_values:
             with self.subTest(valid_value=valid_value):
-                walkers = self.acceptor.get_walkers()
+                walkers = self.state_machine.get_walkers()
                 walkers = [
                     walker
                     for _, walker in EnumSchemaAcceptor.advance_all(
@@ -69,7 +69,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Test that the acceptor does not accept prefixes of valid enum values.
         """
         partial_value = "val"
-        walkers = list(self.acceptor.get_walkers())
+        walkers = list(self.state_machine.get_walkers())
         for char in partial_value:
             walkers = [
                 walker for _, walker in EnumSchemaAcceptor.advance_all(walkers, char)

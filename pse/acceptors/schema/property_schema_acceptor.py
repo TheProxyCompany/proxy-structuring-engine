@@ -66,24 +66,26 @@ class PropertySchemaWalker(PropertyWalker):
     Walker for PropertySchemaAcceptor
     """
 
-    def __init__(self, acceptor: PropertySchemaAcceptor, current_state: State | None = None):
+    def __init__(
+        self, acceptor: PropertySchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor: PropertySchemaAcceptor = acceptor
+        self.state_machine: PropertySchemaAcceptor = acceptor
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():
             return False
 
-        hooks: dict[str, Callable] = self.acceptor.prop_schema.get("__hooks", {})
-        prop_name = self.acceptor.prop_name
+        hooks: dict[str, Callable] = self.state_machine.prop_schema.get("__hooks", {})
+        prop_name = self.state_machine.prop_name
         if self.target_state == 4:
             if "value_start" in hooks:
                 hooks["value_start"](prop_name)
-        elif self.target_state and self.target_state in self.acceptor.end_states:
+        elif self.target_state and self.target_state in self.state_machine.end_states:
             if "value_end" in hooks:
                 hooks["value_end"](prop_name, self.prop_value)
         return True
 
     @property
     def current_value(self):
-        return (self.acceptor.prop_name, self.prop_value)
+        return (self.state_machine.prop_name, self.prop_value)

@@ -9,12 +9,12 @@ from pse.acceptors.basic.character_acceptor import CharacterAcceptor
 from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.state_machine import StateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
 
 logger = logging.getLogger(__name__)
 
 
-class NumberAcceptor(StateMachine):
+class NumberAcceptor(HierarchicalStateMachine):
     """
     Accepts a well-formed JSON number.
 
@@ -94,7 +94,7 @@ class NumberWalker(StateMachineWalker):
             return True
 
         return (
-            bool(self.acceptor.state_graph.get(self.current_state))
+            bool(self.state_machine.state_graph.get(self.current_state))
             and self._accepts_more_input
             and not self.remaining_input
         )

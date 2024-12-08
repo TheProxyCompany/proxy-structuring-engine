@@ -23,10 +23,10 @@ class IntegerWalker(CharacterWalker):
 
     def __init__(self, acceptor: IntegerAcceptor, value: str | None = None) -> None:
         super().__init__(acceptor, value)
-        self.acceptor: IntegerAcceptor = acceptor
+        self.state_machine: IntegerAcceptor = acceptor
 
     @property
     def current_value(self) -> str | None:
-        if self.acceptor.drop_leading_zeros:
+        if self.state_machine.drop_leading_zeros:
             return super().parse_value(self._raw_value)
         return self._raw_value

@@ -11,7 +11,7 @@ from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.state_machine import StateMachine
+from pse.state_machine import HierarchicalStateMachine
 
 
 def get_acceptor(
@@ -19,7 +19,7 @@ def get_acceptor(
     context: dict[str, Any] | None = None,
     start_hook: Callable | None = None,
     end_hook: Callable | None = None,
-) -> StateMachine:
+) -> HierarchicalStateMachine:
     """
     Create an acceptor to validate JSON input based on the provided schema.
 
@@ -70,7 +70,9 @@ def get_acceptor(
         return AnySchemaAcceptor(schemas, context)
 
     if "not" in schema:
-        raise ValueError("The 'not' keyword is not supported due to limitations with autoregressive generation.")
+        raise ValueError(
+            "The 'not' keyword is not supported due to limitations with autoregressive generation."
+        )
 
     schema_type: Any | None = schema.get("type")
 

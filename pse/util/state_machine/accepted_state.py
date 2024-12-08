@@ -21,7 +21,7 @@ class AcceptedState(Walker):
         Args:
             walker: The walker that has reached an accepted state.
         """
-        self.acceptor = walker.acceptor
+        self.state_machine = walker.state_machine
         self.accepted_walker = walker
         self.accepted_history = walker.accepted_history
         self.explored_edges = walker.explored_edges

@@ -61,12 +61,14 @@ class NumberSchemaWalker(NumberWalker):
     Walker for NumberAcceptor
     """
 
-    def __init__(self, acceptor: NumberSchemaAcceptor, current_state: State | None = None):
+    def __init__(
+        self, acceptor: NumberSchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor: NumberSchemaAcceptor = acceptor
+        self.state_machine: NumberSchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
-        if self.acceptor.is_integer and self.target_state == 3:
+        if self.state_machine.is_integer and self.target_state == 3:
             return False
         return super().should_start_transition(token)
 
@@ -76,8 +78,8 @@ class NumberSchemaWalker(NumberWalker):
         # Only validate when there is no remaining input
         if (
             self.target_state is not None
-            and self.target_state in self.acceptor.end_states
+            and self.target_state in self.state_machine.end_states
             and not self.remaining_input
         ):
-            return self.acceptor.validate_value(self.current_value)
+            return self.state_machine.validate_value(self.current_value)
         return True
