@@ -7,7 +7,7 @@ from pse.acceptors.basic.integer_acceptor import IntegerWalker
 from pse.acceptors.basic.number_acceptor import IntegerAcceptor, NumberAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.state_machine import HierarchicalStateMachine, StateMachineWalker
+from pse.state_machine import HierarchicalStateMachine, Walker
 
 
 @pytest.mark.parametrize(
@@ -435,7 +435,7 @@ def test_whitespace_acceptor():
     original_walkers = list(sm.get_walkers())
     assert len(original_walkers) == 1
     first_walker = next(iter(original_walkers))
-    assert isinstance(first_walker, StateMachineWalker)
+    assert isinstance(first_walker, Walker)
     assert first_walker.current_state == sm.start_state
     assert isinstance(first_walker.transition_walker, TextWalker)
 
@@ -494,10 +494,10 @@ def test_simple_number_acceptor():
     walkers = list(sm.get_walkers())
     assert len(walkers) == 2
     text_acceptor_walker = walkers[0]
-    assert isinstance(text_acceptor_walker, StateMachineWalker)
+    assert isinstance(text_acceptor_walker, Walker)
     assert isinstance(text_acceptor_walker.transition_walker, TextWalker)
     integer_acceptor_walker = walkers[1]
-    assert isinstance(integer_acceptor_walker, StateMachineWalker)
+    assert isinstance(integer_acceptor_walker, Walker)
     assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)
 
     for advanced_token, walker in HierarchicalStateMachine.advance_all(
