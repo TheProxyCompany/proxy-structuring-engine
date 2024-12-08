@@ -1,8 +1,10 @@
+from collections.abc import Iterable
+
 import pytest
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-from pse.core.state_machine import StateMachine
-from pse.core.walker import Walker
-from typing import Iterable
 
 
 # Fixture for BooleanAcceptor

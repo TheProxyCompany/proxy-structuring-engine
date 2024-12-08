@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Callable, Tuple
 
-from pse.core.acceptor import Acceptor
-from pse.core.state_machine import StateMachine, State
-from pse.core.walker import Walker
 import logging
+from collections.abc import Callable, Iterable
+from copy import copy
+from typing import Self
+
+from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +23,7 @@ class WaitForAcceptor(StateMachine):
 
     def __init__(
         self,
-        wait_for_acceptor: Acceptor,
+        state_machine: StateMachine,
         allow_break: bool = False,
         start_hook: Callable | None = None,
         end_hook: Callable | None = None,
@@ -32,19 +36,19 @@ class WaitForAcceptor(StateMachine):
                 stops the waiting and stops accepting further characters.
         """
         super().__init__()
-        self.wait_for_acceptor = wait_for_acceptor
+        self.wait_for_sm = state_machine
         self.allow_break = allow_break
         self.start_hook = start_hook
         self.end_hook = end_hook
         self.triggered = False
 
     def get_transitions(
-        self, walker: Walker, state: Optional[State] = None
-    ) -> Iterable[Tuple[Walker, State, State]]:
+        self, walker: Walker, state: State | None = None
+    ) -> Iterable[tuple[Walker, State, State]]:
         """
         Get transitions for the WaitForAcceptor.
         """
-        for transition in self.wait_for_acceptor.get_walkers():
+        for transition in self.wait_for_sm.get_walkers():
             yield transition, 0, "$"
 
     def get_walkers(self) -> Iterable[Walker]:
@@ -70,7 +74,14 @@ class WaitForWalker(Walker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor = acceptor
+        self.state_machine: WaitForAcceptor = acceptor
+
+    def clone(self) -> Self:
+        """Creates a shallow copy of the walker with copied history and explored edges."""
+        cloned_walker = copy(self)
+        cloned_walker.accepted_history = self.accepted_history.copy()
+        cloned_walker.explored_edges = self.explored_edges.copy()
+        return cloned_walker
 
     def should_start_transition(self, token: str) -> bool:
         if self.transition_walker and self.transition_walker.is_within_value():
@@ -120,7 +131,7 @@ class WaitForWalker(Walker):
         ):
             # wait for acceptor blindly accepts all tokens while
             # trying to advance the trigger acceptor
-            if not self.acceptor.allow_break:
+            if not self.state_machine.allow_break:
                 self.transition_walker = None
                 yield from self.branch()
                 return
@@ -128,4 +139,4 @@ class WaitForWalker(Walker):
             yield self
             return
 
-        yield from self.acceptor.advance(self, token)
+        yield from self.state_machine.advance(self, token)

@@ -1,12 +1,15 @@
 from __future__ import annotations
-from typing import Any, Dict, Type
-import logging
 
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.walker import Walker
+import logging
+from typing import Any
+
+from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.property_acceptor import PropertyAcceptor
 
 logger = logging.getLogger()
@@ -48,17 +51,18 @@ class ObjectAcceptor(StateMachine):
             }
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return ObjectWalker
+    def get_new_walker(self, state: State | None = None) -> ObjectWalker:
+        return ObjectWalker(self, state)
 
 
-class ObjectWalker(StateMachineWalker):
+class ObjectWalker(Walker):
     """
     Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
     """
 
-    def __init__(self, acceptor: ObjectAcceptor, current_state: int = 0) -> None:
+    def __init__(
+        self, acceptor: ObjectAcceptor, current_state: State | None = None
+    ) -> None:
         """
         Initialize the ObjectAcceptor.Walker with the parent acceptor and an empty dictionary.
 
@@ -66,7 +70,7 @@ class ObjectWalker(StateMachineWalker):
             acceptor (ObjectAcceptor): The parent ObjectAcceptor instance.
         """
         super().__init__(acceptor, current_state)
-        self.value: Dict[str, Any] = {}
+        self.value: dict[str, Any] = {}
 
     def should_complete_transition(self) -> bool:
         """
@@ -87,12 +91,12 @@ class ObjectWalker(StateMachineWalker):
         return True
 
     @property
-    def current_value(self) -> Dict[str, Any]:
+    def current_value(self) -> dict[str, Any]:
         """
         Get the current parsed JSON object.
 
         Returns:
-            Dict[str, Any]: The accumulated key-value pairs representing the JSON object.
+            dict[str, Any]: The accumulated key-value pairs representing the JSON object.
         """
         if not self.raw_value:
             return {}

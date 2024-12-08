@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set, Type
 
-from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker
-from pse.core.state_machine import StateMachine, StateMachineWalker
+from collections.abc import Iterable
+
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 
 class CharacterAcceptor(StateMachine):
@@ -16,8 +17,8 @@ class CharacterAcceptor(StateMachine):
     def __init__(
         self,
         charset: Iterable[str],
-        char_min: Optional[int] = None,
-        char_limit: Optional[int] = None,
+        char_min: int | None = None,
+        char_limit: int | None = None,
         is_optional: bool = False,
         case_sensitive: bool = True,
     ) -> None:
@@ -30,15 +31,12 @@ class CharacterAcceptor(StateMachine):
         super().__init__(is_optional=is_optional, is_case_sensitive=case_sensitive)
         self.char_min = char_min or 0
         self.char_limit = char_limit or 0
-        self.charset: Set[str] = (
-            set(charset)
-            if case_sensitive
-            else set(char.lower() for char in charset)
+        self.charset: set[str] = (
+            set(charset) if case_sensitive else set(char.lower() for char in charset)
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return CharacterWalker
+    def get_new_walker(self, state: int | str) -> CharacterWalker:
+        return CharacterWalker(self)
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -48,7 +46,7 @@ class CharacterAcceptor(StateMachine):
         return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
 
 
-class CharacterWalker(StateMachineWalker):
+class CharacterWalker(Walker):
     """
     Walker for navigating through characters in CharAcceptor.
     """
@@ -56,7 +54,7 @@ class CharacterWalker(StateMachineWalker):
     def __init__(
         self,
         acceptor: CharacterAcceptor,
-        value: Optional[str] = None,
+        value: str | None = None,
     ) -> None:
         """
         Initialize the Walker.
@@ -67,17 +65,18 @@ class CharacterWalker(StateMachineWalker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor: CharacterAcceptor = acceptor
+        self.state_machine: CharacterAcceptor = acceptor
         self._raw_value = value
 
     def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
-        for char in self.acceptor.charset:
-            yield char
+        yield from self.state_machine.charset
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string."""
-        token = token.lower() if not self.acceptor.is_case_sensitive else token
-        self._accepts_more_input = bool(token and token[0] in self.acceptor.charset)
+        token = token.lower() if not self.state_machine.is_case_sensitive else token
+        self._accepts_more_input = bool(
+            token and token[0] in self.state_machine.charset
+        )
         return self._accepts_more_input
 
     def consume_token(self, token: str) -> Iterable[Walker]:
@@ -94,14 +93,18 @@ class CharacterWalker(StateMachineWalker):
             self._accepts_more_input = False
             return
 
-        token = token.lower() if not self.acceptor.is_case_sensitive else token
+        token = token.lower() if not self.state_machine.is_case_sensitive else token
 
         # Find valid characters up to char_limit
         valid_length = 0
         for char in token:
-            if char not in self.acceptor.charset:
+            if char not in self.state_machine.charset:
                 break
-            if self.acceptor.char_limit > 0 and valid_length + self.consumed_character_count >= self.acceptor.char_limit:
+            if (
+                self.state_machine.char_limit > 0
+                and valid_length + self.consumed_character_count
+                >= self.state_machine.char_limit
+            ):
                 break
             valid_length += 1
 
@@ -110,16 +113,23 @@ class CharacterWalker(StateMachineWalker):
             return
 
         # Create new walker with accumulated value
-        new_walker = self.__class__(self.acceptor, f"{self.raw_value}{token[:valid_length]}")
-        new_walker.consumed_character_count = self.consumed_character_count + valid_length
-        new_walker.remaining_input = token[valid_length:] if valid_length < len(token) else None
+        new_walker = self.__class__(
+            self.state_machine, f"{self.raw_value}{token[:valid_length]}"
+        )
+        new_walker.consumed_character_count = (
+            self.consumed_character_count + valid_length
+        )
+        new_walker.remaining_input = (
+            token[valid_length:] if valid_length < len(token) else None
+        )
         new_walker._accepts_more_input = not new_walker.remaining_input and (
-            self.acceptor.char_limit <= 0 or valid_length < self.acceptor.char_limit
+            self.state_machine.char_limit <= 0
+            or valid_length < self.state_machine.char_limit
         )
 
         yield (
             AcceptedState(new_walker)
-            if new_walker.consumed_character_count >= self.acceptor.char_min
+            if new_walker.consumed_character_count >= self.state_machine.char_min
             else new_walker
         )
 
@@ -128,7 +138,7 @@ class CharacterWalker(StateMachineWalker):
         return self._raw_value or ""
 
     @property
-    def current_value(self) -> Optional[str]:
+    def current_value(self) -> str | None:
         """
         Retrieve the current value of the walker.
 

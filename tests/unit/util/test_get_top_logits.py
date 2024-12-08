@@ -1,6 +1,8 @@
-import pytest
-import numpy as np
 import logging
+
+import numpy as np
+import pytest
+
 from pse.util.get_top_logits import get_top_logits
 
 try:
@@ -69,7 +71,9 @@ def test_handle_logits_top_k(array_type):
 
     expected_indices = [3, 1, 4]
     expected_values = [0.5, 0.4, 0.3]
-    expected_token_ids_and_scores = list(zip(expected_indices, expected_values))
+    expected_token_ids_and_scores = list(
+        zip(expected_indices, expected_values, strict=True)
+    )
 
     assert isinstance(token_ids_and_scores, list)
     assert len(token_ids_and_scores) == top_k
@@ -78,7 +82,7 @@ def test_handle_logits_top_k(array_type):
         for token_id, score in token_ids_and_scores
     )
     for (token_id, score), (exp_id, exp_score) in zip(
-        token_ids_and_scores, expected_token_ids_and_scores
+        token_ids_and_scores, expected_token_ids_and_scores, strict=True
     ):
         assert token_id == exp_id, f"Expected token ID {exp_id}, got {token_id}"
         assert score == pytest.approx(
@@ -98,7 +102,9 @@ def test_handle_logits_top_k_equals_vocab_size(array_type):
 
     expected_indices = [0, 2, 4, 1, 3]
     expected_values = [0.5, 0.4, 0.3, 0.2, 0.1]
-    expected_token_ids_and_scores = list(zip(expected_indices, expected_values))
+    expected_token_ids_and_scores = list(
+        zip(expected_indices, expected_values, strict=True)
+    )
 
     assert isinstance(token_ids_and_scores, list)
     assert len(token_ids_and_scores) == len(logits)
@@ -107,7 +113,7 @@ def test_handle_logits_top_k_equals_vocab_size(array_type):
         for token_id, score in token_ids_and_scores
     )
     for (token_id, score), (exp_id, exp_score) in zip(
-        token_ids_and_scores, expected_token_ids_and_scores
+        token_ids_and_scores, expected_token_ids_and_scores, strict=True
     ):
         assert token_id == exp_id, f"Expected token ID {exp_id}, got {token_id}"
         assert score == pytest.approx(
@@ -128,7 +134,9 @@ def test_handle_logits_top_k_greater_than_vocab_size(array_type):
 
     expected_indices = [0, 2, 1]
     expected_values = [0.5, 0.4, 0.2]
-    expected_token_ids_and_scores = list(zip(expected_indices, expected_values))
+    expected_token_ids_and_scores = list(
+        zip(expected_indices, expected_values, strict=True)
+    )
 
     assert isinstance(token_ids_and_scores, list)
     assert len(token_ids_and_scores) == len(logits)
@@ -137,7 +145,7 @@ def test_handle_logits_top_k_greater_than_vocab_size(array_type):
         for token_id, score in token_ids_and_scores
     )
     for (token_id, score), (exp_id, exp_score) in zip(
-        token_ids_and_scores, expected_token_ids_and_scores
+        token_ids_and_scores, expected_token_ids_and_scores, strict=True
     ):
         assert token_id == exp_id, f"Expected token ID {exp_id}, got {token_id}"
         assert score == pytest.approx(

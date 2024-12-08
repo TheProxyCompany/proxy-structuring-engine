@@ -1,14 +1,15 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Set, Type
 
-from pse.core.state_machine import StateMachine
-from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker
+from collections.abc import Iterable
+
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 # INVALID_CHARS is a set containing characters that are not allowed in JSON strings.
 # It includes control characters (ASCII 0-31) and the double quote (") and backslash (\) characters.
 # These characters need to be escaped or are not permitted in JSON string values.
-INVALID_CHARS: Set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
+INVALID_CHARS: set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
 
 
 class StringCharacterAcceptor(StateMachine):
@@ -16,9 +17,8 @@ class StringCharacterAcceptor(StateMachine):
     Accepts one or more valid JSON unescaped string characters.
     """
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return StringCharacterWalker
+    def get_new_walker(self, state: int | str) -> StringCharacterWalker:
+        return StringCharacterWalker(self)
 
 
 class StringCharacterWalker(Walker):
@@ -29,7 +29,7 @@ class StringCharacterWalker(Walker):
     def __init__(
         self,
         acceptor: StringCharacterAcceptor,
-        value: Optional[str] = None,
+        value: str | None = None,
     ) -> None:
         """
         Initialize the Walker.
@@ -40,7 +40,7 @@ class StringCharacterWalker(Walker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor: StringCharacterAcceptor = acceptor
+        self.state_machine: StringCharacterAcceptor = acceptor
         self._accepts_more_input = True
         self._raw_value = value
 
@@ -80,7 +80,7 @@ class StringCharacterWalker(Walker):
 
         new_walker = self.clone()
         new_walker._raw_value = (self._raw_value or "") + valid_prefix
-        new_walker.remaining_input = token[len(valid_prefix):] or None
+        new_walker.remaining_input = token[len(valid_prefix) :] or None
         new_walker.consumed_character_count += len(valid_prefix)
         yield AcceptedState(new_walker)
 

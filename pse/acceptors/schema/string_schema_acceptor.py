@@ -1,13 +1,15 @@
 from __future__ import annotations
-import json
-import re
-from typing import Callable, Optional, Any, Type
 
-from pse.util.errors import SchemaNotImplementedError
-from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
-from pse.core.walker import Walker
+import json
 import logging
-import regex  # Note: This is a third-party module
+import re
+from collections.abc import Callable
+from typing import Any
+
+import regex
+from pse_core import State
+
+from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +22,16 @@ class StringSchemaAcceptor(StringAcceptor):
     def __init__(
         self,
         schema: dict,
-        start_hook: Optional[Callable] = None,
-        end_hook: Optional[Callable] = None,
+        start_hook: Callable | None = None,
+        end_hook: Callable | None = None,
     ):
         super().__init__()
         self.schema = schema or {}
         self.start_hook = start_hook
         self.end_hook = end_hook
 
-        self.pattern: Optional[re.Pattern] = None
-        self.format: Optional[str] = None
+        self.pattern: re.Pattern | None = None
+        self.format: str | None = None
 
         if "pattern" in self.schema:
             pattern_str = self.schema["pattern"]
@@ -38,13 +40,10 @@ class StringSchemaAcceptor(StringAcceptor):
             self.format = self.schema["format"]
             # support 'email', 'date-time', 'uri' formats
             if self.format not in ["email", "date-time", "uri"]:
-                raise SchemaNotImplementedError(
-                    f"Format '{self.format}' not implemented"
-                )
+                raise ValueError(f"Format '{self.format}' not implemented")
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return StringSchemaWalker
+    def get_new_walker(self, state: State | None = None) -> StringSchemaWalker:
+        return StringSchemaWalker(self, state)
 
     def min_length(self) -> int:
         """
@@ -77,9 +76,7 @@ class StringSchemaAcceptor(StringAcceptor):
             if format_validator and not format_validator(value):
                 return False
             elif not format_validator:
-                raise SchemaNotImplementedError(
-                    f"Format '{self.format}' not implemented"
-                )
+                raise ValueError(f"Format '{self.format}' not implemented")
         return True
 
     def validate_email(self, value: str) -> bool:
@@ -116,17 +113,19 @@ class StringSchemaWalker(StringWalker):
     Walker for StringSchemaAcceptor.
     """
 
-    def __init__(self, acceptor: StringSchemaAcceptor, current_state: int = 0):
+    def __init__(
+        self, acceptor: StringSchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.state_machine: StringSchemaAcceptor = acceptor
         self.is_escaping = False
 
     def should_start_transition(self, token: str) -> bool:
         if (
             self.is_within_value()
             and self.target_state is not None
-            and self.target_state not in self.acceptor.end_states
-            and self.acceptor.pattern
+            and self.target_state not in self.state_machine.end_states
+            and self.state_machine.pattern
             and self.transition_walker
             and self.transition_walker.raw_value
             and not self.is_pattern_prefix(self.transition_walker.raw_value + token)
@@ -138,16 +137,16 @@ class StringSchemaWalker(StringWalker):
     def should_complete_transition(self) -> bool:
         if (
             not self.is_within_value()
-            and self.target_state == self.acceptor.STRING_CONTENTS
-            and self.acceptor.start_hook
+            and self.target_state == self.state_machine.STRING_CONTENTS
+            and self.state_machine.start_hook
         ):
-            self.acceptor.start_hook()
+            self.state_machine.start_hook()
 
         # Only update partial_value when processing actual string content
         if (
             self.is_within_value()
             and self.target_state is not None
-            and self.target_state not in self.acceptor.end_states
+            and self.target_state not in self.state_machine.end_states
         ):
             if self.is_escaping:
                 self.is_escaping = False
@@ -156,12 +155,12 @@ class StringSchemaWalker(StringWalker):
 
         if (
             self.target_state is not None
-            and self.target_state in self.acceptor.end_states
+            and self.target_state in self.state_machine.end_states
         ):
-            if self.acceptor.end_hook:
-                self.acceptor.end_hook()
+            if self.state_machine.end_hook:
+                self.state_machine.end_hook()
 
-            if self.acceptor.validate_value(self.current_value):
+            if self.state_machine.validate_value(self.current_value):
                 return True
             else:
                 return False
@@ -169,14 +168,14 @@ class StringSchemaWalker(StringWalker):
         return True
 
     def is_within_value(self) -> bool:
-        return self.current_state == self.acceptor.STRING_CONTENTS
+        return self.current_state == self.state_machine.STRING_CONTENTS
 
     def is_pattern_prefix(self, s: str) -> bool:
         """
         Check whether the string 's' can be a prefix of any string matching the pattern.
         """
-        if self.acceptor.pattern:
-            pattern_str = self.acceptor.pattern.pattern
+        if self.state_machine.pattern:
+            pattern_str = self.state_machine.pattern.pattern
             # Use partial matching
             match = regex.match(pattern_str, s, partial=True)
             return match is not None

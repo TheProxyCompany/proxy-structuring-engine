@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Type
+from pse_core import State
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.acceptor import Acceptor
 from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.walker import Walker
 
 
 class EncapsulatedAcceptor(StateMachine):
@@ -18,7 +18,7 @@ class EncapsulatedAcceptor(StateMachine):
 
     def __init__(
         self,
-        acceptor: Acceptor,
+        state_machine: StateMachine,
         open_delimiter: str,
         close_delimiter: str,
     ) -> None:
@@ -36,22 +36,18 @@ class EncapsulatedAcceptor(StateMachine):
                     (WaitForAcceptor(TextAcceptor(open_delimiter)), 1),
                 ],
                 1: [
-                    (acceptor, 2),
+                    (state_machine, 2),
                 ],
                 2: [(TextAcceptor(close_delimiter), "$")],
             }
         )
         self.opening_delimiter = open_delimiter
         self.closing_delimiter = close_delimiter
-        self.wait_for_acceptor = acceptor
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return EncapsulatedWalker
+    def get_new_walker(self, state: State | None = None) -> EncapsulatedWalker:
+        return EncapsulatedWalker(self, state)
 
 
-class EncapsulatedWalker(StateMachineWalker):
-
-
+class EncapsulatedWalker(Walker):
     def is_within_value(self) -> bool:
         return self.current_state == 1

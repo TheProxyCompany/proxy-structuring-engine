@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import Type
+
+from pse_core import State
+
 from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
-from pse.core.walker import Walker
+
 
 class NumberSchemaAcceptor(NumberAcceptor):
     """
@@ -23,11 +25,10 @@ class NumberSchemaAcceptor(NumberAcceptor):
             ]
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return NumberSchemaWalker
+    def get_new_walker(self, state: State | None = None) -> NumberSchemaWalker:
+        return NumberSchemaWalker(self, state)
 
-    def validate_value(self, value):
+    def validate_value(self, value: float) -> bool:
         """
         Validate the number value according to the schema
         """
@@ -60,12 +61,14 @@ class NumberSchemaWalker(NumberWalker):
     Walker for NumberAcceptor
     """
 
-    def __init__(self, acceptor: NumberSchemaAcceptor, current_state: int = 0):
+    def __init__(
+        self, acceptor: NumberSchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.state_machine: NumberSchemaAcceptor = acceptor
 
     def should_start_transition(self, token: str) -> bool:
-        if self.acceptor.is_integer and self.target_state == 3:
+        if self.state_machine.is_integer and self.target_state == 3:
             return False
         return super().should_start_transition(token)
 
@@ -75,8 +78,8 @@ class NumberSchemaWalker(NumberWalker):
         # Only validate when there is no remaining input
         if (
             self.target_state is not None
-            and self.target_state in self.acceptor.end_states
+            and self.target_state in self.state_machine.end_states
             and not self.remaining_input
         ):
-            return self.acceptor.validate_value(self.current_value)
+            return self.state_machine.validate_value(self.current_value)
         return True

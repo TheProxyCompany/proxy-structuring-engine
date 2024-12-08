@@ -1,6 +1,7 @@
 import pytest
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture
@@ -80,7 +81,9 @@ def test_valid_json_objects_all_at_once(
 @pytest.mark.parametrize(
     "json_string",
     [
-        ("{key: 'value'}"),  # Missing quotes around key and inconsistent quotes around value
+        (
+            "{key: 'value'}"
+        ),  # Missing quotes around key and inconsistent quotes around value
         ('{"key1": undefined}'),
         ('{"a": "b",, "c": "d"}'),
         ('{"key1": "value1"'),

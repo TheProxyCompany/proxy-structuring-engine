@@ -1,13 +1,14 @@
 """Unit tests for the CharacterAcceptor and its integration with the StateMachine."""
 
 from __future__ import annotations
-from typing import Callable, Iterable, Optional
+
+from collections.abc import Callable, Iterable
 
 import pytest
 from lexpy import DAWG
+from pse_core.state_machine import StateMachine
 
 from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
-from pse.core.state_machine import StateMachine
 
 
 @pytest.fixture
@@ -44,7 +45,7 @@ def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
 def test_character_acceptor_basic(
     charset: Iterable[str],
     input_string: str,
-    expected_value: Optional[str],
+    expected_value: str | None,
     should_accept: bool,
     state_machine_factory: Callable[[CharacterAcceptor], StateMachine],
 ) -> None:

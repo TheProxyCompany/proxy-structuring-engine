@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Iterable, Optional, Type
 
-from pse.core.state_machine import StateMachine
-from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.walker import Walker
 import logging
+from collections.abc import Iterable
+
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 logger = logging.getLogger()
 
@@ -31,9 +32,9 @@ class WhitespaceAcceptor(StateMachine):
 
         super().__init__(is_optional=(min_whitespace == 0))
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return WhitespaceWalker
+    def get_new_walker(self, state: int | str) -> WhitespaceWalker:
+        return WhitespaceWalker(self)
+
 
 class WhitespaceWalker(Walker):
     """
@@ -43,7 +44,7 @@ class WhitespaceWalker(Walker):
     def __init__(
         self,
         acceptor: WhitespaceAcceptor,
-        value: Optional[str] = None,
+        value: str | None = None,
     ):
         """
         Initialize the walker.
@@ -54,10 +55,12 @@ class WhitespaceWalker(Walker):
         """
         super().__init__(acceptor)
         self.target_state = "$"
-        self.acceptor: WhitespaceAcceptor = acceptor
+        self.state_machine: WhitespaceAcceptor = acceptor
         self._raw_value = value or ""
         self.consumed_character_count = len(self._raw_value)
-        self.length_exceeded: bool = len(self._raw_value) > self.acceptor.max_whitespace
+        self.length_exceeded: bool = (
+            len(self._raw_value) > self.state_machine.max_whitespace
+        )
 
     def should_start_transition(self, token: str) -> bool:
         if not token or not token[0].isspace():
@@ -70,13 +73,12 @@ class WhitespaceWalker(Walker):
         if self.length_exceeded:
             return []
 
-        for char in WHITESPACE_CHARS:
-            yield char
+        yield from WHITESPACE_CHARS
 
     def can_accept_more_input(self) -> bool:
         return (
             self._accepts_more_input
-            and self.consumed_character_count < self.acceptor.max_whitespace
+            and self.consumed_character_count < self.state_machine.max_whitespace
         )
 
     def consume_token(self, token: str) -> Iterable[Walker]:
@@ -109,7 +111,7 @@ class WhitespaceWalker(Walker):
             self._accepts_more_input = False
             if (
                 remaining_input
-                and self.consumed_character_count >= self.acceptor.min_whitespace
+                and self.consumed_character_count >= self.state_machine.min_whitespace
             ):
                 copy = self.clone()
                 copy.remaining_input = remaining_input
@@ -122,17 +124,18 @@ class WhitespaceWalker(Walker):
         next_walker.remaining_input = remaining_input
         next_walker.consumed_character_count += valid_length
 
-        if next_walker.consumed_character_count > self.acceptor.max_whitespace:
+        if next_walker.consumed_character_count > self.state_machine.max_whitespace:
             return []
 
         next_walker._accepts_more_input = (
             remaining_input is None
-            and next_walker.consumed_character_count <= self.acceptor.max_whitespace
+            and next_walker.consumed_character_count
+            <= self.state_machine.max_whitespace
         )
 
         yield (
             AcceptedState(next_walker)
-            if next_walker.consumed_character_count >= self.acceptor.min_whitespace
+            if next_walker.consumed_character_count >= self.state_machine.min_whitespace
             else next_walker
         )
 

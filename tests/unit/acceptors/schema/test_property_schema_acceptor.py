@@ -1,5 +1,6 @@
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
-from pse.core.state_machine import StateMachine
 
 
 def test_property_parsing():

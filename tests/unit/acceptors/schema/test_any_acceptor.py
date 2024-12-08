@@ -1,8 +1,9 @@
-import pytest
-from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
-from pse.util.errors import JSONParsingError, UnknownSchemaTypeError
-from typing import Any
 from collections import defaultdict
+from typing import Any
+
+import pytest
+
+from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def parse_input(acceptor: AnySchemaAcceptor, json_string: str) -> Any:
         if walker.has_reached_accept_state():
             return walker.current_value
 
-    raise JSONParsingError("Invalid JSON input for AnyOfAcceptor", len(json_string))
+    raise ValueError(f"Invalid JSON input for AnyOfAcceptor: {json_string}")
 
 
 @pytest.mark.parametrize(
@@ -80,11 +81,11 @@ def test_reject_input_not_matching_any_schema(context):
     invalid_input_string = '"test"'
 
     # Test with invalid number
-    with pytest.raises(JSONParsingError):
+    with pytest.raises(ValueError):
         parse_input(acceptor, invalid_input_number)
 
     # Test with invalid string
-    with pytest.raises(JSONParsingError):
+    with pytest.raises(ValueError):
         parse_input(acceptor, invalid_input_string)
 
 
@@ -92,7 +93,7 @@ def test_invalid_schema_initialization(context):
     """Test that initializing AnyOfAcceptor with invalid schemas raises an error."""
     invalid_schema = {"invalid": "schema"}
 
-    with pytest.raises(UnknownSchemaTypeError):
+    with pytest.raises(ValueError):
         AnySchemaAcceptor(schemas=[invalid_schema], context=context)
 
 
@@ -134,7 +135,7 @@ def test_partial_input(context):
 
     partial_input = '"test"'
 
-    with pytest.raises(JSONParsingError):
+    with pytest.raises(ValueError):
         parse_input(acceptor, partial_input)
 
 

@@ -1,16 +1,17 @@
 from __future__ import annotations
-from typing import Tuple, Optional, Any, Type
-import logging
+
 import json
+import logging
+from typing import Any
 
-from pse.core.acceptor import Acceptor
+from pse_core import State
+from pse_core.state_machine import StateMachine
 
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
+from pse.acceptors.basic.string_acceptor import StringAcceptor
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.basic.string_acceptor import StringAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
 from pse.acceptors.json.json_acceptor import JsonAcceptor
-from pse.core.walker import Walker
 
 logger = logging.getLogger()
 
@@ -23,13 +24,14 @@ class PropertyAcceptor(SequenceAcceptor):
     key-value pair in a JSON object.
     """
 
-    def __init__(self, sequence: Optional[list[Acceptor]] = None) -> None:
+    def __init__(self, sequence: list[StateMachine] | None = None) -> None:
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """
 
         super().__init__(
-            sequence or [
+            sequence
+            or [
                 StringAcceptor(),
                 WhitespaceAcceptor(),
                 TextAcceptor(":"),
@@ -38,9 +40,8 @@ class PropertyAcceptor(SequenceAcceptor):
             ]
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return PropertyWalker
+    def get_new_walker(self, state: State | None = None) -> PropertyWalker:
+        return PropertyWalker(self, state)
 
 
 class PropertyWalker(SequenceWalker):
@@ -51,7 +52,7 @@ class PropertyWalker(SequenceWalker):
     def __init__(
         self,
         acceptor: PropertyAcceptor,
-        current_acceptor_index: int = 0,
+        current_acceptor_index: State | None = None,
     ) -> None:
         """
         Initialize the PropertyAcceptor
@@ -61,7 +62,7 @@ class PropertyWalker(SequenceWalker):
         """
         super().__init__(acceptor, current_acceptor_index)
         self.prop_name = ""
-        self.prop_value: Optional[Any] = None
+        self.prop_value: Any | None = None
 
     def should_complete_transition(self) -> bool:
         """
@@ -80,7 +81,7 @@ class PropertyWalker(SequenceWalker):
         try:
             if self.target_state == 1:
                 self.prop_name = json.loads(self.transition_walker.raw_value)
-            elif self.target_state in self.acceptor.end_states:
+            elif self.target_state in self.state_machine.end_states:
                 self.prop_value = json.loads(self.transition_walker.raw_value)
         except Exception:
             return False
@@ -99,7 +100,7 @@ class PropertyWalker(SequenceWalker):
         return False
 
     @property
-    def current_value(self) -> Tuple[str, Any]:
+    def current_value(self) -> tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 
@@ -114,4 +115,4 @@ class PropertyWalker(SequenceWalker):
         if self.transition_walker and self.transition_walker.can_accept_more_input():
             return True
 
-        return self.current_state not in self.acceptor.end_states
+        return self.current_state not in self.state_machine.end_states

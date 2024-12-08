@@ -1,11 +1,15 @@
-from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
+from __future__ import annotations
+
+import json
+from collections.abc import Callable
+from typing import Any
+
+from pse_core import State
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from typing import Dict, Any, Callable, Type
-import json
-
-from pse.core.walker import Walker
-from pse.util.state_machine.get_acceptor import get_acceptor
+from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
+from pse.util.get_state_machine import get_state_machine
 
 
 class PropertySchemaAcceptor(PropertyAcceptor):
@@ -23,8 +27,8 @@ class PropertySchemaAcceptor(PropertyAcceptor):
     def __init__(
         self,
         prop_name: str,
-        prop_schema: Dict[str, Any],
-        context: Dict[str, Any],
+        prop_schema: dict[str, Any],
+        context: dict[str, Any],
         value_started_hook: Callable | None = None,
         value_ended_hook: Callable | None = None,
     ):
@@ -40,7 +44,7 @@ class PropertySchemaAcceptor(PropertyAcceptor):
                 WhitespaceAcceptor(),
                 TextAcceptor(":"),
                 WhitespaceAcceptor(),
-                get_acceptor(
+                get_state_machine(
                     self.prop_schema,
                     self.prop_context,
                     value_started_hook,
@@ -49,9 +53,8 @@ class PropertySchemaAcceptor(PropertyAcceptor):
             ],
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return PropertySchemaWalker
+    def get_new_walker(self, state: State | None = None) -> PropertySchemaWalker:
+        return PropertySchemaWalker(self, state)
 
     @property
     def is_optional(self) -> bool:
@@ -63,24 +66,26 @@ class PropertySchemaWalker(PropertyWalker):
     Walker for PropertySchemaAcceptor
     """
 
-    def __init__(self, acceptor: PropertySchemaAcceptor, current_state: int = 0):
+    def __init__(
+        self, acceptor: PropertySchemaAcceptor, current_state: State | None = None
+    ):
         super().__init__(acceptor, current_state)
-        self.acceptor = acceptor
+        self.state_machine: PropertySchemaAcceptor = acceptor
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():
             return False
 
-        hooks: Dict[str, Callable] = self.acceptor.prop_schema.get("__hooks", {})
-        prop_name = self.acceptor.prop_name
+        hooks: dict[str, Callable] = self.state_machine.prop_schema.get("__hooks", {})
+        prop_name = self.state_machine.prop_name
         if self.target_state == 4:
             if "value_start" in hooks:
                 hooks["value_start"](prop_name)
-        elif self.target_state and self.target_state in self.acceptor.end_states:
+        elif self.target_state and self.target_state in self.state_machine.end_states:
             if "value_end" in hooks:
                 hooks["value_end"](prop_name, self.prop_value)
         return True
 
     @property
     def current_value(self):
-        return (self.acceptor.prop_name, self.prop_value)
+        return (self.state_machine.prop_name, self.prop_value)

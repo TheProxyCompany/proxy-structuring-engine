@@ -1,11 +1,10 @@
 from __future__ import annotations
-from typing import Optional, Type
-from pse.core.state_machine import (
-    StateMachine,
-    StateMachineWalker,
-)
-from pse.core.walker import Walker
+
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
+
 
 class BooleanAcceptor(StateMachine):
     """
@@ -25,11 +24,11 @@ class BooleanAcceptor(StateMachine):
             }
         )
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return BooleanWalker
+    def get_new_walker(self, state: int | str) -> BooleanWalker:
+        return BooleanWalker(self, state)
 
-class BooleanWalker(StateMachineWalker):
+
+class BooleanWalker(Walker):
     """
     Walker for BooleanAcceptor to track parsing state and value.
     """
@@ -48,14 +47,14 @@ class BooleanWalker(StateMachineWalker):
         """
         if (
             self.target_state
-            and self.target_state in self.acceptor.end_states
+            and self.target_state in self.state_machine.end_states
             and self.transition_walker
         ):
             self._raw_value = self.transition_walker.raw_value
         return self._raw_value == "true" or self._raw_value == "false"
 
     @property
-    def current_value(self) -> Optional[bool]:
+    def current_value(self) -> bool | None:
         """
         Get the parsed boolean value.
 

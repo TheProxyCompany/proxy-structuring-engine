@@ -1,12 +1,16 @@
 from __future__ import annotations
-from typing import List, Any, Type, Optional
-from pse.core.acceptor import StateGraph
-from pse.core.state_machine import StateMachine, StateMachineWalker
-from pse.core.walker import Walker
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+
+from typing import Any
+
+from pse_core import State, StateGraph
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
 from pse.acceptors.json.json_acceptor import JsonAcceptor
+
 
 class ArrayAcceptor(StateMachine):
     """
@@ -16,7 +20,7 @@ class ArrayAcceptor(StateMachine):
     and maintaining the current array values being parsed.
     """
 
-    def __init__(self, state_graph: Optional[StateGraph] = None) -> None:
+    def __init__(self, state_graph: StateGraph | None = None) -> None:
         """
         Initialize the ArrayAcceptor with a state transition graph.
 
@@ -35,21 +39,20 @@ class ArrayAcceptor(StateMachine):
             4: [
                 (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2),
                 (TextAcceptor("]"), "$"),
-            ]
+            ],
         }
         super().__init__(state_graph or base_array_state_graph)
 
-    @property
-    def walker_class(self) -> Type[Walker]:
-        return ArrayWalker
+    def get_new_walker(self, state: State | None = None) -> ArrayWalker:
+        return ArrayWalker(self, state)
 
 
-class ArrayWalker(StateMachineWalker):
+class ArrayWalker(Walker):
     """
     Walker for ArrayAcceptor that maintains the current state and accumulated values.
     """
 
-    def __init__(self, acceptor: ArrayAcceptor, current_state: int = 0):
+    def __init__(self, acceptor: ArrayAcceptor, current_state: State | None = None):
         """
         Initialize the ArrayAcceptor.Walker with the parent acceptor and an empty list.
 
@@ -57,7 +60,7 @@ class ArrayWalker(StateMachineWalker):
             acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
         super().__init__(acceptor, current_state)
-        self.value: List[Any] = []
+        self.value: list[Any] = []
 
     def clone(self) -> ArrayWalker:
         """

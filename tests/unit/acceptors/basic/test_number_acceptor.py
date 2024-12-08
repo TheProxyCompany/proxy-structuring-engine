@@ -1,8 +1,9 @@
-import pytest
 from typing import Any
 
+import pytest
+from pse_core.state_machine import StateMachine
+
 from pse.acceptors.basic.number_acceptor import NumberAcceptor
-from pse.core.state_machine import StateMachine
 from pse.acceptors.basic.text_acceptor import TextAcceptor
 
 
@@ -53,9 +54,7 @@ def parse_number(acceptor: NumberAcceptor):
             if walker.has_reached_accept_state():
                 return walker.current_value
 
-        assert (
-            False
-        ), f"No accepted walker found after advancing with input '{json_string}'."
+        raise AssertionError(f"No accepted walker found after advancing with input '{json_string}'.")
 
     return _parse_number
 

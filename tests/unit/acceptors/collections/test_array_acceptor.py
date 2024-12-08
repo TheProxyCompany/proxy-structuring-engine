@@ -1,5 +1,7 @@
-import pytest
 from typing import Any
+
+import pytest
+
 from pse.acceptors.collections.array_acceptor import ArrayAcceptor
 
 
