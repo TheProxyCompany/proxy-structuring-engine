@@ -12,7 +12,7 @@ from transformers.generation.logits_process import LogitsProcessor
 
 from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.util.get_logit_bias import get_logit_bias
-from pse.util.get_state_machine import get_state_machine
+from pse.state_machines.get_state_machine import get_state_machine
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)

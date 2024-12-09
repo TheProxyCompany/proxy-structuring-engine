@@ -9,7 +9,7 @@ from pse_core import State
 from pse.state_machines.basic.text_acceptor import TextAcceptor
 from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
 from pse.state_machines.json.property_acceptor import PropertyAcceptor, PropertyWalker
-from pse.util.get_state_machine import get_state_machine
+from pse.state_machines.get_state_machine import get_state_machine
 
 
 class PropertySchemaAcceptor(PropertyAcceptor):

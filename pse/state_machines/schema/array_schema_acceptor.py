@@ -12,7 +12,7 @@ from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
 
 class ArraySchemaAcceptor(ArrayAcceptor):
     def __init__(self, schema: dict[str, Any], context: dict[str, Any]) -> None:
-        from pse.util.get_state_machine import (
+        from pse.state_machines.get_state_machine import (
             get_state_machine,
         )
 

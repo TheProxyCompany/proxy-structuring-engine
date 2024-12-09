@@ -10,7 +10,7 @@ from pse.state_machines.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.state_machines.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.state_machines.schema.object_schema_acceptor import ObjectSchemaAcceptor
 from pse.state_machines.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.util.get_state_machine import get_state_machine
+from pse.state_machines.get_state_machine import get_state_machine
 
 
 @pytest.fixture
