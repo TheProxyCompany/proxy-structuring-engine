@@ -1,8 +1,10 @@
+from collections.abc import Iterable
+
 import pytest
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-from pse.core.state_machine import StateMachine
-from pse.core.walker import Walker
-from typing import Iterable
+from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
+
+from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
 
 
 # Fixture for BooleanAcceptor
@@ -12,23 +14,23 @@ def boolean_acceptor():
 
 
 # Helper function to process input for BooleanAcceptor
-def process_input(acceptor: StateMachine, token: str) -> Iterable[Walker]:
-    walkers = acceptor.get_walkers()
-    return [walker for _, walker in acceptor.advance_all(walkers, token)]
+def process_input(state_machine: StateMachine, token: str) -> Iterable[Walker]:
+    walkers = state_machine.get_walkers()
+    return [walker for _, walker in state_machine.advance_all(walkers, token)]
 
 
 # Test for BooleanAcceptor
 def test_accept_true(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "true")
     assert any(
-        walker.current_value is True for walker in accepted_walkers
+        walker.get_current_value() is True for walker in accepted_walkers
     ), "Should have a walker with value True"
 
 
 def test_accept_false(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "false")
     assert any(
-        walker.current_value is False for walker in accepted_walkers
+        walker.get_current_value() is False for walker in accepted_walkers
     ), "Should have a walker with value False"
 
 

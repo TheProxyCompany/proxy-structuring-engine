@@ -1,15 +1,17 @@
 from __future__ import annotations
+
 import pytest
-from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
-from pse.util.state_machine.accepted_state import AcceptedState
-from pse.core.state_machine import StateMachine
+from pse_core.accepted_state import AcceptedState
+from pse_core.state_machine import StateMachine
+
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
+from pse.state_machines.collections.wait_for_acceptor import WaitForAcceptor
 
 
 @pytest.fixture
 def content_acceptor():
-    """Fixture for the content acceptor."""
+    """Fixture for the content state_machine."""
     return TextAcceptor("content")
 
 
@@ -45,8 +47,8 @@ def test_initialization_with_custom_delimiters(content_acceptor):
     transitions_state_0 = encapsulated_acceptor.state_graph[0]
     acceptor_0, _ = transitions_state_0[0]
     assert isinstance(acceptor_0, WaitForAcceptor)
-    assert isinstance(acceptor_0.wait_for_acceptor, TextAcceptor)
-    assert acceptor_0.wait_for_acceptor.text == custom_open
+    assert isinstance(acceptor_0.wait_for_sm, TextAcceptor)
+    assert acceptor_0.wait_for_sm.text == custom_open
 
     transitions_state_2 = encapsulated_acceptor.state_graph[2]
     acceptor_2, _ = transitions_state_2[0]

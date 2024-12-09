@@ -1,5 +1,6 @@
 import pytest
-from pse.acceptors.basic.string_acceptor import StringAcceptor
+
+from pse.state_machines.basic.string_acceptor import StringAcceptor
 
 
 @pytest.fixture
@@ -44,8 +45,8 @@ def test_valid_strings(
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
 @pytest.mark.parametrize(
@@ -115,8 +116,8 @@ def test_empty_string(string_acceptor: StringAcceptor) -> None:
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected empty string, got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected empty string, got '{walker.get_current_value()}'"
 
 
 def test_string_with_valid_escaped_tab(string_acceptor: StringAcceptor) -> None:
@@ -142,8 +143,8 @@ def test_string_with_valid_escaped_tab(string_acceptor: StringAcceptor) -> None:
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
 def test_string_with_escaped_solidus(string_acceptor: StringAcceptor) -> None:
@@ -167,8 +168,8 @@ def test_string_with_escaped_solidus(string_acceptor: StringAcceptor) -> None:
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
 def test_string_with_unescaped_control_characters(
@@ -303,8 +304,8 @@ def test_valid_strings_char_by_char(
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
 @pytest.mark.parametrize(
@@ -382,8 +383,8 @@ def test_empty_string_char_by_char(string_acceptor: StringAcceptor) -> None:
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected empty string, got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected empty string, got '{walker.get_current_value()}'"
 
 
 def test_string_with_valid_escaped_tab_char_by_char(
@@ -415,8 +416,8 @@ def test_string_with_valid_escaped_tab_char_by_char(
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
 def test_string_with_escaped_solidus_char_by_char(
@@ -446,5 +447,5 @@ def test_string_with_escaped_solidus_char_by_char(
 
     for walker in accepted_walkers:
         assert (
-            walker.current_value == expected_value
-        ), f"Expected '{expected_value}', got '{walker.current_value}'"
+            walker.get_current_value() == expected_value
+        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"

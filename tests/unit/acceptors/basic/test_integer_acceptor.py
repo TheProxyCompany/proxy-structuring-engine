@@ -1,7 +1,8 @@
 import pytest
-from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
-from pse.core.state_machine import StateMachine
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse_core.state_machine import StateMachine
+
+from pse.state_machines.basic.integer_acceptor import IntegerAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
 
 
 @pytest.mark.parametrize(
@@ -32,7 +33,7 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -64,7 +65,7 @@ def test_integer_acceptor(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -153,7 +154,7 @@ def test_integer_acceptor_in_state_machine_sequence():
     ), "Combined text and integer input should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             expected_value = "Number: 42"
             assert (
                 value == expected_value
@@ -183,7 +184,7 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     ), "Combined text and integer input should be accepted when advancing char by char."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             expected_value = "Value: 9876"
             assert (
                 value == expected_value
@@ -209,7 +210,7 @@ def test_integer_acceptor_zero():
     ), "Zero should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == 0, f"Expected 0, got {value}"
 
 
@@ -232,7 +233,7 @@ def test_integer_acceptor_large_number():
     ), "Large numbers should be accepted."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert (
                 value == 12345678901234567890
             ), f"Expected 12345678901234567890, got {value}"
@@ -265,45 +266,15 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
     ), f"IntegerAcceptor should accept input '{input_string}'."
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
-
-
-def test_integer_acceptor_walker_equality():
-    """Test the equality of IntegerAcceptor walkers."""
-    integer_acceptor = IntegerAcceptor()
-    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
-
-    assert walker1 == walker2, "Walkers with the same state and value should be equal."
-    assert (
-        walker1 != walker3
-    ), "Walkers with different states or values should not be equal."
-
-
-def test_integer_acceptor_walker_hash():
-    """Test the hash function of IntegerAcceptor walkers."""
-    integer_acceptor = IntegerAcceptor()
-    walker_set = set()
-    walker1 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker2 = integer_acceptor.walker_class(integer_acceptor, "123")
-    walker3 = integer_acceptor.walker_class(integer_acceptor, "124")
-
-    walker_set.add(walker1)
-    walker_set.add(walker2)
-    walker_set.add(walker3)
-
-    assert (
-        len(walker_set) == 2
-    ), "Walkers with the same state and value should have the same hash."
 
 
 def test_integer_acceptor_walker_get_value_with_invalid_text():
     """Test get_value method with invalid text in IntegerAcceptor.Walker."""
     integer_acceptor = IntegerAcceptor()
-    walker = integer_acceptor.walker_class(integer_acceptor, "abc")
+    walker = integer_acceptor.get_new_walker("abc")
 
-    value = walker.current_value
+    value = walker.get_current_value()
 
     assert value == "abc", f"Expected get_value to return 'abc', got '{value}'"

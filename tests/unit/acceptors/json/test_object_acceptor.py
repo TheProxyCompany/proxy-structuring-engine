@@ -1,6 +1,7 @@
 import pytest
-from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.core.state_machine import StateMachine
+from pse_core.state_machine import StateMachine
+
+from pse.state_machines.json.object_acceptor import ObjectAcceptor
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expect
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -74,13 +75,15 @@ def test_valid_json_objects_all_at_once(
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
     "json_string",
     [
-        ("{key: 'value'}"),  # Missing quotes around key and inconsistent quotes around value
+        (
+            "{key: 'value'}"
+        ),  # Missing quotes around key and inconsistent quotes around value
         ('{"key1": undefined}'),
         ('{"a": "b",, "c": "d"}'),
         ('{"key1": "value1"'),
@@ -124,7 +127,7 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -156,4 +159,4 @@ def test_no_spaces(object_acceptor: ObjectAcceptor):
     assert len(walkers) == 1
     walker = walkers[0]
     assert walker.has_reached_accept_state()
-    assert walker.current_value == {"a": "b", "c": "d"}
+    assert walker.get_current_value() == {"a": "b", "c": "d"}

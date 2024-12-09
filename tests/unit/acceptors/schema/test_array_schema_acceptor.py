@@ -1,40 +1,43 @@
+from typing import Any
+
 import pytest
-from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
-from pse.util.errors import JSONParsingError
-from typing import Any, Dict, List
+
+from pse.state_machines.schema.array_schema_acceptor import ArraySchemaAcceptor
 
 
 @pytest.fixture
-def base_context() -> Dict[str, Any]:
+def base_context() -> dict[str, Any]:
     """
     Fixture to provide a common base context for all tests.
     """
     return {"defs": {}, "path": "root"}
 
 
-def parse_array(acceptor: ArraySchemaAcceptor, json_string: str) -> List[Any]:
+def parse_array(state_machine: ArraySchemaAcceptor, json_string: str) -> list[Any]:
     """
     Helper function to parse a JSON array string using the ArraySchemaAcceptor.
 
     Args:
-        acceptor (ArraySchemaAcceptor): The schema acceptor to use for parsing.
+        state_machine (ArraySchemaAcceptor): The schema state_machine to use for parsing.
         json_string (str): The JSON array string to parse.
 
     Returns:
         List[Any]: The parsed array.
 
     Raises:
-        JSONParsingError: If the JSON array is invalid or does not meet schema constraints.
+        ValueError: If the JSON array is invalid or does not meet schema constraints.
     """
-    walkers = list(acceptor.get_walkers())
+    walkers = list(state_machine.get_walkers())
     for char in json_string:
-        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
+        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
-        raise JSONParsingError(
+        raise ValueError(
             "Invalid JSON array or schema constraints not met.", len(json_string)
         )
     parsed_value = next(
-        walker.current_value for walker in walkers if walker.has_reached_accept_state()
+        walker.get_current_value()
+        for walker in walkers
+        if walker.has_reached_accept_state()
     )
     return parsed_value
 
@@ -44,8 +47,8 @@ def test_min_items(base_context):
     Test that min_items returns the correct value based on the schema.
     """
     schema = {"type": "array", "items": {"type": "number"}, "minItems": 3}
-    acceptor = ArraySchemaAcceptor(schema, base_context)
-    assert acceptor.min_items() == 3, "min_items should return 3."
+    state_machine = ArraySchemaAcceptor(schema, base_context)
+    assert state_machine.min_items() == 3, "min_items should return 3."
 
 
 def test_max_items(base_context):
@@ -53,8 +56,8 @@ def test_max_items(base_context):
     Test that max_items returns the correct value based on the schema.
     """
     schema = {"type": "array", "items": {"type": "number"}, "maxItems": 5}
-    acceptor = ArraySchemaAcceptor(schema, base_context)
-    assert acceptor.max_items() == 5, "max_items should return 5."
+    state_machine = ArraySchemaAcceptor(schema, base_context)
+    assert state_machine.max_items() == 5, "max_items should return 5."
 
 
 @pytest.mark.parametrize(
@@ -96,8 +99,8 @@ def test_array_parsing_success(schema, json_array, expected, base_context):
     """
     Test parsing arrays that meet the schema constraints.
     """
-    acceptor = ArraySchemaAcceptor(schema, base_context)
-    parsed_array = parse_array(acceptor, json_array)
+    state_machine = ArraySchemaAcceptor(schema, base_context)
+    parsed_array = parse_array(state_machine, json_array)
     assert (
         parsed_array == expected
     ), f"Array {json_array} should be parsed as {expected}."
@@ -130,8 +133,8 @@ def test_array_parsing_success(schema, json_array, expected, base_context):
 )
 def test_array_parsing_failure(schema, json_array, base_context):
     """
-    Test parsing arrays that do not meet the schema constraints and should raise JSONParsingError.
+    Test parsing arrays that do not meet the schema constraints and should raise ValueError.
     """
-    acceptor = ArraySchemaAcceptor(schema, base_context)
-    with pytest.raises(JSONParsingError):
-        parse_array(acceptor, json_array)
+    state_machine = ArraySchemaAcceptor(schema, base_context)
+    with pytest.raises(ValueError):
+        parse_array(state_machine, json_array)

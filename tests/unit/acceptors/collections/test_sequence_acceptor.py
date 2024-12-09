@@ -1,11 +1,9 @@
 import pytest
-from typing import List
+from pse_core.state_machine import StateMachine
 
-from pse.core.acceptor import Acceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.core.state_machine import StateMachine
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
 
 
 @pytest.fixture
@@ -65,7 +63,7 @@ def test_walker_advance(sequence_acceptor: SequenceAcceptor):
 
 def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
     """Test the state of the walker before and after processing a complete input sequence."""
-    initial_walker = list(sequence_acceptor.get_walkers())[0]
+    initial_walker = next(iter(sequence_acceptor.get_walkers()))
     assert (
         not initial_walker.has_reached_accept_state()
     ), "Initial walker should not be in an accepted state."
@@ -78,7 +76,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.current_value == input_sequence
+        assert walker.get_current_value() == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):
@@ -95,7 +93,7 @@ def test_partial_match(sequence_acceptor: SequenceAcceptor):
 
 
 def test_no_match(sequence_acceptor: SequenceAcceptor):
-    """Test that an input sequence not matching the acceptor sequence results in no accepted walkers."""
+    """Test that an input sequence not matching the state_machine sequence results in no accepted walkers."""
     non_matching_input = "Goodbye"
     walkers = list(sequence_acceptor.get_walkers())
     for char in non_matching_input:
@@ -128,7 +126,7 @@ def test_single_acceptor_sequence():
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(
         walker.has_reached_accept_state() for walker in walkers
-    ), f"Single acceptor SequenceAcceptor should accept the input '{single_text}'."
+    ), f"Single state_machine SequenceAcceptor should accept the input '{single_text}'."
 
 
 @pytest.mark.parametrize(
@@ -142,7 +140,7 @@ def test_single_acceptor_sequence():
     ],
     ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
 )
-def test_multiple_sequences(acceptors: List[Acceptor], token: str):
+def test_multiple_sequences(acceptors: list[StateMachine], token: str):
     """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
     sequence = SequenceAcceptor(acceptors)
     walkers = list(sequence.get_walkers())
@@ -154,7 +152,7 @@ def test_multiple_sequences(acceptors: List[Acceptor], token: str):
 
 
 def test_optional_acceptor():
-    """Test that an optional acceptor can be used correctly in a SequenceAcceptor."""
+    """Test that an optional state_machine can be used correctly in a SequenceAcceptor."""
     sm = StateMachine(
         state_graph={
             0: [
@@ -184,13 +182,16 @@ def test_optional_acceptor():
         for _, walker in StateMachine.advance_all(walkers, input_string_with_whitespace)
     ]
     assert len(new_walkers_with_whitespace) == 1
-    assert new_walkers_with_whitespace[0].current_value == input_string_with_whitespace
+    assert (
+        new_walkers_with_whitespace[0].get_current_value()
+        == input_string_with_whitespace
+    )
 
     input_string_no_whitespace = "Hello,World."
-    # Currently bugged because the sequence acceptor
+    # Currently bugged because the sequence state_machine
     # is not properly putting itself in an accepted state - it
     # should be in the accepted state after it tries to advance the
-    # optional acceptor and fails.
+    # optional state_machine and fails.
     #
     # TODO: Fix this.
     new_walkers_no_whitespace = [
@@ -198,4 +199,6 @@ def test_optional_acceptor():
         for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)
     ]
     assert len(new_walkers_no_whitespace) == 1
-    assert new_walkers_no_whitespace[0].current_value == input_string_no_whitespace
+    assert (
+        new_walkers_no_whitespace[0].get_current_value() == input_string_no_whitespace
+    )

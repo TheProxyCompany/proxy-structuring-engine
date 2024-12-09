@@ -1,13 +1,14 @@
-import pytest
 from typing import Any
 
-from pse.acceptors.basic.number_acceptor import NumberAcceptor
-from pse.core.state_machine import StateMachine
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+import pytest
+from pse_core.state_machine import StateMachine
+
+from pse.state_machines.basic.number_acceptor import NumberAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
 
 
 @pytest.fixture
-def acceptor() -> NumberAcceptor:
+def state_machine() -> NumberAcceptor:
     """
     Fixture to provide a NumberAcceptor instance.
 
@@ -17,12 +18,12 @@ def acceptor() -> NumberAcceptor:
     return NumberAcceptor()
 
 
-def parse_number(acceptor: NumberAcceptor):
+def parse_number(state_machine: NumberAcceptor):
     """
     Helper function to parse a JSON number string using the NumberAcceptor.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
 
     Returns:
         Callable[[str], Any]: A function that takes a JSON number string and returns the parsed value.
@@ -41,9 +42,9 @@ def parse_number(acceptor: NumberAcceptor):
         Raises:
             AssertionError: If no accepted walker is found.
         """
-        walkers = list(acceptor.get_walkers())
+        walkers = list(state_machine.get_walkers())
         for char in json_string:
-            walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
+            walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
 
         assert (
             len(walkers) > 0
@@ -51,11 +52,11 @@ def parse_number(acceptor: NumberAcceptor):
 
         for walker in walkers:
             if walker.has_reached_accept_state():
-                return walker.current_value
+                return walker.get_current_value()
 
-        assert (
-            False
-        ), f"No accepted walker found after advancing with input '{json_string}'."
+        raise AssertionError(
+            f"No accepted walker found after advancing with input '{json_string}'."
+        )
 
     return _parse_number
 
@@ -76,7 +77,7 @@ def parse_number(acceptor: NumberAcceptor):
     ],
 )
 def test_valid_decimal_numbers(
-    acceptor: NumberAcceptor,
+    state_machine: NumberAcceptor,
     input_string: str,
     expected_value: float,
     description: str,
@@ -85,12 +86,12 @@ def test_valid_decimal_numbers(
     Test parsing of valid decimal numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The decimal number string to parse.
         expected_value (float): The expected parsed value.
         description (str): Description of the test case.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse(input_string)
     assert value == pytest.approx(expected_value), description
 
@@ -108,7 +109,7 @@ def test_valid_decimal_numbers(
     ],
 )
 def test_valid_exponential_numbers(
-    acceptor: NumberAcceptor,
+    state_machine: NumberAcceptor,
     input_string: str,
     expected_value: float,
     description: str,
@@ -117,67 +118,67 @@ def test_valid_exponential_numbers(
     Test parsing of valid exponential numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The exponential number string to parse.
         expected_value (float): The expected parsed value.
         description (str): Description of the test case.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse(input_string)
     assert value == pytest.approx(expected_value), description
 
 
 # Edge Case Tests
-def test_zero_handling(acceptor: NumberAcceptor) -> None:
+def test_zero_handling(state_machine: NumberAcceptor) -> None:
     """
     Test parsing of zero and negative zero.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse("0")
     assert value == 0, "Should correctly parse zero."
     value = parse("-0")
     assert value == 0, "Should correctly parse negative zero as zero."
 
 
-def test_large_number_parsing(acceptor: NumberAcceptor) -> None:
+def test_large_number_parsing(state_machine: NumberAcceptor) -> None:
     """
     Test parsing of very large numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse("1e308")
     assert value == 1e308, "Should correctly parse very large exponentials."
     value = parse("-1e308")
     assert value == -1e308, "Should correctly parse very large negative exponentials."
 
 
-def test_number_with_leading_zeros(acceptor: NumberAcceptor) -> None:
+def test_number_with_leading_zeros(state_machine: NumberAcceptor) -> None:
     """
     Test parsing numbers with leading zeros.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse("007")
     assert value == 7, "Should correctly parse numbers with leading zeros."
     value = parse("000.123")
     assert value == 0.123, "Should correctly parse decimals with leading zeros."
 
 
-def test_number_with_trailing_zeros(acceptor: NumberAcceptor) -> None:
+def test_number_with_trailing_zeros(state_machine: NumberAcceptor) -> None:
     """
     Test parsing numbers with trailing zeros.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     value = parse("123.45000")
     assert value == 123.45, "Should correctly parse numbers with trailing zeros."
 
@@ -237,31 +238,33 @@ def test_number_with_trailing_zeros(acceptor: NumberAcceptor) -> None:
     ],
 )
 def test_invalid_number_parsing(
-    acceptor: NumberAcceptor, input_string: str, error_message: str
+    state_machine: NumberAcceptor, input_string: str, error_message: str
 ) -> None:
     """
     Test parsing of invalid numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The invalid number string to parse.
         error_message (str): Description of the expected error.
     """
-    parse = parse_number(acceptor)
+    parse = parse_number(state_machine)
     with pytest.raises(AssertionError):
         parse(input_string)
 
 
 # Tests with StateMachine Integration
-def test_number_acceptor_with_state_machine_float(acceptor: NumberAcceptor) -> None:
+def test_number_acceptor_with_state_machine_float(
+    state_machine: NumberAcceptor,
+) -> None:
     """
     Test NumberAcceptor within a StateMachine for parsing floating-point numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -276,21 +279,21 @@ def test_number_acceptor_with_state_machine_float(acceptor: NumberAcceptor) -> N
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value == -123.456
+                walker.get_current_value() == -123.456
             ), "Parsed value should be the float -123.456."
 
 
 def test_number_acceptor_with_state_machine_exponential(
-    acceptor: NumberAcceptor,
+    state_machine: NumberAcceptor,
 ) -> None:
     """
     Test NumberAcceptor within a StateMachine for parsing exponential numbers.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -305,23 +308,23 @@ def test_number_acceptor_with_state_machine_exponential(
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value == 6.022e23
+                walker.get_current_value() == 6.022e23
             ), "Parsed value should be the float 6.022e23."
 
 
 def test_number_acceptor_with_state_machine_sequence(
-    acceptor: NumberAcceptor,
+    state_machine: NumberAcceptor,
 ) -> None:
     """
     Test NumberAcceptor within a StateMachine sequence along with other acceptors.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
         state_graph={
             0: [(TextAcceptor("Value: "), 1)],
-            1: [(acceptor, 2)],
+            1: [(state_machine, 2)],
         },
         start_state=0,
         end_states=[2],
@@ -336,7 +339,7 @@ def test_number_acceptor_with_state_machine_sequence(
     ), "Combined text and number input should be accepted."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             expected_value = "Value: 42.0"
             assert (
                 value == expected_value
@@ -360,18 +363,18 @@ def test_number_acceptor_with_state_machine_sequence(
     ],
 )
 def test_number_acceptor_multi_char_advancement(
-    acceptor: NumberAcceptor, input_string: str, expected_value: float
+    state_machine: NumberAcceptor, input_string: str, expected_value: float
 ) -> None:
     """
     Test NumberAcceptor with multi-character advancement.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The number string to parse.
         expected_value (float): The expected parsed value.
     """
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -384,7 +387,7 @@ def test_number_acceptor_multi_char_advancement(
     ), f"NumberAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"
@@ -404,18 +407,18 @@ def test_number_acceptor_multi_char_advancement(
     ],
 )
 def test_number_acceptor_single_char_advancement(
-    acceptor: NumberAcceptor, input_string: str, expected_value: float
+    state_machine: NumberAcceptor, input_string: str, expected_value: float
 ) -> None:
     """
     Test NumberAcceptor with single-character advancement.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The number string to parse.
         expected_value (float): The expected parsed value.
     """
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -430,18 +433,18 @@ def test_number_acceptor_single_char_advancement(
     ), f"NumberAcceptor should accept input '{input_string}'."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"
 
 
-def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
+def test_number_acceptor_invalid_input(state_machine: NumberAcceptor) -> None:
     """
     Test NumberAcceptor with invalid inputs.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     invalid_inputs = [
         "abc",
@@ -459,7 +462,7 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
 
     for input_string in invalid_inputs:
         sm = StateMachine(
-            state_graph={0: [(acceptor, 1)]},
+            state_graph={0: [(state_machine, 1)]},
             start_state=0,
             end_states=[1],
         )
@@ -470,15 +473,15 @@ def test_number_acceptor_invalid_input(acceptor: NumberAcceptor) -> None:
         ), f"Input '{input_string}' should not be accepted."
 
 
-def test_number_acceptor_empty_input(acceptor: NumberAcceptor) -> None:
+def test_number_acceptor_empty_input(state_machine: NumberAcceptor) -> None:
     """
     Test NumberAcceptor with empty input.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -492,17 +495,17 @@ def test_number_acceptor_empty_input(acceptor: NumberAcceptor) -> None:
     ), "Empty input should not be accepted."
 
 
-def test_number_acceptor_partial_invalid_input(acceptor: NumberAcceptor) -> None:
+def test_number_acceptor_partial_invalid_input(state_machine: NumberAcceptor) -> None:
     """
     Test NumberAcceptor with input containing invalid characters.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     input_string = "12.3a4"
 
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -515,18 +518,18 @@ def test_number_acceptor_partial_invalid_input(acceptor: NumberAcceptor) -> None
     ), "Input with invalid characters should not be accepted."
 
 
-def test_number_acceptor_large_floating_point(acceptor: NumberAcceptor) -> None:
+def test_number_acceptor_large_floating_point(state_machine: NumberAcceptor) -> None:
     """
     Test NumberAcceptor with a large floating-point number.
 
     Args:
-        acceptor (NumberAcceptor): The NumberAcceptor instance.
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     input_string = "12345678901234567890.123456789"
     expected_value = 12345678901234567890.123456789
 
     sm = StateMachine(
-        state_graph={0: [(acceptor, 1)]},
+        state_graph={0: [(state_machine, 1)]},
         start_state=0,
         end_states=[1],
     )
@@ -539,7 +542,7 @@ def test_number_acceptor_large_floating_point(acceptor: NumberAcceptor) -> None:
     ), "Large floating-point numbers should be accepted."
     for walker in walkers:
         if walker.has_reached_accept_state():
-            value = walker.current_value
+            value = walker.get_current_value()
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"

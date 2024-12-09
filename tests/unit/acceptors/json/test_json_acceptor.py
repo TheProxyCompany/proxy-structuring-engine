@@ -1,6 +1,8 @@
-import pytest
 from typing import Any
-from pse.acceptors.json.json_acceptor import JsonAcceptor
+
+import pytest
+
+from pse.state_machines.json.json_acceptor import JsonAcceptor
 
 
 @pytest.fixture
@@ -11,13 +13,13 @@ def json_acceptor():
 @pytest.fixture
 def parse_json(json_acceptor: JsonAcceptor):
     def parser(json_string: str) -> Any:
-        walkers = json_acceptor.get_walkers()
+        walkers = list(json_acceptor.get_walkers())
         for char in json_string:
             walkers = [walker for _, walker in json_acceptor.advance_all(walkers, char)]
             if not walkers:
                 raise AssertionError("No walkers after parsing")
         accepted_values = [
-            walker.current_value
+            walker.get_current_value()
             for walker in walkers
             if walker.has_reached_accept_state()
         ]
