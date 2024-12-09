@@ -87,7 +87,7 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
         """
         current_state = state or walker.current_state
         for state_machine, target_state in self.get_edges(
-            current_state, walker.current_value
+            current_state, walker.get_current_value()
         ):
             for transition in state_machine.get_walkers():
                 yield transition, current_state, target_state

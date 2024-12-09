@@ -23,7 +23,7 @@ def test_whitespace_acceptor_default():
     assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == "   "
+            assert walker.get_current_value() == "   "
 
 
 def test_whitespace_acceptor_custom_min_whitespace():
@@ -80,7 +80,7 @@ def test_whitespace_acceptor_various_whitespace_characters(token, expected_value
     assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == expected_value
+            assert walker.get_current_value() == expected_value
 
 
 def test_whitespace_acceptor_non_whitespace_input():
@@ -140,7 +140,7 @@ def test_whitespace_acceptor_walker_get_value():
     """Test get_value method of WhitespaceAcceptor.Walker."""
     state_machine = WhitespaceAcceptor()
     walker = WhitespaceWalker(state_machine, value=" \t")
-    assert walker.current_value == " \t"
+    assert walker.get_current_value() == " \t"
 
 
 def test_whitespace_acceptor_walker_is_in_value():
@@ -186,7 +186,7 @@ def test_whitespace_acceptor_integration_with_object_acceptor():
     assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            obj = walker.current_value
+            obj = walker.get_current_value()
             assert obj == {"key": "value", "number": 42}
 
 
@@ -212,7 +212,7 @@ def test_whitespace_acceptor_partial_whitespace_input():
     for advanced_token, walker in result:
         assert walker.has_reached_accept_state()
         assert advanced_token == "  "
-        assert walker.current_value == "  "
+        assert walker.get_current_value() == "  "
 
 
 def test_whitespace_acceptor_walker_length_exceeded():
@@ -272,7 +272,7 @@ def test_whitespace_acceptor_walker_clone():
     cloned_walker = walker.clone()
     assert walker == cloned_walker
     assert walker is not cloned_walker
-    assert walker.current_value == cloned_walker.current_value
+    assert walker.get_current_value() == cloned_walker.get_current_value()
 
 
 def test_whitespace_acceptor_state_machine():
@@ -296,7 +296,7 @@ def test_whitespace_acceptor_state_machine():
     ]
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == "   hello"
+            assert walker.get_current_value() == "   hello"
     for char in "  world    ":
         advanced_walkers = [
             walker for _, walker in StateMachine.advance_all(advanced_walkers, char)
@@ -322,7 +322,7 @@ def test_whitespace_acceptor_sequence_acceptor():
     assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
     for walker in advanced_walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == '"test"   :   '
+            assert walker.get_current_value() == '"test"   :   '
 
 
 def test_max_whitespace_exceeded():

@@ -127,8 +127,10 @@ class StringSchemaWalker(StringWalker):
             and self.target_state not in self.state_machine.end_states
             and self.state_machine.pattern
             and self.transition_walker
-            and self.transition_walker.raw_value
-            and not self.is_pattern_prefix(self.transition_walker.raw_value + token)
+            and self.transition_walker.get_raw_value()
+            and not self.is_pattern_prefix(
+                self.transition_walker.get_raw_value() + token
+            )
         ):
             return False
 
@@ -150,7 +152,10 @@ class StringSchemaWalker(StringWalker):
         ):
             if self.is_escaping:
                 self.is_escaping = False
-            elif self.transition_walker and self.transition_walker.raw_value == "\\":
+            elif (
+                self.transition_walker
+                and self.transition_walker.get_raw_value() == "\\"
+            ):
                 self.is_escaping = True
 
         if (
@@ -160,7 +165,7 @@ class StringSchemaWalker(StringWalker):
             if self.state_machine.end_hook:
                 self.state_machine.end_hook()
 
-            if self.state_machine.validate_value(self.current_value):
+            if self.state_machine.validate_value(self.get_current_value()):
                 return True
             else:
                 return False
@@ -181,6 +186,5 @@ class StringSchemaWalker(StringWalker):
             return match is not None
         return True  # If no pattern, always return True
 
-    @property
-    def current_value(self) -> Any:
-        return json.loads(self.raw_value) if self.raw_value else None
+    def get_current_value(self) -> Any:
+        return json.loads(self.get_raw_value()) if self.get_raw_value() else None

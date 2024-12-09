@@ -76,7 +76,7 @@ def test_walker_in_accepted_state(sequence_acceptor: SequenceAcceptor):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.current_value == input_sequence
+        assert walker.get_current_value() == input_sequence
 
 
 def test_partial_match(sequence_acceptor: SequenceAcceptor):
@@ -182,7 +182,10 @@ def test_optional_acceptor():
         for _, walker in StateMachine.advance_all(walkers, input_string_with_whitespace)
     ]
     assert len(new_walkers_with_whitespace) == 1
-    assert new_walkers_with_whitespace[0].current_value == input_string_with_whitespace
+    assert (
+        new_walkers_with_whitespace[0].get_current_value()
+        == input_string_with_whitespace
+    )
 
     input_string_no_whitespace = "Hello,World."
     # Currently bugged because the sequence state_machine
@@ -196,4 +199,6 @@ def test_optional_acceptor():
         for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)
     ]
     assert len(new_walkers_no_whitespace) == 1
-    assert new_walkers_no_whitespace[0].current_value == input_string_no_whitespace
+    assert (
+        new_walkers_no_whitespace[0].get_current_value() == input_string_no_whitespace
+    )

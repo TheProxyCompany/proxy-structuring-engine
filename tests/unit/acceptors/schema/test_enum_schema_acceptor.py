@@ -29,7 +29,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
             ]
         for walker in walkers:
             self.assertTrue(walker.has_reached_accept_state())
-            self.assertEqual(walker.current_value, valid_value)
+            self.assertEqual(walker.get_current_value(), valid_value)
 
     def test_reject_invalid_enum_value(self) -> None:
         """
@@ -63,7 +63,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
                 ]
                 for walker in walkers:
                     self.assertTrue(walker.has_reached_accept_state())
-                    self.assertEqual(walker.current_value, valid_value)
+                    self.assertEqual(walker.get_current_value(), valid_value)
 
     def test_partial_enum_value_rejection(self) -> None:
         """
@@ -127,4 +127,6 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
                 ]
                 for walker in walkers:
                     self.assertTrue(walker.has_reached_accept_state())
-                    self.assertEqual(walker.current_value, special_value.strip('"'))
+                    self.assertEqual(
+                        walker.get_current_value(), special_value.strip('"')
+                    )

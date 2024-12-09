@@ -50,11 +50,10 @@ class BooleanWalker(Walker):
             and self.target_state in self.state_machine.end_states
             and self.transition_walker
         ):
-            self._raw_value = self.transition_walker.raw_value
+            self._raw_value = self.transition_walker.get_raw_value()
         return self._raw_value == "true" or self._raw_value == "false"
 
-    @property
-    def current_value(self) -> bool | None:
+    def get_current_value(self) -> bool | None:
         """
         Get the parsed boolean value.
 

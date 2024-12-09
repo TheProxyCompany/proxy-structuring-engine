@@ -81,5 +81,5 @@ class NumberSchemaWalker(NumberWalker):
             and self.target_state in self.state_machine.end_states
             and not self.remaining_input
         ):
-            return self.state_machine.validate_value(self.current_value)
+            return self.state_machine.validate_value(self.get_current_value())
         return True

@@ -138,18 +138,16 @@ class TextWalker(Walker):
             else:
                 yield next_walker
 
-    @property
-    def current_value(self) -> str:
+    def get_current_value(self) -> str:
         """
         Retrieves the current state of the text being accepted, highlighting the remaining portion.
 
         Returns:
             str: The accepted portion of the text
         """
-        return self.raw_value
+        return self.get_raw_value()
 
-    @property
-    def raw_value(self) -> str:
+    def get_raw_value(self) -> str:
         return (
             self.state_machine.text[: self.consumed_character_count]
             if self.consumed_character_count < len(self.state_machine.text)

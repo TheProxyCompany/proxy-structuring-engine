@@ -30,7 +30,7 @@ def parse_input(state_machine: AnySchemaAcceptor, json_string: str) -> Any:
     walkers = state_machine.advance_all(walkers, json_string)
     for _, walker in walkers:
         if walker.has_reached_accept_state():
-            return walker.current_value
+            return walker.get_current_value()
 
     raise ValueError(f"Invalid JSON input for AnyOfAcceptor: {json_string}")
 

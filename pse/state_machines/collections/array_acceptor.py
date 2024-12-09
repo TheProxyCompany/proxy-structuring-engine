@@ -85,8 +85,8 @@ class ArrayWalker(Walker):
         if (
             self.target_state == 3
             and self.transition_walker
-            and self.transition_walker.raw_value is not None
+            and self.transition_walker.get_raw_value() is not None
         ):
-            self.value.append(self.transition_walker.raw_value)
+            self.value.append(self.transition_walker.get_raw_value())
 
         return super().should_complete_transition()

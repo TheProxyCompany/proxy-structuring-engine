@@ -32,7 +32,7 @@ def test_property_parsing(
     assert accepted_walkers, f"No walker reached an accepted state for: {input_string}"
 
     for walker in accepted_walkers:
-        name, value = walker.current_value
+        name, value = walker.get_current_value()
         assert name == expected_name
         assert value == expected_value
 

@@ -33,7 +33,7 @@ def test_boolean_acceptor(token, expected_value):
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == expected_value
+            assert walker.get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -61,7 +61,7 @@ def test_text_acceptor(token, acceptor_args, expected_value):
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == expected_value
+            assert walker.get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -90,7 +90,7 @@ def test_state_transitions(first, second, end, token):
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert str(walker.current_value) == token
+            assert str(walker.get_current_value()) == token
 
 
 def test_walker_clone():
@@ -150,7 +150,7 @@ def test_partial_matches():
     # No walkers should be in accepted state since the input is incomplete
     assert not any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
-        assert walker.current_value == "comp"
+        assert walker.get_current_value() == "comp"
 
 
 @pytest.mark.parametrize(
@@ -182,7 +182,7 @@ def test_advance_all_multiple_states(token, expected_value):
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == expected_value
+            assert walker.get_current_value() == expected_value
 
 
 def test_advance_all_invalid_input():
@@ -222,7 +222,7 @@ def test_complex_input():
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == "{\n["
+            assert walker.get_current_value() == "{\n["
 
 
 def test_number_acceptor():
@@ -264,7 +264,7 @@ def test_number_acceptor_in_state_machine_sequence():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value == "Value: 42"
+                walker.get_current_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
     new_advanced = list(StateMachine.advance_all(walkers, ".0"))
@@ -275,7 +275,7 @@ def test_number_acceptor_in_state_machine_sequence():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value == "Value: 42.0"
+                walker.get_current_value() == "Value: 42.0"
             ), "Parsed value should be the combined string 'Value: 42.0'."
 
 
@@ -306,7 +306,7 @@ def test_char_by_char_in_state_machine():
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert (
-                walker.current_value == "Value: 42"
+                walker.get_current_value() == "Value: 42"
             ), "Parsed value should be the combined string 'Value: 42'."
 
 
@@ -363,7 +363,7 @@ def test_state_machine_empty_transition():
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == "test"
+            assert walker.get_current_value() == "test"
 
 
 def test_state_machine_with_loop():
@@ -385,7 +385,7 @@ def test_state_machine_with_loop():
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
         if walker.has_reached_accept_state():
-            assert walker.current_value == "aaab"
+            assert walker.get_current_value() == "aaab"
 
 
 def test_state_machine_advance_walker_with_remaining_input():
@@ -409,7 +409,7 @@ def test_state_machine_advance_walker_with_remaining_input():
         if not walker.has_reached_accept_state():
             # Remaining input 'e' should be in walker.remaining_input
             assert walker.remaining_input == "e"
-            assert walker.current_value == "abcd"
+            assert walker.get_current_value() == "abcd"
 
 
 def test_whitespace_acceptor():
@@ -443,9 +443,9 @@ def test_whitespace_acceptor():
     for advanced_token, walker in advancement:
         assert advanced_token == "{"
         if walker.target_state == "$":
-            assert walker.current_value == "{"
+            assert walker.get_current_value() == "{"
         else:
-            assert walker.current_value == "{"
+            assert walker.get_current_value() == "{"
         new_walkers.append(walker)
 
     assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
@@ -455,9 +455,9 @@ def test_whitespace_acceptor():
     for advanced_token, walker in advancement:
         assert advanced_token == " "
         if walker.target_state == "$":
-            assert walker.current_value == "{ "
+            assert walker.get_current_value() == "{ "
         else:
-            assert walker.current_value == "{ "
+            assert walker.get_current_value() == "{ "
         new_walkers.append(walker)
 
     assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
@@ -466,7 +466,7 @@ def test_whitespace_acceptor():
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "\n}"
-        assert walker.current_value == {}
+        assert walker.get_current_value() == {}
         assert walker.has_reached_accept_state()
         new_walkers.append(walker)
 
@@ -502,4 +502,4 @@ def test_simple_number_acceptor():
     for advanced_token, walker in StateMachine.advance_all(walkers, "-1.2", dawg):
         assert advanced_token == "-1"
         assert walker.has_reached_accept_state()
-        assert walker.current_value == -1
+        assert walker.get_current_value() == -1

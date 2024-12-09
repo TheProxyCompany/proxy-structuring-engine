@@ -42,7 +42,7 @@ def test_valid_json_objects(object_acceptor: ObjectAcceptor, json_string, expect
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -75,7 +75,7 @@ def test_valid_json_objects_all_at_once(
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -127,7 +127,7 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
     assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
 
     for walker in accepted_walkers:
-        assert walker.current_value == expected
+        assert walker.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -159,4 +159,4 @@ def test_no_spaces(object_acceptor: ObjectAcceptor):
     assert len(walkers) == 1
     walker = walkers[0]
     assert walker.has_reached_accept_state()
-    assert walker.current_value == {"a": "b", "c": "d"}
+    assert walker.get_current_value() == {"a": "b", "c": "d"}

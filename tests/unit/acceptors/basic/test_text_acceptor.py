@@ -17,7 +17,7 @@ def test_advance_complete(text_acceptor: TextAcceptor):
     assert len(advanced) == 1
     accepted = advanced[0]
     assert isinstance(accepted, AcceptedState)
-    assert accepted.current_value == "hello"
+    assert accepted.get_current_value() == "hello"
 
 
 def test_advance_invalid_character(text_acceptor: TextAcceptor):
@@ -30,19 +30,19 @@ def test_advance_invalid_character(text_acceptor: TextAcceptor):
 def test_get_value_at_start(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value at the start."""
     walker = TextWalker(text_acceptor, 0)
-    assert walker.current_value == ""
+    assert walker.get_current_value() == ""
 
 
 def test_get_value_middle(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value in the middle."""
     walker = TextWalker(text_acceptor, 2)
-    assert walker.current_value == "he"
+    assert walker.get_current_value() == "he"
 
 
 def test_get_value_end(text_acceptor: TextAcceptor):
     """Test the get_value method returns the correct value at the end."""
     walker = TextWalker(text_acceptor, 5)
-    assert walker.current_value == "hello"
+    assert walker.get_current_value() == "hello"
 
 
 def test_full_acceptance(text_acceptor: TextAcceptor):
@@ -53,14 +53,14 @@ def test_full_acceptance(text_acceptor: TextAcceptor):
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value == "hello"
+    assert walker.get_current_value() == "hello"
 
 
 def test_partial_acceptance(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor correctly handles partial acceptance."""
     walker = TextWalker(text_acceptor, 0)
     for new_walker in walker.consume_token("he"):
-        assert new_walker.current_value == "he"
+        assert new_walker.get_current_value() == "he"
 
 
 def test_repeated_characters():
@@ -73,7 +73,7 @@ def test_repeated_characters():
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value == repeated_text
+    assert walker.get_current_value() == repeated_text
 
 
 def test_unicode_characters():
@@ -86,7 +86,7 @@ def test_unicode_characters():
         assert len(advanced) == 1
         walker = advanced[0]
     assert isinstance(walker, AcceptedState)
-    assert walker.current_value == unicode_text
+    assert walker.get_current_value() == unicode_text
 
 
 def test_empty_text_acceptor():
@@ -105,10 +105,10 @@ def test_case_sensitivity(text_acceptor: TextAcceptor):
     """Test that the TextAcceptor is case-sensitive."""
     walker = TextWalker(text_acceptor, 0)
     for new_walker in walker.consume_token("H"):
-        assert new_walker.current_value == ""
+        assert new_walker.get_current_value() == ""
 
     for new_walker in walker.consume_token("h"):
-        assert new_walker.current_value == "h"
+        assert new_walker.get_current_value() == "h"
 
 
 def test_multiple_advance_steps(text_acceptor: TextAcceptor):
@@ -123,7 +123,7 @@ def test_multiple_advance_steps(text_acceptor: TextAcceptor):
     ]
     for char, expected_pos, expected_value in steps:
         for new_walker in walker.consume_token(char):
-            assert new_walker.current_value == expected_value
+            assert new_walker.get_current_value() == expected_value
             assert new_walker.consumed_character_count == expected_pos
             if expected_pos == 5:
                 assert new_walker.has_reached_accept_state()

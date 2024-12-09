@@ -114,7 +114,7 @@ class CharacterWalker(Walker):
 
         # Create new walker with accumulated value
         new_walker = self.__class__(
-            self.state_machine, f"{self.raw_value}{token[:valid_length]}"
+            self.state_machine, f"{self.get_raw_value()}{token[:valid_length]}"
         )
         new_walker.consumed_character_count = (
             self.consumed_character_count + valid_length
@@ -133,12 +133,10 @@ class CharacterWalker(Walker):
             else new_walker
         )
 
-    @property
-    def raw_value(self) -> str:
+    def get_raw_value(self) -> str:
         return self._raw_value or ""
 
-    @property
-    def current_value(self) -> str | None:
+    def get_current_value(self) -> str | None:
         """
         Retrieve the current value of the walker.
 

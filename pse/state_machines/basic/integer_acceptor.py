@@ -30,8 +30,7 @@ class IntegerWalker(CharacterWalker):
         super().__init__(state_machine, value)
         self.state_machine: IntegerAcceptor = state_machine
 
-    @property
-    def current_value(self) -> str | None:
+    def get_current_value(self) -> str | None:
         if self.state_machine.drop_leading_zeros:
             return super().parse_value(self._raw_value)
         return self._raw_value

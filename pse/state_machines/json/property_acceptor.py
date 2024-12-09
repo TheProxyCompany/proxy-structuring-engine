@@ -77,15 +77,15 @@ class PropertyWalker(SequenceWalker):
         if (
             not self.transition_walker
             or self.target_state is None
-            or not self.transition_walker.raw_value
+            or not self.transition_walker.get_raw_value()
         ):
             return False
 
         try:
             if self.target_state == 1:
-                self.prop_name = json.loads(self.transition_walker.raw_value)
+                self.prop_name = json.loads(self.transition_walker.get_raw_value())
             elif self.target_state in self.state_machine.end_states:
-                self.prop_value = json.loads(self.transition_walker.raw_value)
+                self.prop_value = json.loads(self.transition_walker.get_raw_value())
         except Exception:
             return False
 
@@ -102,8 +102,7 @@ class PropertyWalker(SequenceWalker):
             return super().is_within_value()
         return False
 
-    @property
-    def current_value(self) -> tuple[str, Any]:
+    def get_current_value(self) -> tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.
 

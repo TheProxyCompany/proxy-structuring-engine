@@ -23,14 +23,14 @@ def process_input(state_machine: StateMachine, token: str) -> Iterable[Walker]:
 def test_accept_true(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "true")
     assert any(
-        walker.current_value is True for walker in accepted_walkers
+        walker.get_current_value() is True for walker in accepted_walkers
     ), "Should have a walker with value True"
 
 
 def test_accept_false(boolean_acceptor):
     accepted_walkers = process_input(boolean_acceptor, "false")
     assert any(
-        walker.current_value is False for walker in accepted_walkers
+        walker.get_current_value() is False for walker in accepted_walkers
     ), "Should have a walker with value False"
 
 

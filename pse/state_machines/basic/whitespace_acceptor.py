@@ -139,15 +139,14 @@ class WhitespaceWalker(Walker):
             else next_walker
         )
 
-    @property
-    def current_value(self) -> str:
+    def get_current_value(self) -> str:
         """
         Get the accumulated whitespace value.
 
         Returns:
             str: The whitespace string.
         """
-        return self.raw_value or ""
+        return self.get_raw_value() or ""
 
     def is_within_value(self) -> bool:
         return self.consumed_character_count > 0

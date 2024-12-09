@@ -18,4 +18,4 @@ def test_property_parsing():
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, '": "hi"')]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
-    assert walkers[0].current_value == ("type", "hi")
+    assert walkers[0].get_current_value() == ("type", "hi")
