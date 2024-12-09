@@ -2,21 +2,21 @@ from typing import Any
 
 import pytest
 
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor
+from pse.state_machines.collections.array_acceptor import ArrayAcceptor
 
 
 @pytest.fixture
-def acceptor():
+def state_machine():
     """Fixture that provides an ArrayAcceptor instance."""
     return ArrayAcceptor()
 
 
-def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
+def parse_array(state_machine: ArrayAcceptor, json_string: str) -> list[Any]:
     """
     Helper function to parse a JSON array string using the ArrayAcceptor.
 
     Args:
-        acceptor (ArrayAcceptor): The ArrayAcceptor instance.
+        state_machine (ArrayAcceptor): The ArrayAcceptor instance.
         json_string (str): The JSON array string to parse.
 
     Returns:
@@ -25,9 +25,9 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
     Raises:
         AssertionError: If the JSON array is invalid.
     """
-    walkers = list(acceptor.get_walkers())
+    walkers = list(state_machine.get_walkers())
     for char in json_string:
-        walkers = [walker for _, walker in acceptor.advance_all(walkers, char)]
+        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
         raise AssertionError("No walker in accepted state")
     # Assuming the first accepted walker contains the parsed value
@@ -47,9 +47,11 @@ def parse_array(acceptor: ArrayAcceptor, json_string: str) -> list[Any]:
         ("[[1, 2], [3, 4]]", [[1, 2], [3, 4]]),
     ],
 )
-def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[Any]):
+def test_valid_arrays(
+    state_machine: ArrayAcceptor, json_string: str, expected: list[Any]
+):
     """Test parsing of valid JSON arrays."""
-    assert parse_array(acceptor, json_string) == expected
+    assert parse_array(state_machine, json_string) == expected
 
 
 # Parameterized tests for invalid arrays
@@ -60,7 +62,7 @@ def test_valid_arrays(acceptor: ArrayAcceptor, json_string: str, expected: list[
         "[123, 456, ]",  # Trailing comma
     ],
 )
-def test_invalid_arrays(acceptor: ArrayAcceptor, json_string: str):
+def test_invalid_arrays(state_machine: ArrayAcceptor, json_string: str):
     """Test that an AssertionError is raised for invalid arrays."""
     with pytest.raises(AssertionError):
-        parse_array(acceptor, json_string)
+        parse_array(state_machine, json_string)

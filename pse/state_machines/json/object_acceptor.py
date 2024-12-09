@@ -7,10 +7,10 @@ from pse_core import State
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.acceptors.json.property_acceptor import PropertyAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machines.json.property_acceptor import PropertyAcceptor
 
 logger = logging.getLogger()
 
@@ -19,7 +19,7 @@ class ObjectAcceptor(StateMachine):
     """
     Accepts a well-formed JSON object and manages state transitions during parsing.
 
-    This acceptor handles the parsing of JSON objects by defining state transitions
+    This state_machine handles the parsing of JSON objects by defining state transitions
     and maintaining the current object properties being parsed.
     """
 
@@ -61,15 +61,15 @@ class ObjectWalker(Walker):
     """
 
     def __init__(
-        self, acceptor: ObjectAcceptor, current_state: State | None = None
+        self, state_machine: ObjectAcceptor, current_state: State | None = None
     ) -> None:
         """
-        Initialize the ObjectAcceptor.Walker with the parent acceptor and an empty dictionary.
+        Initialize the ObjectAcceptor.Walker with the parent state_machine and an empty dictionary.
 
         Args:
-            acceptor (ObjectAcceptor): The parent ObjectAcceptor instance.
+            state_machine (ObjectAcceptor): The parent ObjectAcceptor instance.
         """
-        super().__init__(acceptor, current_state)
+        super().__init__(state_machine, current_state)
         self.value: dict[str, Any] = {}
 
     def should_complete_transition(self) -> bool:

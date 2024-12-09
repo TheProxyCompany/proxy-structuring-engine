@@ -14,7 +14,7 @@ WHITESPACE_CHARS: str = " \n\r\t"
 
 class WhitespaceAcceptor(StateMachine):
     """
-    Optional whitespace acceptor using TokenTrie for efficient matching.
+    Optional whitespace state_machine using TokenTrie for efficient matching.
     """
 
     def __init__(self, min_whitespace: int = 0, max_whitespace: int = 40):
@@ -43,19 +43,19 @@ class WhitespaceWalker(Walker):
 
     def __init__(
         self,
-        acceptor: WhitespaceAcceptor,
+        state_machine: WhitespaceAcceptor,
         value: str | None = None,
     ):
         """
         Initialize the walker.
 
         Args:
-            acceptor (WhitespaceAcceptor): The parent acceptor.
+            state_machine (WhitespaceAcceptor): The parent state_machine.
             text (str, optional): Accumulated whitespace text. Defaults to "".
         """
-        super().__init__(acceptor)
+        super().__init__(state_machine)
         self.target_state = "$"
-        self.state_machine: WhitespaceAcceptor = acceptor
+        self.state_machine: WhitespaceAcceptor = state_machine
         self._raw_value = value or ""
         self.consumed_character_count = len(self._raw_value)
         self.length_exceeded: bool = (

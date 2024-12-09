@@ -4,9 +4,9 @@ from pse_core import State
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.acceptors.basic.string_character_acceptor import StringCharacterAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.character_acceptor import CharacterAcceptor
+from pse.state_machines.basic.string_character_acceptor import StringCharacterAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
 
 
 class StringAcceptor(StateMachine):
@@ -77,12 +77,14 @@ class StringWalker(Walker):
 
     MAX_LENGTH = 10000  # Define a maximum allowed string length
 
-    def __init__(self, acceptor: StringAcceptor, current_state: State | None = None):
+    def __init__(
+        self, state_machine: StringAcceptor, current_state: State | None = None
+    ):
         """
         Initialize the walker.
 
         Args:
-            acceptor (StringAcceptor): The parent acceptor.
+            state_machine (StringAcceptor): The parent state_machine.
         """
-        super().__init__(acceptor, current_state)
-        self.state_machine: StringAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: StringAcceptor = state_machine

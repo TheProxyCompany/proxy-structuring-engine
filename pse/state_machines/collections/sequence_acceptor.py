@@ -26,9 +26,9 @@ class SequenceAcceptor(StateMachine):
         """
         self.acceptors = acceptors
         state_graph = {}
-        for i, acceptor in enumerate(self.acceptors):
-            # Each state points **only** to the next acceptor
-            state_graph[i] = [(acceptor, i + 1)]
+        for i, state_machine in enumerate(self.acceptors):
+            # Each state points **only** to the next state_machine
+            state_graph[i] = [(state_machine, i + 1)]
         super().__init__(
             state_graph,
             end_states=[len(acceptors)],

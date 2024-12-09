@@ -1,12 +1,15 @@
-from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor, WaitForWalker
+from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.state_machines.collections.wait_for_acceptor import (
+    WaitForAcceptor,
+    WaitForWalker,
+)
 
 
 def test_default_wait_for_acceptor() -> None:
     text_acceptor = TextAcceptor("Hello World")
-    acceptor = WaitForAcceptor(text_acceptor)
+    state_machine = WaitForAcceptor(text_acceptor)
 
-    walkers = list(acceptor.get_walkers())
+    walkers = list(state_machine.get_walkers())
     assert len(walkers) == 1
     walker = walkers[0]
     assert isinstance(walker, WaitForWalker)
@@ -21,31 +24,35 @@ def test_default_wait_for_acceptor() -> None:
 def test_basic_wait_for_acceptor() -> None:
     """Test that the WaitForAcceptor can accept any token."""
     text_acceptor = TextAcceptor("Hello World")
-    acceptor = WaitForAcceptor(text_acceptor)
-    walkers = list(acceptor.get_walkers())
-    walkers = [walker for _, walker in acceptor.advance_all(walkers, "Hello World")]
+    state_machine = WaitForAcceptor(text_acceptor)
+    walkers = list(state_machine.get_walkers())
+    walkers = [
+        walker for _, walker in state_machine.advance_all(walkers, "Hello World")
+    ]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
 
 
 def test_interrupted_wait_for_acceptor() -> None:
     text_acceptor = TextAcceptor("Hello World")
-    acceptor = WaitForAcceptor(text_acceptor)
+    state_machine = WaitForAcceptor(text_acceptor)
 
-    walkers = list(acceptor.get_walkers())
-    walkers = [walker for _, walker in acceptor.advance_all(walkers, "Hello ")]
+    walkers = list(state_machine.get_walkers())
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
     assert len(walkers) == 1
     assert walkers[0].is_within_value()
     walkers = [
         walker
-        for _, walker in acceptor.advance_all(
+        for _, walker in state_machine.advance_all(
             walkers, "I'm gonna mess up the pattern! But i'll still be accepted!"
         )
     ]
     assert len(walkers) == 1
     assert not walkers[0].is_within_value()
 
-    walkers = [walker for _, walker in acceptor.advance_all(walkers, "Hello World")]
+    walkers = [
+        walker for _, walker in state_machine.advance_all(walkers, "Hello World")
+    ]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
 
@@ -53,19 +60,19 @@ def test_interrupted_wait_for_acceptor() -> None:
 def test_wait_for_acceptor_with_break() -> None:
     """Test that the WaitForAcceptor can accept any token."""
     text_acceptor = TextAcceptor("Hello World")
-    acceptor = WaitForAcceptor(text_acceptor, allow_break=True)
-    walkers = list(acceptor.get_walkers())
-    walkers = [walker for _, walker in acceptor.advance_all(walkers, "Hello ")]
+    state_machine = WaitForAcceptor(text_acceptor, allow_break=True)
+    walkers = list(state_machine.get_walkers())
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
     assert len(walkers) == 1
 
     walkers = [
         walker
-        for _, walker in acceptor.advance_all(
+        for _, walker in state_machine.advance_all(
             walkers, "I'm gonna mess up the pattern! But i'll still be accepted!"
         )
     ]
     assert len(walkers) == 1
 
-    walkers = [walker for _, walker in acceptor.advance_all(walkers, "World")]
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, "World")]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()

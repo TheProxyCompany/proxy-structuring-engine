@@ -1,6 +1,6 @@
 import unittest
 
-from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.state_machines.schema.enum_schema_acceptor import EnumSchemaAcceptor
 
 
 class TestEnumSchemaAcceptor(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def setUp(self) -> None:
         """
-        Set up the default schema acceptor before each test.
+        Set up the default schema state_machine before each test.
         """
         self.default_schema: dict = {"enum": ["value1", "value2", "value3"]}
         self.state_machine: EnumSchemaAcceptor = EnumSchemaAcceptor(
@@ -19,7 +19,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def test_accept_valid_enum_value(self) -> None:
         """
-        Test that the acceptor correctly accepts a value present in the enum.
+        Test that the state_machine correctly accepts a value present in the enum.
         """
         valid_value = "value1"
         walkers = self.state_machine.get_walkers()
@@ -33,7 +33,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def test_reject_invalid_enum_value(self) -> None:
         """
-        Test that the acceptor correctly rejects a value not present in the enum.
+        Test that the state_machine correctly rejects a value not present in the enum.
         """
         invalid_value = "invalid_value"
         walkers = list(self.state_machine.get_walkers())
@@ -49,7 +49,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def test_accept_multiple_enum_values(self) -> None:
         """
-        Test that the acceptor correctly accepts multiple different valid enum values.
+        Test that the state_machine correctly accepts multiple different valid enum values.
         """
         valid_values = ["value1", "value2", "value3"]
         for valid_value in valid_values:
@@ -67,7 +67,7 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def test_partial_enum_value_rejection(self) -> None:
         """
-        Test that the acceptor does not accept prefixes of valid enum values.
+        Test that the state_machine does not accept prefixes of valid enum values.
         """
         partial_value = "val"
         walkers = list(self.state_machine.get_walkers())
@@ -103,8 +103,8 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
         Test that accepting an empty string behaves correctly when the enum is empty.
         """
         schema: dict = {"enum": []}
-        acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
-        walkers = list(acceptor.get_walkers())
+        state_machine: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
+        walkers = list(state_machine.get_walkers())
         self.assertFalse(
             any(walker.has_reached_accept_state() for walker in walkers),
             "Empty string should be rejected when enum is empty.",
@@ -112,13 +112,13 @@ class TestEnumSchemaAcceptor(unittest.TestCase):
 
     def test_accept_enum_with_special_characters(self) -> None:
         """
-        Test that the acceptor correctly handles enum values with special characters.
+        Test that the state_machine correctly handles enum values with special characters.
         """
         schema: dict = {"enum": ["val!@#", "val-123", "val_😊"]}
-        acceptor: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
+        state_machine: EnumSchemaAcceptor = EnumSchemaAcceptor(schema=schema)
         for special_value in schema["enum"]:
             with self.subTest(special_value=special_value):
-                walkers = acceptor.get_walkers()
+                walkers = state_machine.get_walkers()
                 walkers = [
                     walker
                     for _, walker in EnumSchemaAcceptor.advance_all(

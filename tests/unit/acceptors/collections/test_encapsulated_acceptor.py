@@ -4,14 +4,14 @@ import pytest
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.acceptors.collections.wait_for_acceptor import WaitForAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
+from pse.state_machines.collections.wait_for_acceptor import WaitForAcceptor
 
 
 @pytest.fixture
 def content_acceptor():
-    """Fixture for the content acceptor."""
+    """Fixture for the content state_machine."""
     return TextAcceptor("content")
 
 

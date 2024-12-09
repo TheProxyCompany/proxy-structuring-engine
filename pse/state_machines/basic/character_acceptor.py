@@ -53,19 +53,19 @@ class CharacterWalker(Walker):
 
     def __init__(
         self,
-        acceptor: CharacterAcceptor,
+        state_machine: CharacterAcceptor,
         value: str | None = None,
     ) -> None:
         """
         Initialize the Walker.
 
         Args:
-            acceptor (CharAcceptor): The parent CharAcceptor.
+            state_machine (CharAcceptor): The parent CharAcceptor.
             value (Optional[str]): The current input value. Defaults to None.
         """
-        super().__init__(acceptor)
+        super().__init__(state_machine)
         self.target_state = "$"
-        self.state_machine: CharacterAcceptor = acceptor
+        self.state_machine: CharacterAcceptor = state_machine
         self._raw_value = value
 
     def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:

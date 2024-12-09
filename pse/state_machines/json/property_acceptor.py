@@ -7,11 +7,14 @@ from typing import Any
 from pse_core import State
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.basic.string_acceptor import StringAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor, SequenceWalker
-from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.state_machines.basic.string_acceptor import StringAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.sequence_acceptor import (
+    SequenceAcceptor,
+    SequenceWalker,
+)
+from pse.state_machines.json.json_acceptor import JsonAcceptor
 
 logger = logging.getLogger()
 
@@ -20,7 +23,7 @@ class PropertyAcceptor(SequenceAcceptor):
     """
     Acceptor for individual properties within a JSON object.
 
-    This acceptor defines the sequence of token acceptors required to parse a property
+    This state_machine defines the sequence of token acceptors required to parse a property
     key-value pair in a JSON object.
     """
 
@@ -51,16 +54,16 @@ class PropertyWalker(SequenceWalker):
 
     def __init__(
         self,
-        acceptor: PropertyAcceptor,
+        state_machine: PropertyAcceptor,
         current_acceptor_index: State | None = None,
     ) -> None:
         """
         Initialize the PropertyAcceptor
 
         Args:
-            acceptor (PropertyAcceptor): The parent PropertyAcceptor
+            state_machine (PropertyAcceptor): The parent PropertyAcceptor
         """
-        super().__init__(acceptor, current_acceptor_index)
+        super().__init__(state_machine, current_acceptor_index)
         self.prop_name = ""
         self.prop_value: Any | None = None
 

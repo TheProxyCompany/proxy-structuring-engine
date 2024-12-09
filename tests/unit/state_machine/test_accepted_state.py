@@ -2,7 +2,7 @@ import pytest
 from pse_core.accepted_state import AcceptedState
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 
 
 @pytest.fixture

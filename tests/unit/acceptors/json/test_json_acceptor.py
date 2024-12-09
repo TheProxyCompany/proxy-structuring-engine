@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.state_machines.json.json_acceptor import JsonAcceptor
 
 
 @pytest.fixture

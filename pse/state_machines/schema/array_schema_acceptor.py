@@ -4,10 +4,10 @@ from typing import Any
 
 from pse_core import State
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor, ArrayWalker
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.array_acceptor import ArrayAcceptor, ArrayWalker
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
 
 
 class ArraySchemaAcceptor(ArrayAcceptor):
@@ -62,10 +62,10 @@ class ArraySchemaWalker(ArrayWalker):
     """
 
     def __init__(
-        self, acceptor: ArraySchemaAcceptor, current_state: State | None = None
+        self, state_machine: ArraySchemaAcceptor, current_state: State | None = None
     ):
-        super().__init__(acceptor, current_state)
-        self.state_machine: ArraySchemaAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: ArraySchemaAcceptor = state_machine
 
     def should_start_transition(self, token: str) -> bool:
         if (self.current_state == 2 and self.target_state == 3) or (

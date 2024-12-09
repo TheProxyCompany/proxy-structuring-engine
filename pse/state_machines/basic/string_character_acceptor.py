@@ -28,19 +28,19 @@ class StringCharacterWalker(Walker):
 
     def __init__(
         self,
-        acceptor: StringCharacterAcceptor,
+        state_machine: StringCharacterAcceptor,
         value: str | None = None,
     ) -> None:
         """
         Initialize the Walker.
 
         Args:
-            acceptor (StringCharAcceptor): The parent StringCharAcceptor.
+            state_machine (StringCharAcceptor): The parent StringCharAcceptor.
             value (Optional[str]): The accumulated string value. Defaults to None.
         """
-        super().__init__(acceptor)
+        super().__init__(state_machine)
         self.target_state = "$"
-        self.state_machine: StringCharacterAcceptor = acceptor
+        self.state_machine: StringCharacterAcceptor = state_machine
         self._accepts_more_input = True
         self._raw_value = value
 

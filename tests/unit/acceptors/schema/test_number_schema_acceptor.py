@@ -2,7 +2,7 @@
 # from typing import Any, Dict
 
 # from pse.schema_acceptors.number_schema_acceptor import NumberSchemaAcceptor, NumberSchemaWalker
-# from pse.acceptors.basic.text_acceptor import TextAcceptor
+# from pse.state_machines.basic.text_acceptor import TextAcceptor
 # from pse.schema_acceptors.object_schema_acceptor import ObjectSchemaAcceptor
 # from pse.state_machine.state_machine import StateMachine
 
@@ -20,9 +20,9 @@
 #     Test that 'minimum' constraint is enforced correctly.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "minimum": 10}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'minimum' constraint."
 
 
@@ -39,9 +39,9 @@
 #     Test that 'exclusiveMinimum' constraint is enforced correctly.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "exclusiveMinimum": 10}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMinimum' constraint."
 
 
@@ -58,9 +58,9 @@
 #     Test that 'maximum' constraint is enforced correctly.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "maximum": 20}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'maximum' constraint."
 
 
@@ -77,9 +77,9 @@
 #     Test that 'exclusiveMaximum' constraint is enforced correctly.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "exclusiveMaximum": 20}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'exclusiveMaximum' constraint."
 
 
@@ -97,9 +97,9 @@
 #     Test that 'multipleOf' constraint is enforced correctly.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "multipleOf": 5}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} with 'multipleOf' constraint."
 
 
@@ -117,8 +117,8 @@
 #     Ensures that valid values are accepted and invalid values are rejected.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "minimum": 10, "maximum": 20}
-#     acceptor = NumberSchemaAcceptor(schema)
-#     walker = NumberSchemaWalker(acceptor)
+#     state_machine = NumberSchemaAcceptor(schema)
+#     walker = NumberSchemaWalker(state_machine)
 #     result = walker.should_complete_transition()
 #     assert (
 #         result == expected
@@ -138,9 +138,9 @@
 #     Test that only integer values are considered valid when type is 'integer'.
 #     """
 #     schema: Dict[str, Any] = {"type": "integer"}
-#     acceptor = NumberSchemaAcceptor(schema)
+#     state_machine = NumberSchemaAcceptor(schema)
 #     assert (
-#         acceptor.validate_value(value) == expected
+#         state_machine.validate_value(value) == expected
 #     ), f"Value {value} should be {'valid' if expected else 'invalid'} for 'integer' type."
 
 
@@ -168,11 +168,11 @@
 #         },
 #         "required": ["value"],
 #     }
-#     acceptor = ObjectSchemaAcceptor(schema, context={})
+#     state_machine = ObjectSchemaAcceptor(schema, context={})
 
-#     walkers = acceptor.get_walkers()
+#     walkers = state_machine.get_walkers()
 #     for char in json_input:
-#         walkers = [walker for _, walker in acceptor.advance_all_walkers(walkers, char)]
+#         walkers = [walker for _, walker in state_machine.advance_all_walkers(walkers, char)]
 #         if not walkers:
 #             break
 
@@ -234,8 +234,8 @@
 #     Ensures that walker correctly validates numbers based on schema constraints.
 #     """
 #     schema: Dict[str, Any] = {"type": "number", "minimum": 10, "maximum": 100, "multipleOf": 10}
-#     acceptor = NumberSchemaAcceptor(schema)
-#     walker = NumberSchemaWalker(acceptor)
+#     state_machine = NumberSchemaAcceptor(schema)
+#     walker = NumberSchemaWalker(state_machine)
 #     result = walker.should_complete_transition()
 #     assert (
 #         result == expected

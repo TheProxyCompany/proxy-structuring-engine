@@ -5,14 +5,14 @@ from typing import Any
 
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.collections.array_acceptor import ArrayAcceptor
-from pse.acceptors.json.object_acceptor import ObjectAcceptor
-from pse.acceptors.schema.any_schema_acceptor import AnySchemaAcceptor
-from pse.acceptors.schema.enum_schema_acceptor import EnumSchemaAcceptor
-from pse.acceptors.schema.number_schema_acceptor import NumberSchemaAcceptor
-from pse.acceptors.schema.string_schema_acceptor import StringSchemaAcceptor
+from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.collections.array_acceptor import ArrayAcceptor
+from pse.state_machines.json.object_acceptor import ObjectAcceptor
+from pse.state_machines.schema.any_schema_acceptor import AnySchemaAcceptor
+from pse.state_machines.schema.enum_schema_acceptor import EnumSchemaAcceptor
+from pse.state_machines.schema.number_schema_acceptor import NumberSchemaAcceptor
+from pse.state_machines.schema.string_schema_acceptor import StringSchemaAcceptor
 
 
 def get_state_machine(
@@ -22,7 +22,7 @@ def get_state_machine(
     end_hook: Callable | None = None,
 ) -> StateMachine:
     """
-    Create an acceptor to validate JSON input based on the provided schema.
+    Create an state_machine to validate JSON input based on the provided schema.
 
     This function initializes a StateMachineAcceptor that enforces the constraints
     defined by the JSON schema. It handles various schema keywords and ensures that
@@ -38,7 +38,7 @@ def get_state_machine(
             Defaults to None.
 
     Returns:
-        StateMachineAcceptor: An acceptor that validates JSON input based on the schema.
+        StateMachineAcceptor: An state_machine that validates JSON input based on the schema.
 
     Raises:
         SchemaNotImplementedError: If the schema contains unsupported keywords like "$id" or "not".
@@ -92,37 +92,39 @@ def get_state_machine(
 
     # Mapping schema types to their corresponding acceptors
     if schema_type == "boolean":
-        acceptor = BooleanAcceptor()
+        state_machine = BooleanAcceptor()
     elif schema_type == "null":
-        acceptor = TextAcceptor("null")
+        state_machine = TextAcceptor("null")
     elif schema_type in ["number", "integer"]:
-        acceptor = NumberSchemaAcceptor(schema)
+        state_machine = NumberSchemaAcceptor(schema)
     elif "enum" in schema:
-        acceptor = EnumSchemaAcceptor(schema)
+        state_machine = EnumSchemaAcceptor(schema)
     elif schema_type == "string":
-        acceptor = StringSchemaAcceptor(schema, start_hook, end_hook)
+        state_machine = StringSchemaAcceptor(schema, start_hook, end_hook)
     elif "const" in schema:
-        acceptor = TextAcceptor(json.dumps(schema["const"]))
+        state_machine = TextAcceptor(json.dumps(schema["const"]))
     elif schema_type == "object":
         if "properties" in schema:
             # Only allows named properties in the object.
-            from pse.acceptors.schema.object_schema_acceptor import ObjectSchemaAcceptor
+            from pse.state_machines.schema.object_schema_acceptor import (
+                ObjectSchemaAcceptor,
+            )
 
-            acceptor = ObjectSchemaAcceptor(schema, context, start_hook, end_hook)
+            state_machine = ObjectSchemaAcceptor(schema, context, start_hook, end_hook)
         else:
             # Allows any properties in the object.
-            acceptor = ObjectAcceptor()
+            state_machine = ObjectAcceptor()
     elif schema_type == "array":
-        from pse.acceptors.schema.array_schema_acceptor import ArraySchemaAcceptor
+        from pse.state_machines.schema.array_schema_acceptor import ArraySchemaAcceptor
 
         if "items" in schema:
-            acceptor = ArraySchemaAcceptor(schema, context)
+            state_machine = ArraySchemaAcceptor(schema, context)
         else:
-            acceptor = ArrayAcceptor()
+            state_machine = ArrayAcceptor()
     else:
         raise ValueError(f"unknown schema type: {schema}")
 
-    return acceptor
+    return state_machine
 
 
 def resolve_subschemas(

@@ -6,11 +6,11 @@ from typing import Any
 from pse_core import Edge, State
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.acceptors.json.object_acceptor import ObjectAcceptor, ObjectWalker
-from pse.acceptors.schema.property_schema_acceptor import PropertySchemaAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machines.json.object_acceptor import ObjectAcceptor, ObjectWalker
+from pse.state_machines.schema.property_schema_acceptor import PropertySchemaAcceptor
 
 
 class ObjectSchemaAcceptor(ObjectAcceptor):
@@ -86,14 +86,14 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             Iterable of tuples (transition_walker, source_state, target_state).
         """
         current_state = state or walker.current_state
-        for acceptor, target_state in self.get_edges(
+        for state_machine, target_state in self.get_edges(
             current_state, walker.current_value
         ):
-            for transition in acceptor.get_walkers():
+            for transition in state_machine.get_walkers():
                 yield transition, current_state, target_state
 
             if (
-                acceptor.is_optional
+                state_machine.is_optional
                 and target_state not in self.end_states
                 and walker.can_accept_more_input()
             ):
@@ -111,10 +111,10 @@ class ObjectSchemaWalker(ObjectWalker):
     """
 
     def __init__(
-        self, acceptor: ObjectSchemaAcceptor, current_state: State | None = None
+        self, state_machine: ObjectSchemaAcceptor, current_state: State | None = None
     ):
-        super().__init__(acceptor, current_state)
-        self.state_machine: ObjectSchemaAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: ObjectSchemaAcceptor = state_machine
 
     def should_start_transition(self, token: str) -> bool:
         if self.target_state == "$":

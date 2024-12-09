@@ -9,7 +9,7 @@ from typing import Any
 import regex
 from pse_core import State
 
-from pse.acceptors.basic.string_acceptor import StringAcceptor, StringWalker
+from pse.state_machines.basic.string_acceptor import StringAcceptor, StringWalker
 
 logger = logging.getLogger(__name__)
 
@@ -114,10 +114,10 @@ class StringSchemaWalker(StringWalker):
     """
 
     def __init__(
-        self, acceptor: StringSchemaAcceptor, current_state: State | None = None
+        self, state_machine: StringSchemaAcceptor, current_state: State | None = None
     ):
-        super().__init__(acceptor, current_state)
-        self.state_machine: StringSchemaAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: StringSchemaAcceptor = state_machine
         self.is_escaping = False
 
     def should_start_transition(self, token: str) -> bool:

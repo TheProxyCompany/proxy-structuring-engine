@@ -1,6 +1,6 @@
 import pytest
 
-from pse.acceptors.basic.string_acceptor import StringAcceptor
+from pse.state_machines.basic.string_acceptor import StringAcceptor
 
 
 @pytest.fixture

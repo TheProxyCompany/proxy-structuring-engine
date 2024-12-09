@@ -1,7 +1,7 @@
 import pytest
 from pse_core.accepted_state import AcceptedState
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def text_acceptor():
 
 
 def test_advance_complete(text_acceptor: TextAcceptor):
-    """Test advancing the walker completes the acceptor."""
+    """Test advancing the walker completes the state_machine."""
     walker = TextWalker(text_acceptor, 4)  # Position before last character
     advanced = list(walker.consume_token("o"))
     assert len(advanced) == 1
@@ -66,8 +66,8 @@ def test_partial_acceptance(text_acceptor: TextAcceptor):
 def test_repeated_characters():
     """Test the TextAcceptor with repeated characters in the text."""
     repeated_text = "heelloo"
-    acceptor = TextAcceptor(repeated_text)
-    walker = TextWalker(acceptor, 0)
+    state_machine = TextAcceptor(repeated_text)
+    walker = TextWalker(state_machine, 0)
     for char in repeated_text:
         advanced = list(walker.consume_token(char))
         assert len(advanced) == 1
@@ -79,8 +79,8 @@ def test_repeated_characters():
 def test_unicode_characters():
     """Test the TextAcceptor with Unicode characters."""
     unicode_text = "héllo🌟"
-    acceptor = TextAcceptor(unicode_text)
-    walker = TextWalker(acceptor, 0)
+    state_machine = TextAcceptor(unicode_text)
+    walker = TextWalker(state_machine, 0)
     for char in unicode_text:
         advanced = list(walker.consume_token(char))
         assert len(advanced) == 1
@@ -97,9 +97,8 @@ def test_empty_text_acceptor():
 
 def test_invalid_initial_position(text_acceptor: TextAcceptor):
     """Test that advancing from an invalid initial position does not proceed."""
-    walker = TextWalker(text_acceptor, -1)
-    advanced = list(walker.consume_token("h"))
-    assert len(advanced) == 0
+    with pytest.raises(ValueError):
+        TextWalker(text_acceptor, -1)
 
 
 def test_case_sensitivity(text_acceptor: TextAcceptor):
@@ -126,6 +125,5 @@ def test_multiple_advance_steps(text_acceptor: TextAcceptor):
         for new_walker in walker.consume_token(char):
             assert new_walker.current_value == expected_value
             assert new_walker.consumed_character_count == expected_pos
-
-    assert isinstance(walker, AcceptedState)
-    assert walker.current_value == "hello"
+            if expected_pos == 5:
+                assert new_walker.has_reached_accept_state()

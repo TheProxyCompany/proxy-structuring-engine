@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class WaitForAcceptor(StateMachine):
     """
-    Accept all text until a segment triggers another specified acceptor.
+    Accept all text until a segment triggers another specified state_machine.
 
     This is particularly useful for allowing free-form text until a specific
     delimiter or pattern is detected, such as when parsing output from
@@ -29,10 +29,10 @@ class WaitForAcceptor(StateMachine):
         end_hook: Callable | None = None,
     ):
         """
-        Initialize the WaitForAcceptor with a target acceptor to watch for.
+        Initialize the WaitForAcceptor with a target state_machine to watch for.
 
         Args:
-            wait_for_acceptor (TokenAcceptor): The acceptor that, when triggered,
+            wait_for_acceptor (TokenAcceptor): The state_machine that, when triggered,
                 stops the waiting and stops accepting further characters.
         """
         super().__init__()
@@ -62,19 +62,19 @@ class WaitForAcceptor(StateMachine):
 class WaitForWalker(Walker):
     """
     Walker for handling the WaitForAcceptor.
-    Manages internal walkers that monitor for the triggering acceptor.
+    Manages internal walkers that monitor for the triggering state_machine.
     """
 
-    def __init__(self, acceptor: WaitForAcceptor):
+    def __init__(self, state_machine: WaitForAcceptor):
         """
         Initialize the WaitForAcceptor Walker.
 
         Args:
-            acceptor (WaitForAcceptor): The parent WaitForAcceptor.
+            state_machine (WaitForAcceptor): The parent WaitForAcceptor.
         """
-        super().__init__(acceptor)
+        super().__init__(state_machine)
         self.target_state = "$"
-        self.state_machine: WaitForAcceptor = acceptor
+        self.state_machine: WaitForAcceptor = state_machine
 
     def clone(self) -> Self:
         """Creates a shallow copy of the walker with copied history and explored edges."""
@@ -90,7 +90,7 @@ class WaitForWalker(Walker):
 
     def accepts_any_token(self) -> bool:
         """
-        Indicates that this acceptor matches all characters until a trigger is found.
+        Indicates that this state_machine matches all characters until a trigger is found.
 
         Returns:
             bool: Always True.
@@ -129,8 +129,8 @@ class WaitForWalker(Walker):
             not self.transition_walker
             or not self.transition_walker.should_start_transition(token)
         ):
-            # wait for acceptor blindly accepts all tokens while
-            # trying to advance the trigger acceptor
+            # wait for state_machine blindly accepts all tokens while
+            # trying to advance the trigger state_machine
             if not self.state_machine.allow_break:
                 self.transition_walker = None
                 yield from self.branch()

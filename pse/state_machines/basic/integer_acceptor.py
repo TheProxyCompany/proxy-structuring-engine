@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
+from pse.state_machines.basic.character_acceptor import (
+    CharacterAcceptor,
+    CharacterWalker,
+)
 
 
 class IntegerAcceptor(CharacterAcceptor):
@@ -21,9 +24,11 @@ class IntegerWalker(CharacterWalker):
     Walker for IntegerAcceptor.
     """
 
-    def __init__(self, acceptor: IntegerAcceptor, value: str | None = None) -> None:
-        super().__init__(acceptor, value)
-        self.state_machine: IntegerAcceptor = acceptor
+    def __init__(
+        self, state_machine: IntegerAcceptor, value: str | None = None
+    ) -> None:
+        super().__init__(state_machine, value)
+        self.state_machine: IntegerAcceptor = state_machine
 
     @property
     def current_value(self) -> str | None:

@@ -8,7 +8,10 @@ import pytest
 from lexpy import DAWG
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.basic.character_acceptor import CharacterAcceptor, CharacterWalker
+from pse.state_machines.basic.character_acceptor import (
+    CharacterAcceptor,
+    CharacterWalker,
+)
 
 
 @pytest.fixture
@@ -20,9 +23,9 @@ def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
         Callable that creates a StateMachine with the given CharacterAcceptor.
     """
 
-    def create(acceptor: CharacterAcceptor) -> StateMachine:
+    def create(state_machine: CharacterAcceptor) -> StateMachine:
         return StateMachine(
-            state_graph={0: [(acceptor, 1)]},
+            state_graph={0: [(state_machine, 1)]},
             start_state=0,
             end_states=[1],
         )
@@ -59,8 +62,8 @@ def test_character_acceptor_basic(
         should_accept: Whether input should be accepted
         state_machine_factory: Factory function for creating StateMachine
     """
-    acceptor = CharacterAcceptor(charset, case_sensitive=False)
-    sm = state_machine_factory(acceptor)
+    state_machine = CharacterAcceptor(charset, case_sensitive=False)
+    sm = state_machine_factory(state_machine)
 
     dawg = DAWG()
     dawg.add(input_string)
@@ -104,8 +107,8 @@ def test_character_acceptor_char_limit(
         expected_value: Expected output value
         state_machine_factory: Factory function for creating StateMachine
     """
-    acceptor = CharacterAcceptor(charset, char_limit=char_limit)
-    sm = state_machine_factory(acceptor)
+    state_machine = CharacterAcceptor(charset, char_limit=char_limit)
+    sm = state_machine_factory(state_machine)
 
     dawg = DAWG()
     dawg.add(expected_value)
@@ -124,8 +127,8 @@ def test_character_acceptor_char_limit(
 def test_character_acceptor_select() -> None:
     """Test the select method of CharacterWalker."""
     charset = ["a", "b", "c"]
-    acceptor = CharacterAcceptor(charset)
-    walker = CharacterWalker(acceptor)
+    state_machine = CharacterAcceptor(charset)
+    walker = CharacterWalker(state_machine)
 
     dawg = DAWG()
     for char in charset:

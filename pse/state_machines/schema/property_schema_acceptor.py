@@ -6,9 +6,9 @@ from typing import Any
 
 from pse_core import State
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.json.property_acceptor import PropertyAcceptor, PropertyWalker
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.json.property_acceptor import PropertyAcceptor, PropertyWalker
 from pse.util.get_state_machine import get_state_machine
 
 
@@ -67,10 +67,10 @@ class PropertySchemaWalker(PropertyWalker):
     """
 
     def __init__(
-        self, acceptor: PropertySchemaAcceptor, current_state: State | None = None
+        self, state_machine: PropertySchemaAcceptor, current_state: State | None = None
     ):
-        super().__init__(acceptor, current_state)
-        self.state_machine: PropertySchemaAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: PropertySchemaAcceptor = state_machine
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():

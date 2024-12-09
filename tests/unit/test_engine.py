@@ -14,14 +14,16 @@ def engine() -> StructuringEngine:
 
 
 def test_create_acceptor_with_invalid_schema(engine: StructuringEngine) -> None:
-    """Test creating an acceptor with an invalid schema."""
+    """Test creating an state_machine with an invalid schema."""
     with pytest.raises(ValueError):
         engine.set_schema(schema={"type": "invalid_type"}, use_delimiters=False)
 
 
 def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
-    """Test creating an acceptor with custom delimiters."""
-    from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
+    """Test creating an state_machine with custom delimiters."""
+    from pse.state_machines.collections.encapsulated_acceptor import (
+        EncapsulatedAcceptor,
+    )
 
     custom_opening: str = "<<<START>>>"
     custom_closing: str = "<<<END>>>"

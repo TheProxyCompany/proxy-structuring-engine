@@ -3,7 +3,7 @@ from __future__ import annotations
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
 
 
 class BooleanAcceptor(StateMachine):

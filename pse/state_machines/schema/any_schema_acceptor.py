@@ -12,7 +12,7 @@ class AnySchemaAcceptor(StateMachine):
         """
         Initialize the AnyOfAcceptor with multiple JSON schemas.
 
-        This acceptor will validate JSON input against any of the provided schemas.
+        This state_machine will validate JSON input against any of the provided schemas.
 
         Args:
             schemas (List[Dict[str, Any]]): A list of JSON schemas to validate against.
@@ -21,7 +21,9 @@ class AnySchemaAcceptor(StateMachine):
         from pse.util.get_state_machine import get_state_machine
 
         # Construct the state machine graph with an initial state `0` that transitions
-        # to the end state `$` for each schema acceptor.
+        # to the end state `$` for each schema state_machine.
         self.acceptors = [get_state_machine(schema, context) for schema in schemas]
 
-        super().__init__({0: [(acceptor, "$") for acceptor in self.acceptors]})
+        super().__init__(
+            {0: [(state_machine, "$") for state_machine in self.acceptors]}
+        )

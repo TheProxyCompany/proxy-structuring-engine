@@ -6,17 +6,17 @@ from pse_core import State, StateGraph
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
-from pse.acceptors.json.json_acceptor import JsonAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machines.json.json_acceptor import JsonAcceptor
 
 
 class ArrayAcceptor(StateMachine):
     """
     Accepts a well-formed JSON array and handles state transitions during parsing.
 
-    This acceptor manages the parsing of JSON arrays by defining the state transitions
+    This state_machine manages the parsing of JSON arrays by defining the state transitions
     and maintaining the current array values being parsed.
     """
 
@@ -52,14 +52,16 @@ class ArrayWalker(Walker):
     Walker for ArrayAcceptor that maintains the current state and accumulated values.
     """
 
-    def __init__(self, acceptor: ArrayAcceptor, current_state: State | None = None):
+    def __init__(
+        self, state_machine: ArrayAcceptor, current_state: State | None = None
+    ):
         """
-        Initialize the ArrayAcceptor.Walker with the parent acceptor and an empty list.
+        Initialize the ArrayAcceptor.Walker with the parent state_machine and an empty list.
 
         Args:
-            acceptor (ArrayAcceptor): The parent ArrayAcceptor instance.
+            state_machine (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
-        super().__init__(acceptor, current_state)
+        super().__init__(state_machine, current_state)
         self.value: list[Any] = []
 
     def clone(self) -> ArrayWalker:

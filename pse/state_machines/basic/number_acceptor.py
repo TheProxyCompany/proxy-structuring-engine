@@ -7,10 +7,10 @@ from pse_core import Edge, State
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
-from pse.acceptors.collections.sequence_acceptor import SequenceAcceptor
+from pse.state_machines.basic.character_acceptor import CharacterAcceptor
+from pse.state_machines.basic.integer_acceptor import IntegerAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.collections.sequence_acceptor import SequenceAcceptor
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class NumberAcceptor(StateMachine):
     """
     Accepts a well-formed JSON number.
 
-    This acceptor defines the state transitions for parsing JSON numbers, handling integer,
+    This state_machine defines the state transitions for parsing JSON numbers, handling integer,
     decimal, and exponential formats as specified by the JSON standard.
     """
 

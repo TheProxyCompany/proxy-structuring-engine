@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pse_core import State
 
-from pse.acceptors.basic.number_acceptor import NumberAcceptor, NumberWalker
+from pse.state_machines.basic.number_acceptor import NumberAcceptor, NumberWalker
 
 
 class NumberSchemaAcceptor(NumberAcceptor):
@@ -62,10 +62,10 @@ class NumberSchemaWalker(NumberWalker):
     """
 
     def __init__(
-        self, acceptor: NumberSchemaAcceptor, current_state: State | None = None
+        self, state_machine: NumberSchemaAcceptor, current_state: State | None = None
     ):
-        super().__init__(acceptor, current_state)
-        self.state_machine: NumberSchemaAcceptor = acceptor
+        super().__init__(state_machine, current_state)
+        self.state_machine: NumberSchemaAcceptor = state_machine
 
     def should_start_transition(self, token: str) -> bool:
         if self.state_machine.is_integer and self.target_state == 3:

@@ -3,12 +3,12 @@ from lexpy import DAWG
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-from pse.acceptors.basic.character_acceptor import CharacterAcceptor
-from pse.acceptors.basic.integer_acceptor import IntegerWalker
-from pse.acceptors.basic.number_acceptor import IntegerAcceptor, NumberAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.acceptors.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
+from pse.state_machines.basic.character_acceptor import CharacterAcceptor
+from pse.state_machines.basic.integer_acceptor import IntegerWalker
+from pse.state_machines.basic.number_acceptor import IntegerAcceptor, NumberAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
+from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
 
 
 @pytest.mark.parametrize(

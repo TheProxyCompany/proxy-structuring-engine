@@ -1,8 +1,8 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.basic.integer_acceptor import IntegerAcceptor
-from pse.acceptors.basic.text_acceptor import TextAcceptor
+from pse.state_machines.basic.integer_acceptor import IntegerAcceptor
+from pse.state_machines.basic.text_acceptor import TextAcceptor
 
 
 @pytest.mark.parametrize(

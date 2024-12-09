@@ -4,7 +4,7 @@ import pytest
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
-from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
+from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
 
 
 # Fixture for BooleanAcceptor
@@ -14,9 +14,9 @@ def boolean_acceptor():
 
 
 # Helper function to process input for BooleanAcceptor
-def process_input(acceptor: StateMachine, token: str) -> Iterable[Walker]:
-    walkers = acceptor.get_walkers()
-    return [walker for _, walker in acceptor.advance_all(walkers, token)]
+def process_input(state_machine: StateMachine, token: str) -> Iterable[Walker]:
+    walkers = state_machine.get_walkers()
+    return [walker for _, walker in state_machine.advance_all(walkers, token)]
 
 
 # Test for BooleanAcceptor

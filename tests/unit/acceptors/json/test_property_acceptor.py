@@ -1,7 +1,7 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.acceptors.json.property_acceptor import PropertyAcceptor
+from pse.state_machines.json.property_acceptor import PropertyAcceptor
 
 
 @pytest.fixture

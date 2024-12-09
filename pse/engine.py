@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
 from transformers.generation.logits_process import LogitsProcessor
 
-from pse.acceptors.collections.encapsulated_acceptor import EncapsulatedAcceptor
+from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.util.get_logit_bias import get_logit_bias
 from pse.util.get_state_machine import get_state_machine
 from pse.util.get_top_logits import get_top_logits
@@ -94,7 +94,7 @@ class StructuringEngine(LogitsProcessor):
 
     def get_valid_tokens(self) -> tuple[set[str], Trie]:
         """
-        Returns a list of valid token IDs based on the current state of the acceptor.
+        Returns a list of valid token IDs based on the current state of the state_machine.
 
         Args:
             logits: The logits tensor to mask. Just used for dimensionality.
@@ -155,7 +155,7 @@ class StructuringEngine(LogitsProcessor):
 
             return {}
 
-        acceptor = get_state_machine(
+        state_machine = get_state_machine(
             schema=get_schema(schema),
             start_hook=self._start_hook,
             end_hook=self._end_hook,
@@ -164,10 +164,10 @@ class StructuringEngine(LogitsProcessor):
         if use_delimiters:
             open_delimiter, close_delimiter = delimiters or ("```json\n", "\n```")
             self.state_machine = EncapsulatedAcceptor(
-                acceptor, open_delimiter, close_delimiter
+                state_machine, open_delimiter, close_delimiter
             )
         else:
-            self.state_machine = acceptor
+            self.state_machine = state_machine
 
         self.walkers = (
             list(self.state_machine.get_walkers()) if self.state_machine else []
@@ -175,7 +175,7 @@ class StructuringEngine(LogitsProcessor):
 
     def advance_token(self, token_id: int) -> int | None:
         """
-        Advances the acceptor's state using the provided token ID.
+        Advances the state_machine's state using the provided token ID.
         """
         if not (token := self.reverse_vocabulary.get(token_id)):
             logger.warning(f"Unknown token ID: {token_id}")
@@ -203,13 +203,13 @@ class StructuringEngine(LogitsProcessor):
             return longest_partial[1]
 
     def consume_raw_input(self, raw_input: str) -> None:
-        """Advances the acceptor using the provided raw input.
+        """Advances the state_machine using the provided raw input.
 
         Breaks input into tokens and advances all walkers for each token.
         Only exact token matches are supported (no partial matches).
 
         Args:
-            raw_input: The input string to advance the acceptor with.
+            raw_input: The input string to advance the state_machine with.
         """
         # Process each token of the raw string input
         for token_id in self.tokenizer.encode(raw_input, add_special_tokens=False):
@@ -235,8 +235,8 @@ class StructuringEngine(LogitsProcessor):
         """
         Checks whether the driver is in a structured state.
 
-        If the acceptor is encapsulated, then the driver is not structured until the opening delimiter is triggered.
-        If the acceptor is not encapsulated, then the driver is structured as soon as the first token is accepted.
+        If the state_machine is encapsulated, then the driver is not structured until the opening delimiter is triggered.
+        If the state_machine is not encapsulated, then the driver is structured as soon as the first token is accepted.
 
         When processing input, if the driver is within a JSON value (i.e., has consumed the `"` character when processing
         a JSON string), then the driver is not structured until the closing delimiter is triggered. This allows us to
@@ -252,7 +252,7 @@ class StructuringEngine(LogitsProcessor):
     @property
     def has_reached_accept_state(self) -> bool:
         """
-        Checks whether the acceptor has reached a valid final state.
+        Checks whether the state_machine has reached a valid final state.
 
         Returns:
             bool: True if in an accepted state, False otherwise.
@@ -300,7 +300,7 @@ class StructuringEngine(LogitsProcessor):
 
     def _waiting_for_trigger(self) -> bool:
         """
-        Determines if the acceptor is waiting for the opening delimiter.
+        Determines if the state_machine is waiting for the opening delimiter.
 
         Returns:
             bool: True if waiting for trigger, False otherwise.
@@ -314,12 +314,12 @@ class StructuringEngine(LogitsProcessor):
 
     def _start_hook(self) -> None:
         """
-        Called when the acceptor starts processing a new structured output.
+        Called when the state_machine starts processing a new structured output.
         """
         self.within_json_value = True
 
     def _end_hook(self) -> None:
         """
-        Called when the acceptor ends processing a structured output.
+        Called when the state_machine ends processing a structured output.
         """
         self.within_json_value = False

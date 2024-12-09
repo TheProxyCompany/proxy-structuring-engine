@@ -18,7 +18,7 @@ class JsonAcceptor(StateMachine):
         """
         Retrieve the graph edges for transitions out of the current state.
 
-        This method delegates to the appropriate acceptor based on the initial character of the JSON value.
+        This method delegates to the appropriate state_machine based on the initial character of the JSON value.
 
         Args:
             state (int): The current state in the state machine.
@@ -28,12 +28,14 @@ class JsonAcceptor(StateMachine):
             by tuples of TokenAcceptors and their corresponding target states.
         """
         if state == 0:
-            from pse.acceptors.basic.boolean_acceptor import BooleanAcceptor
-            from pse.acceptors.basic.number_acceptor import NumberAcceptor
-            from pse.acceptors.basic.string_acceptor import StringAcceptor
-            from pse.acceptors.basic.text_acceptor import TextAcceptor as NullAcceptor
-            from pse.acceptors.collections.array_acceptor import ArrayAcceptor
-            from pse.acceptors.json.object_acceptor import ObjectAcceptor
+            from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
+            from pse.state_machines.basic.number_acceptor import NumberAcceptor
+            from pse.state_machines.basic.string_acceptor import StringAcceptor
+            from pse.state_machines.basic.text_acceptor import (
+                TextAcceptor as NullAcceptor,
+            )
+            from pse.state_machines.collections.array_acceptor import ArrayAcceptor
+            from pse.state_machines.json.object_acceptor import ObjectAcceptor
 
             return [
                 (ObjectAcceptor(), "$"),

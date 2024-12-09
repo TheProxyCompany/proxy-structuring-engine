@@ -15,7 +15,7 @@ class TextAcceptor(StateMachine):
     Accepts a predefined sequence of characters, validating input against the specified text.
 
     Attributes:
-        text (str): The target string that this acceptor is validating against.
+        text (str): The target string that this state_machine is validating against.
     """
 
     def __init__(
@@ -25,7 +25,7 @@ class TextAcceptor(StateMachine):
         Initialize a new TextAcceptor instance with the specified text.
 
         Args:
-            text (str): The string of characters that this acceptor will validate.
+            text (str): The string of characters that this state_machine will validate.
                 Must be a non-empty string.
 
         Raises:
@@ -59,26 +59,29 @@ class TextWalker(Walker):
     Represents the current position within the TextAcceptor's text during validation.
 
     Attributes:
-        acceptor (TextAcceptor): The TextAcceptor instance that owns this Walker.
+        state_machine (TextAcceptor): The TextAcceptor instance that owns this Walker.
         consumed_character_count (int): The current position in the text being validated.
     """
 
     def __init__(
         self,
-        acceptor: TextAcceptor,
+        state_machine: TextAcceptor,
         consumed_character_count: int | None = None,
     ):
         """
         Initialize a new Walker instance.
 
         Args:
-            acceptor (TextAcceptor): The TextAcceptor instance associated with this walker.
+            state_machine (TextAcceptor): The TextAcceptor instance associated with this walker.
             consumed_character_count (int, optional): The initial position in the text. Defaults to 0.
         """
-        super().__init__(acceptor)
+        super().__init__(state_machine)
+        if consumed_character_count is not None and consumed_character_count < 0:
+            raise ValueError("Consumed character count must be non-negative")
+
         self.target_state = "$"
-        self.state_machine: TextAcceptor = acceptor
-        self.consumed_character_count = (consumed_character_count or 0)
+        self.state_machine: TextAcceptor = state_machine
+        self.consumed_character_count = consumed_character_count or 0
 
     def can_accept_more_input(self) -> bool:
         """
