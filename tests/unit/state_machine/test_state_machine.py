@@ -11,6 +11,25 @@ from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
 
 
+def test_hello_world():
+    sm = StateMachine(
+        state_graph={0: [(TextAcceptor("hello world"), 1)]},
+        start_state=0,
+        end_states=[1],
+    )
+    one_walker = sm.get_new_walker()
+    assert not one_walker.has_reached_accept_state()
+
+
+    walkers = list(sm.get_walkers())
+    advanced = list(StateMachine.advance_all(walkers, "hello world"))
+    walkers = [walker for _, walker in advanced]
+
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.get_current_value() == "hello world"
+
 @pytest.mark.parametrize(
     "token, expected_value",
     [
