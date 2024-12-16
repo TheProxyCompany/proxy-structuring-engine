@@ -25,7 +25,7 @@ def test_walker_advance_with_valid_character(
     walker = StringCharacterWalker(string_char_acceptor, initial_value)
     advance_char = "l"
     advanced_walkers = list(walker.consume_token(advance_char))
-    assert len(advanced_walkers) == 1, "Should yield one advanced walker"
+    assert len(advanced_walkers) == 1, "Should return one advanced walker"
     assert (
         advanced_walkers[0].get_current_value() == "hel"
     ), "Accumulated value should be 'hel'"
@@ -46,7 +46,7 @@ def test_walker_advance_with_invalid_character(
     advanced_walkers = list(walker.consume_token(advance_char))
     assert (
         len(advanced_walkers) == 0
-    ), "Should not yield any advanced walkers for invalid input"
+    ), "Should not return any advanced walkers for invalid input"
 
 
 def test_string_char_acceptor_get_value(string_char_acceptor: StringCharacterAcceptor):

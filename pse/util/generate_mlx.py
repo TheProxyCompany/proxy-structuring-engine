@@ -43,7 +43,7 @@ def sample(
         engine (StructuringEngine): The engine to use for generation.
         temp (float): The temperature for sampling, if 0.0 the argmax is used.
           Default: ``1.0``.
-    Yields:
+    returns:
         Tuple[mx.array, mx.array]: A tuple of one token and a vector of log probabilities.
     """
     import timeit

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from copy import copy
 from typing import Self
 
@@ -44,19 +44,21 @@ class WaitForAcceptor(StateMachine):
 
     def get_transitions(
         self, walker: Walker, state: State | None = None
-    ) -> Iterable[tuple[Walker, State, State]]:
+    ) -> list[tuple[Walker, State, State]]:
         """
         Get transitions for the WaitForAcceptor.
         """
+        transitions = []
         for transition in self.wait_for_sm.get_walkers():
-            yield transition, 0, "$"
+            transitions.append((transition, 0, "$"))
+        return transitions
 
-    def get_walkers(self) -> Iterable[Walker]:
+    def get_walkers(self) -> list[Walker]:
         """
-        Yields:
+        return:
             Walkers for the WaitForAcceptor.
         """
-        yield from self.branch_walker(WaitForWalker(self))
+        return self.branch_walker(WaitForWalker(self))
 
 
 class WaitForWalker(Walker):
@@ -123,7 +125,7 @@ class WaitForWalker(Walker):
             input (str): The input to process.
 
         Returns:
-            Iterable[TokenAcceptor.Walker]: Updated walkers after processing.
+            list[TokenAcceptor.Walker]: Updated walkers after processing.
         """
         if (
             not self.transition_walker

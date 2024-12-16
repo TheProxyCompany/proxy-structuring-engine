@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import Any
 
 from pse_core import Edge, State
@@ -46,11 +46,12 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
     def get_new_walker(self, state: State | None = None) -> ObjectSchemaWalker:
         return ObjectSchemaWalker(self, state)
 
-    def get_edges(self, state: State, value: dict[str, Any]) -> Iterable[Edge]:
+    def get_edges(self, state: State, value: dict[str, Any]) -> list[Edge]:
+        edges = []
         if state == 2:
             for prop_name, prop_schema in self.properties.items():
                 if prop_name not in value:
-                    yield (
+                    edge = (
                         PropertySchemaAcceptor(
                             prop_name,
                             prop_schema,
@@ -60,22 +61,24 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
                         ),
                         3,
                     )
+                    edges.append(edge)
         elif state == 4:
             has_all_required_properties = all(
                 prop_name in value for prop_name in self.required_property_names
             )
-            yield (SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2)
+            edges.append((SequenceAcceptor([TextAcceptor(","), WhitespaceAcceptor()]), 2))
             if has_all_required_properties:
-                yield (TextAcceptor("}"), "$")
+                edges.append((TextAcceptor("}"), "$"))
         else:
-            yield from super().get_edges(state)
+            edges.extend(super().get_edges(state))
+        return edges
 
     def get_transitions(
         self, walker: Walker, state: State | None = None
-    ) -> Iterable[tuple[Walker, State, State]]:
+    ) -> list[tuple[Walker, State, State]]:
         """Retrieve transition walkers from the current state.
 
-        For each edge from the current state, yields walkers that can traverse that edge.
+        For each edge from the current state, returns walkers that can traverse that edge.
         Handles optional acceptors and pass-through transitions appropriately.
 
         Args:
@@ -83,26 +86,28 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             state: Optional starting state. If None, uses the walker's current state.
 
         Returns:
-            Iterable of tuples (transition_walker, source_state, target_state).
+            list[tuple[Walker, State, State]]: A list of tuples representing transitions.
         """
         current_state = state or walker.current_state
+        transitions = []
         for state_machine, target_state in self.get_edges(
             current_state, walker.get_current_value()
         ):
             for transition in state_machine.get_walkers():
-                yield transition, current_state, target_state
+                transitions.append((transition, current_state, target_state))
 
             if (
                 state_machine.is_optional
                 and target_state not in self.end_states
                 and walker.can_accept_more_input()
             ):
-                yield from self.get_transitions(walker, target_state)
+                transitions.extend(self.get_transitions(walker, target_state))
+        return transitions
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ObjectSchemaAcceptor):
             return other.__eq__(self)
-        
+
         return super().__eq__(other) and self.schema == other.schema
 
 

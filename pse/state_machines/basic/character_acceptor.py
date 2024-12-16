@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -16,7 +14,7 @@ class CharacterAcceptor(StateMachine):
 
     def __init__(
         self,
-        charset: Iterable[str],
+        charset: list[str],
         char_min: int | None = None,
         char_limit: int | None = None,
         is_optional: bool = False,
@@ -26,7 +24,7 @@ class CharacterAcceptor(StateMachine):
         Initialize the CharAcceptor with a set of valid characters.
 
         Args:
-            charset (Iterable[str]): An iterable of characters to be accepted.
+            charset (list[str]): A list of characters to be accepted.
         """
         super().__init__(is_optional=is_optional, is_case_sensitive=case_sensitive)
         self.char_min = char_min or 0
@@ -68,8 +66,8 @@ class CharacterWalker(Walker):
         self.state_machine: CharacterAcceptor = state_machine
         self._raw_value = value
 
-    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
-        yield from self.state_machine.charset
+    def get_valid_continuations(self, depth: int = 0) -> list[str]:
+        return list(self.state_machine.charset)
 
     def should_start_transition(self, token: str) -> bool:
         """Determines if a transition should start with the given input string."""
@@ -87,7 +85,7 @@ class CharacterWalker(Walker):
             token (str): The input to advance with.
 
         Returns:
-            Iterable[Walker]: An iterable containing the new walker state if input is valid.
+            list[Walker]: A list containing the new walker state if input is valid.
         """
         if not token:
             self._accepts_more_input = False

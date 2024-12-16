@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
@@ -98,18 +97,22 @@ class TextWalker(Walker):
         remaining_text = self.state_machine.text[self.consumed_character_count :]
         return remaining_text.startswith(token) or token.startswith(remaining_text)
 
-    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> list[str]:
         if self.consumed_character_count >= len(self.state_machine.text):
             return []
 
+        valid_continuations = []
+
         remaining_text = self.state_machine.text[self.consumed_character_count :]
-        yield remaining_text
+        valid_continuations.append(remaining_text)
 
         # Check if the exact partial prefixes exist in the DAWG
         max_possible_match_len = len(remaining_text)
         for i in range(1, max_possible_match_len):
             partial = remaining_text[:i]
-            yield partial
+            valid_continuations.append(partial)
+
+        return valid_continuations
 
     def consume_token(self, token: str) -> list[Walker]:
         """
@@ -118,7 +121,7 @@ class TextWalker(Walker):
             token (str): The string to match against the expected text.
 
         Returns:
-            Iterable[Walker]: A walker if the token matches, empty otherwise.
+            list[Walker]: A walker if the token matches, empty otherwise.
         """
         pos = self.consumed_character_count
         match_len = min(len(self.state_machine.text) - pos, len(token))

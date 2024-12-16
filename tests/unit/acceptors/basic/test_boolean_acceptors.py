@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 import pytest
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -14,7 +12,7 @@ def boolean_acceptor():
 
 
 # Helper function to process input for BooleanAcceptor
-def process_input(state_machine: StateMachine, token: str) -> Iterable[Walker]:
+def process_input(state_machine: StateMachine, token: str) -> list[Walker]:
     walkers = state_machine.get_walkers()
     return [walker for _, walker in state_machine.advance_all(walkers, token)]
 

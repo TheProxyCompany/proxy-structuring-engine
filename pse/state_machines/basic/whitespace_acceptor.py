@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
@@ -69,11 +68,11 @@ class WhitespaceWalker(Walker):
 
         return True
 
-    def get_valid_continuations(self, depth: int = 0) -> Iterable[str]:
+    def get_valid_continuations(self, depth: int = 0) -> list[str]:
         if self.length_exceeded:
             return []
 
-        yield from WHITESPACE_CHARS
+        return list(WHITESPACE_CHARS)
 
     def can_accept_more_input(self) -> bool:
         return (

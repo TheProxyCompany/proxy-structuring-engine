@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 
 import pytest
 from pse_core.state_machine import StateMachine
@@ -45,7 +45,7 @@ def state_machine_factory() -> Callable[[CharacterAcceptor], StateMachine]:
     ],
 )
 def test_character_acceptor_basic(
-    charset: Iterable[str],
+    charset: list[str],
     input_string: str,
     expected_value: str | None,
     should_accept: bool,
@@ -90,7 +90,7 @@ def test_character_acceptor_basic(
     ],
 )
 def test_character_acceptor_char_limit(
-    charset: Iterable[str],
+    charset: list[str],
     char_limit: int,
     input_string: str,
     expected_value: str,

@@ -22,7 +22,7 @@ class SequenceAcceptor(StateMachine):
         Initialize the SequenceAcceptor with a sequence of TokenAcceptors.
 
         Args:
-            acceptors (Iterable[TokenAcceptor]): An iterable of TokenAcceptors to be chained.
+            acceptors (list[TokenAcceptor]): An list of TokenAcceptors to be chained.
         """
         self.acceptors = acceptors
         state_graph = {}
