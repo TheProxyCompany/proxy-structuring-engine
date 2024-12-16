@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -57,7 +55,7 @@ class StringCharacterWalker(Walker):
 
         return True
 
-    def consume_token(self, token: str) -> Iterable[Walker]:
+    def consume_token(self, token: str) -> list[Walker]:
         """
         Advance the walker with the given input.
 
@@ -76,13 +74,13 @@ class StringCharacterWalker(Walker):
 
         if not valid_prefix:
             self._accepts_more_input = False
-            return
+            return []
 
         new_walker = self.clone()
         new_walker._raw_value = (self._raw_value or "") + valid_prefix
         new_walker.remaining_input = token[len(valid_prefix) :] or None
         new_walker.consumed_character_count += len(valid_prefix)
-        yield AcceptedState(new_walker)
+        return [AcceptedState(new_walker)]
 
     def is_within_value(self) -> bool:
         """

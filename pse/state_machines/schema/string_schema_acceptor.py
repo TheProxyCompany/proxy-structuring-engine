@@ -127,10 +127,8 @@ class StringSchemaWalker(StringWalker):
             and self.target_state not in self.state_machine.end_states
             and self.state_machine.pattern
             and self.transition_walker
-            and self.transition_walker.get_raw_value()
-            and not self.is_pattern_prefix(
-                self.transition_walker.get_raw_value() + token
-            )
+            and (raw_value := self.transition_walker.get_raw_value())
+            and not self.is_pattern_prefix(raw_value + token)
         ):
             return False
 
@@ -187,4 +185,6 @@ class StringSchemaWalker(StringWalker):
         return True  # If no pattern, always return True
 
     def get_current_value(self) -> Any:
-        return json.loads(self.get_raw_value()) if self.get_raw_value() else None
+        if raw_value := self.get_raw_value():
+            return json.loads(raw_value)
+        return None

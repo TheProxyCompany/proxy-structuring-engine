@@ -82,10 +82,16 @@ class PropertyWalker(SequenceWalker):
             return False
 
         try:
-            if self.target_state == 1:
-                self.prop_name = json.loads(self.transition_walker.get_raw_value())
-            elif self.target_state in self.state_machine.end_states:
-                self.prop_value = json.loads(self.transition_walker.get_raw_value())
+            if (
+                self.target_state == 1
+                and (raw_value := self.transition_walker.get_raw_value())
+            ):
+                self.prop_name = json.loads(raw_value)
+            elif (
+                self.target_state in self.state_machine.end_states
+                and (raw_value := self.transition_walker.get_raw_value())
+            ):
+                self.prop_value = json.loads(raw_value)
         except Exception:
             return False
 

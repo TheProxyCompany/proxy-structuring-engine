@@ -81,7 +81,7 @@ class WhitespaceWalker(Walker):
             and self.consumed_character_count < self.state_machine.max_whitespace
         )
 
-    def consume_token(self, token: str) -> Iterable[Walker]:
+    def consume_token(self, token: str) -> list[Walker]:
         """
         Advance the walker with the given characters.
         Args:
@@ -116,8 +116,8 @@ class WhitespaceWalker(Walker):
                 copy = self.clone()
                 copy.remaining_input = remaining_input
                 copy._accepts_more_input = False
-                yield AcceptedState(copy)
-            return
+                return [AcceptedState(copy)]
+            return []
 
         next_walker = self.clone()
         next_walker._raw_value = (next_walker._raw_value or "") + valid_input
@@ -133,11 +133,11 @@ class WhitespaceWalker(Walker):
             <= self.state_machine.max_whitespace
         )
 
-        yield (
+        return [
             AcceptedState(next_walker)
             if next_walker.consumed_character_count >= self.state_machine.min_whitespace
             else next_walker
-        )
+        ]
 
     def get_current_value(self) -> str:
         """

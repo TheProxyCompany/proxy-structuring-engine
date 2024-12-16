@@ -111,7 +111,7 @@ class TextWalker(Walker):
             partial = remaining_text[:i]
             yield partial
 
-    def consume_token(self, token: str) -> Iterable[Walker]:
+    def consume_token(self, token: str) -> list[Walker]:
         """
         Advances the walker if the token matches the expected text at the current position.
         Args:
@@ -131,9 +131,11 @@ class TextWalker(Walker):
             )
 
             if pos + match_len == len(self.state_machine.text):
-                yield AcceptedState(next_walker)
+                return [AcceptedState(next_walker)]
             else:
-                yield next_walker
+                return [next_walker]
+
+        return []
 
     def get_current_value(self) -> str:
         """

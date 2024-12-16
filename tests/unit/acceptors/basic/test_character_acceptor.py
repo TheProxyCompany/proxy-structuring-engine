@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 
 import pytest
-from lexpy import DAWG
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.basic.character_acceptor import (
@@ -65,11 +64,11 @@ def test_character_acceptor_basic(
     state_machine = CharacterAcceptor(charset, case_sensitive=False)
     sm = state_machine_factory(state_machine)
 
-    dawg = DAWG()
-    dawg.add(input_string)
+    # dawg = DAWG()
+    # dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
+    advanced = list(StateMachine.advance_all(walkers, input_string))
 
     if should_accept:
         assert any(
@@ -110,12 +109,12 @@ def test_character_acceptor_char_limit(
     state_machine = CharacterAcceptor(charset, char_limit=char_limit)
     sm = state_machine_factory(state_machine)
 
-    dawg = DAWG()
-    dawg.add(expected_value)
-    dawg.add(input_string)
+    # dawg = DAWG()
+    # dawg.add(expected_value)
+    # dawg.add(input_string)
 
     walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, input_string, dawg))
+    advanced = list(StateMachine.advance_all(walkers, input_string))
 
     assert len(advanced) == 1, "Expected 1 walker after advancing"
     assert any(walker.has_reached_accept_state() for _, walker in advanced)
@@ -130,9 +129,9 @@ def test_character_acceptor_select() -> None:
     state_machine = CharacterAcceptor(charset)
     walker = CharacterWalker(state_machine)
 
-    dawg = DAWG()
-    for char in charset:
-        dawg.add(char)
+    # dawg = DAWG()
+    # for char in charset:
+    #     dawg.add(char)
 
     selections = walker.get_valid_continuations()
     assert set(selections) == set(charset)

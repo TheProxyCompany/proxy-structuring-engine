@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pse.state_machines.basic.character_acceptor import (
     CharacterAcceptor,
     CharacterWalker,
@@ -30,7 +32,7 @@ class IntegerWalker(CharacterWalker):
         super().__init__(state_machine, value)
         self.state_machine: IntegerAcceptor = state_machine
 
-    def get_current_value(self) -> str | None:
+    def get_current_value(self) -> Any:
         if self.state_machine.drop_leading_zeros:
             return super().parse_value(self._raw_value)
         return self._raw_value

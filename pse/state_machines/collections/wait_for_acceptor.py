@@ -115,7 +115,7 @@ class WaitForWalker(Walker):
             and self.transition_walker.is_within_value()
         )
 
-    def consume_token(self, token: str) -> Iterable[Walker]:
+    def consume_token(self, token: str) -> list[Walker]:
         """
         Advance all internal walkers with the given input.
 
@@ -133,10 +133,8 @@ class WaitForWalker(Walker):
             # trying to advance the trigger state_machine
             if not self.state_machine.allow_break:
                 self.transition_walker = None
-                yield from self.branch()
-                return
+                return self.branch()
 
-            yield self
-            return
+            return [self]
 
-        yield from self.state_machine.advance(self, token)
+        return self.state_machine.advance(self, token)

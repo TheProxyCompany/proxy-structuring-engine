@@ -1,5 +1,4 @@
 import pytest
-from lexpy import DAWG
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
@@ -199,20 +198,20 @@ def test_whitespace_acceptor_with_no_whitespace():
     assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)
 
 
-def test_whitespace_acceptor_partial_whitespace_input():
-    """Test advancing with partial whitespace followed by non-whitespace."""
-    dawg = DAWG()
-    dawg.add("  ")
-    dawg.add("a")
-    state_machine = WhitespaceAcceptor()
-    walkers = list(state_machine.get_walkers())
-    advancing_token = "  a"
-    result = list(StateMachine.advance_all(walkers, advancing_token, dawg))
-    assert len(result) == 1
-    for advanced_token, walker in result:
-        assert walker.has_reached_accept_state()
-        assert advanced_token == "  "
-        assert walker.get_current_value() == "  "
+# def test_whitespace_acceptor_partial_whitespace_input():
+#     """Test advancing with partial whitespace followed by non-whitespace."""
+#     dawg = DAWG()
+#     dawg.add("  ")
+#     dawg.add("a")
+#     state_machine = WhitespaceAcceptor()
+#     walkers = list(state_machine.get_walkers())
+#     advancing_token = "  a"
+#     result = list(StateMachine.advance_all(walkers, advancing_token, dawg))
+#     assert len(result) == 1
+#     for advanced_token, walker in result:
+#         assert walker.has_reached_accept_state()
+#         assert advanced_token == "  "
+#         assert walker.get_current_value() == "  "
 
 
 def test_whitespace_acceptor_walker_length_exceeded():

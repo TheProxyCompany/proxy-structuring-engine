@@ -79,7 +79,7 @@ class CharacterWalker(Walker):
         )
         return self._accepts_more_input
 
-    def consume_token(self, token: str) -> Iterable[Walker]:
+    def consume_token(self, token: str) -> list[Walker]:
         """
         Advance the walker with the given input. Accumulates all valid characters.
 
@@ -91,7 +91,7 @@ class CharacterWalker(Walker):
         """
         if not token:
             self._accepts_more_input = False
-            return
+            return []
 
         token = token.lower() if not self.state_machine.is_case_sensitive else token
 
@@ -110,7 +110,7 @@ class CharacterWalker(Walker):
 
         if valid_length == 0:
             self._accepts_more_input = False
-            return
+            return []
 
         # Create new walker with accumulated value
         new_walker = self.__class__(
@@ -127,11 +127,11 @@ class CharacterWalker(Walker):
             or valid_length < self.state_machine.char_limit
         )
 
-        yield (
+        return [
             AcceptedState(new_walker)
             if new_walker.consumed_character_count >= self.state_machine.char_min
             else new_walker
-        )
+        ]
 
     def get_raw_value(self) -> str:
         return self._raw_value or ""

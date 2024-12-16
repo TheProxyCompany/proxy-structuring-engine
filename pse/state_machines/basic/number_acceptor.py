@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 
 from pse_core import Edge, State
 from pse_core.state_machine import StateMachine
@@ -62,21 +61,18 @@ class NumberAcceptor(StateMachine):
     def get_new_walker(self, state: int | str) -> NumberWalker:
         return NumberWalker(self, state)
 
-    def get_edges(self, state: State) -> Iterable[Edge]:
+    def get_edges(self, state: State) -> list[Edge]:
         """
         Get the edges for a given state.
         """
         if state == 0:
-            yield from super().get_edges(1)
-            yield from super().get_edges(state)
+            return [*super().get_edges(1), *super().get_edges(state)]
         elif state == 2:
-            yield from super().get_edges(state)
-            yield from super().get_edges(3)
+            return [*super().get_edges(state), *super().get_edges(3)]
         elif state == 4:
-            yield from super().get_edges(5)
-            yield from super().get_edges(state)
+            return [*super().get_edges(5), *super().get_edges(state)]
         else:
-            yield from super().get_edges(state)
+            return [*super().get_edges(state)]
 
 
 class NumberWalker(Walker):

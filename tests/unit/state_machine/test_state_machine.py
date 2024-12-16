@@ -1,5 +1,4 @@
 import pytest
-from lexpy import DAWG
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
 
@@ -26,9 +25,9 @@ def test_hello_world():
     assert one_walker.state_machine == sm
 
     walkers = sm.get_walkers()
-    breakpoint()
     advanced = sm.advance_all(walkers, "hello world")
     walkers = [walker for _, walker in advanced]
+    breakpoint()
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:
@@ -439,13 +438,13 @@ def test_state_machine_advance_walker_with_remaining_input():
 def test_whitespace_acceptor():
     """Test StateMachine with WhitespaceAcceptor."""
 
-    dawg = DAWG()
-    dawg.add("\n")
-    dawg.add("\n\n")
-    dawg.add(" ")
-    dawg.add("{")
-    dawg.add("{.")
-    dawg.add("}")
+    # dawg = DAWG()
+    # dawg.add("\n")
+    # dawg.add("\n\n")
+    # dawg.add(" ")
+    # dawg.add("{")
+    # dawg.add("{.")
+    # dawg.add("}")
     sm = StateMachine(
         {
             0: [(TextAcceptor("{"), 1)],
@@ -462,7 +461,7 @@ def test_whitespace_acceptor():
     assert first_walker.current_state == sm.start_state
     assert isinstance(first_walker.transition_walker, TextWalker)
 
-    advancement = StateMachine.advance_all(original_walkers, "{.", dawg)
+    advancement = StateMachine.advance_all(original_walkers, "{.")
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "{"
@@ -474,7 +473,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
 
-    advancement = StateMachine.advance_all(new_walkers, " ", dawg)
+    advancement = StateMachine.advance_all(new_walkers, " ")
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == " "
@@ -486,7 +485,7 @@ def test_whitespace_acceptor():
 
     assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
 
-    advancement = StateMachine.advance_all(new_walkers, "\n}", dawg)
+    advancement = StateMachine.advance_all(new_walkers, "\n}")
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == "\n}"
@@ -510,10 +509,10 @@ def test_simple_number_acceptor():
         }
     )
 
-    dawg = DAWG()
-    dawg.add("-")
-    dawg.add("-1")
-    dawg.add("1")
+    # dawg = DAWG()
+    # dawg.add("-")
+    # dawg.add("-1")
+    # dawg.add("1")
     walkers = list(sm.get_walkers())
     assert len(walkers) == 2
     text_acceptor_walker = walkers[0]
@@ -523,7 +522,7 @@ def test_simple_number_acceptor():
     assert isinstance(integer_acceptor_walker, Walker)
     assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)
 
-    for advanced_token, walker in StateMachine.advance_all(walkers, "-1.2", dawg):
+    for advanced_token, walker in StateMachine.advance_all(walkers, "-1.2"):
         assert advanced_token == "-1"
         assert walker.has_reached_accept_state()
         assert walker.get_current_value() == -1
