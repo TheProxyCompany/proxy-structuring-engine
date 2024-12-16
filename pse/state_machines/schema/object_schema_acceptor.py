@@ -101,7 +101,8 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ObjectSchemaAcceptor):
-            return NotImplemented
+            return other.__eq__(self)
+        
         return super().__eq__(other) and self.schema == other.schema
 
 

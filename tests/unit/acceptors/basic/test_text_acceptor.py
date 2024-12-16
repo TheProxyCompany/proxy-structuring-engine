@@ -4,15 +4,22 @@ from pse_core.accepted_state import AcceptedState
 from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 
 
+def test_basic():
+    text_acceptor = TextAcceptor("hello")
+    text_walker = TextWalker(text_acceptor, 0)
+    text_walker_2 = text_acceptor.get_new_walker()
+    assert text_walker == text_walker_2
+
 @pytest.fixture
 def text_acceptor():
     """Fixture to provide a TextAcceptor instance."""
     return TextAcceptor("hello")
 
 
-def test_advance_complete(text_acceptor: TextAcceptor):
+def test_advance_complete():
     """Test advancing the walker completes the state_machine."""
-    walker = TextWalker(text_acceptor, 4)  # Position before last character
+    text_acceptor = TextAcceptor("hello")
+    walker = TextWalker(text_acceptor, 4)
     advanced = list(walker.consume_token("o"))
     assert len(advanced) == 1
     accepted = advanced[0]

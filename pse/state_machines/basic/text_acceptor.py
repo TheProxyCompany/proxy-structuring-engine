@@ -41,9 +41,6 @@ class TextAcceptor(StateMachine):
     def get_new_walker(self, state: int | str | None = None) -> TextWalker:
         return TextWalker(self)
 
-    def __str__(self) -> str:
-        return self.__repr__()
-
     def __repr__(self) -> str:
         """
         Provide a string representation of the TextAcceptor.
@@ -183,7 +180,7 @@ class TextWalker(Walker):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TextWalker):
-            return False
+            return other.__eq__(self)
 
         return (
             super().__eq__(other)
