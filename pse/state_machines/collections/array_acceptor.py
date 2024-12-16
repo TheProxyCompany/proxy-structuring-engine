@@ -62,6 +62,7 @@ class ArrayWalker(Walker):
             state_machine (ArrayAcceptor): The parent ArrayAcceptor instance.
         """
         super().__init__(state_machine, current_state)
+        self.state_machine: ArrayAcceptor = state_machine
         self.value: list[Any] = []
 
     def clone(self) -> ArrayWalker:
@@ -71,7 +72,8 @@ class ArrayWalker(Walker):
         Returns:
             ArrayAcceptor.Walker: A new instance of the cloned walker.
         """
-        cloned_walker = super().clone()
+        cloned_walker = self.__class__(self.state_machine, self.current_state)
+        cloned_walker.accepted_history = self.accepted_history[:]
         cloned_walker.value = self.value[:]
         return cloned_walker
 

@@ -15,9 +15,11 @@ class StringCharacterAcceptor(StateMachine):
     Accepts one or more valid JSON unescaped string characters.
     """
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
     def get_new_walker(self, state: int | str) -> StringCharacterWalker:
         return StringCharacterWalker(self)
-
 
 class StringCharacterWalker(Walker):
     """
@@ -76,8 +78,8 @@ class StringCharacterWalker(Walker):
             self._accepts_more_input = False
             return []
 
-        new_walker = self.clone()
-        new_walker._raw_value = (self._raw_value or "") + valid_prefix
+        value = (self._raw_value or "") + valid_prefix
+        new_walker = self.__class__(self.state_machine, value)
         new_walker.remaining_input = token[len(valid_prefix) :] or None
         new_walker.consumed_character_count += len(valid_prefix)
         return [AcceptedState(new_walker)]

@@ -25,7 +25,7 @@ def default_delimiters():
 
 
 @pytest.fixture
-def default_encapsulated_acceptor(content_acceptor, default_delimiters):
+def default_encapsulated_acceptor(content_acceptor, default_delimiters) -> EncapsulatedAcceptor:
     """Fixture for EncapsulatedAcceptor with default settings."""
     return EncapsulatedAcceptor(
         content_acceptor,
@@ -56,14 +56,17 @@ def test_initialization_with_custom_delimiters(content_acceptor):
     assert acceptor_2.text == custom_close
 
 
-def test_accepting_valid_sequence(default_encapsulated_acceptor, default_delimiters):
+def test_accepting_valid_sequence(
+    default_encapsulated_acceptor: EncapsulatedAcceptor,
+    default_delimiters: dict[str, str],
+) -> None:
     """Test accepting a valid sequence with delimiters and content."""
     input_sequence = (
         default_delimiters["open_delimiter"]
         + "content"
         + default_delimiters["close_delimiter"]
     )
-    walkers = list(default_encapsulated_acceptor.get_walkers())
+    walkers = default_encapsulated_acceptor.get_walkers()
     for char in input_sequence:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
@@ -118,7 +121,7 @@ def test_accepting_custom_delimiters(content_acceptor):
         close_delimiter=custom_close,
     )
     input_sequence = custom_open + "content" + custom_close
-    walkers = list(encapsulated_acceptor.get_walkers())
+    walkers = encapsulated_acceptor.get_walkers()
     for char in input_sequence:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
@@ -136,7 +139,7 @@ def test_nested_encapsulated_acceptors():
         inner_acceptor, open_delimiter="<outer>", close_delimiter="</outer>"
     )
     input_sequence = "<outer><inner>inner_content</inner></outer>"
-    walkers = list(outer_acceptor.get_walkers())
+    walkers = outer_acceptor.get_walkers()
     for char in input_sequence:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
@@ -175,7 +178,7 @@ def test_acceptor_with_whitespace_content(default_delimiters):
         + "   "
         + default_delimiters["close_delimiter"]
     )
-    walkers = list(encapsulated_acceptor.get_walkers())
+    walkers = encapsulated_acceptor.get_walkers()
     for char in input_sequence:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 

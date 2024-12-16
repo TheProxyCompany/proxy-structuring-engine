@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -14,7 +16,7 @@ class CharacterAcceptor(StateMachine):
 
     def __init__(
         self,
-        charset: list[str],
+        charset: list[str] | Iterable[str],
         char_min: int | None = None,
         char_limit: int | None = None,
         is_optional: bool = False,

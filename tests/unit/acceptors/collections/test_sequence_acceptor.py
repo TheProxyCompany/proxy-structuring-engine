@@ -188,12 +188,6 @@ def test_optional_acceptor():
     )
 
     input_string_no_whitespace = "Hello,World."
-    # Currently bugged because the sequence state_machine
-    # is not properly putting itself in an accepted state - it
-    # should be in the accepted state after it tries to advance the
-    # optional state_machine and fails.
-    #
-    # TODO: Fix this.
     new_walkers_no_whitespace = [
         walker
         for _, walker in StateMachine.advance_all(walkers, input_string_no_whitespace)

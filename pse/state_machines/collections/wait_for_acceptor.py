@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from copy import copy
-from typing import Self
 
 from pse_core import State
 from pse_core.state_machine import StateMachine
@@ -53,7 +51,7 @@ class WaitForAcceptor(StateMachine):
             transitions.append((transition, 0, "$"))
         return transitions
 
-    def get_walkers(self) -> list[Walker]:
+    def get_walkers(self, state: State | None = None) -> list[Walker]:
         """
         return:
             Walkers for the WaitForAcceptor.
@@ -78,12 +76,12 @@ class WaitForWalker(Walker):
         self.target_state = "$"
         self.state_machine: WaitForAcceptor = state_machine
 
-    def clone(self) -> Self:
-        """Creates a shallow copy of the walker with copied history and explored edges."""
-        cloned_walker = copy(self)
-        cloned_walker.accepted_history = self.accepted_history.copy()
-        cloned_walker.explored_edges = self.explored_edges.copy()
-        return cloned_walker
+    # def clone(self) -> Self:
+    #     """Creates a shallow copy of the walker with copied history and explored edges."""
+    #     cloned_walker = copy(self)
+    #     cloned_walker.accepted_history = self.accepted_history.copy()
+    #     cloned_walker.explored_edges = self.explored_edges.copy()
+    #     return cloned_walker
 
     def should_start_transition(self, token: str) -> bool:
         if self.transition_walker and self.transition_walker.is_within_value():

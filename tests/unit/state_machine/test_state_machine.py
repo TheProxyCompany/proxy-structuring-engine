@@ -27,7 +27,6 @@ def test_hello_world():
     walkers = sm.get_walkers()
     advanced = sm.advance_all(walkers, "hello world")
     walkers = [walker for _, walker in advanced]
-    breakpoint()
 
     assert any(walker.has_reached_accept_state() for walker in walkers)
     for walker in walkers:

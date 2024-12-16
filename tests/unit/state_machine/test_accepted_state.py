@@ -76,7 +76,7 @@ def test_equality_of_accepted_state_instances(test_acceptor: TextAcceptor) -> No
 
     assert (
         accepted1 == accepted2
-    ), "AcceptedState instances should not be equal even if their values are the same."
+    ), "AcceptedState instances should be equal even if their values are the same."
 
     assert (
         not accepted1.is_within_value()

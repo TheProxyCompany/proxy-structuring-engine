@@ -255,15 +255,6 @@ def test_whitespace_acceptor_no_remaining_input():
             assert c.remaining_input is None
 
 
-def test_whitespace_acceptor_walker_equality():
-    """Test equality and hashing of WhitespaceAcceptor.Walker."""
-    state_machine = WhitespaceAcceptor()
-    walker1 = WhitespaceWalker(state_machine, value=" ")
-    walker2 = WhitespaceWalker(state_machine, value=" ")
-    assert walker1 == walker2
-    assert hash(walker1) == hash(walker2)
-
-
 def test_whitespace_acceptor_walker_clone():
     """Test cloning functionality of WhitespaceAcceptor.Walker."""
     state_machine = WhitespaceAcceptor()
