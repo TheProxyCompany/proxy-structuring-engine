@@ -18,15 +18,22 @@ def process_input(state_machine: StateMachine, token: str) -> list[Walker]:
 
 
 # Test for BooleanAcceptor
-def test_accept_true(boolean_acceptor):
-    accepted_walkers = process_input(boolean_acceptor, "true")
+def test_accept_true() -> None:
+    acceptor = BooleanAcceptor()
+    walkers = acceptor.get_walkers()
+    accepted_walkers = [
+        walker for _, walker in acceptor.advance_all(walkers, "true")
+    ]
     assert any(
         walker.get_current_value() is True for walker in accepted_walkers
     ), "Should have a walker with value True"
 
 
-def test_accept_false(boolean_acceptor):
-    accepted_walkers = process_input(boolean_acceptor, "false")
+def test_accept_false(boolean_acceptor: BooleanAcceptor) -> None:
+    walkers = boolean_acceptor.get_walkers()
+    accepted_walkers = [
+        walker for _, walker in boolean_acceptor.advance_all(walkers, "false")
+    ]
     assert any(
         walker.get_current_value() is False for walker in accepted_walkers
     ), "Should have a walker with value False"

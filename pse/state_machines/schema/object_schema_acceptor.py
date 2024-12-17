@@ -70,7 +70,7 @@ class ObjectSchemaAcceptor(ObjectAcceptor):
             if has_all_required_properties:
                 edges.append((TextAcceptor("}"), "$"))
         else:
-            edges.extend(super().get_edges(state))
+            edges.extend(self.state_graph.get(state, []))
         return edges
 
     def get_transitions(

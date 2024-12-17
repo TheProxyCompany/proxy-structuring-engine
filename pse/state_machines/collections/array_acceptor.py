@@ -72,8 +72,7 @@ class ArrayWalker(Walker):
         Returns:
             ArrayAcceptor.Walker: A new instance of the cloned walker.
         """
-        cloned_walker = self.__class__(self.state_machine, self.current_state)
-        cloned_walker.accepted_history = self.accepted_history[:]
+        cloned_walker = super().clone()
         cloned_walker.value = self.value[:]
         return cloned_walker
 
@@ -92,3 +91,10 @@ class ArrayWalker(Walker):
             self.value.append(self.transition_walker.get_raw_value())
 
         return super().should_complete_transition()
+
+    def parse_value(self, value: str | None) -> Any:
+        import json
+
+        if not value:
+            return None
+        return json.loads(value)

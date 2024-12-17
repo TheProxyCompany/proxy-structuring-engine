@@ -67,6 +67,12 @@ class PropertyWalker(SequenceWalker):
         self.prop_name = ""
         self.prop_value: Any | None = None
 
+    def clone(self) -> PropertyWalker:
+        cloned_walker = super().clone()
+        cloned_walker.prop_name = self.prop_name
+        cloned_walker.prop_value = self.prop_value
+        return cloned_walker
+
     def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition by setting the property name and value.

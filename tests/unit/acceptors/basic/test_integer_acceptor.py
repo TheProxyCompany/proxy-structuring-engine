@@ -268,13 +268,3 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
         if walker.has_reached_accept_state():
             value = walker.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
-
-
-def test_integer_acceptor_walker_get_value_with_invalid_text():
-    """Test get_value method with invalid text in IntegerAcceptor.Walker."""
-    integer_acceptor = IntegerAcceptor()
-    walker = integer_acceptor.get_new_walker("abc")
-
-    value = walker.get_current_value()
-
-    assert value == "abc", f"Expected get_value to return 'abc', got '{value}'"

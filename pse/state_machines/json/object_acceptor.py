@@ -72,6 +72,11 @@ class ObjectWalker(Walker):
         super().__init__(state_machine, current_state)
         self.value: dict[str, Any] = {}
 
+    def clone(self) -> ObjectWalker:
+        cloned_walker = super().clone()
+        cloned_walker.value = self.value.copy()
+        return cloned_walker
+
     def should_complete_transition(self) -> bool:
         """
         Handle the completion of a transition by updating the accumulated key-value pairs.

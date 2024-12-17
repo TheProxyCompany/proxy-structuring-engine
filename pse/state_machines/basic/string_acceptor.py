@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pse_core import State
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -88,3 +90,9 @@ class StringWalker(Walker):
         """
         super().__init__(state_machine, current_state)
         self.state_machine: StringAcceptor = state_machine
+
+    def parse_value(self, value: str | None) -> Any:
+        import json
+        if not value:
+            return None
+        return json.loads(value)
