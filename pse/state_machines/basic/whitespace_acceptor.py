@@ -112,14 +112,15 @@ class WhitespaceWalker(Walker):
                 remaining_input
                 and self.consumed_character_count >= self.state_machine.min_whitespace
             ):
-                copy = self.__class__(self.state_machine, self._raw_value)
+                copy = self.clone()
+                copy._raw_value = (self._raw_value or "") + valid_input
                 copy.remaining_input = remaining_input
                 copy._accepts_more_input = False
                 return [AcceptedState(copy)]
             return []
 
-        value = (self._raw_value or "") + valid_input
-        next_walker = self.__class__(self.state_machine, value)
+        next_walker = self.clone()
+        next_walker._raw_value = (self._raw_value or "") + valid_input
         next_walker.remaining_input = remaining_input
         next_walker.consumed_character_count += valid_length
 
