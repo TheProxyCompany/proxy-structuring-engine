@@ -1,6 +1,6 @@
-import numpy as np
 import logging
-from typing import Dict
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ except ImportError:
     _has_torch = False
 
 
-def get_top_logits(logits, top_k: int = 64) -> Dict[int, float]:
+def get_top_logits(logits, top_k: int = 64) -> dict[int, float]:
     """
     Returns the top_k logits and their corresponding token ids.
 
@@ -55,7 +55,7 @@ def get_top_logits(logits, top_k: int = 64) -> Dict[int, float]:
     else:
         raise TypeError(f"Unsupported array type for logits: {type(logits)}")
 
-    return {int(i): float(v) for i, v in zip(indices, values)}
+    return {int(i): float(v) for i, v in zip(indices, values, strict=True)}
 
 
 def get_top_logits_mlx(logits, top_k: int):
