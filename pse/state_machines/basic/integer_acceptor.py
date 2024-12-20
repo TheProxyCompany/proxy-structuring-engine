@@ -33,6 +33,6 @@ class IntegerWalker(CharacterWalker):
         self.state_machine: IntegerAcceptor = state_machine
 
     def get_current_value(self) -> Any:
-        if self.state_machine.drop_leading_zeros:
-            return super().parse_value(self._raw_value)
+        if self.state_machine.drop_leading_zeros and self._raw_value is not None:
+            return int(self._raw_value)
         return self._raw_value

@@ -19,8 +19,7 @@ class EncapsulatedAcceptor(StateMachine):
     def __init__(
         self,
         state_machine: StateMachine,
-        open_delimiter: str,
-        close_delimiter: str,
+        delimiters: tuple[str, str],
     ) -> None:
         """
         Initialize the EncapsulatedAcceptor with delimiters and the JSON state_machine.
@@ -33,16 +32,15 @@ class EncapsulatedAcceptor(StateMachine):
         super().__init__(
             {
                 0: [
-                    (WaitForAcceptor(TextAcceptor(open_delimiter)), 1),
+                    (WaitForAcceptor(TextAcceptor(delimiters[0])), 1),
                 ],
                 1: [
                     (state_machine, 2),
                 ],
-                2: [(TextAcceptor(close_delimiter), "$")],
+                2: [(TextAcceptor(delimiters[1]), "$")],
             }
         )
-        self.opening_delimiter = open_delimiter
-        self.closing_delimiter = close_delimiter
+        self.delimiters = delimiters
 
     def get_new_walker(self, state: State | None = None) -> EncapsulatedWalker:
         return EncapsulatedWalker(self, state)

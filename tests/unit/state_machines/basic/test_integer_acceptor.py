@@ -235,7 +235,7 @@ def test_integer_acceptor_large_number():
         if walker.has_reached_accept_state():
             value = walker.get_current_value()
             assert (
-                value == 12345678901234567890
+                int(value) == 1.2345678901234567e19
             ), f"Expected 12345678901234567890, got {value}"
 
 

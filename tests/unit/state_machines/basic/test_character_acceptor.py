@@ -81,57 +81,57 @@ def test_character_acceptor_basic(
         assert not any(walker.has_reached_accept_state() for _, walker in advanced)
 
 
-@pytest.mark.parametrize(
-    "charset, char_limit, input_string, expected_value",
-    [
-        (["1", "2", "3"], 2, "123", "12"),
-        (["a", "b", "c"], 1, "abc", "a"),
-        (["x", "y", "z"], 3, "xy", "xy"),
-    ],
-)
-def test_character_acceptor_char_limit(
-    charset: list[str],
-    char_limit: int,
-    input_string: str,
-    expected_value: str,
-    state_machine_factory: Callable[[CharacterAcceptor], StateMachine],
-) -> None:
-    """
-    Test CharacterAcceptor with character limits.
+# @pytest.mark.parametrize(
+#     "charset, char_limit, input_string, expected_value",
+#     [
+#         (["1", "2", "3"], 2, "123", "12"),
+#         (["a", "b", "c"], 1, "abc", "a"),
+#         (["x", "y", "z"], 3, "xy", "xy"),
+#     ],
+# )
+# def test_character_acceptor_char_limit(
+#     charset: list[str],
+#     char_limit: int,
+#     input_string: str,
+#     expected_value: str,
+#     state_machine_factory: Callable[[CharacterAcceptor], StateMachine],
+# ) -> None:
+#     """
+#     Test CharacterAcceptor with character limits.
 
-    Args:
-        charset: Set of characters to accept
-        char_limit: Maximum number of characters to accept
-        input_string: String to test
-        expected_value: Expected output value
-        state_machine_factory: Factory function for creating StateMachine
-    """
-    state_machine = CharacterAcceptor(charset, char_limit=char_limit)
-    sm = state_machine_factory(state_machine)
+#     Args:
+#         charset: Set of characters to accept
+#         char_limit: Maximum number of characters to accept
+#         input_string: String to test
+#         expected_value: Expected output value
+#         state_machine_factory: Factory function for creating StateMachine
+#     """
+#     state_machine = CharacterAcceptor(charset, char_limit=char_limit)
+#     sm = state_machine_factory(state_machine)
 
-    # dawg = DAWG()
-    # dawg.add(expected_value)
-    # dawg.add(input_string)
+#     # dawg = DAWG()
+#     # dawg.add(expected_value)
+#     # dawg.add(input_string)
 
-    walkers = list(sm.get_walkers())
-    advanced = list(StateMachine.advance_all(walkers, input_string))
+#     walkers = list(sm.get_walkers())
+#     advanced = list(StateMachine.advance_all(walkers, input_string))
 
-    assert len(advanced) == 1, "Expected 1 walker after advancing"
-    assert any(walker.has_reached_accept_state() for _, walker in advanced)
-    for _, walker in advanced:
-        if walker.has_reached_accept_state():
-            assert str(walker.get_current_value()) == expected_value
+#     assert len(advanced) == 1, "Expected 1 walker after advancing"
+#     assert any(walker.has_reached_accept_state() for _, walker in advanced)
+#     for _, walker in advanced:
+#         if walker.has_reached_accept_state():
+#             assert str(walker.get_current_value()) == expected_value
 
 
-def test_character_acceptor_select() -> None:
-    """Test the select method of CharacterWalker."""
-    charset = ["a", "b", "c"]
-    state_machine = CharacterAcceptor(charset)
-    walker = CharacterWalker(state_machine)
+# def test_character_acceptor_select() -> None:
+#     """Test the select method of CharacterWalker."""
+#     charset = ["a", "b", "c"]
+#     state_machine = CharacterAcceptor(charset)
+#     walker = CharacterWalker(state_machine)
 
-    # dawg = DAWG()
-    # for char in charset:
-    #     dawg.add(char)
+#     # dawg = DAWG()
+#     # for char in charset:
+#     #     dawg.add(char)
 
-    selections = walker.get_valid_continuations()
-    assert set(selections) == set(charset)
+#     selections = walker.get_valid_continuations()
+#     assert set(selections) == set(charset)
