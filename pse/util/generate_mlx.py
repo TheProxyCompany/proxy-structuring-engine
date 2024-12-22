@@ -10,6 +10,7 @@ from pse.structuring_engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class GenerateStepResult:
     token: mx.array
@@ -103,23 +104,40 @@ def generate(
     prompt: str,
     model: nn.Module,
     engine: StructuringEngine,
+    prefill: str | None = None,
 ) -> CompletedGeneration:
     messages = [{"role": "user", "content": prompt}]
-    encoded_prompt = engine.tokenizer.apply_chat_template(
-        messages, add_generation_prompt=True
+    encoded_prompt = mx.array(
+        engine.tokenizer.apply_chat_template(
+            conversation=messages,
+            add_generation_prompt=True,
+        )
     )
+
+    if prefill:
+        encoded_prompt = mx.concatenate(
+            [
+                encoded_prompt,
+                mx.array(engine.tokenizer.encode(prefill)),
+            ]
+        )
+
+    logger.info(engine.tokenizer.decode(encoded_prompt.tolist()))
     encoded_prompt = mx.array(encoded_prompt)
     generation_results: list[GenerateStepResult] = []
     while not engine.has_reached_accept_state:
         try:
-            generation_result = sample(encoded_prompt, model, engine)
-            encoded_prompt = mx.concatenate([encoded_prompt, generation_result.token])
-            generation_results.append(generation_result)
+            result = sample(encoded_prompt, model, engine)
+            encoded_prompt = mx.concatenate([encoded_prompt, result.token])
+            generation_results.append(result)
         except Exception as e:
             logger.warning(f"Token rejected: {e}")
             break
 
     output = engine.tokenizer.decode([result.token_id for result in generation_results])
+    if prefill:
+        output = prefill + output
+
     mask_latencies = [
         mask_time
         for result in generation_results

@@ -546,3 +546,51 @@ def test_number_acceptor_large_floating_point(state_machine: NumberAcceptor) -> 
             assert value == pytest.approx(
                 expected_value
             ), f"Expected {expected_value}, got {value}"
+
+
+@pytest.mark.parametrize(
+    "value, followup_value",
+    [
+        (10, None),
+        (-10, 1),
+        (0, ".0"),
+    ],
+)
+def test_number_acceptor(
+    state_machine: NumberAcceptor, value: int, followup_value: int | str | None
+) -> None:
+    """
+    Test NumberAcceptor with an integer.
+
+    Args:
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
+    """
+
+    sm = StateMachine(
+        state_graph={
+            0: [(TextAcceptor("Value: "), 1)],
+            1: [(state_machine, 2)],
+            2: [(TextAcceptor("!"), 3)],
+        },
+        start_state=0,
+        end_states=[3],
+    )
+
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, f"Value: {value}")]
+
+    assert len(walkers) == 1, "Should have one walker."
+    if followup_value is not None:
+        walkers = [walker for _, walker in sm.advance_all(walkers, str(followup_value))]
+
+    walkers = [walker for _, walker in sm.advance_all(walkers, "!")]
+
+    assert len(walkers) == 1, "Should have one walker."
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert (
+                walker.get_current_value()
+                == f"Value: {str(value) + str(followup_value or "")}!"
+            )

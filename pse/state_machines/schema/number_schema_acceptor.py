@@ -34,6 +34,7 @@ class NumberSchemaAcceptor(NumberAcceptor):
         """
         if "minimum" in self.schema and value < self.schema["minimum"]:
             return False
+
         if (
             "exclusiveMinimum" in self.schema
             and value <= self.schema["exclusiveMinimum"]
@@ -51,8 +52,9 @@ class NumberSchemaAcceptor(NumberAcceptor):
             if value / divisor != value // divisor:
                 return False
 
-        if self.is_integer and not isinstance(value, int):
+        if self.is_integer and not value.is_integer():
             return False
+
         return True
 
 

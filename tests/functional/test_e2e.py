@@ -26,6 +26,21 @@ def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     engine = StructuringEngine(tokenizer._tokenizer)
     return model, engine
 
+def get_dict_from_raw_output(raw_output: str) -> dict:
+    try:
+        if raw_output.startswith("```json\n"):
+            only_json = raw_output.split("```json\n", 1)[1].split("\n```", 1)[0]
+        else:
+            only_json = raw_output
+    except IndexError:
+        pytest.fail(
+            f"Failed to extract JSON content from delimited output: {raw_output}"
+        )
+    try:
+        return json.loads(only_json)
+    except json.JSONDecodeError:
+        pytest.fail(f"Failed to parse JSON output for {raw_output}.")
+
 
 def test_simple_json_structure(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -97,17 +112,7 @@ def test_complex_json_structure(
     engine.configure(schema, wrap_with_delimiters=True)
     completed_generation = generate(raw_prompt, model, engine)
     raw_output = completed_generation.output
-    try:
-        only_json = raw_output.split("```json\n", 1)[1].split("\n```", 1)[0]
-    except IndexError:
-        pytest.fail(
-            f"Failed to extract JSON content from delimited output: {raw_output}"
-        )
-
-    try:
-        output = json.loads(only_json)
-    except json.JSONDecodeError:
-        pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
+    output = get_dict_from_raw_output(raw_output)
 
     logger.info(f"Output: {output}")
     assert output["name"] == "metacognition"
@@ -117,75 +122,72 @@ def test_complex_json_structure(
     assert engine.has_reached_accept_state
 
 
-# def test_better_than_openai(
-#     model_and_engine: Tuple[nn.Module, StructuringEngine],
-# ) -> None:
-#     """Test that OpenAI sucks."""
-#     # openAI's structured output blog post said:
-#     #
-#     #   "The following is a sample recursive schema that is supported on
-#     #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
-#     #
-#     # let's test that.
-#     model, engine = model_and_engine
-#     schema = {
-#         "name": "ui",
-#         "description": "Dynamically generated UI",
-#         "strict": True,
-#         "schema": {
-#             "type": "object",
-#             "properties": {
-#                 "type": {
-#                     "type": "string",
-#                     "description": "The type of the UI component",
-#                     "enum": ["div", "button", "header", "section", "field", "form"],
-#                 },
-#                 "label": {
-#                     "type": "string",
-#                     "description": "The label of the UI component, used for buttons or form fields",
-#                 },
-#                 "children": {
-#                     "type": "array",
-#                     "description": "Nested UI components",
-#                     "items": {"$ref": "#"},
-#                 },
-#                 "attributes": {
-#                     "type": "array",
-#                     "description": "Arbitrary attributes for the UI component, suitable for any element",
-#                     "items": {
-#                         "type": "object",
-#                         "properties": {
-#                             "name": {
-#                                 "type": "string",
-#                                 "description": "The name of the attribute, for example onClick or className",
-#                             },
-#                             "value": {
-#                                 "type": "string",
-#                                 "description": "The value of the attribute",
-#                             },
-#                         },
-#                     },
-#                 },
-#             },
-#             "required": ["type", "label", "children", "attributes"],
-#             "additionalProperties": False,
-#         },
-#     }
-#     raw_prompt = (
-#         f"Please generate a div component that has one child - a button component that says 'Hello, World!'."
-#         f"Please follow the following schema: {schema}."
-#     )
-#     engine.set_schema(schema, use_delimiters=False)
-#     completed_generation = generate(raw_prompt, model, engine)
-#     try:
-#         output = json.loads(completed_generation.output)
-#     except json.JSONDecodeError:
-#         pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
+def test_better_than_openai(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that OpenAI sucks."""
+    # openAI's structured output blog post said:
+    #
+    #   "The following is a sample recursive schema that is supported on
+    #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
+    #
+    # let's test that.
+    model, engine = model_and_engine
+    schema = {
+        "name": "ui",
+        "description": "Dynamically generated UI",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "The type of the UI component",
+                    "enum": ["div", "button", "header", "section", "field", "form"],
+                },
+                "label": {
+                    "type": "string",
+                    "description": "The label of the UI component, used for buttons or form fields",
+                },
+                "children": {
+                    "type": "array",
+                    "description": "Nested UI components",
+                    "items": {"$ref": "#"},
+                },
+                "attributes": {
+                    "type": "array",
+                    "description": "Arbitrary attributes for the UI component, suitable for any element",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the attribute, for example onClick or className",
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The value of the attribute",
+                            },
+                        },
+                    },
+                },
+            },
+            "required": ["type", "label", "children", "attributes"],
+            "additionalProperties": False,
+        },
+    }
+    raw_prompt = (
+        f"Please generate a div component that has one child - a button component that says 'Hello, World!'."
+        f"Please follow the following schema: {schema}."
+    )
+    engine.configure(schema, wrap_with_delimiters=False)
+    completed_generation = generate(raw_prompt, model, engine)
+    output = get_dict_from_raw_output(completed_generation.output)
 
-#     assert output["type"] == "div"
-#     assert len(output["children"]) == 1
-#     assert output["children"][0]["type"] == "button"
-#     assert output["children"][0]["label"] == "Hello, World!"
+    assert output["type"] == "div"
+    assert len(output["children"]) == 1
+    assert output["children"][0]["type"] == "button"
+    assert output["children"][0]["label"] == "Hello, World!"
 
 
 def test_multiple_schemas(
@@ -247,17 +249,85 @@ def test_multiple_schemas(
     engine.configure(schema, wrap_with_delimiters=True)
     completed_generation = generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
-    try:
-        only_json = completed_generation.output.split("```json\n", 1)[1].split(
-            "\n```", 1
-        )[0]
-    except IndexError:
-        pytest.fail(
-            f"Failed to extract JSON content from delimited output: {completed_generation.output}"
-        )
+    output = get_dict_from_raw_output(completed_generation.output)
+    assert output["name"] == "metacognition"
 
-    try:
-        output = json.loads(only_json)
-    except json.JSONDecodeError:
-        pytest.fail(f"Failed to parse JSON output for {completed_generation.output}.")
-    logger.info(f"Output: {output}")
+
+def test_schema_web_search(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that the engine can generate a schema for web search."""
+    model, engine = model_and_engine
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "const", "const": "web_search"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query string. Text only. An artificial assistant will be created to perform the search.",
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "The maximum number of search results to return. Defaults to 5.",
+                        "default": 5,
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    engine.configure(schema, wrap_with_delimiters=False)
+    prefill = '```json\n{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
+    engine.consume_raw_input(prefill)
+    raw_prompt = (
+        f"This is a test of your abilities."
+        f" Please structure your response to follow the following schemas: {schema}."
+        f" You must wrap your response with ```json\n and \n```."
+        " Please use the web_search schema to find popular favoirte pokemon."
+    )
+    completed_generation = generate(raw_prompt, model, engine, prefill=prefill)
+    assert engine.has_reached_accept_state
+    output = get_dict_from_raw_output(completed_generation.output)
+    assert output["name"] == "web_search"
+    assert output["arguments"]["query"] == "popular favorite Pokémon"
+    # assert output["arguments"]["max_results"] is not None
+
+
+def test_message(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that the engine can generate a schema for web search."""
+    model, engine = model_and_engine
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "const", "const": "send_message"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
+                    }
+                },
+                "required": ["message"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    engine.configure(schema, wrap_with_delimiters=False)
+    prefill = '```json\n{"name": "send_message", "arguments": {"message": "I am writing a message right now'
+    engine.consume_raw_input(prefill)
+    raw_prompt = (
+        f"This is a test of your abilities."
+        f"Please structure your response to follow the following schemas: {schema}."
+        f"You must wrap your response with ```json\n and \n```."
+    )
+    completed_generation = generate(raw_prompt, model, engine, prefill=prefill)
+    assert engine.has_reached_accept_state
+    output = get_dict_from_raw_output(completed_generation.output)
+    assert output["name"] == "send_message"

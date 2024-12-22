@@ -225,3 +225,53 @@ def test_complex_structure_partial_advancement():
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
     assert walkers[0].get_current_value() == {"type": "div", "label": "hello!"}
+
+
+@pytest.mark.parametrize(
+    "value, followup_value",
+    [
+        (10, None),
+        (10, 1),
+    ],
+)
+def test_object_schema_acceptor_edge_case(value: int, followup_value: int | str | None) -> None:
+    """
+    Test NumberAcceptor with an integer.
+
+    Args:
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
+    """
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query string. Text only. An artificial assistant will be created to perform the search.",
+            },
+            "max_results": {
+                "type": "integer",
+                "description": "The maximum number of search results to return. Defaults to 5.",
+                "default": 5,
+            },
+        },
+        "required": ["query"],
+    }
+    state_machine = ObjectSchemaAcceptor(schema, {})
+    walkers = state_machine.get_walkers()
+    raw_input = '{"query": "popular favorite Pokémon",  "max_results": '
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
+    assert len(walkers) == 1, "Should have one walker."
+
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
+    assert len(walkers) == 1, "Should have one walker."
+
+    walkers = [
+        walker
+        for _, walker in state_machine.advance_all(
+            walkers, str(followup_value or "") + "}"
+        )
+    ]
+
+    assert len(walkers) == 1, "Should have one walker."
+    assert walkers[0].has_reached_accept_state()

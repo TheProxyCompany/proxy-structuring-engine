@@ -10,6 +10,7 @@ from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
 from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.state_machines.get_state_machine import get_state_machine
+from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,9 @@ class StructuringEngine(Engine):
         Process the logits and return the next token.
         Invokes the C++ engine to process the logits.
         """
-        return self.process_logits(input_ids, scores)
+        adjusted_logits = self.process_logits(input_ids, scores)
+        # self.print_logits(adjusted_logits, 10)
+        return adjusted_logits
 
     def configure(
         self,
@@ -114,3 +117,27 @@ class StructuringEngine(Engine):
             f"    schema={pprint.pformat(self.schema, indent=4, width=80)}\n"
             ")"
         )
+
+    def print_logits(self, scores: Any, top_n: int = 64) -> None:
+        """
+        Print the top logits for the given input and scores.
+        """
+
+        rows = []
+        top_logits = get_top_logits(scores, top_n)
+
+        for token_id, score in top_logits.items():
+            # Get token from token_id using reverse vocabulary map
+            if not (token := self.reverse_vocabulary.get(token_id)):
+                logger.warning(f"Unknown token ID: {token_id}")
+                continue
+
+            rows.append(f"{token_id:<8} | {score:>10.4f} | {repr(token)[1:-1]}")
+
+        header = f"{'Token ID':<8} | {'Score':>10} | Token"
+        separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
+        chart = "\n".join([header, separator] + rows[:top_n])
+        if rows:
+            logger.debug(f"🔵 Top logits:\n{chart}")
+        else:
+            logger.debug("🔴 No valid tokens found")
