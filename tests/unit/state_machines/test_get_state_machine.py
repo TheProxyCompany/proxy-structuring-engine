@@ -4,13 +4,13 @@ from typing import Any
 import pytest
 
 from pse.state_machines.basic.text_acceptor import TextAcceptor
+from pse.state_machines.get_state_machine import get_state_machine
 from pse.state_machines.schema.any_schema_acceptor import AnySchemaAcceptor
 from pse.state_machines.schema.array_schema_acceptor import ArraySchemaAcceptor
 from pse.state_machines.schema.enum_schema_acceptor import EnumSchemaAcceptor
 from pse.state_machines.schema.number_schema_acceptor import NumberSchemaAcceptor
 from pse.state_machines.schema.object_schema_acceptor import ObjectSchemaAcceptor
 from pse.state_machines.schema.string_schema_acceptor import StringSchemaAcceptor
-from pse.state_machines.get_state_machine import get_state_machine
 
 
 @pytest.fixture

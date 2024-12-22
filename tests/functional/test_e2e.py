@@ -45,7 +45,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.set_schema(schema, use_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=False)
     completed_generation = generate(raw_prompt, model, engine)
     # Validate the generated output
     assert engine.has_reached_accept_state
@@ -58,7 +58,7 @@ def test_token_by_token_generation(
     """Test that the engine can generate tokens one at a time."""
     model, engine = model_and_engine
     schema = {"type": "string"}
-    engine.set_schema(schema, use_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=False)
     step_1 = sample("Respond with a string.", model, engine)
     assert engine.tokenizer.decode([step_1.token_id]).startswith('"')
     assert not engine.in_structured_state
@@ -96,7 +96,7 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.set_schema(schema, use_delimiters=True)
+    engine.configure(schema, wrap_with_delimiters=True)
     completed_generation = generate(raw_prompt, model, engine)
     raw_output = completed_generation.output
     try:
@@ -246,7 +246,7 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.set_schema(schema, use_delimiters=True)
+    engine.configure(schema, wrap_with_delimiters=True)
     completed_generation = generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
     try:

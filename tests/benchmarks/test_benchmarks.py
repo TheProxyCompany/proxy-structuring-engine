@@ -68,7 +68,7 @@ def generate_local_pse(prompt: str, schema: Any) -> tuple[dict[str, Any], float]
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
     engine = StructuringEngine(tokenizer._tokenizer)
-    engine.set_schema(schema, use_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=False)
 
     start_time = timeit.default_timer()
     completed_generation = generate_mlx(prompt, model, engine)

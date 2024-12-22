@@ -26,6 +26,9 @@ class StructuringEngine(Engine):
         tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
         vocabulary: dict[str, int] | None = None,
     ) -> None:
+        """
+        Initialize the StructuringEngine with a tokenizer and vocabulary.
+        """
         self.tokenizer = tokenizer
         raw_vocab = vocabulary or self.tokenizer.get_vocab()
         token_ids = list(raw_vocab.values())
@@ -38,54 +41,18 @@ class StructuringEngine(Engine):
         super().__init__(vocab)
 
     def encode_token(self, token: str) -> list[int]:
+        """
+        Encode a token into a list of token IDs.
+        This helper method allows us to avoid passing the tokenizer object to the C++ engine.
+        """
         return self.tokenizer.encode(token, add_special_tokens=False)
 
-    # def __call__(self, input_ids: Any, scores: Any) -> Any:
-    #     """
-    #     scores are logits
-    #     """
-    #     # Generate rows for each token
-    #     rows = []
-    #     top_logits = get_top_logits(scores, 20)
-    #     valid_tokens, reversed_valid_tokens = self.get_valid_tokens()
-    #     if not valid_tokens:
-    #         return scores
-
-    #     for token_id, score in top_logits.items():
-    #         # Get token from token_id using reverse vocabulary map
-    #         if not (token := self.reverse_vocabulary.get(token_id)):
-    #             logger.warning(f"Unknown token ID: {token_id}")
-    #             continue
-
-    #         if token in valid_tokens:
-    #             rows.append(f"{token_id:<8} | 🟢 {score:>9.4f} | {repr(token)[1:-1]}")
-    #             continue
-
-    #         if token not in valid_tokens:
-    #             scores[token_id] = float("-inf")
-    #             fixed_tokens = [
-    #                 t[::-1]
-    #                 for t in reversed_valid_tokens.search_with_prefix(token[::-1])
-    #                 if isinstance(t, str)
-    #             ]
-
-    #             for fixed_token in fixed_tokens:
-    #                 fixed_token_id = self.vocabulary[fixed_token]
-    #                 scores[fixed_token_id] = score
-    #                 rows.append(
-    #                     f"{fixed_token_id:<8} | 🟢 {score:>9.4f} | {repr(fixed_token)[1:-1]}"
-    #                 )
-
-    #     header = f"{'Token ID':<8} | {'Score':>10} | Token"
-    #     separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
-    #     chart = "\n".join([header, separator] + rows[:10])
-    #     if rows:
-    #         logger.info(f"🔵 Top logits:\n{chart}")
-    #     else:
-    #         logger.info("🔴 No valid tokens found")
-
-    #     valid_token_ids = set(self.vocabulary[t] for t in valid_tokens)
-    #     return scores + get_logit_bias(scores, valid_token_ids)
+    def __call__(self, input_ids: Any, scores: Any) -> Any:
+        """
+        Process the logits and return the next token.
+        Invokes the C++ engine to process the logits.
+        """
+        return self.process_logits(input_ids, scores)
 
     def configure(
         self,
@@ -96,6 +63,9 @@ class StructuringEngine(Engine):
         wrap_with_delimiters: bool = False,
         delimiters: tuple[str, str] | None = ("```json\n", "\n```"),
     ) -> None:
+        """
+        Configure the structuring engine with the given schema.
+        """
 
         self.is_encapsulated = wrap_with_delimiters
         if self.is_encapsulated:
