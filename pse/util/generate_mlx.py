@@ -115,8 +115,8 @@ def generate(
             generation_result = sample(encoded_prompt, model, engine)
             encoded_prompt = mx.concatenate([encoded_prompt, generation_result.token])
             generation_results.append(generation_result)
-        except Exception:
-            logger.warning("Token rejected.")
+        except Exception as e:
+            logger.warning(f"Token rejected: {e}")
             break
 
     output = engine.tokenizer.decode([result.token_id for result in generation_results])

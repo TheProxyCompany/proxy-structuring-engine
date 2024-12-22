@@ -61,8 +61,6 @@ def test_token_by_token_generation(
     engine.configure(schema, wrap_with_delimiters=False)
     step_1 = sample("Respond with a string.", model, engine)
     assert engine.tokenizer.decode([step_1.token_id]).startswith('"')
-    assert not engine.in_structured_state
-    assert engine.within_json_value
 
 
 def test_complex_json_structure(

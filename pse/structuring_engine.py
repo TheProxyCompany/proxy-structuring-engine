@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pprint
 from typing import Any
 
 from pse_core.engine import Engine
@@ -11,6 +12,7 @@ from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcc
 from pse.state_machines.get_state_machine import get_state_machine
 
 logger = logging.getLogger(__name__)
+
 
 class StructuringEngine(Engine):
     """
@@ -37,8 +39,8 @@ class StructuringEngine(Engine):
             if vocabulary
             else self.tokenizer.batch_decode(token_ids)
         )
-        vocab = {token: id for token, id in zip(decoded_tokens, token_ids, strict=True)}
-        super().__init__(vocab)
+        reverse_vocab = {id: token for token, id in zip(decoded_tokens, token_ids, strict=True)}
+        super().__init__(reverse_vocab)
 
     def encode_token(self, token: str) -> list[int]:
         """
@@ -102,4 +104,13 @@ class StructuringEngine(Engine):
             state_machine
             if not self.is_encapsulated
             else EncapsulatedAcceptor(state_machine, self.delimiters)
+        )
+        self.walkers = self.state_machine.get_walkers()
+
+    def __repr__(self) -> str:
+        return (
+            "StructuringEngine(\n"
+            f"    {len(self.walkers)} walkers\n"
+            f"    schema={pprint.pformat(self.schema, indent=4, width=80)}\n"
+            ")"
         )
