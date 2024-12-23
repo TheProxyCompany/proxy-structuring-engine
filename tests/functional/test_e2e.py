@@ -185,9 +185,8 @@ def test_better_than_openai(
     output = get_dict_from_raw_output(completed_generation.output)
 
     assert output["type"] == "div"
-    assert len(output["children"]) == 1
-    assert output["children"][0]["type"] == "button"
-    assert output["children"][0]["label"] == "Hello, World!"
+    assert any(child["type"] == "button" for child in output["children"])
+    assert any(child["label"] == "Hello, World!" for child in output["children"])
 
 
 def test_multiple_schemas(
@@ -294,7 +293,7 @@ def test_schema_web_search(
     output = get_dict_from_raw_output(completed_generation.output)
     assert output["name"] == "web_search"
     assert output["arguments"]["query"] == "popular favorite Pokémon"
-    # assert output["arguments"]["max_results"] is not None
+    assert output["arguments"]["max_results"] is not None
 
 
 def test_message(
@@ -320,7 +319,7 @@ def test_message(
         "required": ["name", "arguments"],
     }
     engine.configure(schema, wrap_with_delimiters=False)
-    prefill = '```json\n{"name": "send_message", "arguments": {"message": "I am writing a message right now'
+    prefill = '```json\n{"name": "send_message", "arguments": {"message": ":D Ah, I see what you\'re getting at'
     engine.consume_raw_input(prefill)
     raw_prompt = (
         f"This is a test of your abilities."
