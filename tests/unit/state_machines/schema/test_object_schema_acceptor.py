@@ -275,3 +275,56 @@ def test_object_schema_acceptor_edge_case(value: int, followup_value: int | str 
 
     assert len(walkers) == 1, "Should have one walker."
     assert walkers[0].has_reached_accept_state()
+
+
+@pytest.mark.parametrize(
+    "value, followup_value",
+    [
+        ("Hello", "!"),
+    ],
+)
+def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> None:
+    """
+    Test NumberAcceptor with an integer.
+
+    Args:
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
+    """
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "const", "const": "send_message"},
+            "arguments": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
+                    }
+                },
+                "required": ["message"],
+            },
+        },
+        "required": ["name", "arguments"],
+    }
+    state_machine = ObjectSchemaAcceptor(schema, {})
+    walkers = state_machine.get_walkers()
+    raw_input = '{"name": "send_message", "arguments": {"message": "'
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
+    assert len(walkers) == 1, "Should have one walker."
+
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
+    assert len(walkers) == 1, "Should have one walker."
+
+    walkers = [
+        walker
+        for _, walker in state_machine.advance_all(
+            walkers,
+            followup_value
+        )
+    ]
+
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"}}')]
+    assert len(walkers) == 1, "Should have one walker."
+    assert walkers[0].has_reached_accept_state()

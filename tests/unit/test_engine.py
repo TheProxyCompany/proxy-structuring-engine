@@ -157,3 +157,58 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     engine.configure(schema, wrap_with_delimiters=True)
     engine.consume_raw_input("Here is the response: ```json\n{\n")
     assert len(engine.walkers) == 2
+
+@pytest.mark.parametrize(
+    "value, followup_value",
+    [
+        ("Hello", '!'),
+    ],
+)
+def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str) -> None:
+    """
+    Test NumberAcceptor with an integer.
+
+    Args:
+        state_machine (NumberAcceptor): The NumberAcceptor instance.
+    """
+
+    schema = {
+        "anyOf": [
+            {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "const", "const": "send_message"},
+                    "arguments": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
+                            }
+                        },
+                        "required": ["message"],
+                    },
+                },
+                "required": ["name", "arguments"],
+            }
+        ]
+    }
+    engine.configure(schema, wrap_with_delimiters=True)
+    raw_input = '```json\n{"name": "send_message", "arguments": {"message": "'
+    engine.consume_raw_input(raw_input)
+
+    token_id = engine.tokenizer.encode(str(value), add_special_tokens=False)[0]
+    advanced_token = engine.advance_token(token_id)
+    assert advanced_token is not None
+    assert advanced_token == token_id
+
+    advanced_token = engine.advance_token(0)
+    assert advanced_token is not None
+    assert advanced_token == 0
+
+    for token in engine.tokenizer.encode('"}}\n```', add_special_tokens=False):
+        advanced_token = engine.advance_token(token)
+        assert advanced_token is not None
+        assert advanced_token == token
+
+    assert engine.has_reached_accept_state
