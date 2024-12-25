@@ -45,7 +45,8 @@ dependencies = [
     "wheel",
     "protobuf",
     "pydantic",
-    "flake8"
+    "flake8",
+    "pse-core"
 ]
 
 [project.urls]
@@ -82,7 +83,8 @@ all = [
     "outlines @ git+https://github.com/cmcmaster1/outlines.git@5bdfb9e9f6eba3353c978b4be82fdee35ab2fab5",
     "lm-format-enforcer",
     "openai",
-    "instructor"
+    "instructor",
+    "pse-core"
 ]
 
 [tool.hatch.metadata]
