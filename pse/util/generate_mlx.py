@@ -83,7 +83,8 @@ def sample(
 
     while not token:
         token_id = cast(int, _sample(logprobs).item())
-        if valid_token_id := engine.advance_token(token_id):
+        valid_token_id = engine.advance_token(token_id)
+        if valid_token_id is not None:
             token = mx.array([valid_token_id])
             end_next_token = timeit.default_timer()
         else:

@@ -202,9 +202,14 @@ def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str)
     assert advanced_token is not None
     assert advanced_token == token_id
 
-    advanced_token = engine.advance_token(0)
+    advanced_token = engine.advance_token(
+        engine.tokenizer.encode(str(followup_value), add_special_tokens=False)[0]
+    )
     assert advanced_token is not None
-    assert advanced_token == 0
+    assert (
+        advanced_token
+        == engine.tokenizer.encode(str(followup_value), add_special_tokens=False)[0]
+    )
 
     for token in engine.tokenizer.encode('"}}\n```', add_special_tokens=False):
         advanced_token = engine.advance_token(token)

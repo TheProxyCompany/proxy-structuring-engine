@@ -118,6 +118,12 @@ class StructuringEngine(Engine):
             ")"
         )
 
+    def reset(self) -> None:
+        """
+        Reset the state machine and walkers.
+        """
+        self.walkers = self.state_machine.get_walkers()
+
     def print_logits(self, scores: Any, top_n: int = 64) -> None:
         """
         Print the top logits for the given input and scores.
