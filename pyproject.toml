@@ -46,7 +46,7 @@ dependencies = [
     "protobuf",
     "pydantic",
     "flake8",
-    "pse-core>=0.9.0"
+    "pse-core"
 ]
 
 [project.urls]
@@ -63,6 +63,7 @@ dev = [
     "flake8",
     "torch",
     "sentencepiece",
+    "pse-core"
 ]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
