@@ -44,9 +44,9 @@ dependencies = [
     "urllib3",
     "wheel",
     "protobuf",
-    "lexpy",
     "pydantic",
-    "flake8"
+    "flake8",
+    "pse-core>=0.9.0"
 ]
 
 [project.urls]
@@ -62,7 +62,7 @@ dev = [
     "numpy",
     "flake8",
     "torch",
-    "sentencepiece"
+    "sentencepiece",
 ]
 mlx = ["mlx", "mlx-lm"]
 torch = ["torch"]
@@ -83,7 +83,7 @@ all = [
     "outlines @ git+https://github.com/cmcmaster1/outlines.git@5bdfb9e9f6eba3353c978b4be82fdee35ab2fab5",
     "lm-format-enforcer",
     "openai",
-    "instructor"
+    "instructor",
 ]
 
 [tool.hatch.metadata]
@@ -105,3 +105,12 @@ log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
+
+[tool.ruff.lint]
+extend-select = [
+  "B",    # flake8-bugbear
+  "I",    # isort
+  "PGH",  # pygrep-hooks
+  "RUF",  # Ruff-specific
+  "UP",   # pyupgrade
+]

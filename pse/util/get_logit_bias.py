@@ -1,6 +1,7 @@
-import numpy as np
 import logging
 from typing import TypeVar, overload
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

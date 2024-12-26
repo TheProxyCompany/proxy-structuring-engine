@@ -1,22 +1,25 @@
-import pytest
 import json
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Tuple, Callable
-from enum import Enum
-from pse.core.engine import StructuringEngine
-import timeit
-from outlines import models, generate
-from openai import OpenAI
-
 import logging
+import timeit
+from collections.abc import Callable
+from enum import Enum
+from typing import Any
+
+import pytest
+from openai import OpenAI
+from outlines import generate, models
+from pydantic import BaseModel, Field
+
+from pse.structuring_engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 
 try:
     from mlx_lm.utils import load
-    from pse.util.generate.mlx import generate as generate_mlx
+
+    from pse.util.generate_mlx import generate as generate_mlx
 except ImportError:
-    raise ImportError("mlx or mlx_lm is not installed. Skipping tests.")
+    pytest.skip("mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True)
 
 
 class UiType(str, Enum):
@@ -40,8 +43,8 @@ class DynamicUI(BaseModel):
     label: str = Field(
         description="The label of the UI component, used for buttons or form fields"
     )
-    children: List["DynamicUI"] = Field(description="Nested UI components")
-    attributes: List[Attribute] = Field(
+    children: list["DynamicUI"] = Field(description="Nested UI components")
+    attributes: list[Attribute] = Field(
         description="Arbitrary attributes for the UI component, suitable for any element"
     )
 
@@ -51,21 +54,21 @@ class DynamicUI(BaseModel):
 
 def run_benchmark(
     name: str,
-    generator_func: Callable[[str, Any], Tuple[Dict[str, Any], float]],
+    generator_func: Callable[[str, Any], tuple[dict[str, Any], float]],
     prompt: str,
     schema: Any,
-) -> Tuple[Dict[str, Any], float]:
+) -> tuple[dict[str, Any], float]:
     output, timing = generator_func(prompt, schema)
     # Perform assertions
     logger.info(f"{name} timing: {timing} seconds")
     return output, timing
 
 
-def generate_local_pse(prompt: str, schema: Any) -> Tuple[Dict[str, Any], float]:
+def generate_local_pse(prompt: str, schema: Any) -> tuple[dict[str, Any], float]:
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
     engine = StructuringEngine(tokenizer._tokenizer)
-    engine.set_schema(schema, use_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=False)
 
     start_time = timeit.default_timer()
     completed_generation = generate_mlx(prompt, model, engine)
@@ -80,25 +83,25 @@ def generate_local_pse(prompt: str, schema: Any) -> Tuple[Dict[str, Any], float]
         pytest.fail(f"Failed to parse JSON output: {completed_generation.output}")
 
 
-def generate_outlines(prompt: str, schema: Any) -> Tuple[Dict[str, Any], float]:
-    if isinstance(schema, Dict):
+def generate_outlines(prompt: str, schema: Any) -> tuple[dict[str, Any], float]:
+    if isinstance(schema, dict):
         schema = json.dumps(schema)
 
     model_path_hf = "mlx-community/Llama-3.2-3B-Instruct"
-    model = models.mlxlm(model_name=model_path_hf)  # type: ignore
-    generator = generate.json(model, schema)  # type: ignore
+    model = models.mlxlm(model_name=model_path_hf)  # type: ignore[reportPrivateImportUsage]
+    generator = generate.json(model, schema)  # type: ignore[reportPrivateImportUsage]
 
     start_time = timeit.default_timer()
     output = generator(prompt)
     end_time = timeit.default_timer()
     total_time = end_time - start_time
 
-    return output, total_time  # type: ignore
+    return output, total_time  # type: ignore[reportReturnType]
 
 
 def generate_openai_instructor(
     prompt: str, schema: Any
-) -> Tuple[Dict[str, Any], float]:
+) -> tuple[dict[str, Any], float]:
     import instructor
 
     # Patch the OpenAI client
@@ -108,7 +111,7 @@ def generate_openai_instructor(
         pytest.skip(f"OpenAI client failed to initialize: {e}")
     client = instructor.from_openai(client)
 
-    if isinstance(schema, Dict):
+    if isinstance(schema, dict):
         pytest.skip("OpenAI Instructor does not support Dict schema")
 
     # Extract structured data from natural language
@@ -126,7 +129,7 @@ def generate_openai_instructor(
 
 def generate_openai_structured_output(
     prompt: str, schema: Any
-) -> Tuple[Dict[str, Any], float]:
+) -> tuple[dict[str, Any], float]:
     # Initialize the OpenAI client
     try:
         client = OpenAI()
@@ -135,7 +138,7 @@ def generate_openai_structured_output(
 
     start_time = timeit.default_timer()
 
-    if isinstance(schema, Dict):
+    if isinstance(schema, dict):
         schema = {
             "type": "json_schema",
             "json_schema": {
@@ -195,7 +198,7 @@ def test_simple_json_object(generator_name: str, generator_func: Callable) -> No
     Validates that the engine can generate a simple JSON object
     adhering to a specified schema using real LLM output.
     """
-    schema: Dict[str, Any] = {
+    schema: dict[str, Any] = {
         "type": "object",
         "properties": {"value": {"type": "number"}},
         "required": ["value"],
