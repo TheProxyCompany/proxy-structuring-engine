@@ -60,7 +60,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
+    engine.configure(schema, wrap_with_delimiters=False)
     completed_generation = generate(raw_prompt, model, engine)
     # Validate the generated output
     assert engine.has_reached_accept_state
