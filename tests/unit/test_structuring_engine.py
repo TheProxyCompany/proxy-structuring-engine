@@ -1,5 +1,12 @@
+from typing import Any
+
 import pytest
 from transformers import LlamaTokenizer
+
+try:
+    _has_mlx = True
+except ImportError:
+    _has_mlx = False
 
 from pse.structuring_engine import StructuringEngine
 
@@ -12,9 +19,16 @@ def engine() -> StructuringEngine:
     engine = StructuringEngine(tokenizer)
     return engine
 
-def test_engine_init(engine: StructuringEngine) -> None:
-    """Test that the engine is initialized correctly."""
-    assert engine.vocabulary is not None
+def generate_mock_logits(engine: StructuringEngine, input: dict[str, float], dtype: Any) -> Any:
+    import mlx.core as mx
+
+    logits = mx.full(len(engine.vocabulary), float("-inf"), dtype=dtype)
+    for token, score in input.items():
+        token_id = engine.vocabulary.get(token)
+        if token_id is not None:
+            logits[token_id] = score
+
+    return logits
 
 def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
     """Test creating an state_machine with custom delimiters."""
@@ -194,8 +208,11 @@ def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str)
         ]
     }
     engine.configure(schema, wrap_with_delimiters=True)
-    raw_input = '```json\n{"name": "send_message", "arguments": {"message": "'
+    raw_input = '```json\n{"name": "send_message",'
     engine.consume_raw_input(raw_input)
+
+    raw_input_2 = ' "arguments": {"message": "'
+    engine.consume_raw_input(raw_input_2)
 
     token_id = engine.tokenizer.encode(str(value), add_special_tokens=False)[0]
     advanced_token = engine.advance_token(token_id)
@@ -217,3 +234,101 @@ def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str)
         assert advanced_token == token
 
     assert engine.has_reached_accept_state
+
+def test_wait_for_acceptor(engine: StructuringEngine) -> None:
+    """Test that the wait for acceptor is working correctly."""
+    engine.configure(
+        schema={"type": "string", "const": "Hello World!"},
+        wrap_with_delimiters=False,
+        wait_for_acceptor=True,
+    )
+    engine.consume_raw_input("Sure, here is the response: ")
+    assert len(engine.walkers) == 1
+    assert not engine.has_reached_accept_state
+    engine.consume_raw_input('"*')
+    assert len(engine.walkers) == 1
+    assert not engine.has_reached_accept_state
+    engine.consume_raw_input("Hello ")
+    engine.consume_raw_input('World!"')
+    assert engine.has_reached_accept_state
+
+
+@pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
+def test_logits_processing_dtypes(engine: StructuringEngine) -> None:
+    """Test that the logits processing is working correctly across different dtypes."""
+    import mlx.core as mx
+
+    dtypes = [mx.float32, mx.bfloat16, mx.float16]
+
+    for dtype in dtypes:
+        engine.configure(
+            schema={"type": "string"}, wrap_with_delimiters=False
+        )
+        # we expect only tokens that start with a " character
+        input_ids = mx.array([], dtype=dtype)
+        scores = generate_mock_logits(engine, {
+            "Hello": 10.0,
+            '"Hello': 3.0,
+            "Hi": 8.0,
+            '"Hi': 4.0,
+            "Hey": 2.0,
+            '"Hey': 1.0,
+            '"': 1.0,
+        }, dtype)
+        adjusted_logits = engine(input_ids, scores)
+        expected_score = generate_mock_logits(
+            engine,
+            {
+                "Hello": float("-inf"),
+                '"Hello': 3.0,
+                "Hi": float("-inf"),
+                '"Hi': 4.0,
+                "Hey": float("-inf"),
+                '"Hey': 1.0,
+                '"': 1.0,
+            }, dtype)
+        assert mx.allclose(adjusted_logits, expected_score)
+
+@pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
+def test_real_world_logits_processing(engine: StructuringEngine) -> None:
+    """Test that the logits processing is working correctly."""
+    import mlx.core as mx
+
+    input_ids = mx.array([])
+    scores = generate_mock_logits(engine, {
+        "val": 10.0,
+        "type": 3.0,
+        "value": 8.0,
+        "validate": 4.0,
+        "additionalProperties": 2.0,
+        "required": 1.0,
+        "values": 1.0,
+        '"': 1.0,
+    }, mx.bfloat16)
+
+    schema = {
+        "type": "object",
+        "properties": {"value": {"type": "number"}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
+    engine.consume_raw_input('Sure, here is the response: {"')
+    assert not engine.has_reached_accept_state
+    adjusted_logits = engine(input_ids, scores)
+    expected_score = generate_mock_logits(
+        engine,
+        {
+            "val": float("-inf"),
+            "type": float("-inf"),
+            "value": 8.0,
+            "validate": float("-inf"),
+            "additionalProperties": float("-inf"),
+            "required": float("-inf"),
+            "values": float("-inf"),
+            '"': float("-inf"),
+        },
+        mx.bfloat16,
+    )
+    expected_scores_match = mx.allclose(adjusted_logits, expected_score)
+    assert expected_scores_match

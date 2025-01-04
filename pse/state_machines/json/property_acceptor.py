@@ -103,17 +103,6 @@ class PropertyWalker(SequenceWalker):
 
         return True
 
-    def is_within_value(self) -> bool:
-        """
-        Indicates whether the walker is currently parsing a property value.
-
-        Returns:
-            bool: True if parsing the property value, False otherwise.
-        """
-        if self.current_state == 4:
-            return super().is_within_value()
-        return False
-
     def get_current_value(self) -> tuple[str, Any]:
         """
         Get the parsed property as a key-value pair.

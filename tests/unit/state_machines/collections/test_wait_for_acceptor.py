@@ -1,3 +1,5 @@
+from pse_core.trie import TrieSet
+
 from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 from pse.state_machines.collections.wait_for_acceptor import (
     WaitForAcceptor,
@@ -76,3 +78,17 @@ def test_wait_for_acceptor_with_break() -> None:
     walkers = [walker for _, walker in state_machine.advance_all(walkers, "World")]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
+
+def test_wait_for_acceptor_with_partial_match():
+    """Test that the WaitForAcceptor can accept any token."""
+    text_acceptor = TextAcceptor('"hello"')
+    state_machine = WaitForAcceptor(text_acceptor)
+    walkers = list(state_machine.get_walkers())
+    trie_set = TrieSet()
+    keys = ['"hello', '"', "hello", '"c']
+    trie_set = trie_set.insert_all(keys)
+    for advanced_token, walker in state_machine.advance_all(walkers, '"*', trie_set):
+        assert walker.get_current_value() == '"'
+        assert advanced_token == '"'
+    assert len(walkers) == 1
+    assert not walkers[0].has_reached_accept_state()

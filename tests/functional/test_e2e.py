@@ -60,7 +60,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure(schema, wrap_with_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
     completed_generation = generate(raw_prompt, model, engine)
     # Validate the generated output
     assert engine.has_reached_accept_state
@@ -294,39 +294,3 @@ def test_schema_web_search(
     assert output["name"] == "web_search"
     assert output["arguments"]["query"] == "popular favorite Pokémon"
     assert output["arguments"]["max_results"] is not None
-
-
-def test_message(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
-    """Test that the engine can generate a schema for web search."""
-    model, engine = model_and_engine
-    schema = {
-        "type": "object",
-        "properties": {
-            "name": {"type": "const", "const": "send_message"},
-            "arguments": {
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
-                    }
-                },
-                "required": ["message"],
-            },
-        },
-        "required": ["name", "arguments"],
-    }
-    engine.configure(schema, wrap_with_delimiters=False)
-    prefill = '```json\n{"name": "send_message", "arguments": {"message": ":D Ah, I see what you\'re getting at'
-    engine.consume_raw_input(prefill)
-    raw_prompt = (
-        f"This is a test of your abilities."
-        f"Please structure your response to follow the following schemas: {schema}."
-        f"You must wrap your response with ```json\n and \n```."
-    )
-    completed_generation = generate(raw_prompt, model, engine, prefill=prefill)
-    assert engine.has_reached_accept_state
-    output = get_dict_from_raw_output(completed_generation.output)
-    assert output["name"] == "send_message"

@@ -1,5 +1,6 @@
 import pytest
 from pse_core.accepted_state import AcceptedState
+from pse_core.trie import TrieSet
 
 from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
 
@@ -134,3 +135,17 @@ def test_multiple_advance_steps(text_acceptor: TextAcceptor):
             assert new_walker.consumed_character_count == expected_pos
             if expected_pos == 5:
                 assert new_walker.has_reached_accept_state()
+
+
+def test_partial_match():
+    """Test that the TextAcceptor correctly handles partial matches."""
+    text_acceptor = TextAcceptor('"hello"')
+    walkers = text_acceptor.get_walkers()
+    vocab = TrieSet()
+    keys = ['"hello', '"', "hello", '"c']
+    vocab = vocab.insert_all(keys)
+    advanced = text_acceptor.advance_all(walkers, '"*', vocab)
+    assert len(advanced) == 1
+    for advanced_token, walker in advanced:
+        assert walker.get_current_value() == '"'
+        assert advanced_token == '"'

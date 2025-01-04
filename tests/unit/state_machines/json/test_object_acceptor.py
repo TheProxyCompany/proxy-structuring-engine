@@ -129,6 +129,16 @@ def test_complex_json_objects(object_acceptor: ObjectAcceptor, json_string, expe
     for walker in accepted_walkers:
         assert walker.get_current_value() == expected
 
+def test_edge_case(object_acceptor: ObjectAcceptor):
+    walkers = list(object_acceptor.get_walkers())
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '{"":""')]
+    assert len(walkers) == 3
+
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ',')]
+    assert len(walkers) == 1
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
+    assert len(walkers) == 3
+
 
 @pytest.mark.parametrize(
     "json_string",

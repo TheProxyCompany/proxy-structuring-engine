@@ -24,9 +24,9 @@ class SequenceAcceptor(StateMachine):
         Args:
             acceptors (list[TokenAcceptor]): An list of TokenAcceptors to be chained.
         """
-        self.acceptors = acceptors
+        # self.acceptors = acceptors
         state_graph = {}
-        for i, state_machine in enumerate(self.acceptors):
+        for i, state_machine in enumerate(acceptors):
             # Each state points **only** to the next state_machine
             state_graph[i] = [(state_machine, i + 1)]
         super().__init__(
@@ -43,6 +43,12 @@ class SequenceWalker(Walker):
     Walker for navigating through the SequenceAcceptor.
     Designed for inspectability and debugging purposes.
     """
+
+    def should_start_transition(self, token: str) -> bool:
+        if self.transition_walker and self.transition_walker.state_machine.is_optional:
+            return True
+
+        return super().should_start_transition(token)
 
     def can_accept_more_input(self) -> bool:
         if self.transition_walker and self.transition_walker.can_accept_more_input():

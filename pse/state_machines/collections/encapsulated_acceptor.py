@@ -47,5 +47,21 @@ class EncapsulatedAcceptor(StateMachine):
 
 
 class EncapsulatedWalker(Walker):
+
     def is_within_value(self) -> bool:
-        return self.current_state == 1
+        return self.current_state != 0
+
+    def accepts_any_token(self) -> bool:
+        """
+        Indicates that this state_machine matches all characters until a trigger is found.
+
+        Returns:
+            bool: Always True.
+        """
+        if not self.is_within_value():
+            return True
+
+        if self.transition_walker:
+            return self.transition_walker.accepts_any_token()
+
+        return False

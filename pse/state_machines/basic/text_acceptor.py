@@ -47,7 +47,7 @@ class TextAcceptor(StateMachine):
         Returns:
             str: A string representation of the TextAcceptor.
         """
-        return f"TextAcceptor({repr(self.text)[1:-1]})"
+        return f"TextAcceptor(text={self.text!r})"
 
 
 class TextWalker(Walker):
@@ -94,8 +94,8 @@ class TextWalker(Walker):
         if not token:
             return False
 
-        remaining_text = self.state_machine.text[self.consumed_character_count :]
-        return remaining_text.startswith(token) or token.startswith(remaining_text)
+        valid_length = self._get_valid_match_length(token, self.consumed_character_count)
+        return valid_length > 0
 
     def get_valid_continuations(self, depth: int = 0) -> list[str]:
         if self.consumed_character_count >= len(self.state_machine.text):
@@ -124,16 +124,20 @@ class TextWalker(Walker):
             list[Walker]: A walker if the token matches, empty otherwise.
         """
         pos = self.consumed_character_count
-        match_len = min(len(self.state_machine.text) - pos, len(token))
+        valid_length = self._get_valid_match_length(token, pos)
 
-        if self.state_machine.text[pos : pos + match_len] == token[:match_len]:
-            next_walker = self.__class__(self.state_machine, pos + match_len)
-            next_walker.remaining_input = token[match_len:] or None
-            next_walker._accepts_more_input = (pos + match_len) < len(
+        if not token:
+            return []
+
+        if valid_length > 0:
+            remaining_input = token[valid_length:] or None
+            next_walker = self.__class__(self.state_machine, pos + valid_length)
+            next_walker.remaining_input = remaining_input
+            next_walker._accepts_more_input = (pos + valid_length) < len(
                 self.state_machine.text
             )
 
-            if pos + match_len == len(self.state_machine.text):
+            if pos + valid_length == len(self.state_machine.text):
                 return [AcceptedState(next_walker)]
             else:
                 return [next_walker]
@@ -182,6 +186,15 @@ class TextWalker(Walker):
             + repr(accumulated_value)[1:-1]
             + target_state
         )
+
+    def _get_valid_match_length(self, token: str, pos: int) -> int:
+        valid_length = 0
+        for i, c in enumerate(token):
+            if pos + i < len(self.state_machine.text) and c == self.state_machine.text[pos + i]:
+                valid_length += 1
+            else:
+                break
+        return valid_length
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TextWalker):

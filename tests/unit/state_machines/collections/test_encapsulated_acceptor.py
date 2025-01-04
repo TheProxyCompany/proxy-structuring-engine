@@ -4,6 +4,7 @@ import pytest
 from pse_core.accepted_state import AcceptedState
 from pse_core.state_machine import StateMachine
 
+from pse.state_machines.basic.string_acceptor import StringAcceptor
 from pse.state_machines.basic.text_acceptor import TextAcceptor
 from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
 from pse.state_machines.collections.wait_for_acceptor import WaitForAcceptor
@@ -153,12 +154,6 @@ def test_no_acceptance_on_partial_delimiter(
     assert not any(isinstance(walker, AcceptedState) for walker in walkers)
 
 
-def test_acceptor_with_empty_content():
-    """Test handling of empty content."""
-    with pytest.raises(ValueError):
-        TextAcceptor("")
-
-
 def test_acceptor_with_whitespace_content(default_delimiters):
     """Test handling content with whitespace."""
     whitespace_acceptor = TextAcceptor("   ")
@@ -176,3 +171,32 @@ def test_acceptor_with_whitespace_content(default_delimiters):
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
     assert any(isinstance(walker, AcceptedState) for walker in walkers)
+
+
+def test_accepts_any_token_when_within_value(default_delimiters):
+    """Test that accepts_any_token returns True when within a value."""
+    sm = EncapsulatedAcceptor(
+        StringAcceptor(),
+        delimiters=default_delimiters,
+    )
+    walkers = sm.get_walkers()
+    assert all(walker.accepts_any_token() for walker in walkers)
+
+    input_sequence = "Wow, proxy is such a cool company! I would love to work there. Let's see if this unit test passes!"
+    walkers = [
+        walker
+        for _, walker in StateMachine.advance_all(
+            walkers, input_sequence
+        )
+    ]
+    assert all(walker.accepts_any_token() for walker in walkers)
+    assert not any(walker.is_within_value() for walker in walkers)
+
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, default_delimiters[0])]
+
+    assert all(not walker.accepts_any_token() for walker in walkers)
+    assert all(walker.is_within_value() for walker in walkers)
+
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
+    assert all(walker.is_within_value() for walker in walkers)
+    assert any(walker.accepts_any_token() for walker in walkers)

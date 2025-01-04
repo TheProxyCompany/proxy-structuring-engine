@@ -99,10 +99,10 @@ def get_state_machine(
         state_machine = NumberSchemaAcceptor(schema)
     elif "enum" in schema:
         state_machine = EnumSchemaAcceptor(schema)
-    elif schema_type == "string":
-        state_machine = StringSchemaAcceptor(schema, start_hook, end_hook)
     elif "const" in schema:
         state_machine = TextAcceptor(json.dumps(schema["const"]))
+    elif schema_type == "string":
+        state_machine = StringSchemaAcceptor(schema, start_hook, end_hook)
     elif schema_type == "object":
         if "properties" in schema:
             # Only allows named properties in the object.

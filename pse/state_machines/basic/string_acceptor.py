@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from pse_core import State
 from pse_core.state_machine import StateMachine
 from pse_core.walker import Walker
@@ -36,30 +34,20 @@ class StringAcceptor(StateMachine):
                     (TextAcceptor('"'), self.STRING_CONTENTS),
                 ],
                 self.STRING_CONTENTS: [
-                    (
-                        StringCharacterAcceptor(),
-                        self.STRING_CONTENTS,
-                    ),  # Regular chars first
-                    (TextAcceptor('"'), "$"),  # End quote second
-                    (TextAcceptor("\\"), self.ESCAPED_SEQUENCE),  # Escape last
+                    (StringCharacterAcceptor(), self.STRING_CONTENTS),  # Regular characters
+                    (TextAcceptor('"'), "$"),  # End quote
+                    (TextAcceptor("\\"), self.ESCAPED_SEQUENCE),  # Escape character
                 ],
                 self.ESCAPED_SEQUENCE: [
-                    (
-                        CharacterAcceptor('"\\/bfnrt', char_limit=1),
-                        self.STRING_CONTENTS,
-                    ),  # Escaped characters
-                    (
-                        TextAcceptor("u"),
-                        self.HEX_CODE,
-                    ),  # Unicode escape sequence
+                    (CharacterAcceptor('"\\/bfnrt', char_limit=1), self.STRING_CONTENTS),  # Escaped characters
+                    (TextAcceptor("u"), self.HEX_CODE),  # Unicode escape sequence
                 ],
                 self.HEX_CODE: [
-                    (
-                        CharacterAcceptor(
-                            "0123456789ABCDEFabcdef", char_min=4, char_limit=4
-                        ),
-                        self.STRING_CONTENTS,
-                    ),  # First hex digit
+                    (CharacterAcceptor(
+                        "0123456789ABCDEFabcdef",
+                        char_min=4,
+                        char_limit=4,
+                    ), self.STRING_CONTENTS),
                 ],
             }
         )
@@ -77,8 +65,6 @@ class StringWalker(Walker):
     explicitly excluding the opening and closing quotation marks.
     """
 
-    MAX_LENGTH = 10000  # Define a maximum allowed string length
-
     def __init__(
         self, state_machine: StringAcceptor, current_state: State | None = None
     ):
@@ -90,9 +76,3 @@ class StringWalker(Walker):
         """
         super().__init__(state_machine, current_state)
         self.state_machine: StringAcceptor = state_machine
-
-    def parse_value(self, value: str | None) -> Any:
-        import json
-        if not value:
-            return None
-        return json.loads(value)

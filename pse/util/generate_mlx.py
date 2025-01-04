@@ -65,6 +65,7 @@ def sample(
 
     # Time the generation of the logit bias mask
     start_bias_mask = timeit.default_timer()
+    # logits = mx.array(logits, dtype=mx.float32)
     logits = engine(prompt, logits[0, :])
     end_bias_mask = timeit.default_timer()
     logprobs = logits - mx.logsumexp(logits, keepdims=True)

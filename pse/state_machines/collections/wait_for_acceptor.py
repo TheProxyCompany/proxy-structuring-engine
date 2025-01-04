@@ -89,12 +89,17 @@ class WaitForWalker(Walker):
             bool: Always True.
         """
         if self.transition_walker and self.transition_walker.is_within_value():
-            return False
+            return self.transition_walker.accepts_any_token()
 
         return True
 
     def can_accept_more_input(self) -> bool:
         return False
+
+    def get_valid_continuations(self, depth: int = 0) -> list[str]:
+        if self.transition_walker and self.transition_walker.is_within_value():
+            return self.transition_walker.get_valid_continuations(depth)
+        return super().get_valid_continuations(depth)
 
     def is_within_value(self) -> bool:
         """
@@ -118,16 +123,12 @@ class WaitForWalker(Walker):
         Returns:
             list[TokenAcceptor.Walker]: Updated walkers after processing.
         """
-        if (
-            not self.transition_walker
-            or not self.transition_walker.should_start_transition(token)
-        ):
-            # wait for state_machine blindly accepts all tokens while
-            # trying to advance the trigger state_machine
-            if not self.state_machine.allow_break:
-                self.transition_walker = None
-                return self.branch()
-
-            return [self]
+        if self.transition_walker:
+            if not self.transition_walker.should_start_transition(token):
+                if self.state_machine.allow_break:
+                    return [self]
+                else:
+                    self.transition_walker = None
+                    return self.branch()
 
         return self.state_machine.advance(self, token)

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 from collections.abc import Callable
-from typing import Any
 
 import regex
 from pse_core import State
@@ -183,8 +181,3 @@ class StringSchemaWalker(StringWalker):
             match = regex.match(pattern_str, s, partial=True)
             return match is not None
         return True  # If no pattern, always return True
-
-    def get_current_value(self) -> Any:
-        if raw_value := self.get_raw_value():
-            return json.loads(raw_value)
-        return None

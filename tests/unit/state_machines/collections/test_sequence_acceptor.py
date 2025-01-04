@@ -128,28 +128,21 @@ def test_single_acceptor_sequence():
         walker.has_reached_accept_state() for walker in walkers
     ), f"Single state_machine SequenceAcceptor should accept the input '{single_text}'."
 
-
-@pytest.mark.parametrize(
-    "acceptors, token",
-    [
-        ([WhitespaceAcceptor(), TextAcceptor("Alpha")], " Alpha"),
-        (
-            [TextAcceptor("Beta"), WhitespaceAcceptor(), TextAcceptor("Gamma")],
-            "Beta Gamma",
-        ),
-    ],
-    ids=["WhitespaceAlphaSequence", "BetaWhitespaceGammaSequence"],
-)
-def test_multiple_sequences(acceptors: list[StateMachine], token: str):
-    """Test multiple SequenceAcceptor instances with different configurations to ensure independence."""
-    sequence = SequenceAcceptor(acceptors)
-    walkers = list(sequence.get_walkers())
-    for char in token:
+def test_whitespace_first():
+    """Test that the WhitespaceAcceptor is first in the sequence."""
+    sequence = SequenceAcceptor([WhitespaceAcceptor(), TextAcceptor(" Alpha")])
+    walkers = sequence.get_walkers()
+    for char in " Alpha":
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Input '{token}' should be accepted by the given SequenceAcceptor."
+    assert any(walker.has_reached_accept_state() for walker in walkers)
 
+def test_whitespace_middle():
+    """Test that the WhitespaceAcceptor is in the middle of the sequence."""
+    sequence = SequenceAcceptor([TextAcceptor("Beta"), WhitespaceAcceptor(), TextAcceptor("Gamma")])
+    walkers = sequence.get_walkers()
+    for char in "Beta Gamma":
+        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+    assert any(walker.has_reached_accept_state() for walker in walkers)
 
 def test_optional_acceptor():
     """Test that an optional state_machine can be used correctly in a SequenceAcceptor."""
