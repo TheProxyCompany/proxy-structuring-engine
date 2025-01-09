@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import cast
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 class GenerateStepResult:
     token: mx.array
     logits: mx.array
-    token_id: int
+    token_ids: list[int]
     time_to_generate_mask: float | None
     time_to_next_token: float | None
     total_time: float
@@ -27,7 +26,6 @@ class CompletedGeneration:
     average_mask_latency: float
     average_time_to_get_next_token: float
     average_total_time: float
-
 
 def sample(
     prompt: str | mx.array,
@@ -61,44 +59,36 @@ def sample(
     # Generate logits
     logits = model(prompt[None])
     logits = logits[:, -1, :]
+    assert isinstance(logits, mx.array)
     mx.async_eval(logits)
 
     # Time the generation of the logit bias mask
-    start_bias_mask = timeit.default_timer()
-    # logits = mx.array(logits, dtype=mx.float32)
-    logits = engine(prompt, logits[0, :])
-    end_bias_mask = timeit.default_timer()
+    start_logits = timeit.default_timer()
+    logits = engine(logits[0, :])
+    end_logits = timeit.default_timer()
     logprobs = logits - mx.logsumexp(logits, keepdims=True)
 
-    # Time the process of getting the next token
-    def _sample(logprobs: mx.array) -> mx.array:
-        return (
+    def __sample(logprobs: mx.array, **kwargs) -> mx.array:
+        temp = float(kwargs.get("temperature", 1.0))
+        token: mx.array = (
             categorical_sampling(logprobs, temp)
             if temp > 0.0
             else mx.argmax(logprobs, axis=-1)
         )
+        return token
 
-    end_next_token = None
-    token = None
-    start_next_token = timeit.default_timer()
 
-    while not token:
-        token_id = cast(int, _sample(logprobs).item())
-        valid_token_id = engine.advance_token(token_id)
-        if valid_token_id is not None:
-            token = mx.array([valid_token_id])
-            end_next_token = timeit.default_timer()
-        else:
-            logprobs[token_id] = float("-inf")
-
+    # Time the process of sampling the next token
+    start_token = timeit.default_timer()
+    token_ids = engine.sample(logprobs, __sample, temperature=temp)
     end_token = timeit.default_timer()
 
     return GenerateStepResult(
-        token,
+        mx.array(token_ids, dtype=prompt.dtype),
         logits,
-        cast(int, token.item()),
-        end_bias_mask - start_bias_mask,
-        (end_next_token - start_next_token) if end_next_token else None,
+        token_ids,
+        end_logits - start_logits,
+        end_token - start_token,
         end_token - start_total,
     )
 
@@ -137,7 +127,9 @@ def generate(
             logger.warning(f"Token rejected: {e}")
             break
 
-    output = engine.tokenizer.decode([result.token_id for result in generation_results])
+    output = engine.tokenizer.decode(
+        [token_id for result in generation_results for token_id in result.token_ids]
+    )
     if prefill:
         output = prefill + output
 

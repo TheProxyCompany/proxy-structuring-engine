@@ -312,10 +312,10 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
     walkers = state_machine.get_walkers()
     raw_input = '{"name": "send_message", "arguments": {"message": "'
     walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
-    assert len(walkers) == 3, "Should have one walker."
+    assert len(walkers) == 3
 
     walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
-    assert len(walkers) == 1, "Should have one walker."
+    assert len(walkers) == 3
 
     walkers = [
         walker
@@ -326,5 +326,5 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
     ]
 
     walkers = [walker for _, walker in state_machine.advance_all(walkers, '"}}')]
-    assert len(walkers) == 1, "Should have one walker."
+    assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()

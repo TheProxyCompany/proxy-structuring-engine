@@ -254,7 +254,7 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
 
 
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
-def test_logits_processing_dtypes(engine: StructuringEngine) -> None:
+def test_logits_processing(engine: StructuringEngine) -> None:
     """Test that the logits processing is working correctly across different dtypes."""
     import mlx.core as mx
 
@@ -265,7 +265,6 @@ def test_logits_processing_dtypes(engine: StructuringEngine) -> None:
             schema={"type": "string"}, wrap_with_delimiters=False
         )
         # we expect only tokens that start with a " character
-        input_ids = mx.array([], dtype=dtype)
         scores = generate_mock_logits(engine, {
             "Hello": 10.0,
             '"Hello': 3.0,
@@ -275,16 +274,13 @@ def test_logits_processing_dtypes(engine: StructuringEngine) -> None:
             '"Hey': 1.0,
             '"': 1.0,
         }, dtype)
-        adjusted_logits = engine(input_ids, scores)
+        adjusted_logits = engine(scores)
         expected_score = generate_mock_logits(
             engine,
             {
                 "Hello": float("-inf"),
-                '"Hello': 3.0,
                 "Hi": float("-inf"),
-                '"Hi': 4.0,
                 "Hey": float("-inf"),
-                '"Hey': 1.0,
                 '"': 1.0,
             }, dtype)
         assert mx.allclose(adjusted_logits, expected_score)
@@ -294,13 +290,11 @@ def test_real_world_logits_processing(engine: StructuringEngine) -> None:
     """Test that the logits processing is working correctly."""
     import mlx.core as mx
 
-    input_ids = mx.array([])
     scores = generate_mock_logits(engine, {
         "val": 10.0,
         "type": 3.0,
         "value": 8.0,
         "validate": 4.0,
-        "additionalProperties": 2.0,
         "required": 1.0,
         "values": 1.0,
         '"': 1.0,
@@ -315,18 +309,16 @@ def test_real_world_logits_processing(engine: StructuringEngine) -> None:
     engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
     engine.consume_raw_input('Sure, here is the response: {"')
     assert not engine.has_reached_accept_state
-    adjusted_logits = engine(input_ids, scores)
+    adjusted_logits = engine(scores)
     expected_score = generate_mock_logits(
         engine,
         {
-            "val": float("-inf"),
+            "val": 10.0,
             "type": float("-inf"),
             "value": 8.0,
-            "validate": float("-inf"),
-            "additionalProperties": float("-inf"),
-            "required": float("-inf"),
-            "values": float("-inf"),
-            '"': float("-inf"),
+            "validate": 4.0,
+            "values": 1.0,
+            '"': 1.0,
         },
         mx.bfloat16,
     )

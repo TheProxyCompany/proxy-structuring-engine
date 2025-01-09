@@ -464,16 +464,16 @@ def test_whitespace_acceptor():
         assert walker.get_current_value() == "{"
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 2, "Expected 2 walkers after advancing with '{.'"
+    assert len(new_walkers) == 2
 
-    advancement = StateMachine.advance_all(new_walkers, " ")
+    advancement = StateMachine.advance_all(new_walkers, " \n\n")
     new_walkers = []
     for advanced_token, walker in advancement:
-        assert advanced_token == " "
-        assert walker.get_current_value() == "{ "
+        assert advanced_token == " \n\n"
+        assert walker.get_current_value() == "{ \n\n"
         new_walkers.append(walker)
 
-    assert len(new_walkers) == 1, "Expected 1 walker after advancing with ' '"
+    assert len(new_walkers) == 2
 
     advancement = StateMachine.advance_all(new_walkers, "\n}")
     new_walkers = []

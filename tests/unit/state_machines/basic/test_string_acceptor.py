@@ -420,9 +420,7 @@ def test_string_with_valid_escaped_tab_char_by_char(
         ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
-def test_string_with_escaped_solidus_char_by_char(
-    string_acceptor: StringAcceptor,
-) -> None:
+def test_string_with_escaped_solidus_char_by_char(string_acceptor: StringAcceptor) -> None:
     """
     Test StringAcceptor with a string containing an escaped solidus by advancing character by character.
 
@@ -449,3 +447,17 @@ def test_string_with_escaped_solidus_char_by_char(
         assert (
             walker.get_current_value() == expected_value
         ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+
+
+def test_edge_case():
+    string_acceptor = StringAcceptor()
+    walkers = string_acceptor.get_walkers()
+    assert len(walkers) == 1
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
+    assert len(walkers) == 3
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, 'Hello There!')]
+    assert len(walkers) == 3
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].get_current_value() == 'Hello There!'

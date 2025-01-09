@@ -99,7 +99,7 @@ class WaitForWalker(Walker):
     def get_valid_continuations(self, depth: int = 0) -> list[str]:
         if self.transition_walker and self.transition_walker.is_within_value():
             return self.transition_walker.get_valid_continuations(depth)
-        return super().get_valid_continuations(depth)
+        return [] # any token is valid
 
     def is_within_value(self) -> bool:
         """

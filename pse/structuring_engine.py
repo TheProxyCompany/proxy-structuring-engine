@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import pprint
 import time
+from collections.abc import Callable
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
@@ -25,6 +26,8 @@ class StructuringEngine(Engine):
     or other supported schema types. It manages the state of token acceptance and provides mechanisms
     to advance tokens and characters while validating the structured output.
     """
+
+    T = TypeVar("T")
 
     def __init__(
         self,
@@ -51,8 +54,7 @@ class StructuringEngine(Engine):
         """
         return self.tokenizer.encode(token, add_special_tokens=False)
 
-    T = TypeVar("T")
-    def __call__(self, input_ids: Any, scores: T) -> T:
+    def __call__(self, scores: T) -> T:
         """
         Merge invalid token scores with the valid token scores.
         i.e
@@ -62,13 +64,36 @@ class StructuringEngine(Engine):
             Hi: -inf
             "Hi: 15.0
         """
-        self.print_logits(scores, 5, "🔵 Before")
+        return self.process_logits(scores)
+
+    def process_logits(self, scores: T) -> T:
+        self.multi_token_mapping = {}
+        self.print_logits(scores, 10, "🔵 Before")
         tic = time.perf_counter()
-        adjusted_logits = self.process_logits(input_ids, scores)
+        adjusted_logits = super().process_logits(scores)
         toc = time.perf_counter()
-        self.print_logits(adjusted_logits, 5, "🟢 After")
+        self.print_logits(adjusted_logits, 10, "🟢 After")
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
+
+    def sample(
+        self,
+        logprobs: object,
+        sampler: Callable[..., object],
+        **kwargs,
+    ) -> list[int]:
+        """
+        Sample a token from the logits using the given sampler.
+        kwargs are passed to the sampler function.
+        """
+        logger.debug(f"Sampling with kwargs: {kwargs}")
+        tic = time.perf_counter()
+        token = super().sample(logprobs, sampler, **kwargs)
+        toc = time.perf_counter()
+        logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
+        decoded_token = self.tokenizer.decode(token)
+        logger.debug(f"Sampled token: {decoded_token!r}")
+        return token
 
     def configure(
         self,
@@ -118,7 +143,9 @@ class StructuringEngine(Engine):
 
         self.state_machine = get_state_machine(self.schema)
         if self.is_encapsulated:
-            self.state_machine = EncapsulatedAcceptor(self.state_machine, self.delimiters)
+            self.state_machine = EncapsulatedAcceptor(
+                self.state_machine, self.delimiters
+            )
         if wait_for_acceptor:
             self.state_machine = WaitForAcceptor(self.state_machine)
 
@@ -142,6 +169,8 @@ class StructuringEngine(Engine):
         """
         Print the top logits for the given input and scores.
         """
+        if logger.getEffectiveLevel() > logging.DEBUG:
+            return
 
         rows = []
         top_logits = get_top_logits(scores, top_n)
@@ -155,7 +184,13 @@ class StructuringEngine(Engine):
             if score == float("-inf"):
                 continue
 
-            rows.append(f"{token_id:<8} | {score:>10.4f} | {repr(token)[1:-1]}")
+            if token_id in self.multi_token_mapping:
+                multiple_token_ids = self.multi_token_mapping[token_id]
+                token = repr(self.tokenizer.decode(multiple_token_ids)) + " *️⃣"
+            else:
+                token = repr(token)
+
+            rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
 
         header = f"{'Token ID':<8} | {'Score':>10} | Token"
         separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20

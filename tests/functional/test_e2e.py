@@ -66,6 +66,31 @@ def test_simple_json_structure(
     assert engine.has_reached_accept_state
     assert json.loads(completed_generation.output) == {"value": 9.11}
 
+def test_wait_for_simple_json_structure(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """
+    Validates that the engine can generate a simple JSON object
+    adhering to a specified schema using real LLM output.
+    """
+    model, engine = model_and_engine
+    # Define schema and prompt
+    schema = {
+        "type": "object",
+        "properties": {"value": {"type": "number"}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    raw_prompt = (
+        f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
+    )
+    engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
+    completed_generation = generate(raw_prompt, model, engine)
+    # Validate the generated output
+    assert engine.has_reached_accept_state
+    parsed_output = completed_generation.output.split("{", 1)[1].split("}", 1)[0]
+    assert json.loads(parsed_output) == {"value": 9.11}
+
 
 def test_token_by_token_generation(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -75,7 +100,7 @@ def test_token_by_token_generation(
     schema = {"type": "string"}
     engine.configure(schema, wrap_with_delimiters=False)
     step_1 = sample("Respond with a string.", model, engine)
-    assert engine.tokenizer.decode([step_1.token_id]).startswith('"')
+    assert engine.tokenizer.decode(step_1.token_ids).startswith('"')
 
 
 def test_complex_json_structure(

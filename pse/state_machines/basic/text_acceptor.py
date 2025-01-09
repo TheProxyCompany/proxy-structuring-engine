@@ -83,9 +83,7 @@ class TextWalker(Walker):
         """
         Check if the walker can accept more input.
         """
-        return self._accepts_more_input and self.consumed_character_count < len(
-            self.state_machine.text
-        )
+        return self._accepts_more_input and self.consumed_character_count < len(self.state_machine.text)
 
     def should_start_transition(self, token: str) -> bool:
         """
@@ -94,7 +92,7 @@ class TextWalker(Walker):
         if not token:
             return False
 
-        valid_length = self._get_valid_match_length(token, self.consumed_character_count)
+        valid_length = self._get_valid_match_length(token)
         return valid_length > 0
 
     def get_valid_continuations(self, depth: int = 0) -> list[str]:
@@ -123,21 +121,21 @@ class TextWalker(Walker):
         Returns:
             list[Walker]: A walker if the token matches, empty otherwise.
         """
-        pos = self.consumed_character_count
-        valid_length = self._get_valid_match_length(token, pos)
+        valid_length = self._get_valid_match_length(token)
 
         if not token:
             return []
 
         if valid_length > 0:
+            consumed_length = self.consumed_character_count + valid_length
             remaining_input = token[valid_length:] or None
-            next_walker = self.__class__(self.state_machine, pos + valid_length)
+            next_walker = self.__class__(self.state_machine, consumed_length)
             next_walker.remaining_input = remaining_input
-            next_walker._accepts_more_input = (pos + valid_length) < len(
+            next_walker._accepts_more_input = consumed_length < len(
                 self.state_machine.text
             )
 
-            if pos + valid_length == len(self.state_machine.text):
+            if consumed_length == len(self.state_machine.text):
                 return [AcceptedState(next_walker)]
             else:
                 return [next_walker]
@@ -187,7 +185,8 @@ class TextWalker(Walker):
             + target_state
         )
 
-    def _get_valid_match_length(self, token: str, pos: int) -> int:
+    def _get_valid_match_length(self, token: str, pos: int | None = None) -> int:
+        pos = pos or self.consumed_character_count
         valid_length = 0
         for i, c in enumerate(token):
             if pos + i < len(self.state_machine.text) and c == self.state_machine.text[pos + i]:

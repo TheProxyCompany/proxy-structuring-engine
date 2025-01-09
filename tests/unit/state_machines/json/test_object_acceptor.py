@@ -170,3 +170,14 @@ def test_no_spaces(object_acceptor: ObjectAcceptor):
     walker = walkers[0]
     assert walker.has_reached_accept_state()
     assert walker.get_current_value() == {"a": "b", "c": "d"}
+
+
+def test_basic_token_by_token():
+    object_acceptor = ObjectAcceptor()
+    walkers = object_acceptor.get_walkers()
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '{')]
+    assert len(walkers) == 3
+    assert all(not walker.has_reached_accept_state() for walker in walkers)
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '\n\n')]
+    assert len(walkers) == 2
+    assert all(not walker.has_reached_accept_state() for walker in walkers)
