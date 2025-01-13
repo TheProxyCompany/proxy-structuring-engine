@@ -3,36 +3,38 @@ from pse_core.state_machine import StateMachine
 from pse_core.trie import TrieSet
 from pse_core.walker import Walker
 
-from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
-from pse.state_machines.basic.character_acceptor import CharacterAcceptor
-from pse.state_machines.basic.integer_acceptor import IntegerWalker
-from pse.state_machines.basic.number_acceptor import IntegerAcceptor, NumberAcceptor
-from pse.state_machines.basic.text_acceptor import TextAcceptor, TextWalker
-from pse.state_machines.basic.whitespace_acceptor import WhitespaceAcceptor
+from pse.state_machines.base.character import CharacterStateMachine
+from pse.state_machines.base.phrase import PhraseStateMachine, PhraseWalker
+from pse.state_machines.types.boolean import BooleanStateMachine
+from pse.state_machines.types.integer import IntegerWalker
+from pse.state_machines.types.number import IntegerStateMachine, NumberStateMachine
+from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
-def test_hello_world():
+def test_basic():
     sm = StateMachine(
-        state_graph={
-            0: [(TextAcceptor("hello world"), 1)]
-        },
-        start_state=0,
-        end_states=[1],
+        {
+            0: [(PhraseStateMachine("hello"), 1)],
+            1: [(WhitespaceStateMachine(), 2)],
+            2: [(PhraseStateMachine("world!"), "$")],
+        }
     )
-    one_walker = sm.get_new_walker()
-    assert not one_walker.has_reached_accept_state()
-    assert one_walker.current_state == 0
-    assert one_walker.consumed_character_count == 0
-    assert one_walker.state_machine == sm
-
     walkers = sm.get_walkers()
-    advanced = sm.advance_all(walkers, "hello world")
-    walkers = [walker for _, walker in advanced]
+    assert len(walkers) == 1
+    breakpoint()
+    walkers = [walker for _, walker in sm.advance_all(walkers, "hello")]
+    assert len(walkers) == 2
+    walkers = [walker for _, walker in sm.advance_all(walkers, " ")]
+    assert len(walkers) == 2
+    breakpoint()
+    walkers = [walker for _, walker in sm.advance_all(walkers, "world")]
+    assert len(walkers) == 1
+    breakpoint()
+    walkers = [walker for _, walker in sm.advance_all(walkers, "!")]
+    assert len(walkers) == 1
 
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert walker.get_current_value() == "hello world"
+    assert all(walker.has_reached_accept_state() for walker in walkers)
+
 
 @pytest.mark.parametrize(
     "token, expected_value",
@@ -44,12 +46,12 @@ def test_hello_world():
 def test_boolean_acceptor(token, expected_value):
     """Test StateMachine with BooleanAcceptor accepting 'true' or 'false'."""
     sm = StateMachine(
-        state_graph={0: [(BooleanAcceptor(), 1)]},
+        state_graph={0: [(BooleanStateMachine(), 1)]},
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
@@ -72,12 +74,12 @@ def test_boolean_acceptor(token, expected_value):
 def test_text_acceptor(token, acceptor_args, expected_value):
     """Test StateMachine with TextAcceptor transitions."""
     sm = StateMachine(
-        state_graph={0: [(TextAcceptor(**acceptor_args), 1)]},
+        state_graph={0: [(PhraseStateMachine(**acceptor_args), 1)]},
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
@@ -98,15 +100,15 @@ def test_state_transitions(first, second, end, token):
     """Test StateMachine with multiple sequential transitions."""
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor(first), 1)],
-            1: [(TextAcceptor(second), 2)],
-            2: [(TextAcceptor(end), 3)],
+            0: [(PhraseStateMachine(first), 1)],
+            1: [(PhraseStateMachine(second), 2)],
+            2: [(PhraseStateMachine(end), 3)],
         },
         start_state=0,
         end_states=[3],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, str(token)))
     walkers = [walker for _, walker in advanced]
 
@@ -119,12 +121,12 @@ def test_state_transitions(first, second, end, token):
 def test_walker_clone():
     """Test cloning functionality of the StateMachine Walker."""
     sm = StateMachine(
-        state_graph={0: [(TextAcceptor("clone"), 1)]},
+        state_graph={0: [(PhraseStateMachine("clone"), 1)]},
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     for walker in walkers:
         original_walker = walker
         cloned_walker = original_walker.clone()
@@ -142,13 +144,13 @@ def test_walker_clone():
 def test_invalid_input_characters():
     """Test StateMachine handling of invalid input characters."""
     sm = StateMachine(
-        state_graph={0: [(TextAcceptor("valid"), 1)]},
+        state_graph={0: [(PhraseStateMachine("valid"), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     invalid_input = "vali$d"  # '$' is an invalid character
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
@@ -160,13 +162,13 @@ def test_invalid_input_characters():
 def test_partial_matches():
     """Test StateMachine handling of partial matches."""
     sm = StateMachine(
-        state_graph={0: [(TextAcceptor("complete"), 1)]},
+        state_graph={0: [(PhraseStateMachine("complete"), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     partial_input = "comp"
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, partial_input))
     walkers = [walker for _, walker in advanced]
 
@@ -188,17 +190,17 @@ def test_advance_all_multiple_states(token, expected_value):
     sm = StateMachine(
         state_graph={
             0: [
-                (TextAcceptor("cat"), 1),
-                (TextAcceptor("car"), 2),
+                (PhraseStateMachine("cat"), 1),
+                (PhraseStateMachine("car"), 2),
             ],
-            1: [(TextAcceptor("dog"), 3)],
-            2: [(TextAcceptor("door"), 3)],
+            1: [(PhraseStateMachine("dog"), 3)],
+            2: [(PhraseStateMachine("door"), 3)],
         },
         start_state=0,
         end_states=[3],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, token))
     walkers = [walker for _, walker in advanced]
 
@@ -211,13 +213,13 @@ def test_advance_all_multiple_states(token, expected_value):
 def test_advance_all_invalid_input():
     """Test StateMachine.advance_all_walkers with invalid input characters."""
     sm = StateMachine(
-        state_graph={0: [(TextAcceptor("hello"), 1)]},
+        state_graph={0: [(PhraseStateMachine("hello"), 1)]},
         start_state=0,
         end_states=[1],
     )
 
     invalid_input = "hell@"
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, invalid_input))
     walkers = [walker for _, walker in advanced]
 
@@ -230,15 +232,15 @@ def test_complex_input():
     """Test StateMachine.advance_all_walkers with complex input."""
     sm = StateMachine(
         state_graph={
-            0: [(CharacterAcceptor("{"), 1)],
-            1: [(CharacterAcceptor("\n"), 2)],
-            2: [(CharacterAcceptor("["), 3)],
+            0: [(CharacterStateMachine("{"), 1)],
+            1: [(CharacterStateMachine("\n"), 2)],
+            2: [(CharacterStateMachine("["), 3)],
         },
         start_state=0,
         end_states=[3],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, "{\n["))
     walkers = [walker for _, walker in advanced]
 
@@ -252,12 +254,12 @@ def test_number_acceptor():
     """Test StateMachine with NumberAcceptor."""
 
     sm = StateMachine(
-        state_graph={0: [(NumberAcceptor(), 1)]},
+        state_graph={0: [(NumberStateMachine(), 1)]},
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, "123.456"))
     walkers = [walker for _, walker in advanced]
 
@@ -269,14 +271,14 @@ def test_number_acceptor_in_state_machine_sequence():
 
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor("Value: "), 1)],
-            1: [(NumberAcceptor(), 2)],
+            0: [(PhraseStateMachine("Value: "), 1)],
+            1: [(NumberStateMachine(), 2)],
         },
         start_state=0,
         end_states=[2],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     input_string = "Value: 42"
     advanced = list(StateMachine.advance_all(walkers, input_string))
     walkers = [walker for _, walker in advanced]
@@ -307,14 +309,14 @@ def test_char_by_char_in_state_machine():
 
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor("Value: "), 1)],
-            1: [(NumberAcceptor(), 2)],
+            0: [(PhraseStateMachine("Value: "), 1)],
+            1: [(NumberStateMachine(), 2)],
         },
         start_state=0,
         end_states=[2],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     input_string = "Value: 42"
     for char in input_string:
         advanced = list(StateMachine.advance_all(walkers, char))
@@ -340,13 +342,13 @@ def test_unexpected_input():
     """Test StateMachine with unexpected input."""
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor("expected"), 1)],
+            0: [(PhraseStateMachine("expected"), 1)],
         },
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, "unexpected"))
     walkers = [walker for _, walker in advanced]
 
@@ -373,14 +375,14 @@ def test_state_machine_empty_transition():
     """Test StateMachine with an EmptyTransition."""
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor("ignored", is_optional=True), 1)],
-            1: [(TextAcceptor("test"), 2)],
+            0: [(PhraseStateMachine("ignored", is_optional=True), 1)],
+            1: [(PhraseStateMachine("test"), 2)],
         },
         start_state=0,
         end_states=[2],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, "test"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -394,15 +396,15 @@ def test_state_machine_with_loop():
     sm = StateMachine(
         state_graph={
             0: [
-                (TextAcceptor("a"), 0),
-                (TextAcceptor("b"), 1),
+                (PhraseStateMachine("a"), 0),
+                (PhraseStateMachine("b"), 1),
             ],
         },
         start_state=0,
         end_states=[1],
     )
 
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     advanced = list(StateMachine.advance_all(walkers, "aaab"))
     walkers = [walker for _, walker in advanced]
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -415,14 +417,14 @@ def test_state_machine_advance_walker_with_remaining_input():
     """Test advance_walker handling remaining input in transition_walker."""
     sm = StateMachine(
         state_graph={
-            0: [(TextAcceptor("ab"), 1)],
-            1: [(TextAcceptor("cd"), 2)],
+            0: [(PhraseStateMachine("ab"), 1)],
+            1: [(PhraseStateMachine("cd"), 2)],
         },
         start_state=0,
         end_states=[2],
     )
 
-    initial_walkers = list(sm.get_walkers())
+    initial_walkers = sm.get_walkers()
     # Advance with partial input to create remaining input scenario
     advanced = list(StateMachine.advance_all(initial_walkers, "abcde"))
     walkers = [walker for _, walker in advanced]
@@ -435,33 +437,24 @@ def test_state_machine_advance_walker_with_remaining_input():
             assert walker.get_current_value() == "abcd"
 
 
-def test_whitespace_acceptor():
+def test_trie_token_healing():
     """Test StateMachine with WhitespaceAcceptor."""
 
     trie = TrieSet()
-    keys = ["\n", "\n\n", " ", "{", "{.", "}"]
+    keys = ["\n", "\n\n", " ", "(", "(.", ")"]
     trie = trie.insert_all(keys)
     sm = StateMachine(
         {
-            0: [(TextAcceptor("{"), 1)],
-            1: [
-                (WhitespaceAcceptor(), 2),
-            ],
-            2: [(TextAcceptor("}"), "$")],
+            0: [(PhraseStateMachine("("), 1)],
+            1: [(WhitespaceStateMachine(), 2)],
+            2: [(PhraseStateMachine(")"), "$")],
         }
     )
-    original_walkers = sm.get_walkers()
-    assert len(original_walkers) == 1
-    first_walker = next(iter(original_walkers))
-    assert isinstance(first_walker, Walker)
-    assert first_walker.current_state == sm.start_state
-    assert isinstance(first_walker.transition_walker, TextWalker)
-
-    advancement = StateMachine.advance_all(original_walkers, "{.", trie)
+    walkers = sm.get_walkers()
     new_walkers = []
-    for advanced_token, walker in advancement:
-        assert advanced_token == "{"
-        assert walker.get_current_value() == "{"
+    for advanced_token, walker in StateMachine.advance_all(walkers, "(.", trie):
+        assert advanced_token == "("
+        assert walker.get_current_value() == "("
         new_walkers.append(walker)
 
     assert len(new_walkers) == 2
@@ -470,16 +463,16 @@ def test_whitespace_acceptor():
     new_walkers = []
     for advanced_token, walker in advancement:
         assert advanced_token == " \n\n"
-        assert walker.get_current_value() == "{ \n\n"
+        assert walker.get_current_value() == "( \n\n"
         new_walkers.append(walker)
 
     assert len(new_walkers) == 2
 
-    advancement = StateMachine.advance_all(new_walkers, "\n}")
+    advancement = StateMachine.advance_all(new_walkers, "\n )")
     new_walkers = []
     for advanced_token, walker in advancement:
-        assert advanced_token == "\n}"
-        assert walker.get_current_value() == {}
+        assert advanced_token == "\n )"
+        assert walker.get_current_value() == "( \n\n\n )"
         assert walker.has_reached_accept_state()
         new_walkers.append(walker)
 
@@ -491,10 +484,10 @@ def test_simple_number_acceptor():
     sm = StateMachine(
         {
             0: [
-                (TextAcceptor("-", is_optional=True), 1),
+                (PhraseStateMachine("-", is_optional=True), 1),
             ],
             1: [
-                (IntegerAcceptor(), "$"),
+                (IntegerStateMachine(), "$"),
             ],
         }
     )
@@ -502,11 +495,11 @@ def test_simple_number_acceptor():
     trie = TrieSet()
     keys = ["-", "-1", "1"]
     trie = trie.insert_all(keys)
-    walkers = list(sm.get_walkers())
+    walkers = sm.get_walkers()
     assert len(walkers) == 2
     text_acceptor_walker = walkers[0]
     assert isinstance(text_acceptor_walker, Walker)
-    assert isinstance(text_acceptor_walker.transition_walker, TextWalker)
+    assert isinstance(text_acceptor_walker.transition_walker, PhraseWalker)
     integer_acceptor_walker = walkers[1]
     assert isinstance(integer_acceptor_walker, Walker)
     assert isinstance(integer_acceptor_walker.transition_walker, IntegerWalker)

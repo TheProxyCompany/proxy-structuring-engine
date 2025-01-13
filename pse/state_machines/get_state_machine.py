@@ -5,14 +5,14 @@ from typing import Any
 
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.basic.boolean_acceptor import BooleanAcceptor
-from pse.state_machines.basic.text_acceptor import TextAcceptor
-from pse.state_machines.collections.array_acceptor import ArrayAcceptor
-from pse.state_machines.json.object_acceptor import ObjectAcceptor
-from pse.state_machines.schema.any_schema_acceptor import AnySchemaAcceptor
-from pse.state_machines.schema.enum_schema_acceptor import EnumSchemaAcceptor
-from pse.state_machines.schema.number_schema_acceptor import NumberSchemaAcceptor
-from pse.state_machines.schema.string_schema_acceptor import StringSchemaAcceptor
+from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.schema.any_schema import AnySchemaStateMachine
+from pse.state_machines.schema.enum_schema import EnumSchemaStateMachine
+from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
+from pse.state_machines.schema.string_schema import StringSchemaStateMachine
+from pse.state_machines.types.array import ArrayStateMachine
+from pse.state_machines.types.boolean import BooleanStateMachine
+from pse.state_machines.types.object import ObjectStateMachine
 
 
 def get_state_machine(
@@ -53,7 +53,7 @@ def get_state_machine(
     if schema.get("nullable"):
         non_nullable_schema: dict[str, Any] = schema.copy()
         del non_nullable_schema["nullable"]
-        return AnySchemaAcceptor([{"type": "null"}, non_nullable_schema], context)
+        return AnySchemaStateMachine([{"type": "null"}, non_nullable_schema], context)
 
     if "$defs" in schema:
         schema_defs: dict[str, Any] = schema["$defs"]
@@ -68,7 +68,7 @@ def get_state_machine(
     if len(schemas) == 1:
         schema = schemas[0]
     else:
-        return AnySchemaAcceptor(schemas, context)
+        return AnySchemaStateMachine(schemas, context)
 
     if "not" in schema:
         raise ValueError(
@@ -81,7 +81,7 @@ def get_state_machine(
         merged_schemas: list[dict[str, Any]] = [
             {**schema, "type": type_} for type_ in schema_type
         ]
-        return AnySchemaAcceptor(merged_schemas, context)
+        return AnySchemaStateMachine(merged_schemas, context)
 
     # Infer schema type based on properties if not explicitly defined
     if schema_type is None:
@@ -92,35 +92,37 @@ def get_state_machine(
 
     # Mapping schema types to their corresponding acceptors
     if schema_type == "boolean":
-        state_machine = BooleanAcceptor()
+        state_machine = BooleanStateMachine()
     elif schema_type == "null":
-        state_machine = TextAcceptor("null")
+        state_machine = PhraseStateMachine("null")
     elif schema_type in ["number", "integer"]:
-        state_machine = NumberSchemaAcceptor(schema)
+        state_machine = NumberSchemaStateMachine(schema)
     elif "enum" in schema:
-        state_machine = EnumSchemaAcceptor(schema)
+        state_machine = EnumSchemaStateMachine(schema)
     elif "const" in schema:
-        state_machine = TextAcceptor(json.dumps(schema["const"]))
+        state_machine = PhraseStateMachine(json.dumps(schema["const"]))
     elif schema_type == "string":
-        state_machine = StringSchemaAcceptor(schema, start_hook, end_hook)
+        state_machine = StringSchemaStateMachine(schema, start_hook, end_hook)
     elif schema_type == "object":
         if "properties" in schema:
             # Only allows named properties in the object.
-            from pse.state_machines.schema.object_schema_acceptor import (
-                ObjectSchemaAcceptor,
+            from pse.state_machines.schema.object_schema import (
+                ObjectSchemaStateMachine,
             )
 
-            state_machine = ObjectSchemaAcceptor(schema, context, start_hook, end_hook)
+            state_machine = ObjectSchemaStateMachine(
+                schema, context, start_hook, end_hook
+            )
         else:
             # Allows any properties in the object.
-            state_machine = ObjectAcceptor()
+            state_machine = ObjectStateMachine()
     elif schema_type == "array":
-        from pse.state_machines.schema.array_schema_acceptor import ArraySchemaAcceptor
+        from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
 
         if "items" in schema:
-            state_machine = ArraySchemaAcceptor(schema, context)
+            state_machine = ArraySchemaStateMachine(schema, context)
         else:
-            state_machine = ArrayAcceptor()
+            state_machine = ArrayStateMachine()
     else:
         raise ValueError(f"unknown schema type: {schema}")
 

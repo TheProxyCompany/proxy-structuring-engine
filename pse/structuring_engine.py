@@ -10,8 +10,8 @@ from pse_core.engine import Engine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.state_machines.collections.encapsulated_acceptor import EncapsulatedAcceptor
-from pse.state_machines.collections.wait_for_acceptor import WaitForAcceptor
+from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
+from pse.state_machines.composite.wait_for import WaitForStateMachine
 from pse.state_machines.get_state_machine import get_state_machine
 from pse.util.get_top_logits import get_top_logits
 
@@ -143,11 +143,11 @@ class StructuringEngine(Engine):
 
         self.state_machine = get_state_machine(self.schema)
         if self.is_encapsulated:
-            self.state_machine = EncapsulatedAcceptor(
+            self.state_machine = EncapsulatedStateMachine(
                 self.state_machine, self.delimiters
             )
         if wait_for_acceptor:
-            self.state_machine = WaitForAcceptor(self.state_machine)
+            self.state_machine = WaitForStateMachine(self.state_machine)
 
         self.walkers = self.state_machine.get_walkers()
 

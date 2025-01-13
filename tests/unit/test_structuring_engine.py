@@ -19,7 +19,10 @@ def engine() -> StructuringEngine:
     engine = StructuringEngine(tokenizer)
     return engine
 
-def generate_mock_logits(engine: StructuringEngine, input: dict[str, float], dtype: Any) -> Any:
+
+def generate_mock_logits(
+    engine: StructuringEngine, input: dict[str, float], dtype: Any
+) -> Any:
     import mlx.core as mx
 
     logits = mx.full(len(engine.vocabulary), float("-inf"), dtype=dtype)
@@ -30,10 +33,11 @@ def generate_mock_logits(engine: StructuringEngine, input: dict[str, float], dty
 
     return logits
 
+
 def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
     """Test creating an state_machine with custom delimiters."""
-    from pse.state_machines.collections.encapsulated_acceptor import (
-        EncapsulatedAcceptor,
+    from pse.state_machines.composite.encapsulated import (
+        EncapsulatedStateMachine,
     )
 
     delimiters = "<<<START>>>", "<<<END>>>"
@@ -44,7 +48,7 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
         delimiters=delimiters,
     )
 
-    assert isinstance(engine.state_machine, EncapsulatedAcceptor)
+    assert isinstance(engine.state_machine, EncapsulatedStateMachine)
     assert engine.state_machine.delimiters == delimiters
 
 
@@ -53,6 +57,7 @@ def test_delimitered_acceptor(engine: StructuringEngine) -> None:
     engine.configure({"type": "string"}, wrap_with_delimiters=True)
     engine.consume_raw_input('```json\n"test string"\n```')
     assert engine.has_reached_accept_state, f"Engine with schema {engine.schema} should be in accepted state, walkers: {engine.walkers}"
+
 
 def test_create_acceptor_with_complex_schema(
     engine: StructuringEngine,
@@ -172,13 +177,16 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     engine.consume_raw_input("Here is the response: ```json\n{\n")
     assert len(engine.walkers) == 2
 
+
 @pytest.mark.parametrize(
     "value, followup_value",
     [
-        ("Hello", '!'),
+        ("Hello", "!"),
     ],
 )
-def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str) -> None:
+def test_edge_case_1(
+    engine: StructuringEngine, value: str, followup_value: str
+) -> None:
     """
     Test NumberAcceptor with an integer.
 
@@ -235,6 +243,7 @@ def test_edge_case_1(engine: StructuringEngine, value: str, followup_value: str)
 
     assert engine.has_reached_accept_state
 
+
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
     engine.configure(
@@ -261,19 +270,21 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
-        engine.configure(
-            schema={"type": "string"}, wrap_with_delimiters=False
-        )
+        engine.configure(schema={"type": "string"}, wrap_with_delimiters=False)
         # we expect only tokens that start with a " character
-        scores = generate_mock_logits(engine, {
-            "Hello": 10.0,
-            '"Hello': 3.0,
-            "Hi": 8.0,
-            '"Hi': 4.0,
-            "Hey": 2.0,
-            '"Hey': 1.0,
-            '"': 1.0,
-        }, dtype)
+        scores = generate_mock_logits(
+            engine,
+            {
+                "Hello": 10.0,
+                '"Hello': 3.0,
+                "Hi": 8.0,
+                '"Hi': 4.0,
+                "Hey": 2.0,
+                '"Hey': 1.0,
+                '"': 1.0,
+            },
+            dtype,
+        )
         adjusted_logits = engine(scores)
         expected_score = generate_mock_logits(
             engine,
@@ -282,23 +293,30 @@ def test_logits_processing(engine: StructuringEngine) -> None:
                 "Hi": float("-inf"),
                 "Hey": float("-inf"),
                 '"': 1.0,
-            }, dtype)
+            },
+            dtype,
+        )
         assert mx.allclose(adjusted_logits, expected_score)
+
 
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
 def test_real_world_logits_processing(engine: StructuringEngine) -> None:
     """Test that the logits processing is working correctly."""
     import mlx.core as mx
 
-    scores = generate_mock_logits(engine, {
-        "val": 10.0,
-        "type": 3.0,
-        "value": 8.0,
-        "validate": 4.0,
-        "required": 1.0,
-        "values": 1.0,
-        '"': 1.0,
-    }, mx.bfloat16)
+    scores = generate_mock_logits(
+        engine,
+        {
+            "val": 10.0,
+            "type": 3.0,
+            "value": 8.0,
+            "validate": 4.0,
+            "required": 1.0,
+            "values": 1.0,
+            '"': 1.0,
+        },
+        mx.bfloat16,
+    )
 
     schema = {
         "type": "object",
