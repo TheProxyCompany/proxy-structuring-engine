@@ -1,6 +1,6 @@
 import unittest
 
-from pse.state_machines.schema.enum_schema import EnumSchemaStateMachine
+from pse.state_machines.types.enum import EnumSchemaStateMachine
 
 
 class TestEnumSchemaAcceptor(unittest.TestCase):

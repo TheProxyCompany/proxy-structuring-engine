@@ -59,6 +59,9 @@ class ObjectStateMachine(StateMachine):
     def get_new_walker(self, state: State | None = None) -> ObjectWalker:
         return ObjectWalker(self, state)
 
+    def __str__(self) -> str:
+        return "Object"
+
 
 class ObjectWalker(Walker):
     """

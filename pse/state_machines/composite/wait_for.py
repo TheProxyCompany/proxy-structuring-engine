@@ -58,6 +58,9 @@ class WaitForStateMachine(StateMachine):
         """
         return self.branch_walker(WaitForWalker(self))
 
+    def __str__(self) -> str:
+        return f"WaitFor({self.wait_for_sm})"
+
 
 class WaitForWalker(Walker):
     """

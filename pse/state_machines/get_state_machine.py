@@ -7,7 +7,7 @@ from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
-from pse.state_machines.schema.enum_schema import EnumSchemaStateMachine
+from pse.state_machines.types.enum import EnumSchemaStateMachine
 from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
 from pse.state_machines.schema.string_schema import StringSchemaStateMachine
 from pse.state_machines.types.array import ArrayStateMachine

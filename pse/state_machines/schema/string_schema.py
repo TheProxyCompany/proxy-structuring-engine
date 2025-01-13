@@ -104,7 +104,6 @@ class StringSchemaStateMachine(StringStateMachine):
         result = urlparse(value)
         return all([result.scheme, result.netloc])
 
-
 class StringSchemaWalker(StringWalker):
     """
     Walker for StringSchemaAcceptor.

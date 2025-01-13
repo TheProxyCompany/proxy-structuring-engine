@@ -117,7 +117,6 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
 
         return super().__eq__(other) and self.schema == other.schema
 
-
 class ObjectSchemaWalker(ObjectWalker):
     """
     Walker for ObjectAcceptor

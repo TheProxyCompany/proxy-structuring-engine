@@ -60,7 +60,6 @@ class PropertySchemaStateMachine(PropertyStateMachine):
     def is_optional(self) -> bool:
         return super().is_optional or self.prop_schema.get("nullable", False)
 
-
 class PropertySchemaWalker(PropertyWalker):
     """
     Walker for PropertySchemaAcceptor

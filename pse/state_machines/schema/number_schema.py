@@ -58,7 +58,6 @@ class NumberSchemaStateMachine(NumberStateMachine):
 
         return True
 
-
 class NumberSchemaWalker(Walker):
     """
     Walker for NumberAcceptor

@@ -51,6 +51,9 @@ class ArrayStateMachine(StateMachine):
     def get_new_walker(self, state: State | None = None) -> ArrayWalker:
         return ArrayWalker(self, state)
 
+    def __str__(self) -> str:
+        return "Array"
+
 
 class ArrayWalker(Walker):
     """

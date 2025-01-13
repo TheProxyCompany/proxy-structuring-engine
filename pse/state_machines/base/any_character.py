@@ -48,6 +48,31 @@ class AnyCharacterStateMachine(StateMachine):
     def get_new_walker(self, state: int | str) -> AnyCharacterWalker:
         return AnyCharacterWalker(self)
 
+    def __str__(self) -> str:
+        """Return a readable string representation of the state machine."""
+        def format_charset(charset: set[str]) -> str:
+            if not charset:
+                return ""
+            return ", ".join(f"'{char!r}'" for char in sorted(charset))
+
+        allowed = format_charset(self.allowed_charset)
+        disallowed = format_charset(self.disallowed_charset)
+
+        parts = []
+        if allowed:
+            parts.append(f"\tallowed_charset=[{allowed}]")
+        if disallowed:
+            parts.append(f"\tdisallowed_charset=[{disallowed}]")
+
+        if not parts:
+            return f"{self.__class__.__name__}()"
+
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"{',\n'.join(parts)}\n"
+            ")"
+        )
+
 
 class AnyCharacterWalker(Walker):
     """

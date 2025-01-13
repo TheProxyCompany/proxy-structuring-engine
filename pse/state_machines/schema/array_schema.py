@@ -60,7 +60,6 @@ class ArraySchemaStateMachine(ArrayStateMachine):
         """
         return self.schema.get("maxItems", 2**32)
 
-
 class ArraySchemaWalker(ArrayWalker):
     """
     Walker for ArrayAcceptor

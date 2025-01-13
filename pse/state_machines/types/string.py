@@ -89,3 +89,6 @@ class StringWalker(Walker):
         """
         super().__init__(state_machine, current_state)
         self.state_machine: StringStateMachine = state_machine
+
+    def __str__(self) -> str:
+        return "String"

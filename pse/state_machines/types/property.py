@@ -44,6 +44,9 @@ class PropertyStateMachine(ChainStateMachine):
     def get_new_walker(self, state: State | None = None) -> PropertyWalker:
         return PropertyWalker(self, state)
 
+    def __str__(self) -> str:
+        return "Property"
+
 
 class PropertyWalker(Walker):
     """

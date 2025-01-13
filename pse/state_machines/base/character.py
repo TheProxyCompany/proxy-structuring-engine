@@ -37,7 +37,7 @@ class CharacterStateMachine(StateMachine):
     def get_new_walker(self, state: int | str) -> CharacterWalker:
         return CharacterWalker(self)
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         sorted_character_set = ", ".join(
             [f"'{char!r}'" for char in sorted(self.charset)]
         )

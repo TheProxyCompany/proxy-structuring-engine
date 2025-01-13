@@ -40,10 +40,21 @@ class EncapsulatedStateMachine(StateMachine):
                 2: [(PhraseStateMachine(delimiters[1]), "$")],
             }
         )
+        self.inner_state_machine = state_machine
         self.delimiters = delimiters
 
     def get_new_walker(self, state: State | None = None) -> EncapsulatedWalker:
         return EncapsulatedWalker(self, state)
+
+    def __str__(self) -> str:
+        components = []
+        if self.delimiters[0]:
+            components.append(f"{self.delimiters[0]!r}")
+        if self.delimiters[1]:
+            components.append(f"{self.delimiters[1]!r}")
+        if self.inner_state_machine:
+            components.append(str(self.inner_state_machine))
+        return f"Encapsulated({', '.join(components)})"
 
 
 class EncapsulatedWalker(Walker):

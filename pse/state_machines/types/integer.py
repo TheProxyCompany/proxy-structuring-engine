@@ -20,6 +20,8 @@ class IntegerStateMachine(CharacterStateMachine):
     def get_new_walker(self, state: int | str) -> IntegerWalker:
         return IntegerWalker(self)
 
+    def __str__(self) -> str:
+        return "Integer"
 
 class IntegerWalker(CharacterWalker):
     """

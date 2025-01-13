@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-
+from pse_core import StateGraph
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
@@ -12,7 +11,7 @@ class EnumSchemaStateMachine(StateMachine):
     Accept one of several constant strings.
     """
 
-    def __init__(self, schema: dict) -> None:
+    def __init__(self, enum_values: list[str], require_quotes: bool = True) -> None:
         """
         Initialize the EnumSchemaAcceptor with a dictionary-based transition graph.
 
@@ -26,19 +25,15 @@ class EnumSchemaStateMachine(StateMachine):
             KeyError: If the 'enum' key is not present in the schema.
             TypeError: If the 'enum' value is not a list.
         """
-        enum_values: list[str] | None = schema.get("enum")
+        if not enum_values:
+            raise ValueError("Enum values must be provided.")
 
-        if enum_values is None:
-            raise KeyError("Schema must contain 'enum' key.")
+        state_graph: StateGraph = {0: []}
+        for value in enum_values:
+            enum_value = repr(value) if require_quotes else value
+            state_graph[0].append((PhraseStateMachine(enum_value), "$"))
 
-        if not isinstance(enum_values, list):
-            raise TypeError("'enum' must be a list of string values.")
+        super().__init__(state_graph)
 
-        super().__init__(
-            {
-                0: [
-                    (PhraseStateMachine(json.dumps(value)), "$")
-                    for value in enum_values
-                ],
-            },
-        )
+    def __str__(self) -> str:
+        return "Enum"

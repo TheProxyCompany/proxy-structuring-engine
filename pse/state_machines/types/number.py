@@ -69,3 +69,6 @@ class NumberStateMachine(StateMachine):
             return [*super().get_edges(5), *super().get_edges(state)]
         else:
             return [*super().get_edges(state)]
+
+    def __str__(self) -> str:
+        return "Number"

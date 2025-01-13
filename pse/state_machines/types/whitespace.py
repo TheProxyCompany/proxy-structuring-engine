@@ -30,3 +30,6 @@ class WhitespaceStateMachine(CharacterStateMachine):
             max_whitespace,
             is_optional=(min_whitespace == 0),
         )
+
+    def __str__(self) -> str:
+        return "Whitespace"

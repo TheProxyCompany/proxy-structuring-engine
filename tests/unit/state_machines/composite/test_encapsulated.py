@@ -45,12 +45,12 @@ def test_initialization_with_custom_delimiters(content_acceptor):
     acceptor_0, _ = transitions_state_0[0]
     assert isinstance(acceptor_0, WaitForStateMachine)
     assert isinstance(acceptor_0.wait_for_sm, PhraseStateMachine)
-    assert acceptor_0.wait_for_sm.text == custom_open
+    assert acceptor_0.wait_for_sm.phrase == custom_open
 
     transitions_state_2 = encapsulated_acceptor.state_graph[2]
     acceptor_2, _ = transitions_state_2[0]
     assert isinstance(acceptor_2, PhraseStateMachine)
-    assert acceptor_2.text == custom_close
+    assert acceptor_2.phrase == custom_close
 
 
 def test_accepting_valid_sequence(

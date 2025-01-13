@@ -22,3 +22,6 @@ class BooleanStateMachine(StateMachine):
                 ]
             }
         )
+
+    def __str__(self) -> str:
+        return "Boolean"

@@ -29,3 +29,6 @@ class ChainStateMachine(StateMachine):
             },
             end_states=[len(state_machines)],
         )
+
+    def __str__(self) -> str:
+        return "Chain"

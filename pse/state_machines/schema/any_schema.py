@@ -26,3 +26,6 @@ class AnySchemaStateMachine(StateMachine):
         super().__init__(
             {0: [(state_machine, "$") for state_machine in self.acceptors]}
         )
+
+    def __str__(self) -> str:
+        return "Any"
