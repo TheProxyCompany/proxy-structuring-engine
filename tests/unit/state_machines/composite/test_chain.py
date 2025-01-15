@@ -1,10 +1,10 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.types.string import StringStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.types.whitespace import WhitespaceStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
+from pse.state_machines.types.string import StringStateMachine
+from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
 @pytest.fixture(scope="module")
@@ -29,24 +29,43 @@ def test_basic():
         ]
     )
     walkers = sm.get_walkers()
-    breakpoint()
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
-    breakpoint()
     assert len(walkers) == 2
+
+def test_nested_chain():
+    sm = StateMachine(
+        state_graph={
+            0: [
+                (
+                    ChainStateMachine(
+                        [
+                            PhraseStateMachine("Hello"),
+                            PhraseStateMachine("!", is_optional=True),
+                        ]
+                    ),
+                    1,
+                )
+            ]
+        },
+        end_states=[1],
+    )
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello")]
+    assert len(walkers) == 2
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "!")]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].get_current_value() == "Hello!"
 
 
 def test_walker_advance(sequence_acceptor: ChainStateMachine):
     """Test advancing the walker through the sequence of acceptors with specific inputs."""
     walkers = sequence_acceptor.get_walkers()
-    breakpoint()
     assert len(walkers) == 2
     walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, " ")]
-    breakpoint()
     assert len(walkers) == 2
     walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, "H")]
     assert len(walkers) == 1
-    # Advance through the full input sequence " Hello World"
-    breakpoint()
     full_input = "ello"
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, full_input)]
     assert len(walkers) == 2
@@ -140,6 +159,7 @@ def test_whitespace_first():
         [WhitespaceStateMachine(), PhraseStateMachine(" Alpha")]
     )
     walkers = sequence.get_walkers()
+    assert len(walkers) == 2
     for char in " Alpha":
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
     assert any(walker.has_reached_accept_state() for walker in walkers)
@@ -185,7 +205,9 @@ def test_optional_acceptor_advanced():
     )
     walkers = sm.get_walkers()
     assert len(walkers) == 2
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello,")]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello")]
+    assert len(walkers) == 2
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
     assert len(walkers) == 3
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, " ")]
     assert len(walkers) == 3
@@ -213,7 +235,8 @@ def test_whitespace_acceptor_sequence_acceptor():
         ]
     )
     walkers = sequence_acceptor.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"test"')]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, 'test"')]
     assert len(walkers) == 2
     for walker in walkers:
         assert not walker.has_reached_accept_state()
@@ -225,9 +248,7 @@ def test_whitespace_acceptor_sequence_acceptor():
         assert not walker.has_reached_accept_state()
         assert walker.get_raw_value() == '"test"   '
 
-    breakpoint()
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, ":    ")]
-    breakpoint()
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
     assert walkers[0].get_current_value() == '"test"   :    '

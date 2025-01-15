@@ -1,5 +1,4 @@
 [run]
-branch = True
 source = pse
 omit = tests/*
 

@@ -39,9 +39,11 @@ class ArrayStateMachine(StateMachine):
             4: [
                 (
                     ChainStateMachine(
-                        [PhraseStateMachine(","), WhitespaceStateMachine()]
-                    ),
-                    2,
+                        [
+                            PhraseStateMachine(","),
+                            WhitespaceStateMachine()
+                        ]
+                    ), 2,
                 ),
                 (PhraseStateMachine("]"), "$"),
             ],

@@ -40,15 +40,13 @@ class WaitForStateMachine(StateMachine):
         self.end_hook = end_hook
         self.triggered = False
 
-    def get_transitions(
-        self, walker: Walker, state: State | None = None
-    ) -> list[tuple[Walker, State, State]]:
+    def get_transitions(self, walker: Walker) -> list[tuple[Walker, State]]:
         """
         Get transitions for the WaitForAcceptor.
         """
         transitions = []
         for transition in self.wait_for_sm.get_walkers():
-            transitions.append((transition, 0, "$"))
+            transitions.append((transition, "$"))
         return transitions
 
     def get_walkers(self, state: State | None = None) -> list[Walker]:
@@ -96,9 +94,6 @@ class WaitForWalker(Walker):
 
         return True
 
-    def can_accept_more_input(self) -> bool:
-        return False
-
     def get_valid_continuations(self, depth: int = 0) -> list[str]:
         if self.transition_walker and self.transition_walker.is_within_value():
             return self.transition_walker.get_valid_continuations(depth)
@@ -132,6 +127,6 @@ class WaitForWalker(Walker):
                     return [self]
                 else:
                     self.transition_walker = None
-                    return self.branch()
+                    return self.state_machine.branch_walker(self)
 
         return self.state_machine.advance_walker(self, token)

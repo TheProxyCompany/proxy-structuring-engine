@@ -20,7 +20,12 @@ def test_default_wait_for_acceptor() -> None:
     assert walker.transition_walker.state_machine == text_acceptor
     assert isinstance(walker.transition_walker, PhraseWalker)
     assert not walker.is_within_value()
-    assert not walker.can_accept_more_input()
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
+    assert len(walkers) == 1
+    assert walkers[0].is_within_value()
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, "World")]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
 
 
 def test_basic_wait_for_acceptor() -> None:
@@ -39,7 +44,7 @@ def test_interrupted_wait_for_acceptor() -> None:
     text_acceptor = PhraseStateMachine("Hello World")
     state_machine = WaitForStateMachine(text_acceptor)
 
-    walkers = list(state_machine.get_walkers())
+    walkers = state_machine.get_walkers()
     walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
     assert len(walkers) == 1
     assert walkers[0].is_within_value()

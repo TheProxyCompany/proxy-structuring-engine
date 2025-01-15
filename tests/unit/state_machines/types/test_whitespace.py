@@ -22,8 +22,7 @@ def test_whitespace_acceptor_default():
 def test_whitespace_acceptor_custom_min_whitespace():
     """Test WhitespaceAcceptor with custom min_whitespace."""
     state_machine = WhitespaceStateMachine(min_whitespace=2)
-    walkers = list(state_machine.get_walkers())
-
+    walkers = state_machine.get_walkers()
     # Input with one whitespace character, should not be accepted
     advanced_walkers = [walker for _, walker in StateMachine.advance_all(walkers, " ")]
     assert not any(walker.has_reached_accept_state() for walker in advanced_walkers)

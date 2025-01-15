@@ -27,6 +27,13 @@ def test_advance_complete():
     assert accepted.has_reached_accept_state()
     assert accepted.get_current_value() == "hello"
 
+def test_advance_incomplete():
+    """Test advancing the walker completes the state_machine."""
+    text_acceptor = PhraseStateMachine("hello")
+    walker = PhraseWalker(text_acceptor, 4)
+    assert not walker.has_reached_accept_state()
+    assert walker.get_current_value() == "hell"
+
 
 def test_advance_invalid_character(text_acceptor: PhraseStateMachine):
     """Test advancing the walker with an invalid character does not advance."""
@@ -90,7 +97,7 @@ def test_unicode_characters():
     state_machine = PhraseStateMachine(unicode_text)
     walker = PhraseWalker(state_machine, 0)
     for char in unicode_text:
-        advanced = list(walker.consume(char))
+        advanced = walker.consume(char)
         assert len(advanced) == 1
         walker = advanced[0]
     assert walker.has_reached_accept_state()

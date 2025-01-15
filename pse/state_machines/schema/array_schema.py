@@ -4,6 +4,7 @@ from typing import Any
 
 from pse_core import State
 
+from pse.state_machines import get_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.types.array import ArrayStateMachine, ArrayWalker
@@ -12,10 +13,7 @@ from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 class ArraySchemaStateMachine(ArrayStateMachine):
     def __init__(self, schema: dict[str, Any], context: dict[str, Any]) -> None:
-        from pse.state_machines.get_state_machine import (
-            get_state_machine,
-        )
-
+        self.schema = schema
         self.schema = schema
         self.context = context
         super().__init__(

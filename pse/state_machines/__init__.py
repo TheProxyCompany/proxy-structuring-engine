@@ -7,11 +7,11 @@ from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
-from pse.state_machines.types.enum import EnumSchemaStateMachine
 from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
 from pse.state_machines.schema.string_schema import StringSchemaStateMachine
 from pse.state_machines.types.array import ArrayStateMachine
 from pse.state_machines.types.boolean import BooleanStateMachine
+from pse.state_machines.types.enum import EnumStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
 
 
@@ -98,7 +98,7 @@ def get_state_machine(
     elif schema_type in ["number", "integer"]:
         state_machine = NumberSchemaStateMachine(schema)
     elif "enum" in schema:
-        state_machine = EnumSchemaStateMachine(schema)
+        state_machine = EnumStateMachine(schema["enum"])
     elif "const" in schema:
         state_machine = PhraseStateMachine(json.dumps(schema["const"]))
     elif schema_type == "string":

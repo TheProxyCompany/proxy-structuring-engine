@@ -10,9 +10,9 @@ from pse_core.engine import Engine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
+from pse.state_machines import get_state_machine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitForStateMachine
-from pse.state_machines.get_state_machine import get_state_machine
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
@@ -134,20 +134,19 @@ class StructuringEngine(Engine):
             self.schema = schema.model_json_schema()
         elif isinstance(schema, dict):
             if "schema" in schema:
-                logger.warning(
-                    "Schema should not be provided as an object with 'schema' key."
-                )
                 self.schema = schema["schema"]
             else:
                 self.schema = schema
 
-        self.state_machine = get_state_machine(self.schema)
         if self.is_encapsulated:
             self.state_machine = EncapsulatedStateMachine(
-                self.state_machine, self.delimiters
+                get_state_machine(self.schema),
+                self.delimiters,
             )
-        if wait_for_acceptor:
-            self.state_machine = WaitForStateMachine(self.state_machine)
+        elif wait_for_acceptor:
+            self.state_machine = WaitForStateMachine(get_state_machine(self.schema))
+        else:
+            self.state_machine = get_state_machine(self.schema)
 
         self.walkers = self.state_machine.get_walkers()
 

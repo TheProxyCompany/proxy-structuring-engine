@@ -46,8 +46,11 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
     def get_new_walker(self, state: State | None = None) -> ObjectSchemaWalker:
         return ObjectSchemaWalker(self, state)
 
-    def get_edges(self, state: State, value: dict[str, Any]) -> list[Edge]:
+    def get_edges(self, state: State, value: dict[str, Any] | None = None) -> list[Edge]:
         edges = []
+        if value is None:
+            value = {}
+
         if state == 2:
             for prop_name, prop_schema in self.properties.items():
                 if prop_name not in value:
@@ -82,7 +85,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
 
     def get_transitions(
         self, walker: Walker, state: State | None = None
-    ) -> list[tuple[Walker, State, State]]:
+    ) -> list[tuple[Walker, State]]:
         """Retrieve transition walkers from the current state.
 
         For each edge from the current state, returns walkers that can traverse that edge.
@@ -93,7 +96,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
             state: Optional starting state. If None, uses the walker's current state.
 
         Returns:
-            list[tuple[Walker, State, State]]: A list of tuples representing transitions.
+            list[tuple[Walker, State]]: A list of tuples representing transitions.
         """
         current_state = state or walker.current_state
         transitions = []
@@ -101,7 +104,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
             current_state, walker.get_current_value()
         ):
             for transition in state_machine.get_walkers():
-                transitions.append((transition, current_state, target_state))
+                transitions.append((transition, target_state))
 
             if (
                 state_machine.is_optional

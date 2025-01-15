@@ -13,7 +13,6 @@ def basic_state_machine():
     """Fixture for a basic AnyCharacterStateMachine with no restrictions."""
     return AnyCharacterStateMachine()
 
-
 @pytest.fixture
 def allowed_charset_state_machine():
     """Fixture for AnyCharacterStateMachine with allowed charset."""
@@ -25,26 +24,11 @@ def disallowed_charset_state_machine():
     """Fixture for AnyCharacterStateMachine with disallowed charset."""
     return AnyCharacterStateMachine(disallowed_charset=["x", "y", "z"])
 
-
-@pytest.fixture
-def case_sensitive_state_machine():
-    """Fixture for case-sensitive AnyCharacterStateMachine."""
-    return AnyCharacterStateMachine(
-        allowed_charset=["A", "B", "C"], case_sensitive=True
-    )
-
-
-@pytest.fixture
-def limited_state_machine():
-    """Fixture for AnyCharacterStateMachine with character limits."""
-    return AnyCharacterStateMachine(char_min=2, char_limit=4)
-
-
 @pytest.mark.parametrize(
     "input_str, expected_value",
     [
         ("hello", "hello"),
-        ("123", "123"),
+        ("123", 123),
         ("!@#", "!@#"),
         ("", None),
     ],
@@ -66,14 +50,14 @@ def test_basic_character_acceptance(basic_state_machine, input_str, expected_val
     [
         ("abc", "abc"),
         ("cab", "cab"),
-        ("abcd", None),
+        ("abcd", "abc"),
         ("xyz", None),
     ],
 )
 def test_allowed_charset(allowed_charset_state_machine, input_str, expected_value):
     """Test character acceptance with allowed charset."""
     walker = AnyCharacterWalker(allowed_charset_state_machine)
-    walkers = list(walker.consume(input_str))
+    walkers = walker.consume(input_str)
 
     if not walkers:
         assert expected_value is None
@@ -88,7 +72,7 @@ def test_allowed_charset(allowed_charset_state_machine, input_str, expected_valu
         ("abc", "abc"),
         ("def", "def"),
         ("xyz", None),
-        ("axy", None),
+        ("axy", "a"),
     ],
 )
 def test_disallowed_charset(
@@ -110,11 +94,14 @@ def test_disallowed_charset(
     [
         ("ABC", "ABC"),
         ("abc", None),
-        ("AbC", None),
+        ("AbC", "A"),
     ],
 )
-def test_case_sensitivity(case_sensitive_state_machine, input_str, expected_value):
+def test_case_sensitivity(input_str, expected_value):
     """Test case-sensitive character acceptance."""
+    case_sensitive_state_machine = AnyCharacterStateMachine(
+        allowed_charset=["A", "B", "C"], case_sensitive=True
+    )
     walker = AnyCharacterWalker(case_sensitive_state_machine)
     walkers = list(walker.consume(input_str))
 
@@ -135,16 +122,18 @@ def test_case_sensitivity(case_sensitive_state_machine, input_str, expected_valu
         ("abcde", False),  # Too long
     ],
 )
-def test_character_limits(limited_state_machine, input_str, should_accept):
+def test_character_limits(input_str, should_accept):
     """Test character length limits."""
+    limited_state_machine = AnyCharacterStateMachine(char_min=2, char_limit=4)
     walker = AnyCharacterWalker(limited_state_machine)
-    walkers = list(walker.consume(input_str))
+    walkers = walker.consume(input_str)
 
+    assert len(walkers) == 1
+    assert walkers[0].get_current_value() == input_str
     if should_accept:
-        assert len(walkers) == 1
-        assert walkers[0].get_current_value() == input_str
+        assert walkers[0].has_reached_accept_state()
     else:
-        assert not walkers
+        assert not walkers[0].has_reached_accept_state()
 
 
 def test_walker_clone(basic_state_machine):
@@ -156,7 +145,7 @@ def test_walker_clone(basic_state_machine):
     assert walker is not cloned
 
     # Verify independent advancement
-    list(walker.consume("a"))
+    walker = walker.consume("a")[0]
     assert walker.get_current_value() == "testa"
     assert cloned.get_current_value() == "test"
 

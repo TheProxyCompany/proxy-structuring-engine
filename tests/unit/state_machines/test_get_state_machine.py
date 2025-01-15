@@ -3,14 +3,14 @@ from typing import Any
 
 import pytest
 
+from pse.state_machines import get_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.get_state_machine import get_state_machine
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
 from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
-from pse.state_machines.types.enum import EnumSchemaStateMachine
 from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
 from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
 from pse.state_machines.schema.string_schema import StringSchemaStateMachine
+from pse.state_machines.types.enum import EnumStateMachine
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def context() -> dict[str, Any]:
             None,
         ),
         ({"const": "fixed_value"}, PhraseStateMachine, None),
-        ({"enum": ["red", "green", "blue"]}, EnumSchemaStateMachine, None),
+        ({"enum": ["red", "green", "blue"]}, EnumStateMachine, None),
         (
             {"allOf": [{"type": "string"}, {"minLength": 5}]},
             StringSchemaStateMachine,

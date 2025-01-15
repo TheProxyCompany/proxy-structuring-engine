@@ -3,11 +3,22 @@ import pytest
 from pse.state_machines.types.string import StringStateMachine
 
 
-@pytest.fixture
-def string_acceptor() -> StringStateMachine:
-    """Fixture to create a new instance of StringAcceptor for each test."""
-    return StringStateMachine()
-
+def test_basic() -> None:
+    string_acceptor = StringStateMachine()
+    walkers = list(string_acceptor.get_walkers())
+    assert len(walkers) == 1
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
+    assert len(walkers) == 3
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, "Hello")]
+    assert len(walkers) == 3
+    assert any(
+        walker.transition_walker and walker.transition_walker.has_reached_accept_state()
+        for walker in walkers
+    )
+    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].get_current_value() == "Hello"
 
 @pytest.mark.parametrize(
     "input_string, expected_value",
@@ -23,9 +34,7 @@ def string_acceptor() -> StringStateMachine:
         ('"Escaped solidus: \\/"', "Escaped solidus: /"),
     ],
 )
-def test_valid_strings(
-    string_acceptor: StringStateMachine, input_string: str, expected_value: str
-) -> None:
+def test_valid_strings(input_string: str, expected_value: str) -> None:
     """
     Test StringAcceptor with various valid JSON strings.
 
@@ -34,6 +43,7 @@ def test_valid_strings(
         input_string (str): The JSON string input.
         expected_value (str): The expected parsed string value.
     """
+    string_acceptor = StringStateMachine()
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
         walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
@@ -75,9 +85,7 @@ def test_valid_strings(
         ),
     ],
 )
-def test_invalid_strings(
-    string_acceptor: StringStateMachine, input_string: str, error_message: str
-) -> None:
+def test_invalid_strings(input_string: str, error_message: str) -> None:
     """
     Test StringAcceptor with various invalid JSON strings.
 
@@ -86,6 +94,7 @@ def test_invalid_strings(
         input_string (str): The invalid JSON string input.
         error_message (str): The assertion error message.
     """
+    string_acceptor = StringStateMachine()
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
         walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
@@ -95,13 +104,14 @@ def test_invalid_strings(
     ), error_message
 
 
-def test_empty_string(string_acceptor: StringStateMachine) -> None:
+def test_empty_string() -> None:
     """
     Test StringAcceptor with an empty JSON string.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '""'
     expected_value: str = ""
 
@@ -120,13 +130,14 @@ def test_empty_string(string_acceptor: StringStateMachine) -> None:
         ), f"Expected empty string, got '{walker.get_current_value()}'"
 
 
-def test_string_with_valid_escaped_tab(string_acceptor: StringStateMachine) -> None:
+def test_string_with_valid_escaped_tab() -> None:
     """
     Test StringAcceptor with a valid escaped tab character.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Tab\\tcharacter"'
     expected_value: str = "Tab\tcharacter"
 
@@ -147,13 +158,14 @@ def test_string_with_valid_escaped_tab(string_acceptor: StringStateMachine) -> N
         ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
-def test_string_with_escaped_solidus(string_acceptor: StringStateMachine) -> None:
+def test_string_with_escaped_solidus() -> None:
     """
     Test StringAcceptor with a string containing an escaped solidus.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Escaped solidus: \\/"'
     expected_value: str = "Escaped solidus: /"
 
@@ -172,15 +184,14 @@ def test_string_with_escaped_solidus(string_acceptor: StringStateMachine) -> Non
         ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
-def test_string_with_unescaped_control_characters(
-    string_acceptor: StringStateMachine,
-) -> None:
+def test_string_with_unescaped_control_characters() -> None:
     """
     Test StringAcceptor with unescaped control characters (should fail).
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Invalid \x0b string"'  # Vertical tab, should be escaped
 
     walkers = list(string_acceptor.get_walkers())
@@ -192,15 +203,14 @@ def test_string_with_unescaped_control_characters(
     ), "StringAcceptor incorrectly accepted string with unescaped control characters"
 
 
-def test_string_with_invalid_unicode_escape(
-    string_acceptor: StringStateMachine,
-) -> None:
+def test_string_with_invalid_unicode_escape() -> None:
     """
     Test StringAcceptor with invalid unicode escape sequence.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Invalid unicode: \\u12G4"'  # 'G' is not a hex digit
 
     walkers = list(string_acceptor.get_walkers())
@@ -212,15 +222,14 @@ def test_string_with_invalid_unicode_escape(
     ), "StringAcceptor incorrectly accepted string with invalid unicode escape"
 
 
-def test_string_with_incomplete_unicode_escape(
-    string_acceptor: StringStateMachine,
-) -> None:
+def test_string_with_incomplete_unicode_escape() -> None:
     """
     Test StringAcceptor with an incomplete unicode escape sequence.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Incomplete unicode: \\u123"'  # Missing one hex digit
 
     walkers = list(string_acceptor.get_walkers())
@@ -232,13 +241,14 @@ def test_string_with_incomplete_unicode_escape(
     ), "StringAcceptor incorrectly accepted string with incomplete unicode escape"
 
 
-def test_string_missing_start_quote(string_acceptor: StringStateMachine) -> None:
+def test_string_missing_start_quote() -> None:
     """
     Test StringAcceptor with a string missing the starting quote.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = 'missing start quote"'
 
     walkers = list(string_acceptor.get_walkers())
@@ -250,13 +260,14 @@ def test_string_missing_start_quote(string_acceptor: StringStateMachine) -> None
     ), "StringAcceptor incorrectly accepted string missing starting quote"
 
 
-def test_incomplete_string(string_acceptor: StringStateMachine) -> None:
+def test_incomplete_string() -> None:
     """
     Test StringAcceptor with an incomplete string (missing closing quote).
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"incomplete string'
 
     walkers = list(string_acceptor.get_walkers())
@@ -282,9 +293,7 @@ def test_incomplete_string(string_acceptor: StringStateMachine) -> None:
         ('"Escaped solidus: \\/"', "Escaped solidus: /"),
     ],
 )
-def test_valid_strings_char_by_char(
-    string_acceptor: StringStateMachine, input_string: str, expected_value: str
-) -> None:
+def test_valid_strings_char_by_char(input_string: str, expected_value: str) -> None:
     """
     Test StringAcceptor with various valid JSON strings by advancing character by character.
 
@@ -293,6 +302,7 @@ def test_valid_strings_char_by_char(
         input_string (str): The JSON string input.
         expected_value (str): The expected parsed string value.
     """
+    string_acceptor = StringStateMachine()
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
         new_walkers = []
@@ -338,9 +348,7 @@ def test_valid_strings_char_by_char(
         ),
     ],
 )
-def test_invalid_strings_char_by_char(
-    string_acceptor: StringStateMachine, input_string: str, error_message: str
-) -> None:
+def test_invalid_strings_char_by_char(input_string: str, error_message: str) -> None:
     """
     Test StringAcceptor with various invalid JSON strings by advancing character by character.
 
@@ -349,6 +357,7 @@ def test_invalid_strings_char_by_char(
         input_string (str): The invalid JSON string input.
         error_message (str): The assertion error message.
     """
+    string_acceptor = StringStateMachine()
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
         new_walkers = []
@@ -362,7 +371,7 @@ def test_invalid_strings_char_by_char(
     ), error_message
 
 
-def test_empty_string_char_by_char(string_acceptor: StringStateMachine) -> None:
+def test_empty_string_char_by_char() -> None:
     """
     Test StringAcceptor with an empty JSON string by advancing character by character.
 
@@ -372,6 +381,7 @@ def test_empty_string_char_by_char(string_acceptor: StringStateMachine) -> None:
     input_string: str = '""'
     expected_value: str = ""
 
+    string_acceptor = StringStateMachine()
     walkers = list(string_acceptor.get_walkers())
     for ch in input_string:
         new_walkers = []
@@ -391,48 +401,37 @@ def test_empty_string_char_by_char(string_acceptor: StringStateMachine) -> None:
         ), f"Expected empty string, got '{walker.get_current_value()}'"
 
 
-def test_string_with_valid_escaped_tab_char_by_char(
-    string_acceptor: StringStateMachine,
-) -> None:
+def test_string_with_valid_escaped_tab_char_by_char() -> None:
     """
     Test StringAcceptor with a valid escaped tab character by advancing character by character.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Tab\\tcharacter"'
     expected_value: str = "Tab\tcharacter"
 
-    walkers = list(string_acceptor.get_walkers())
+    walkers = string_acceptor.get_walkers()
     for ch in input_string:
-        new_walkers = []
-        for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all([walker], ch)
-            new_walkers.extend([w for _, w in advanced_walkers])
-        walkers = new_walkers
+        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
-    ]
-    assert (
-        accepted_walkers
-    ), "StringAcceptor did not accept string with escaped tab character"
+    assert all(walker.has_reached_accept_state() for walker in walkers)
 
-    for walker in accepted_walkers:
+    for walker in walkers:
         assert (
             walker.get_current_value() == expected_value
         ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
 
 
-def test_string_with_escaped_solidus_char_by_char(
-    string_acceptor: StringStateMachine,
-) -> None:
+def test_string_with_escaped_solidus_char_by_char() -> None:
     """
     Test StringAcceptor with a string containing an escaped solidus by advancing character by character.
 
     Args:
         string_acceptor (StringAcceptor): The StringAcceptor instance.
     """
+    string_acceptor = StringStateMachine()
     input_string: str = '"Escaped solidus: \\/"'
     expected_value: str = "Escaped solidus: /"
 

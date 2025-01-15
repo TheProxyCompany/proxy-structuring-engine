@@ -7,7 +7,6 @@ from pse_core.walker import Walker
 
 logger = logging.getLogger(__name__)
 
-
 class PhraseStateMachine(StateMachine):
     """
     Accepts a predefined sequence of characters, validating input against the specified text.
@@ -127,15 +126,13 @@ class PhraseWalker(Walker):
             list[Walker]: A walker if the token matches, empty otherwise.
         """
         valid_length = self._get_valid_match_length(token)
+        if valid_length <= 0:
+            return []
 
-        if valid_length > 0:
-            new_value = self.get_raw_value() + token[:valid_length]
-            remaining_input = (
-                token[valid_length:] if valid_length < len(token) else None
-            )
-            return self.transition(new_value, remaining_input)
-
-        return []
+        new_value = self.get_raw_value() + token[:valid_length]
+        remaining_input = token[valid_length:] if valid_length < len(token) else None
+        new_walker = self.transition(new_value, remaining_input)
+        return [new_walker]
 
     def get_current_value(self) -> str:
         """

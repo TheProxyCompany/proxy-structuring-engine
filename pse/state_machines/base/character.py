@@ -38,9 +38,7 @@ class CharacterStateMachine(StateMachine):
         return CharacterWalker(self)
 
     def __str__(self) -> str:
-        sorted_character_set = ", ".join(
-            [f"'{char!r}'" for char in sorted(self.charset)]
-        )
+        sorted_character_set = ", ".join([f"{char!r}" for char in sorted(self.charset)])
         return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
 
 
@@ -88,10 +86,19 @@ class CharacterWalker(Walker):
         """
         Determines if the transition should be completed based on the character limit.
         """
-        if self.state_machine.char_limit > 0:
-            return self.consumed_character_count <= self.state_machine.char_limit
+        if (
+            self.state_machine.char_limit > 0
+            and self.consumed_character_count > self.state_machine.char_limit
+        ):
+            return False
 
-        return self.consumed_character_count >= self.state_machine.char_min
+        if (
+            self.state_machine.char_min > 0
+            and self.consumed_character_count < self.state_machine.char_min
+        ):
+            return False
+
+        return True
 
     def consume(self, token: str) -> list[Walker]:
         """
@@ -126,14 +133,24 @@ class CharacterWalker(Walker):
 
         new_value = self.get_raw_value() + token[:valid_length]
         remaining_input = token[valid_length:] if valid_length < len(token) else None
+        new_walker = self.transition(new_value, remaining_input)
 
-        return self.transition(new_value, remaining_input)
+        return [new_walker]
 
     def can_accept_more_input(self) -> bool:
         """
         Determines if the walker can accept more input based on the character limit.
         """
-        if self.state_machine.char_limit > 0:
-            return self.consumed_character_count < self.state_machine.char_limit
+        if (
+            self.state_machine.char_limit > 0
+            and self.consumed_character_count > self.state_machine.char_limit
+        ):
+            return False
 
-        return self.consumed_character_count > 0
+        if (
+            self.state_machine.char_min > 0
+            and self.consumed_character_count < self.state_machine.char_min
+        ):
+            return False
+
+        return True

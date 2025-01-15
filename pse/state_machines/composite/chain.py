@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 logger = logging.getLogger(__name__)
 
@@ -30,5 +31,20 @@ class ChainStateMachine(StateMachine):
             end_states=[len(state_machines)],
         )
 
+    def get_new_walker(self, state: int | str | None = None) -> Walker:
+        return ChainWalker(self, state)
+
     def __str__(self) -> str:
         return "Chain"
+
+class ChainWalker(Walker):
+    """
+    A walker that chains multiple walkers in a specific sequence.
+    """
+
+    def __init__(self, chain_state_machine: ChainStateMachine, *args, **kwargs) -> None:
+        super().__init__(chain_state_machine, *args, **kwargs)
+        self.state_machine = chain_state_machine
+
+    # def should_branch(self) -> bool:
+    #     return not self.has_reached_accept_state()

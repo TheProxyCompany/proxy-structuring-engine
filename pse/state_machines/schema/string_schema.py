@@ -6,8 +6,9 @@ from collections.abc import Callable
 
 import regex
 from pse_core import State
+from pse_core.walker import Walker
 
-from pse.state_machines.types.string import StringStateMachine, StringWalker
+from pse.state_machines.types.string import StringStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class StringSchemaStateMachine(StringStateMachine):
         result = urlparse(value)
         return all([result.scheme, result.netloc])
 
-class StringSchemaWalker(StringWalker):
+class StringSchemaWalker(Walker):
     """
     Walker for StringSchemaAcceptor.
     """

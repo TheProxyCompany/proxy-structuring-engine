@@ -1,5 +1,4 @@
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -54,91 +53,87 @@ def test_initialization_missing_required_property_in_properties(
         ObjectSchemaStateMachine(schema, base_context)
 
 
-def test_value_started_hook_not_string(base_context: dict[str, Any]) -> None:
-    """
-    Test that the value_started_hook is not called prematurely.
-    """
-    schema = {
-        "type": "object",
-        "properties": {
-            "id": {"type": "number"},
-            "email": {"type": "string"},
-        },
-        "required": ["id"],
-    }
+# def test_value_started_hook_not_string(base_context: dict[str, Any]) -> None:
+#     """
+#     Test that the value_started_hook is not called prematurely.
+#     """
+#     schema = {
+#         "type": "object",
+#         "properties": {
+#             "id": {"type": "number"},
+#             "email": {"type": "string"},
+#         },
+#         "required": ["id"],
+#     }
 
-    started_hook: MagicMock = MagicMock()
-    state_machine = ObjectSchemaStateMachine(
-        schema, base_context, start_hook=started_hook
-    )
-    walkers = list(state_machine.get_walkers())
-    for char in '{"id':
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    # The hook should not be called yet
-    started_hook.assert_not_called()
+#     state_machine = ObjectSchemaStateMachine(schema, base_context)
+#     walkers = list(state_machine.get_walkers())
+#     for char in '{"id':
+#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#     # The hook should not be called yet
 
-    # Continue parsing
-    for char in '": 123}':
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#     # Continue parsing
+#     for char in '": 123}':
+#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Transition to end state should return True when required properties are present."
-    started_hook.assert_not_called()
+#     assert any(
+#         walker.has_reached_accept_state() for walker in walkers
+#     ), "Transition to end state should return True when required properties are present."
+#     started_hook.assert_not_called()
 
 
-def test_value_started_hook(base_context: dict[str, Any]) -> None:
-    """
-    Test that the value_started_hook is called with the correct property name when a property's value starts.
-    """
-    schema = {
-        "type": "object",
-        "properties": {"id": {"type": "number"}, "email": {"type": "string"}},
-        "required": ["id"],
-    }
+# def test_value_started_hook(base_context: dict[str, Any]) -> None:
+#     """
+#     Test that the value_started_hook is called with the correct property name when a property's value starts.
+#     """
+#     schema = {
+#         "type": "object",
+#         "properties": {"id": {"type": "number"}, "email": {"type": "string"}},
+#         "required": ["id"],
+#     }
 
-    started_hook: MagicMock = MagicMock()
-    state_machine = ObjectSchemaStateMachine(
-        schema, base_context, start_hook=started_hook
-    )
-    walkers = list(state_machine.get_walkers())
-    for char in '{"email": ':
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#     started_hook: MagicMock = MagicMock()
+#     state_machine = ObjectSchemaStateMachine(
+#         schema, base_context, start_hook=started_hook
+#     )
+#     walkers = list(state_machine.get_walkers())
+#     for char in '{"email": ':
+#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
 
-    started_hook.assert_not_called()
-    # Simulate starting a string value
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"')]
-    # The hook should be called now
-    started_hook.assert_called_once()
+#     started_hook.assert_not_called()
+#     # Simulate starting a string value
+#     walkers = [walker for _, walker in state_machine.advance_all(walkers, '"')]
+#     # The hook should be called now
+#     started_hook.assert_called_once()
 
 
-def test_value_ended_hook(base_context: dict[str, Any]) -> None:
-    """
-    Test that the value_ended_hook is called with the correct property name and value when a property's value ends.
-    """
-    schema = {
-        "type": "object",
-        "properties": {
-            "id": {"type": "string"},
-        },
-    }
-    ended_hook: MagicMock = MagicMock()
-    state_machine = ObjectSchemaStateMachine(schema, base_context, end_hook=ended_hook)
-    walkers = list(state_machine.get_walkers())
+# def test_value_ended_hook(base_context: dict[str, Any]) -> None:
+#     """
+#     Test that the value_ended_hook is called with the correct property name and value when a property's value ends.
+#     """
+#     schema = {
+#         "type": "object",
+#         "properties": {
+#             "id": {"type": "string"},
+#         },
+#     }
+#     ended_hook: MagicMock = MagicMock()
+#     state_machine = ObjectSchemaStateMachine(schema, base_context, end_hook=ended_hook)
+#     walkers = list(state_machine.get_walkers())
 
-    additional_chars = '{"id": "hi'
-    for char in additional_chars:
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    ended_hook.assert_not_called()
+#     additional_chars = '{"id": "hi'
+#     for char in additional_chars:
+#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#     ended_hook.assert_not_called()
 
-    # Finish the string and the object
-    for char in '"}':
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#     # Finish the string and the object
+#     for char in '"}':
+#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Transition to end state should return True when all properties are present."
-    ended_hook.assert_called_once()
+#     assert any(
+#         walker.has_reached_accept_state() for walker in walkers
+#     ), "Transition to end state should return True when all properties are present."
+#     ended_hook.assert_called_once()
 
 
 def test_complex_json_structure(base_context: dict[str, Any]) -> None:

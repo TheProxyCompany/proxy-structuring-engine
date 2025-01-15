@@ -3,8 +3,8 @@ from typing import Any
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.types.number import NumberStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.types.number import NumberStateMachine
 
 
 @pytest.fixture
@@ -555,8 +555,8 @@ def test_number_acceptor_large_floating_point(
 @pytest.mark.parametrize(
     "value, followup_value",
     [
-        # (10, None),
-        # (-10, 1),
+        (10, None),
+        (-10, 1),
         (0, ".0"),
     ],
 )
@@ -585,7 +585,7 @@ def test_number_acceptor(
     assert len(walkers) == 2
     walkers = [walker for _, walker in sm.advance_all(walkers, str(value))]
 
-    assert len(walkers) == 4, "Should have one walker."
+    assert len(walkers) == 4, "Should have four walkers."
     if followup_value is not None:
         walkers = [walker for _, walker in sm.advance_all(walkers, str(followup_value))]
 

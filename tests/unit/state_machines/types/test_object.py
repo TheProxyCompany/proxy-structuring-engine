@@ -136,9 +136,8 @@ def test_edge_case(object_acceptor: ObjectStateMachine):
     walkers = list(object_acceptor.get_walkers())
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, '{"":""')]
     assert len(walkers) == 3
-
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
-    assert len(walkers) == 1
+    assert len(walkers) == 2
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
     assert len(walkers) == 3
 

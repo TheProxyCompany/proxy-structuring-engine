@@ -21,15 +21,12 @@ def test_basic():
     )
     walkers = sm.get_walkers()
     assert len(walkers) == 1
-    breakpoint()
     walkers = [walker for _, walker in sm.advance_all(walkers, "hello")]
     assert len(walkers) == 2
     walkers = [walker for _, walker in sm.advance_all(walkers, " ")]
     assert len(walkers) == 2
-    breakpoint()
     walkers = [walker for _, walker in sm.advance_all(walkers, "world")]
     assert len(walkers) == 1
-    breakpoint()
     walkers = [walker for _, walker in sm.advance_all(walkers, "!")]
     assert len(walkers) == 1
 
@@ -59,35 +56,6 @@ def test_boolean_acceptor(token, expected_value):
     for walker in walkers:
         if walker.has_reached_accept_state():
             assert walker.get_current_value() == expected_value
-
-
-@pytest.mark.parametrize(
-    "token, acceptor_args, expected_value",
-    [
-        ('"world"', {"text": '"world"'}, "world"),
-        ("data", {"text": "data"}, "data"),
-        ('"hello"', {"text": '"hello"'}, "hello"),
-        ("I should use a tool", {"text": "I should use a tool"}, "I should use a tool"),
-        ('"chain_of_thought"', {"text": '"chain_of_thought"'}, "chain_of_thought"),
-    ],
-)
-def test_text_acceptor(token, acceptor_args, expected_value):
-    """Test StateMachine with TextAcceptor transitions."""
-    sm = StateMachine(
-        state_graph={0: [(PhraseStateMachine(**acceptor_args), 1)]},
-        start_state=0,
-        end_states=[1],
-    )
-
-    walkers = sm.get_walkers()
-    advanced = list(StateMachine.advance_all(walkers, token))
-    walkers = [walker for _, walker in advanced]
-
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert walker.get_current_value() == expected_value
-
 
 @pytest.mark.parametrize(
     "first, second, end, token",

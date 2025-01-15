@@ -49,29 +49,7 @@ class AnyCharacterStateMachine(StateMachine):
         return AnyCharacterWalker(self)
 
     def __str__(self) -> str:
-        """Return a readable string representation of the state machine."""
-        def format_charset(charset: set[str]) -> str:
-            if not charset:
-                return ""
-            return ", ".join(f"'{char!r}'" for char in sorted(charset))
-
-        allowed = format_charset(self.allowed_charset)
-        disallowed = format_charset(self.disallowed_charset)
-
-        parts = []
-        if allowed:
-            parts.append(f"\tallowed_charset=[{allowed}]")
-        if disallowed:
-            parts.append(f"\tdisallowed_charset=[{disallowed}]")
-
-        if not parts:
-            return f"{self.__class__.__name__}()"
-
-        return (
-            f"{self.__class__.__name__}(\n"
-            f"{',\n'.join(parts)}\n"
-            ")"
-        )
+        return "AnyCharacter"
 
 
 class AnyCharacterWalker(Walker):
@@ -104,6 +82,24 @@ class AnyCharacterWalker(Walker):
     def is_within_value(self) -> bool:
         return True
 
+    def can_accept_more_input(self) -> bool:
+        """
+        Determines if the walker can accept more input based on the character limit.
+        """
+        if (
+            self.state_machine.char_limit > 0
+            and self.consumed_character_count > self.state_machine.char_limit
+        ):
+            return False
+
+        if (
+            self.state_machine.char_min > 0
+            and self.consumed_character_count < self.state_machine.char_min
+        ):
+            return False
+
+        return True
+
     def should_start_transition(self, token: str) -> bool:
         """
         Determines if a transition should start with the given token.
@@ -126,6 +122,18 @@ class AnyCharacterWalker(Walker):
 
         if self.state_machine.allowed_charset:
             return first_char in self.state_machine.allowed_charset
+
+        return True
+
+    def should_complete_transition(self) -> bool:
+        """
+        Determines if the transition should be completed based on the character limit.
+        """
+        if self.state_machine.char_limit > 0 and self.consumed_character_count > self.state_machine.char_limit:
+            return False
+
+        if self.state_machine.char_min > 0 and self.consumed_character_count < self.state_machine.char_min:
+            return False
 
         return True
 
@@ -158,4 +166,6 @@ class AnyCharacterWalker(Walker):
 
         new_value = self.get_raw_value() + valid_prefix
         remaining_input = token[len(valid_prefix) :] or None
-        return self.transition(new_value, remaining_input)
+        new_walker = self.transition(new_value, remaining_input)
+
+        return [new_walker]

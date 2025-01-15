@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from pse_core import State
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
 
 from pse.state_machines.base.any_character import AnyCharacterStateMachine
 from pse.state_machines.base.character import CharacterStateMachine
@@ -64,31 +62,6 @@ class StringStateMachine(StateMachine):
                 ],
             }
         )
-
-    def get_new_walker(self, state: State) -> StringWalker:
-        return StringWalker(self, state)
-
-
-class StringWalker(Walker):
-    """
-    Walker for StringAcceptor.
-
-    Manages the parsing state and accumulates characters for a JSON string.
-    The length attribute tracks the number of characters in the string content,
-    explicitly excluding the opening and closing quotation marks.
-    """
-
-    def __init__(
-        self, state_machine: StringStateMachine, current_state: State | None = None
-    ):
-        """
-        Initialize the walker.
-
-        Args:
-            state_machine (StringAcceptor): The parent state_machine.
-        """
-        super().__init__(state_machine, current_state)
-        self.state_machine: StringStateMachine = state_machine
 
     def __str__(self) -> str:
         return "String"

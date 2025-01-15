@@ -6,7 +6,7 @@ from pse_core.state_machine import StateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
 
 
-class EnumSchemaStateMachine(StateMachine):
+class EnumStateMachine(StateMachine):
     """
     Accept one of several constant strings.
     """
