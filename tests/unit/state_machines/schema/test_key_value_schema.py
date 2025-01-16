@@ -1,10 +1,10 @@
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.schema.property_schema import PropertySchemaStateMachine
+from pse.state_machines.schema.key_value_schema import KeyValueSchemaStateMachine
 
 
 def test_property_parsing():
-    state_machine = PropertySchemaStateMachine(
+    state_machine = KeyValueSchemaStateMachine(
         prop_name="type",
         prop_schema={"type": "string"},
         context={"defs": {}},

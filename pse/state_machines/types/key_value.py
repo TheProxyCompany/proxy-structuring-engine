@@ -17,7 +17,7 @@ from pse.state_machines.types.whitespace import WhitespaceStateMachine
 logger = logging.getLogger()
 
 
-class PropertyStateMachine(ChainStateMachine):
+class KeyValueStateMachine(ChainStateMachine):
     """
     Acceptor for individual properties within a JSON object.
 
@@ -29,10 +29,8 @@ class PropertyStateMachine(ChainStateMachine):
         """
         Initialize the PropertyAcceptor with a predefined sequence of token acceptors.
         """
-
         super().__init__(
-            sequence
-            or [
+            sequence or [
                 StringStateMachine(),
                 WhitespaceStateMachine(),
                 PhraseStateMachine(":"),
@@ -41,21 +39,21 @@ class PropertyStateMachine(ChainStateMachine):
             ]
         )
 
-    def get_new_walker(self, state: State | None = None) -> PropertyWalker:
-        return PropertyWalker(self, state)
+    def get_new_walker(self, state: State | None = None) -> KeyValueWalker:
+        return KeyValueWalker(self, state)
 
     def __str__(self) -> str:
-        return "Property"
+        return "KeyValue"
 
 
-class PropertyWalker(Walker):
+class KeyValueWalker(Walker):
     """
     Walker for PropertyAcceptor that maintains the parsed property name and value.
     """
 
     def __init__(
         self,
-        state_machine: PropertyStateMachine,
+        state_machine: KeyValueStateMachine,
         current_acceptor_index: State | None = None,
     ) -> None:
         """
@@ -68,7 +66,7 @@ class PropertyWalker(Walker):
         self.prop_name = ""
         self.prop_value: Any | None = None
 
-    def clone(self) -> PropertyWalker:
+    def clone(self) -> KeyValueWalker:
         cloned_walker = super().clone()
         cloned_walker.prop_name = self.prop_name
         cloned_walker.prop_value = self.prop_value
@@ -112,9 +110,3 @@ class PropertyWalker(Walker):
         if self.prop_name is None:
             return ("", None)
         return (self.prop_name, self.prop_value)
-
-    def can_accept_more_input(self) -> bool:
-        if self.transition_walker and self.transition_walker.can_accept_more_input():
-            return True
-
-        return self.current_state not in self.state_machine.end_states

@@ -50,10 +50,12 @@ class EncapsulatedStateMachine(StateMachine):
         components = []
         if self.delimiters[0]:
             components.append(f"{self.delimiters[0]!r}")
-        if self.delimiters[1]:
-            components.append(f"{self.delimiters[1]!r}")
+
         if self.inner_state_machine:
             components.append(str(self.inner_state_machine))
+
+        if self.delimiters[1]:
+            components.append(f"{self.delimiters[1]!r}")
         return f"Encapsulated({', '.join(components)})"
 
 

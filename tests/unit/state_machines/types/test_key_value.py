@@ -1,12 +1,7 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.types.property import PropertyStateMachine
-
-
-@pytest.fixture
-def property_acceptor() -> PropertyStateMachine:
-    return PropertyStateMachine()
+from pse.state_machines.types.key_value import KeyValueStateMachine
 
 
 @pytest.mark.parametrize(
@@ -19,10 +14,9 @@ def property_acceptor() -> PropertyStateMachine:
         ('"spaced_key"  :  "spaced_value"', "spaced_key", "spaced_value"),
     ],
 )
-def test_property_parsing(
-    property_acceptor: PropertyStateMachine, input_string, expected_name, expected_value
-):
-    walkers = list(property_acceptor.get_walkers())
+def test_property_parsing(input_string, expected_name, expected_value):
+    sm = KeyValueStateMachine()
+    walkers = sm.get_walkers()
     for char in input_string:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 
@@ -47,10 +41,9 @@ def test_property_parsing(
         ':"value"',  # missing key
     ],
 )
-def test_invalid_property_formats(
-    property_acceptor: PropertyStateMachine, invalid_input
-):
-    walkers = list(property_acceptor.get_walkers())
+def test_invalid_property_formats(invalid_input):
+    sm = KeyValueStateMachine()
+    walkers = sm.get_walkers()
     for char in invalid_input:
         walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
 

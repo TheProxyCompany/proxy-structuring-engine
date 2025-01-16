@@ -1,8 +1,8 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.state_machines.types.integer import IntegerStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.types.integer import IntegerStateMachine
 
 
 @pytest.mark.parametrize(

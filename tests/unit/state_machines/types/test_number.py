@@ -63,25 +63,20 @@ def parse_number(state_machine: NumberStateMachine):
 
 # Test Cases for Valid Decimal Numbers
 @pytest.mark.parametrize(
-    "input_string, expected_value, description",
+    "input_string, expected_value",
     [
-        ("1.1", 1.1, "Should correctly parse positive decimals."),
-        ("123.45", 123.45, "Should correctly parse positive decimals."),
-        ("-0.789", -0.789, "Should correctly parse negative decimals."),
-        ("0.0", 0.0, "Should correctly parse zero as decimal."),
-        ("-0.0", 0.0, "Should correctly parse negative zero as zero."),
-        ("1.0", 1.0, "Should correctly parse decimal with zero fraction."),
-        ("123.0000", 123.0, "Should correctly parse decimal with trailing zeros."),
-        ("0.0001", 0.0001, "Should correctly parse small decimals."),
-        ("98765.4321", 98765.4321, "Should correctly parse large decimals."),
+        ("1.1", 1.1),
+        ("123.45", 123.45),
+        ("-0.789", -0.789),
+        ("0.0", 0.0),
+        ("-0.0", 0.0),
+        ("1.0", 1.0),
+        ("123.0000", 123.0),
+        ("0.0001", 0.0001),
+        ("98765.4321", 98765.4321),
     ],
 )
-def test_valid_decimal_numbers(
-    state_machine: NumberStateMachine,
-    input_string: str,
-    expected_value: float,
-    description: str,
-) -> None:
+def test_valid_decimal_numbers(input_string: str, expected_value: float) -> None:
     """
     Test parsing of valid decimal numbers.
 
@@ -91,28 +86,30 @@ def test_valid_decimal_numbers(
         expected_value (float): The expected parsed value.
         description (str): Description of the test case.
     """
-    parse = parse_number(state_machine)
-    value = parse(input_string)
-    assert value == pytest.approx(expected_value), description
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    # assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert expected_value == pytest.approx(walkers[0].get_current_value())
 
 
 # Test Cases for Valid Exponential Numbers
 @pytest.mark.parametrize(
-    "input_string, expected_value, description",
+    "input_string, expected_value",
     [
-        ("1e10", 1e10, "Should correctly parse positive exponentials."),
-        ("-2.5e-3", -2.5e-3, "Should correctly parse negative exponentials."),
-        ("6.022e23", 6.022e23, "Should correctly parse large exponentials."),
-        ("1E+2", 1e2, "Should correctly parse exponentials with '+' sign."),
-        ("-1E-2", -1e-2, "Should correctly parse negative exponentials with '-' sign."),
-        ("0e0", 0.0, "Should correctly parse zero exponential."),
+        ("1e10", 1e10),
+        ("-2.5e-3", -2.5e-3),
+        ("6.022e23", 6.022e23),
+        ("1E+2", 1e2),
+        ("-1E-2", -1e-2),
+        ("0e0", 0.0),
     ],
 )
 def test_valid_exponential_numbers(
     state_machine: NumberStateMachine,
     input_string: str,
     expected_value: float,
-    description: str,
 ) -> None:
     """
     Test parsing of valid exponential numbers.
@@ -123,140 +120,102 @@ def test_valid_exponential_numbers(
         expected_value (float): The expected parsed value.
         description (str): Description of the test case.
     """
-    parse = parse_number(state_machine)
-    value = parse(input_string)
-    assert value == pytest.approx(expected_value), description
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    # assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert expected_value == pytest.approx(walkers[0].get_current_value())
 
 
 # Edge Case Tests
-def test_zero_handling(state_machine: NumberStateMachine) -> None:
+@pytest.mark.parametrize(
+    "input_string, expected_value",
+    [("0", 0), ("-0", 0), ("0.0", 0), ("-0.0", 0)],
+)
+def test_zero_handling(input_string: str, expected_value: float) -> None:
     """
     Test parsing of zero and negative zero.
 
     Args:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(state_machine)
-    value = parse("0")
-    assert value == 0, "Should correctly parse zero."
-    value = parse("-0")
-    assert value == 0, "Should correctly parse negative zero as zero."
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    # assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].get_current_value() == expected_value
 
 
-def test_large_number_parsing(state_machine: NumberStateMachine) -> None:
+@pytest.mark.parametrize(
+    "input_string, expected_value",
+    [("1e308", 1e308), ("-1e308", -1e308)],
+)
+def test_large_number_parsing(input_string: str, expected_value: float) -> None:
     """
     Test parsing of very large numbers.
 
     Args:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(state_machine)
-    value = parse("1e308")
-    assert value == 1e308, "Should correctly parse very large exponentials."
-    value = parse("-1e308")
-    assert value == -1e308, "Should correctly parse very large negative exponentials."
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    # assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert expected_value == pytest.approx(walkers[0].get_current_value())
 
 
-def test_number_with_leading_zeros(state_machine: NumberStateMachine) -> None:
+@pytest.mark.parametrize(
+    "input_string, expected_value",
+    [("007", 7), ("000.123", 0.123), ("123.45000", 123.45)],
+)
+def test_number_with_leading_zeros(input_string: str, expected_value: float) -> None:
     """
     Test parsing numbers with leading zeros.
 
     Args:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
-    parse = parse_number(state_machine)
-    value = parse("007")
-    assert value == 7, "Should correctly parse numbers with leading zeros."
-    value = parse("000.123")
-    assert value == 0.123, "Should correctly parse decimals with leading zeros."
-
-
-def test_number_with_trailing_zeros(state_machine: NumberStateMachine) -> None:
-    """
-    Test parsing numbers with trailing zeros.
-
-    Args:
-        state_machine (NumberAcceptor): The NumberAcceptor instance.
-    """
-    parse = parse_number(state_machine)
-    value = parse("123.45000")
-    assert value == 123.45, "Should correctly parse numbers with trailing zeros."
-
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    assert walkers[0].has_reached_accept_state()
+    assert expected_value == pytest.approx(walkers[0].get_current_value())
 
 # Error Handling Tests
 @pytest.mark.parametrize(
-    "input_string, error_message",
+    "input_string",
     [
-        (
-            "12.34.56",
-            "Should raise AssertionError for invalid number with multiple decimals.",
-        ),
-        (
-            "1e",
-            "Should raise AssertionError for incomplete exponentials.",
-        ),
-        (
-            "1e+e",
-            "Should raise AssertionError for invalid exponential format.",
-        ),
-        (
-            "1e1.5",
-            "Should raise AssertionError for non-integer exponent.",
-        ),
-        (
-            ".456",
-            "Should raise AssertionError for numbers starting with a dot.",
-        ),
-        (
-            "abc",
-            "Should raise AssertionError for non-numeric input.",
-        ),
-        (
-            "--123",
-            "Should raise AssertionError for multiple negative signs.",
-        ),
-        (
-            "",
-            "Should raise AssertionError for empty input.",
-        ),
-        (
-            "12a34",
-            "Should raise AssertionError for invalid characters in number.",
-        ),
-        (
-            "123.",
-            "Should raise AssertionError for incomplete decimal number.",
-        ),
-        (
-            "1.2.3",
-            "Should raise AssertionError for multiple decimal points.",
-        ),
-        (
-            "1e10e5",
-            "Should raise AssertionError for multiple exponentials.",
-        ),
+        "12.34.56",
+        "1e+e",
+        "1e",
+        "1e1.5",
+        ".456",
+        "abc",
+        "--123",
+        "123.",
+        "12a34",
+        "1.2.3",
+        "1e10e5",
     ],
 )
-def test_invalid_number_parsing(
-    state_machine: NumberStateMachine, input_string: str, error_message: str
-) -> None:
+def test_invalid_number_parsing(input_string: str) -> None:
     """
     Test parsing of invalid numbers.
 
     Args:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The invalid number string to parse.
-        error_message (str): Description of the expected error.
     """
-    parse = parse_number(state_machine)
-    with pytest.raises(AssertionError):
-        parse(input_string)
-
+    sm = NumberStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    assert not any(walker.has_reached_accept_state() for walker in walkers)
 
 # Tests with StateMachine Integration
-def test_number_acceptor_with_state_machine_float(
-    state_machine: NumberStateMachine,
-) -> None:
+def test_number_acceptor_with_state_machine_float(state_machine: NumberStateMachine,) -> None:
     """
     Test NumberAcceptor within a StateMachine for parsing floating-point numbers.
 

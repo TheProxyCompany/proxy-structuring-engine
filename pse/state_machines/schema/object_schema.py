@@ -8,7 +8,7 @@ from pse_core.walker import Walker
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.schema.property_schema import PropertySchemaStateMachine
+from pse.state_machines.schema.key_value_schema import KeyValueSchemaStateMachine
 from pse.state_machines.types.object import ObjectStateMachine, ObjectWalker
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
@@ -46,7 +46,9 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
     def get_new_walker(self, state: State | None = None) -> ObjectSchemaWalker:
         return ObjectSchemaWalker(self, state)
 
-    def get_edges(self, state: State, value: dict[str, Any] | None = None) -> list[Edge]:
+    def get_edges(
+        self, state: State, value: dict[str, Any] | None = None
+    ) -> list[Edge]:
         edges = []
         if value is None:
             value = {}
@@ -55,7 +57,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
             for prop_name, prop_schema in self.properties.items():
                 if prop_name not in value:
                     edge = (
-                        PropertySchemaStateMachine(
+                        KeyValueSchemaStateMachine(
                             prop_name,
                             prop_schema,
                             self.context,
@@ -106,19 +108,22 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
             for transition in state_machine.get_walkers():
                 transitions.append((transition, target_state))
 
-            if (
-                state_machine.is_optional
-                and target_state not in self.end_states
-                and walker.can_accept_more_input()
-            ):
-                transitions.extend(self.get_transitions(walker, target_state))
         return transitions
+
+    #         # if (
+    #         #     state_machine.is_optional
+    #         #     and target_state not in self.end_states
+    #         #     and walker.can_accept_more_input()
+    #         # ):
+    #         #     transitions.extend(self.get_transitions(walker, target_state))
+    #     return transitions
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ObjectSchemaStateMachine):
             return other.__eq__(self)
 
         return super().__eq__(other) and self.schema == other.schema
+
 
 class ObjectSchemaWalker(ObjectWalker):
     """

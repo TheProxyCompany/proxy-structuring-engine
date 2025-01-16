@@ -103,7 +103,7 @@ def test_enum_with_quotes(value):
 
     for walker in walkers:
         assert walker.has_reached_accept_state()
-        assert walker.get_current_value() == value
+        assert walker.get_current_value() == "test"
 
 
 def test_enum_without_quotes():

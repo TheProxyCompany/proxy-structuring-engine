@@ -134,15 +134,6 @@ class PhraseWalker(Walker):
         new_walker = self.transition(new_value, remaining_input)
         return [new_walker]
 
-    def get_current_value(self) -> str:
-        """
-        Retrieves the current state of the text being accepted, highlighting the remaining portion.
-
-        Returns:
-            str: The accepted portion of the text
-        """
-        return self.get_raw_value()
-
     def get_raw_value(self) -> str:
         return self.state_machine.phrase[: self.consumed_character_count]
 

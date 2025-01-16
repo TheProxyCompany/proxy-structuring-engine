@@ -38,8 +38,8 @@ class CharacterStateMachine(StateMachine):
         return CharacterWalker(self)
 
     def __str__(self) -> str:
-        sorted_character_set = ", ".join([f"{char!r}" for char in sorted(self.charset)])
-        return f"{self.__class__.__name__}(charset=[{sorted_character_set}])"
+        sorted_character_set = f"{"".join(sorted(self.charset))}"
+        return f"{self.__class__.__name__}(charset={sorted_character_set!r})"
 
 
 class CharacterWalker(Walker):
@@ -143,13 +143,7 @@ class CharacterWalker(Walker):
         """
         if (
             self.state_machine.char_limit > 0
-            and self.consumed_character_count > self.state_machine.char_limit
-        ):
-            return False
-
-        if (
-            self.state_machine.char_min > 0
-            and self.consumed_character_count < self.state_machine.char_min
+            and self.consumed_character_count >= self.state_machine.char_limit
         ):
             return False
 

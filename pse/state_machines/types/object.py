@@ -9,7 +9,7 @@ from pse_core.walker import Walker
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.types.property import PropertyStateMachine
+from pse.state_machines.types.key_value import KeyValueStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 logger = logging.getLogger()
@@ -39,7 +39,7 @@ class ObjectStateMachine(StateMachine):
                     (PhraseStateMachine("}"), "$"),  # Empty object
                 ],
                 2: [
-                    (PropertyStateMachine(), 3),
+                    (KeyValueStateMachine(), 3),
                 ],
                 3: [
                     (WhitespaceStateMachine(), 4),

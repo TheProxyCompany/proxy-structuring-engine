@@ -1,6 +1,8 @@
 from typing import Any
 
+from pse_core import State
 from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 
 class AnySchemaStateMachine(StateMachine):
@@ -26,5 +28,11 @@ class AnySchemaStateMachine(StateMachine):
             {0: [(state_machine, "$") for state_machine in self.acceptors]}
         )
 
+    def get_walkers(self, state: State | None = None) -> list[Walker]:
+        walkers = []
+        for edge, _ in self.get_edges(state or 0):
+            walkers.extend(edge.get_walkers())
+        return walkers
+
     def __str__(self) -> str:
-        return "Any"
+        return "AnyStateMachine"

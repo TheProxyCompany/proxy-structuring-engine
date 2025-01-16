@@ -92,7 +92,7 @@ class StructuringEngine(Engine):
         toc = time.perf_counter()
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
         decoded_token = self.tokenizer.decode(token)
-        logger.debug(f"Sampled token: {decoded_token!r}")
+        logger.info(f"Sampled token: {decoded_token!r}")
         return token
 
     def configure(

@@ -28,7 +28,7 @@ class ChainStateMachine(StateMachine):
                 i: [(state_machine, i + 1)]
                 for i, state_machine in enumerate(state_machines)
             },
-            end_states=[len(state_machines)],
+            end_states=[len(state_machines)]
         )
 
     def get_new_walker(self, state: int | str | None = None) -> Walker:

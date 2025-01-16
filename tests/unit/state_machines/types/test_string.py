@@ -417,7 +417,6 @@ def test_string_with_valid_escaped_tab_char_by_char() -> None:
         walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
 
     assert all(walker.has_reached_accept_state() for walker in walkers)
-
     for walker in walkers:
         assert (
             walker.get_current_value() == expected_value

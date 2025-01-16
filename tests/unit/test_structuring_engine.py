@@ -175,7 +175,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     schema = {"anyOf": [schema1, schema2]}
     engine.configure(schema, wrap_with_delimiters=True)
     engine.consume_raw_input("Here is the response: ```json\n{\n")
-    assert len(engine.walkers) == 2
+    assert len(engine.walkers) == 3
 
 
 @pytest.mark.parametrize(

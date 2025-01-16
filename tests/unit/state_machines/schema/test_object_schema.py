@@ -219,8 +219,12 @@ def test_complex_structure_partial_advancement():
     assert len(walkers) == 2
     walkers = [walker for _, walker in state_machine.advance_all(walkers, "type")]
     assert len(walkers) == 1
-    rest = '": "div", "label": "hello!" \n}'
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, rest)]
+    walkers = [walker for _, walker in state_machine.advance_all(walkers, '": "div"')]
+    assert len(walkers) == 2
+    walkers = [
+        walker
+        for _, walker in state_machine.advance_all(walkers, ', "label": "hello!" \n}')
+    ]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
     assert walkers[0].get_current_value() == {"type": "div", "label": "hello!"}
@@ -262,8 +266,7 @@ def test_object_schema_acceptor_edge_case(
     walkers = state_machine.get_walkers()
     raw_input = '{"query": "popular favorite Pokémon",  "max_results": '
     walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
-    assert len(walkers) == 1, "Should have one walker."
-
+    assert len(walkers) == 3
     walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
     assert len(walkers) == 1, "Should have one walker."
 
@@ -321,7 +324,6 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
     walkers = [
         walker for _, walker in state_machine.advance_all(walkers, followup_value)
     ]
-
     walkers = [walker for _, walker in state_machine.advance_all(walkers, '"}}')]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()

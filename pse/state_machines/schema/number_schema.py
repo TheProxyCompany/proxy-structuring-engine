@@ -33,6 +33,9 @@ class NumberSchemaStateMachine(NumberStateMachine):
         """
         Validate the number value according to the schema
         """
+        if not isinstance(value, int | float):
+            return True
+
         if "minimum" in self.schema and value < self.schema["minimum"]:
             return False
 
@@ -74,16 +77,17 @@ class NumberSchemaWalker(Walker):
     def should_start_transition(self, token: str) -> bool:
         if self.state_machine.is_integer and self.target_state == 3:
             return False
+
         return super().should_start_transition(token)
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():
             return False
-        # Only validate when there is no remaining input
-        if (
-            self.target_state is not None
-            and self.target_state in self.state_machine.end_states
-            and not self.remaining_input
-        ):
+
+        return self.state_machine.validate_value(self.get_current_value())
+
+    def has_reached_accept_state(self) -> bool:
+        if super().has_reached_accept_state():
             return self.state_machine.validate_value(self.get_current_value())
-        return True
+
+        return False

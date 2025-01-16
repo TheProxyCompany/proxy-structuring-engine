@@ -8,11 +8,11 @@ from pse_core import State
 
 from pse.state_machines import get_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.types.property import PropertyStateMachine, PropertyWalker
+from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueWalker
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
-class PropertySchemaStateMachine(PropertyStateMachine):
+class KeyValueSchemaStateMachine(KeyValueStateMachine):
     """
     Acceptor for an object property according to the schema.
 
@@ -53,25 +53,26 @@ class PropertySchemaStateMachine(PropertyStateMachine):
             ],
         )
 
-    def get_new_walker(self, state: State | None = None) -> PropertySchemaWalker:
-        return PropertySchemaWalker(self, state)
+    def get_new_walker(self, state: State | None = None) -> KeyValueSchemaWalker:
+        return KeyValueSchemaWalker(self, state)
 
     @property
     def is_optional(self) -> bool:
         return super().is_optional or self.prop_schema.get("nullable", False)
 
-class PropertySchemaWalker(PropertyWalker):
+
+class KeyValueSchemaWalker(KeyValueWalker):
     """
     Walker for PropertySchemaAcceptor
     """
 
     def __init__(
         self,
-        state_machine: PropertySchemaStateMachine,
+        state_machine: KeyValueSchemaStateMachine,
         current_state: State | None = None,
     ):
         super().__init__(state_machine, current_state)
-        self.state_machine: PropertySchemaStateMachine = state_machine
+        self.state_machine: KeyValueSchemaStateMachine = state_machine
 
     def should_complete_transition(self) -> bool:
         if not super().should_complete_transition():

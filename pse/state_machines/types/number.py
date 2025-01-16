@@ -28,7 +28,7 @@ class NumberStateMachine(StateMachine):
         super().__init__(
             {
                 0: [
-                    (PhraseStateMachine("-"), 1),
+                    (PhraseStateMachine("-", is_optional=True), 1),
                 ],
                 1: [
                     (IntegerStateMachine(), 2),
@@ -39,7 +39,7 @@ class NumberStateMachine(StateMachine):
                             [
                                 PhraseStateMachine("."),
                                 IntegerStateMachine(drop_leading_zeros=False),
-                            ]
+                            ],
                         ),
                         3,
                     ),
@@ -61,9 +61,7 @@ class NumberStateMachine(StateMachine):
         """
         Get the edges for a given state.
         """
-        if state == 0:
-            return [*super().get_edges(1), *super().get_edges(state)]
-        elif state == 2:
+        if state == 2:
             return [*super().get_edges(state), *super().get_edges(3)]
         elif state == 4:
             return [*super().get_edges(5), *super().get_edges(state)]

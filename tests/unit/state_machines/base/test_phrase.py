@@ -45,7 +45,7 @@ def test_advance_invalid_character(text_acceptor: PhraseStateMachine):
 def test_get_value_at_start(text_acceptor: PhraseStateMachine):
     """Test the get_value method returns the correct value at the start."""
     walker = PhraseWalker(text_acceptor, 0)
-    assert walker.get_current_value() == ""
+    assert walker.get_current_value() is None
 
 
 def test_get_value_middle(text_acceptor: PhraseStateMachine):

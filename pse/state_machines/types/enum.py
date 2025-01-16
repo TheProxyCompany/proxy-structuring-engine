@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from pse_core import StateGraph
+import json
+
+from pse_core import State, StateGraph
 from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 
@@ -30,10 +33,13 @@ class EnumStateMachine(StateMachine):
 
         state_graph: StateGraph = {0: []}
         for value in enum_values:
-            enum_value = repr(value) if require_quotes else value
+            enum_value = json.dumps(value) if require_quotes else value
             state_graph[0].append((PhraseStateMachine(enum_value), "$"))
 
         super().__init__(state_graph)
 
-    def __str__(self) -> str:
-        return "Enum"
+    def get_walkers(self, state: State | None = None) -> list[Walker]:
+        walkers = []
+        for edge, _ in self.get_edges(state or 0):
+            walkers.extend(edge.get_walkers())
+        return walkers
