@@ -199,3 +199,12 @@ def test_whitespace_acceptor_integration_with_object_acceptor():
         if walker.has_reached_accept_state():
             obj = walker.get_current_value()
             assert obj == {"key": "value", "number": 42}
+
+
+def test_nested_object():
+    sm = ObjectStateMachine()
+    walkers = sm.get_walkers()
+    walkers = [walker for _, walker in sm.advance_all(walkers, '{"a":{"b":"c')]
+    assert len(walkers) == 3
+    walkers = [walker for _, walker in sm.advance_all(walkers, '"}}')]
+    assert any(walker.has_reached_accept_state() for walker in walkers)

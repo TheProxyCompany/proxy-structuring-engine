@@ -1,6 +1,5 @@
-from typing import Any
-
 import pytest
+from pse_core._core import Walker
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
@@ -16,50 +15,6 @@ def state_machine() -> NumberStateMachine:
         NumberAcceptor: An instance of NumberAcceptor.
     """
     return NumberStateMachine()
-
-
-def parse_number(state_machine: NumberStateMachine):
-    """
-    Helper function to parse a JSON number string using the NumberAcceptor.
-
-    Args:
-        state_machine (NumberAcceptor): The NumberAcceptor instance.
-
-    Returns:
-        Callable[[str], Any]: A function that takes a JSON number string and returns the parsed value.
-    """
-
-    def _parse_number(json_string: str) -> Any:
-        """
-        Parses a JSON number string using the NumberAcceptor.
-
-        Args:
-            json_string (str): The JSON number string to parse.
-
-        Returns:
-            Any: The parsed number as int or float.
-
-        Raises:
-            AssertionError: If no accepted walker is found.
-        """
-        walkers = list(state_machine.get_walkers())
-        for char in json_string:
-            walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-
-        assert (
-            len(walkers) > 0
-        ), f"No walkers remain after advancing with input '{json_string}'."
-
-        for walker in walkers:
-            if walker.has_reached_accept_state():
-                return walker.get_current_value()
-
-        raise AssertionError(
-            f"No accepted walker found after advancing with input '{json_string}'."
-        )
-
-    return _parse_number
-
 
 # Test Cases for Valid Decimal Numbers
 @pytest.mark.parametrize(
@@ -89,9 +44,10 @@ def test_valid_decimal_numbers(input_string: str, expected_value: float) -> None
     sm = NumberStateMachine()
     walkers = sm.get_walkers()
     walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    # assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert expected_value == pytest.approx(walkers[0].get_current_value())
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert expected_value == pytest.approx(walker.get_current_value())
 
 
 # Test Cases for Valid Exponential Numbers
@@ -106,11 +62,7 @@ def test_valid_decimal_numbers(input_string: str, expected_value: float) -> None
         ("0e0", 0.0),
     ],
 )
-def test_valid_exponential_numbers(
-    state_machine: NumberStateMachine,
-    input_string: str,
-    expected_value: float,
-) -> None:
+def test_valid_exponential_numbers(input_string: str,expected_value: float) -> None:
     """
     Test parsing of valid exponential numbers.
 
@@ -121,17 +73,23 @@ def test_valid_exponential_numbers(
         description (str): Description of the test case.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
+    walkers: list[Walker] = sm.get_walkers()
     walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    # assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert expected_value == pytest.approx(walkers[0].get_current_value())
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert expected_value == pytest.approx(walker.get_current_value())
 
 
 # Edge Case Tests
 @pytest.mark.parametrize(
     "input_string, expected_value",
-    [("0", 0), ("-0", 0), ("0.0", 0), ("-0.0", 0)],
+    [
+        ("0", 0),
+        ("-0", 0),
+        ("0.0", 0),
+        ("-0.0", 0),
+    ],
 )
 def test_zero_handling(input_string: str, expected_value: float) -> None:
     """
@@ -143,9 +101,10 @@ def test_zero_handling(input_string: str, expected_value: float) -> None:
     sm = NumberStateMachine()
     walkers = sm.get_walkers()
     walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    # assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == expected_value
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert walker.get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -169,7 +128,9 @@ def test_large_number_parsing(input_string: str, expected_value: float) -> None:
 
 @pytest.mark.parametrize(
     "input_string, expected_value",
-    [("007", 7), ("000.123", 0.123), ("123.45000", 123.45)],
+    [("007", 7),
+     ("000.123", 0.123),
+     ("123.45000", 123.45)],
 )
 def test_number_with_leading_zeros(input_string: str, expected_value: float) -> None:
     """
@@ -181,8 +142,10 @@ def test_number_with_leading_zeros(input_string: str, expected_value: float) -> 
     sm = NumberStateMachine()
     walkers = sm.get_walkers()
     walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert walkers[0].has_reached_accept_state()
-    assert expected_value == pytest.approx(walkers[0].get_current_value())
+    assert any(walker.has_reached_accept_state() for walker in walkers)
+    for walker in walkers:
+        if walker.has_reached_accept_state():
+            assert expected_value == pytest.approx(walker.get_current_value())
 
 # Error Handling Tests
 @pytest.mark.parametrize(

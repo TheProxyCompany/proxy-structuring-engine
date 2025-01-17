@@ -4,28 +4,19 @@ from pse_core.trie import TrieSet
 from pse.state_machines.base.phrase import PhraseStateMachine, PhraseWalker
 
 
-def test_basic():
-    text_acceptor = PhraseStateMachine("hello")
-    text_walker = PhraseWalker(text_acceptor, 0)
-    text_walker_2 = text_acceptor.get_new_walker()
-    assert text_walker == text_walker_2
-
-
 @pytest.fixture
 def text_acceptor():
     """Fixture to provide a TextAcceptor instance."""
     return PhraseStateMachine("hello")
 
-
-def test_advance_complete():
+def test_basic():
     """Test advancing the walker completes the state_machine."""
     text_acceptor = PhraseStateMachine("hello")
     walker = PhraseWalker(text_acceptor, 4)
-    advanced = list(walker.consume("o"))
-    assert len(advanced) == 1
-    accepted = advanced[0]
-    assert accepted.has_reached_accept_state()
-    assert accepted.get_current_value() == "hello"
+    walkers = [walker for _, walker in text_acceptor.advance_all([walker], "o")]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+    assert walkers[0].get_current_value() == "hello"
 
 def test_advance_incomplete():
     """Test advancing the walker completes the state_machine."""

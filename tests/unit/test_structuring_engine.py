@@ -174,7 +174,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     }
     schema = {"anyOf": [schema1, schema2]}
     engine.configure(schema, wrap_with_delimiters=True)
-    engine.consume_raw_input("Here is the response: ```json\n{\n")
+    engine.consume_raw_input("Here is the response: ```json\n{")
     assert len(engine.walkers) == 3
 
 

@@ -45,10 +45,10 @@ class NumberStateMachine(StateMachine):
                     ),
                 ],
                 3: [
-                    (CharacterStateMachine("eE"), 4),
+                    (CharacterStateMachine("eE", char_limit=1), 4),
                 ],
                 4: [
-                    (CharacterStateMachine("+-"), 5),
+                    (CharacterStateMachine("+-", char_limit=1), 5),
                 ],
                 5: [
                     (IntegerStateMachine(), "$"),

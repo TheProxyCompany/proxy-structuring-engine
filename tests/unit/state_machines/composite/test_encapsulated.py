@@ -6,6 +6,7 @@ from pse_core.state_machine import StateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitForStateMachine
+from pse.state_machines.types.object import ObjectStateMachine
 from pse.state_machines.types.string import StringStateMachine
 
 
@@ -188,3 +189,22 @@ def test_accepts_any_token_when_within_value(default_delimiters):
     walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
     assert all(walker.is_within_value() for walker in walkers)
     assert any(walker.accepts_any_token() for walker in walkers)
+
+
+def test_edge_case():
+    """Test edge case where the encapsulated acceptor is empty."""
+    sm = EncapsulatedStateMachine(
+        ObjectStateMachine(),
+        delimiters=("<tool>", "</tool>"),
+    )
+    walkers = sm.get_walkers()
+    assert any(walker.accepts_any_token() for walker in walkers)
+
+    walkers = [walker for _, walker in sm.advance_all(walkers, '<tool>{"name":"test", "message":"')]
+    # breakpoint()
+    assert any(walker.accepts_any_token() for walker in walkers)
+    assert len(walkers) == 3
+
+    walkers = [walker for _, walker in sm.advance_all(walkers, '"</tool>')]
+    assert any(walker.accepts_any_token() for walker in walkers)
+    assert len(walkers) == 3
