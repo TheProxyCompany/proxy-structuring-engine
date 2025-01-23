@@ -255,6 +255,8 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     engine.consume_raw_input('"*')
     assert len(engine.walkers) == 1
     assert not engine.has_reached_accept_state
+    assert engine.walkers[0].get_current_value() == '"'
+    assert engine.walkers[0].is_within_value()
     engine.consume_raw_input("Hello ")
     engine.consume_raw_input('World!"')
     assert engine.has_reached_accept_state

@@ -60,6 +60,7 @@ class EncapsulatedStateMachine(StateMachine):
 
 
 class EncapsulatedWalker(Walker):
+
     def is_within_value(self) -> bool:
         return self.current_state != 0
 

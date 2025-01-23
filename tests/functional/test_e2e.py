@@ -282,7 +282,7 @@ def test_schema_web_search(
         },
         "required": ["name", "arguments"],
     }
-    engine.configure(schema, wrap_with_delimiters=False)
+    engine.configure(schema, wrap_with_delimiters=True)
     prefill = '```json\n{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
     engine.consume_raw_input(prefill)
     raw_prompt = (
