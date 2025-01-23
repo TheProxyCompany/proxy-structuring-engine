@@ -61,6 +61,9 @@ class NumberSchemaStateMachine(NumberStateMachine):
 
         return True
 
+    def __str__(self) -> str:
+        return super().__str__() + "Schema"
+
 class NumberSchemaWalker(Walker):
     """
     Walker for NumberAcceptor

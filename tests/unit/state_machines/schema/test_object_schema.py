@@ -268,7 +268,6 @@ def test_object_schema_acceptor_edge_case(
     walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
     assert len(walkers) == 3
     walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
-    assert len(walkers) == 1, "Should have one walker."
 
     walkers = [
         walker

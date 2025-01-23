@@ -8,6 +8,17 @@ from pse.state_machines.types.object import ObjectStateMachine
 def object_acceptor() -> ObjectStateMachine:
     return ObjectStateMachine()
 
+def test_basic():
+    sm = ObjectStateMachine()
+    walkers = sm.get_walkers()
+    input = '{"value": '
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, input)]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "1")]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ".2")]
+    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "e2}")]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()
+
 
 @pytest.mark.parametrize(
     "json_string, expected",

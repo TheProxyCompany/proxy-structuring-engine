@@ -200,11 +200,10 @@ def test_edge_case():
     walkers = sm.get_walkers()
     assert any(walker.accepts_any_token() for walker in walkers)
 
-    walkers = [walker for _, walker in sm.advance_all(walkers, '<tool>{"name":"test", "message":"')]
-    # breakpoint()
-    assert any(walker.accepts_any_token() for walker in walkers)
+    walkers = [walker for _, walker in sm.advance_all(walkers, '<tool>{"name":"test", "message": {"a":"b"')]
     assert len(walkers) == 3
 
-    walkers = [walker for _, walker in sm.advance_all(walkers, '"</tool>')]
-    assert any(walker.accepts_any_token() for walker in walkers)
-    assert len(walkers) == 3
+    walkers = [walker for _, walker in sm.advance_all(walkers, '}}')]
+    walkers = [walker for _, walker in sm.advance_all(walkers, "</tool>")]
+    assert len(walkers) == 1
+    assert walkers[0].has_reached_accept_state()

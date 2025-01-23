@@ -20,9 +20,7 @@ def engine() -> StructuringEngine:
     return engine
 
 
-def generate_mock_logits(
-    engine: StructuringEngine, input: dict[str, float], dtype: Any
-) -> Any:
+def generate_mock_logits(engine: StructuringEngine, input: dict[str, float], dtype: Any) -> Any:
     import mlx.core as mx
 
     logits = mx.full(len(engine.vocabulary), float("-inf"), dtype=dtype)
@@ -174,8 +172,8 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     }
     schema = {"anyOf": [schema1, schema2]}
     engine.configure(schema, wrap_with_delimiters=True)
-    engine.consume_raw_input("Here is the response: ```json\n{")
-    assert len(engine.walkers) == 3
+    engine.consume_raw_input('Here is the response: ```json\n{\n"name":"')
+    assert len(engine.walkers) == 2
 
 
 @pytest.mark.parametrize(

@@ -79,22 +79,14 @@ class KeyValueWalker(Walker):
         Returns:
             bool: True if the transition was successful, False otherwise.
         """
-        if (
-            not self.transition_walker
-            or self.target_state is None
-            or not self.transition_walker.get_raw_value()
-        ):
+        if not super().should_complete_transition() or not self.transition_walker:
             return False
 
         try:
-            if self.target_state == 1 and (
-                raw_value := self.transition_walker.get_raw_value()
-            ):
-                self.prop_name = json.loads(raw_value)
-            elif self.target_state in self.state_machine.end_states and (
-                raw_value := self.transition_walker.get_raw_value()
-            ):
-                self.prop_value = json.loads(raw_value)
+            if self.target_state == 1:
+                self.prop_name = json.loads(self.transition_walker.get_raw_value())
+            elif self.target_state in self.state_machine.end_states:
+                self.prop_value = json.loads(self.transition_walker.get_raw_value())
         except Exception:
             return False
 

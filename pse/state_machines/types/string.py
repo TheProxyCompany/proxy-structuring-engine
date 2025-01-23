@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from pse_core import State
 from pse_core.state_machine import StateMachine
+from pse_core.walker import Walker
 
 from pse.state_machines.base.any_character import AnyCharacterStateMachine
 from pse.state_machines.base.character import CharacterStateMachine
@@ -63,5 +65,20 @@ class StringStateMachine(StateMachine):
             }
         )
 
+    def get_new_walker(self, state: int | str | None = None) -> Walker:
+        return StringWalker(self, state)
+
     def __str__(self) -> str:
         return "String"
+
+
+class StringWalker(Walker):
+
+    def __init__(
+        self, state_machine: StringStateMachine, current_state: State | None = None
+    ) -> None:
+        super().__init__(state_machine, current_state)
+        self.state_machine: StringStateMachine = state_machine
+
+    def is_within_value(self) -> bool:
+        return self.current_state == self.state_machine.STRING_CONTENTS

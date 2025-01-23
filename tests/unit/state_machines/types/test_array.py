@@ -25,7 +25,7 @@ def parse_array(state_machine: ArrayStateMachine, json_string: str) -> list[Any]
     Raises:
         AssertionError: If the JSON array is invalid.
     """
-    walkers = list(state_machine.get_walkers())
+    walkers = state_machine.get_walkers()
     for char in json_string:
         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
     if not any(walker.has_reached_accept_state() for walker in walkers):
@@ -42,6 +42,7 @@ def parse_array(state_machine: ArrayStateMachine, json_string: str) -> list[Any]
     "json_string, expected",
     [
         ("[]", []),
+        ("[1]", [1]),
         ("[123]", [123]),
         ('[123, 456, "789"]', [123, 456, "789"]),
         ("[[1, 2], [3, 4]]", [[1, 2], [3, 4]]),

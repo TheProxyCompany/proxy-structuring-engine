@@ -105,6 +105,9 @@ class StringSchemaStateMachine(StringStateMachine):
         result = urlparse(value)
         return all([result.scheme, result.netloc])
 
+    def __str__(self) -> str:
+        return super().__str__() + "Schema"
+
 class StringSchemaWalker(Walker):
     """
     Walker for StringSchemaAcceptor.
@@ -117,66 +120,30 @@ class StringSchemaWalker(Walker):
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: StringSchemaStateMachine = state_machine
-        self.is_escaping = False
 
     def should_start_transition(self, token: str) -> bool:
-        if (
-            self.is_within_value()
-            and self.target_state is not None
-            and self.target_state not in self.state_machine.end_states
-            and self.state_machine.pattern
-            and self.transition_walker
-            and (raw_value := self.transition_walker.get_raw_value())
-            and not self.is_pattern_prefix(raw_value + token)
-        ):
-            return False
+        if super().should_start_transition(token):
+            assert self.transition_walker
+            raw_value = self.transition_walker.get_raw_value()
+            if self.is_within_value():
+                return self.is_pattern_prefix(raw_value + token)
+            return True
 
-        return super().should_start_transition(token)
+        return False
 
     def should_complete_transition(self) -> bool:
-        if (
-            not self.is_within_value()
-            and self.target_state == self.state_machine.STRING_CONTENTS
-            and self.state_machine.start_hook
-        ):
-            self.state_machine.start_hook()
+        if super().should_complete_transition():
+            if self.target_state in self.state_machine.end_states:
+                return self.state_machine.validate_value(self.get_current_value())
+            return True
 
-        # Only update partial_value when processing actual string content
-        if (
-            self.is_within_value()
-            and self.target_state is not None
-            and self.target_state not in self.state_machine.end_states
-        ):
-            if self.is_escaping:
-                self.is_escaping = False
-            elif (
-                self.transition_walker
-                and self.transition_walker.get_raw_value() == "\\"
-            ):
-                self.is_escaping = True
-
-        if (
-            self.target_state is not None
-            and self.target_state in self.state_machine.end_states
-        ):
-            if self.state_machine.end_hook:
-                self.state_machine.end_hook()
-
-            if self.state_machine.validate_value(self.get_current_value()):
-                return True
-            else:
-                return False
-
-        return True
-
-    def is_within_value(self) -> bool:
-        return self.current_state == self.state_machine.STRING_CONTENTS
+        return False
 
     def is_pattern_prefix(self, s: str) -> bool:
         """
         Check whether the string 's' can be a prefix of any string matching the pattern.
         """
-        if self.state_machine.pattern:
+        if self.is_within_value() and self.state_machine.pattern and self.target_state not in self.state_machine.end_states:
             pattern_str = self.state_machine.pattern.pattern
             # Use partial matching
             match = regex.match(pattern_str, s, partial=True)

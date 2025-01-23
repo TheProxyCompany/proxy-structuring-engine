@@ -41,9 +41,9 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
         super().__init__(
             [
                 PhraseStateMachine(json.dumps(self.prop_name)),
-                WhitespaceStateMachine(),
+                WhitespaceStateMachine(max_whitespace=10),
                 PhraseStateMachine(":"),
-                WhitespaceStateMachine(),
+                WhitespaceStateMachine(max_whitespace=10),
                 get_state_machine(
                     self.prop_schema,
                     self.prop_context,

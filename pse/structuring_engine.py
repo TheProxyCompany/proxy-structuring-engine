@@ -88,6 +88,7 @@ class StructuringEngine(Engine):
         """
         logger.debug(f"Sampling with kwargs: {kwargs}")
         tic = time.perf_counter()
+        breakpoint()
         token = super().sample(logprobs, sampler, **kwargs)
         toc = time.perf_counter()
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds")

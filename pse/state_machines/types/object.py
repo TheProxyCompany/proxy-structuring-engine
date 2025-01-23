@@ -85,23 +85,15 @@ class ObjectWalker(Walker):
         cloned_walker.value = self.value.copy()
         return cloned_walker
 
-    def should_complete_transition(self) -> bool:
-        """
-        Handle the completion of a transition by updating the accumulated key-value pairs.
+    def is_within_value(self) -> bool:
+        return self.current_state == 3
 
-        Returns:
-            bool: True if the transition was successful, False otherwise.
-        """
-        if (
-            self.target_state == 3
-            and self.transition_walker
-            and self.transition_walker.has_reached_accept_state()
-        ):
-            prop_name, prop_value = self.transition_walker.get_current_value()
+    def add_to_history(self, walker: Walker) -> None:
+        if self.is_within_value():
+            prop_name, prop_value = walker.get_current_value()
             logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
-
-        return True
+        super().add_to_history(walker)
 
     def get_current_value(self) -> dict[str, Any]:
         """

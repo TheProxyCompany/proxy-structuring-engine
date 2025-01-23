@@ -88,18 +88,21 @@ class ArrayWalker(Walker):
         cloned_walker.value = self.value[:]
         return cloned_walker
 
-    def should_complete_transition(self) -> bool:
+    def is_within_value(self) -> bool:
+        return self.current_state == 3
+
+    def add_to_history(self, walker: Walker) -> None:
+        if self.is_within_value():
+            self.value.append(walker.get_current_value())
+        super().add_to_history(walker)
+
+    def get_current_value(self) -> list:
         """
-        Handle the completion of a transition by updating the accumulated values.
+        Get the current parsed JSON object.
 
         Returns:
-            bool: True if the transition was successful, False otherwise.
+            dict[str, Any]: The accumulated key-value pairs representing the JSON object.
         """
-        if (
-            self.target_state == 3
-            and self.transition_walker
-            and self.transition_walker.get_raw_value() is not None
-        ):
-            self.value.append(self.transition_walker.get_raw_value())
-
-        return super().should_complete_transition()
+        if not self.get_raw_value():
+            return []
+        return self.value
