@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 from pse_core import State
 from pse_core.state_machine import StateMachine
@@ -70,6 +70,12 @@ class EncapsulatedWalker(Walker):
         self.scratch_pad = ""
         self.inner_walker: Walker | None = None
 
+    def clone(self) -> Self:
+        clone = super().clone()
+        clone.scratch_pad = self.scratch_pad
+        clone.inner_walker = self.inner_walker
+        return clone
+
     def is_within_value(self) -> bool:
         return (
             self.transition_walker is not None
@@ -77,10 +83,12 @@ class EncapsulatedWalker(Walker):
         )
 
     def add_to_history(self, walker: Walker) -> None:
-        if walker.state_machine == self.state_machine.inner_state_machine:
+        if self.current_state == 2:
             self.inner_walker = walker
-        elif walker.current_state == 1 and isinstance(walker.get_current_value(), tuple):
-            self.scratch_pad += walker.get_current_value()[0]
+        elif self.current_state == 1:
+            value = walker.get_current_value()
+            assert isinstance(value, tuple)
+            self.scratch_pad += value[0]
         return super().add_to_history(walker)
 
     def get_current_value(self) -> tuple[str, Any]:

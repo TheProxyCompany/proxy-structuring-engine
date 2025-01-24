@@ -100,7 +100,6 @@ extend-select = [
   "PGH",  # pygrep-hooks
   "RUF",  # Ruff-specific
   "UP",   # pyupgrade
-  "SLF",  # SLLF
 ]
 
 [tool.hatch.metadata]

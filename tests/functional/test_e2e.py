@@ -21,10 +21,9 @@ except ImportError:
 @pytest.fixture(scope="module")
 def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    # model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
-    model_path_hf = "/Users/jckwind/Documents/ProxyBot/language_models/llama-3.1/Llama-3.1-8B-Instruct"
+    model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
-    engine = StructuringEngine(tokenizer._tokenizer)
+    engine = StructuringEngine(tokenizer._tokenizer)  # typing: ignore
     return model, engine
 
 def get_dict_from_raw_output(raw_output: str) -> dict:
