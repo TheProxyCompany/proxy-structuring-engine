@@ -94,7 +94,7 @@ def get_state_machine(
     if schema_type == "boolean":
         state_machine = BooleanStateMachine()
     elif schema_type == "null":
-        state_machine = PhraseStateMachine("null")
+        state_machine = PhraseStateMachine("null", is_optional=True)
     elif schema_type in ["number", "integer"]:
         state_machine = NumberSchemaStateMachine(schema)
     elif "enum" in schema:

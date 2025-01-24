@@ -130,13 +130,11 @@ def callable_to_json_schema(function: Callable, name: str | None = None, descrip
             # Handle Optional types
             origin = get_origin(param.annotation)
             args = get_args(param.annotation)
-
-            if origin is not None and type(None) in args:
-                actual_types = [arg for arg in args if arg is not type(None)]
+            actual_types = [argument for argument in args if argument is not type(None)]
+            if args:
                 param_schema = {
                     "type": [_get_json_type(t) for t in actual_types],
                     "description": param_doc.description,
-                    "nullable": True,
                 }
             elif origin in [list, set, tuple]:
                 param_schema = {
@@ -184,5 +182,5 @@ def _get_json_type(py_type: Any) -> str:
         type(None): "null",
     }
 
-    breakpoint()
-    return type_map.get(get_origin(py_type), py_type)
+    type_name = get_origin(py_type) or py_type
+    return type_map.get(type_name, "unknown")
