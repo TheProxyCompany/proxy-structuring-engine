@@ -94,7 +94,9 @@ def test_wait_for_acceptor_with_partial_match():
     keys = ['"hello', '"', "hello", '"c']
     trie_set = trie_set.insert_all(keys)
     for advanced_token, walker in state_machine.advance_all(walkers, '"*', trie_set):
-        assert walker.get_current_value() == '"'
+        before_trigger, value = walker.get_current_value()
+        assert not before_trigger
+        assert value == '"'
         assert advanced_token == '"'
     assert len(walkers) == 1
     assert not walkers[0].has_reached_accept_state()

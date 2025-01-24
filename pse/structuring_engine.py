@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-import pprint
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
@@ -18,6 +17,8 @@ from pse.util.get_top_logits import get_top_logits
 logger = logging.getLogger(__name__)
 
 
+T = TypeVar("T")
+
 class StructuringEngine(Engine):
     """
     Drives a StateMachineAcceptor to manage and validate structured outputs based on a given schema.
@@ -26,8 +27,6 @@ class StructuringEngine(Engine):
     or other supported schema types. It manages the state of token acceptance and provides mechanisms
     to advance tokens and characters while validating the structured output.
     """
-
-    T = TypeVar("T")
 
     def __init__(
         self,
@@ -67,7 +66,7 @@ class StructuringEngine(Engine):
         return self.process_logits(scores)
 
     def process_logits(self, scores: T) -> T:
-        self.multi_token_mapping = {}
+        self.multi_token_mapping.clear()
         self.print_logits(scores, 10, "🔵 Before")
         tic = time.perf_counter()
         adjusted_logits = super().process_logits(scores)
@@ -92,7 +91,7 @@ class StructuringEngine(Engine):
         toc = time.perf_counter()
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
         decoded_token = self.tokenizer.decode(token)
-        logger.info(f"Sampled token: {decoded_token!r}")
+        logger.debug(f"Sampled token: {decoded_token!r}")
         return token
 
     def configure(
@@ -102,7 +101,7 @@ class StructuringEngine(Engine):
         | dict[str, Any]
         | list[dict[str, Any]],
         wrap_with_delimiters: bool = False,
-        delimiters: tuple[str, str] | None = ("```json\n", "\n```"),
+        delimiters: tuple[str, str] = ("```json\n", "\n```"),
         wait_for_acceptor: bool = False,
     ) -> None:
         """
@@ -112,12 +111,7 @@ class StructuringEngine(Engine):
             raise ValueError("Cannot wait for acceptor and wrap with delimiters")
 
         self.is_encapsulated = wrap_with_delimiters
-        if self.is_encapsulated:
-            if not delimiters:
-                raise ValueError(
-                    "Delimiters must be provided if wrap_with_delimiters is True"
-                )
-            self.delimiters = delimiters
+        self.delimiters = delimiters
 
         if isinstance(schema, list):
             if all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
@@ -149,14 +143,6 @@ class StructuringEngine(Engine):
             self.state_machine = get_state_machine(self.schema)
 
         self.walkers = self.state_machine.get_walkers()
-
-    def __repr__(self) -> str:
-        return (
-            "StructuringEngine(\n"
-            f"    schema={pprint.pformat(self.schema, indent=4, width=80)}\n"
-            f"    walkers={self.walkers}\n"
-            ")"
-        )
 
     def reset(self) -> None:
         """
@@ -198,3 +184,10 @@ class StructuringEngine(Engine):
             logger.debug(f"{flag} Top logits:\n{chart}")
         else:
             logger.debug(f"{flag} No valid tokens found")
+
+    def get_current_value(self) -> Iterable[Any]:
+        for walker in self.walkers:
+            yield walker.get_current_value()
+
+    def __repr__(self) -> str:
+        return "StructuringEngine(\n" f"    walkers={self.walkers}\n" ")"

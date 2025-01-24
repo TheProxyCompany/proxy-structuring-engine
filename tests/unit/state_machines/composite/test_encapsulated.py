@@ -207,18 +207,3 @@ def test_edge_case():
     walkers = [walker for _, walker in sm.advance_all(walkers, "</tool>")]
     assert len(walkers) == 1
     assert walkers[0].has_reached_accept_state()
-
-
-def test_edge_case_2(default_delimiters):
-    """Test edge case where the encapsulated acceptor is empty."""
-    sm = EncapsulatedStateMachine(
-        ObjectStateMachine(),
-        delimiters=default_delimiters,
-    )
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, default_delimiters[0])]
-    assert len(walkers) == 1
-    input_sequence = '{"name": "send_message", "arguments": {"message": "Hi! back!"}}'
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_sequence)]
-    assert len(walkers) == 1
-    breakpoint()

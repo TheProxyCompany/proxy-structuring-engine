@@ -46,7 +46,7 @@ dependencies = [
     "protobuf",
     "pydantic",
     "flake8",
-    "pse-core"
+    "pse-core",
 ]
 
 [project.urls]
@@ -87,6 +87,22 @@ all = [
     "instructor",
 ]
 
+[tool.pytest.ini_options]
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
+log_cli_date_format = "%H:%M:%S"
+
+[tool.ruff.lint]
+extend-select = [
+  "B",    # flake8-bugbear
+  "I",    # isort
+  "PGH",  # pygrep-hooks
+  "RUF",  # Ruff-specific
+  "UP",   # pyupgrade
+  "SLF",  # SLLF
+]
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
@@ -100,18 +116,34 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["pse"]
+include = ["pse/**"]
+optimize = true
+ignore-vcs = true
 
-[tool.pytest.ini_options]
-log_cli = true
-log_cli_level = "INFO"
-log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
-log_cli_date_format = "%H:%M:%S"
+[tool.hatch.envs.default]
+python = "3.11"
+env-vars = { PYTHONOPTIMIZE = "2" }
 
-[tool.ruff.lint]
-extend-select = [
-  "B",    # flake8-bugbear
-  "I",    # isort
-  "PGH",  # pygrep-hooks
-  "RUF",  # Ruff-specific
-  "UP",   # pyupgrade
-]
+# [tool.hatch.build]
+# dev-mode-dirs = ["pse"]
+# artifacts = ["pse/**/*.py[cod]", "pse/**/*.so"]
+
+# [tool.hatch.build.targets.wheel.hooks.mypyc]
+# dependencies = ["mypy[mypyc]", "hatch-mypyc"]
+# mypy-args = [
+#     "--ignore-missing-imports",
+#     "--verbose",
+#     "--allow-redefinition",
+#     "--disable-error-code=attr-defined",
+#     "--disable-error-code=assignment",
+#     "--disable-error-code=type-var",
+#     "--disable-error-code=method-assign",
+#     "--disable-error-code=misc",
+#     "--disable-error-code=no-untyped-def",
+#     "--disable-error-code=no-untyped-call",
+#     "--disable-error-code=assert-type",
+# ]
+# exclude = [
+#     "pse/util/*",
+#     "pse/state_machines/schema/*"
+# ]

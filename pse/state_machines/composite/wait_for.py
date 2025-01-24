@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from typing import Any, Self
 
 from pse_core import State
 from pse_core.state_machine import StateMachine
@@ -23,8 +23,7 @@ class WaitForStateMachine(StateMachine):
         self,
         state_machine: StateMachine,
         allow_break: bool = False,
-        start_hook: Callable | None = None,
-        end_hook: Callable | None = None,
+        min_length_before_trigger: int = 0,
     ):
         """
         Initialize the WaitForAcceptor with a target state_machine to watch for.
@@ -36,9 +35,7 @@ class WaitForStateMachine(StateMachine):
         super().__init__()
         self.wait_for_sm = state_machine
         self.allow_break = allow_break
-        self.start_hook = start_hook
-        self.end_hook = end_hook
-        self.triggered = False
+        self.min_length_before_trigger = min_length_before_trigger
 
     def get_transitions(self, walker: Walker) -> list[tuple[Walker, State]]:
         """
@@ -76,10 +73,21 @@ class WaitForWalker(Walker):
         super().__init__(state_machine)
         self.target_state = "$"
         self.state_machine: WaitForStateMachine = state_machine
+        self.before_trigger = ""
+
+    def clone(self) -> Self:
+        clone = super().clone()
+        clone.before_trigger = self.before_trigger
+        return super().clone()
 
     def should_start_transition(self, token: str) -> bool:
+        if self.state_machine.min_length_before_trigger > 0:
+            if len(self.get_raw_value()) < self.state_machine.min_length_before_trigger:
+                return False
+
         if self.transition_walker and self.transition_walker.is_within_value():
             return self.transition_walker.should_start_transition(token)
+
         return True
 
     def accepts_any_token(self) -> bool:
@@ -91,25 +99,7 @@ class WaitForWalker(Walker):
         """
         if self.transition_walker and self.transition_walker.is_within_value():
             return self.transition_walker.accepts_any_token()
-
         return True
-
-    def get_valid_continuations(self, depth: int = 0) -> list[str]:
-        if self.transition_walker and self.transition_walker.is_within_value():
-            return self.transition_walker.get_valid_continuations(depth)
-        return []  # any token is valid
-
-    def is_within_value(self) -> bool:
-        """
-        Determine if the walker is currently within a value.
-
-        Returns:
-            bool: True if in a value, False otherwise.
-        """
-        return (
-            self.transition_walker is not None
-            and self.transition_walker.is_within_value()
-        )
 
     def consume(self, token: str) -> list[Walker]:
         """
@@ -123,10 +113,21 @@ class WaitForWalker(Walker):
         """
         if self.transition_walker:
             if not self.transition_walker.should_start_transition(token):
-                if self.state_machine.allow_break:
-                    return [self]
+                new_walkers = []
+                self.before_trigger += token
+                if self.state_machine.allow_break or not self.is_within_value():
+                    new_walkers.append(self)
                 else:
-                    self.transition_walker = None
-                    return self.state_machine.branch_walker(self)
+                    for transition in self.state_machine.wait_for_sm.get_walkers():
+                        if new_walker := self.start_transition(transition):
+                            new_walker.target_state = "$"
+                            new_walkers.append(new_walker)
+                return new_walkers
 
         return self.state_machine.advance_walker(self, token)
+
+    def get_current_value(self) -> tuple[str, Any]:
+        if self.transition_walker:
+            return self.before_trigger, self.transition_walker.get_current_value()
+
+        return self.before_trigger, None

@@ -165,32 +165,21 @@ def resolve_subschemas(
         visited_refs[schema_ref].extend(resolved)
         return resolved
 
-    if "allOf" in schema:
-        base_schema: dict[str, Any] = {k: v for k, v in schema.items() if k != "allOf"}
-        schemas: list[dict[str, Any]] = resolve_subschemas(
-            base_schema, defs, visited_refs
-        )
-        for subschema in schema["allOf"]:
-            resolved_subschemas: list[dict[str, Any]] = resolve_subschemas(
-                subschema, defs, visited_refs
-            )
-            schemas = [{**ms, **rs} for ms in schemas for rs in resolved_subschemas]
-        return schemas
+    for key in ["allOf", "anyOf", "oneOf"]:
+        if key not in schema:
+            continue
 
-    if "anyOf" in schema or "oneOf" in schema:
-        key: str = "anyOf" if "anyOf" in schema else "oneOf"
-        base_schema: dict[str, Any] = {k: v for k, v in schema.items() if k != key}
-        base_schemas: list[dict[str, Any]] = resolve_subschemas(
-            base_schema, defs, visited_refs
-        )
-        combined_schemas: list[dict[str, Any]] = []
+        base_schema = {k: v for k, v in schema.items() if k != key}
+        base_schemas = resolve_subschemas(base_schema, defs, visited_refs)
+        combined_schemas = base_schemas if key == "allOf" else []
+
         for subschema in schema[key]:
-            resolved_subschemas: list[dict[str, Any]] = resolve_subschemas(
-                subschema, defs, visited_refs
-            )
-            combined_schemas.extend(
-                [{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas]
-            )
+            resolved_subschemas = resolve_subschemas(subschema, defs, visited_refs)
+            if key == "allOf":
+                combined_schemas = [{**ms, **rs} for ms in combined_schemas for rs in resolved_subschemas]
+            else:
+                combined_schemas.extend([{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas])
+
         return combined_schemas
 
     return [schema]

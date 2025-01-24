@@ -59,7 +59,7 @@ class ArraySchemaStateMachine(ArrayStateMachine):
             list[tuple[Walker, State]]: A list of tuples representing transitions.
         """
         if walker.current_state == 4:
-            transitions = []
+            transitions: list[tuple[Walker, State]] = []
             if len(walker.get_current_value()) >= self.min_items():
                 for transition in PhraseStateMachine("]").get_walkers():
                     transitions.append((transition, "$"))
