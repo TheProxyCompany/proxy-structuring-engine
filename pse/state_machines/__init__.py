@@ -24,10 +24,8 @@ def get_state_machine(
     """
     Create an state_machine to validate JSON input based on the provided schema.
 
-    This function initializes a StateMachineAcceptor that enforces the constraints
-    defined by the JSON schema. It handles various schema keywords and ensures that
-    the input conforms to the expected structure and types.
-
+    This function initializes a StateMachine that enforces the constraints
+    defined by the JSON schema.
     Args:
         schema (Dict[str, Any]): The JSON schema to validate against.
         context (Optional[Dict[str, Any]]): Contextual information for schema definitions and path.
@@ -38,12 +36,7 @@ def get_state_machine(
             Defaults to None.
 
     Returns:
-        StateMachineAcceptor: An state_machine that validates JSON input based on the schema.
-
-    Raises:
-        SchemaNotImplementedError: If the schema contains unsupported keywords like "$id" or "not".
-        UnknownSchemaTypeError: If the schema type is unrecognized.
-        DefinitionNotFoundError: If a referenced definition is not found in the context.
+        StateMachine: An state_machine that validates JSON input based on the schema.
     """
     if context is None:
         context = {"defs": defaultdict(dict), "path": ""}

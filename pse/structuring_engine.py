@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
@@ -16,8 +17,26 @@ from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
+LogitType = TypeVar("LogitType")
+OutputType = TypeVar("OutputType", bound=BaseModel)
 
-T = TypeVar("T")
+
+@dataclass
+class EngineOutput[T]:
+    """
+    A dataclass that represents the output of the Engine.
+    """
+
+    """
+    The scratchpad is input that was not used in the state machine. For example, using a schema with delimiters,
+    the scratchpad is the input before the first delimiter.
+    """
+    scratchpad: str
+    """
+    The value output by the engine.
+    """
+    value: T
+
 
 class StructuringEngine(Engine):
     """
@@ -28,10 +47,7 @@ class StructuringEngine(Engine):
     to advance tokens and characters while validating the structured output.
     """
 
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
-    ) -> None:
+    def __init__(self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
@@ -53,7 +69,7 @@ class StructuringEngine(Engine):
         """
         return self.tokenizer.encode(token, add_special_tokens=False)
 
-    def __call__(self, scores: T) -> T:
+    def __call__(self, scores: LogitType) -> LogitType:
         """
         Merge invalid token scores with the valid token scores.
         i.e
@@ -65,8 +81,8 @@ class StructuringEngine(Engine):
         """
         return self.process_logits(scores)
 
-    def process_logits(self, scores: T) -> T:
-        self.multi_token_mapping.clear()
+    def process_logits(self, scores: LogitType) -> LogitType:
+        self.multi_token_mapping: dict[int, list[int]] = {}
         self.print_logits(scores, 10, "🔵 Before")
         tic = time.perf_counter()
         adjusted_logits = super().process_logits(scores)
@@ -75,12 +91,7 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(
-        self,
-        logprobs: object,
-        sampler: Callable[..., object],
-        **kwargs,
-    ) -> list[int]:
+    def sample(self, logprobs: object, sampler: Callable[..., object], **kwargs) -> list[int]:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
@@ -100,8 +111,8 @@ class StructuringEngine(Engine):
         | list[type[BaseModel]]
         | dict[str, Any]
         | list[dict[str, Any]],
-        wrap_with_delimiters: bool = False,
         delimiters: tuple[str, str] = ("```json\n", "\n```"),
+        wrap_with_delimiters: bool = False,
         wait_for_acceptor: bool = False,
     ) -> None:
         """
@@ -110,8 +121,9 @@ class StructuringEngine(Engine):
         if wait_for_acceptor and wrap_with_delimiters:
             raise ValueError("Cannot wait for acceptor and wrap with delimiters")
 
-        self.is_encapsulated = wrap_with_delimiters
         self.delimiters = delimiters
+        self.is_encapsulated = wrap_with_delimiters
+        self.wait_for_acceptor = wait_for_acceptor
 
         if isinstance(schema, list):
             if all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
@@ -185,9 +197,27 @@ class StructuringEngine(Engine):
         else:
             logger.debug(f"{flag} No valid tokens found")
 
-    def get_current_value(self) -> Iterable[Any]:
+    def read_output(self, output_type: type[OutputType] | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
+        """
+        Get the current value of the structuring engine.
+        """
+        should_have_scratchpad = self.is_encapsulated or self.wait_for_acceptor
         for walker in self.walkers:
-            yield walker.get_current_value()
+            scratchpad = ""
+            value = None
+            walker_value = walker.get_current_value()
+            if isinstance(walker_value, tuple) and should_have_scratchpad:
+                scratchpad = walker_value[0]
+                value = walker_value[1]
+            else:
+                value = walker_value
 
-    def __repr__(self) -> str:
-        return "StructuringEngine(\n" f"    walkers={self.walkers}\n" ")"
+            if output_type and value is not None:
+                try:
+                    value = output_type.model_validate(value)
+                    yield EngineOutput[output_type](scratchpad, value)
+                    break
+                except Exception:
+                    logger.warning(f"Failed to validate value {value} with type {output_type}")
+
+            yield EngineOutput[Any](scratchpad, value)

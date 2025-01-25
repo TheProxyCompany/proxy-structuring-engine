@@ -71,7 +71,9 @@ def pydantic_to_json_schema(model: type[BaseModel]) -> dict[str, Any]:
     }
 
 
-def callable_to_json_schema(function: Callable, name: str | None = None, description: str | None = None) -> dict[str, Any]:
+def callable_to_json_schema(
+    function: Callable, name: str | None = None, description: str | None = None
+) -> dict[str, Any]:
     """
     Generate a JSON schema for the specified Python function.
 
@@ -93,7 +95,9 @@ def callable_to_json_schema(function: Callable, name: str | None = None, descrip
 
     schema: dict[str, Any] = {
         "name": name or function.__name__,
-        "description": description or docstring.long_description or "No description provided.",
+        "description": description
+        or docstring.long_description
+        or "No description provided.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -121,9 +125,7 @@ def callable_to_json_schema(function: Callable, name: str | None = None, descrip
             )
 
         # Determine the JSON schema for the parameter
-        if inspect.isclass(param.annotation) and issubclass(
-            param.annotation, BaseModel
-        ):
+        if inspect.isclass(param.annotation) and issubclass(param.annotation, BaseModel):
             # Use Pydantic model schema if the parameter is a BaseModel subclass
             param_schema = pydantic_to_json_schema(param.annotation)
         else:
