@@ -188,32 +188,31 @@ class StructuringEngine(Engine):
         Get the current value of the structuring engine.
         """
         for stepper in self.steppers:
-            scratchpad = ""
+            buffer = ""
             value = None
             stepper_value = stepper.get_current_value()
             if isinstance(stepper_value, tuple):
-                scratchpad = stepper_value[0]
+                buffer = stepper_value[0]
                 value = stepper_value[1]
             else:
                 value = stepper_value
 
             if output_type and value is not None:
                 try:
-                    if isinstance(output_type, type) and issubclass(
-                        output_type, BaseModel
-                    ):
+                    if isinstance(output_type, type) and issubclass(output_type, BaseModel):
                         # Handle Pydantic models
                         value = output_type.model_validate(value)
                     elif type(value) is not output_type:
                         # Handle primitive types
                         value = output_type(value)
-                    yield EngineOutput[output_type](scratchpad, value)
+                    yield EngineOutput[output_type](buffer, value)
                 except Exception:
+                    breakpoint()
                     logger.warning(
                         f"Failed to validate/cast value {value} with type {output_type}"
                     )
 
-            yield EngineOutput[type(value)](scratchpad, value)
+            yield EngineOutput[type(value)](buffer, value)
 
 
     @staticmethod
