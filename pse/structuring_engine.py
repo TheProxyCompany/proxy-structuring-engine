@@ -19,8 +19,7 @@ from pse.util.get_top_logits import get_top_logits
 logger = logging.getLogger(__name__)
 
 LogitType = TypeVar("LogitType")
-OutputType = TypeVar("OutputType", bound=BaseModel)
-
+OutputType = TypeVar("OutputType", bound=type)
 
 @dataclass
 class EngineOutput[T]:
@@ -184,7 +183,7 @@ class StructuringEngine(Engine):
         else:
             logger.debug(f"{flag} No valid tokens found")
 
-    def read_output(self, output_type: type[OutputType] | type[Any] | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
+    def read_output(self, output_type: OutputType | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
         """
         Get the current value of the structuring engine.
         """
@@ -200,7 +199,7 @@ class StructuringEngine(Engine):
 
             if output_type and value is not None:
                 try:
-                    if isinstance(output_type, type) and issubclass(output_type, BaseModel):
+                    if issubclass(output_type, BaseModel):
                         # Handle Pydantic models
                         value = output_type.model_validate(value)
                     elif type(value) is not output_type:
