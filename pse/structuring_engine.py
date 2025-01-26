@@ -4,7 +4,7 @@ import logging
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 from pse_core.engine import Engine
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
 from pse.state_machines import get_state_machine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
-from pse.state_machines.composite.wait_for import WaitForStateMachine
+from pse.state_machines.composite.wait_for import WaitFor
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
@@ -28,10 +28,10 @@ class EngineOutput[T]:
     """
 
     """
-    The scratchpad is input that was not used in the state machine. For example, using a schema with delimiters,
-    the scratchpad is the input before the first delimiter.
+    The buffer is input that was not used in the state machine. For example, using a schema with delimiters,
+    the buffer is the input before the first delimiter.
     """
-    scratchpad: str
+    buffer: str
     """
     The value output by the engine.
     """
@@ -39,15 +39,15 @@ class EngineOutput[T]:
 
 
 class StructuringEngine(Engine):
-    """
-    Drives a StateMachineAcceptor to manage and validate structured outputs based on a given schema.
 
-    This driver utilizes various acceptors to ensure that the output adheres to the specified JSON schema
-    or other supported schema types. It manages the state of token acceptance and provides mechanisms
-    to advance tokens and characters while validating the structured output.
+    SchemaType: TypeAlias = type[BaseModel] | list[type[BaseModel]] | dict[str, Any] | list[dict[str, Any]]
+    """
+    The types of objects that the engine can use as a schema.
     """
 
-    def __init__(self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase) -> None:
+    def __init__(
+        self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase
+    ) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
@@ -91,7 +91,9 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(self, logprobs: object, sampler: Callable[..., object], **kwargs) -> list[int]:
+    def sample(
+        self, logprobs: object, sampler: Callable[..., object], **kwargs
+    ) -> list[int]:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
@@ -107,60 +109,44 @@ class StructuringEngine(Engine):
 
     def configure(
         self,
-        schema: type[BaseModel]
-        | list[type[BaseModel]]
-        | dict[str, Any]
-        | list[dict[str, Any]],
-        delimiters: tuple[str, str] = ("```json\n", "\n```"),
-        wrap_with_delimiters: bool = False,
-        wait_for_acceptor: bool = False,
+        schema: SchemaType,
+        delimiters: tuple[str, str] | None = None,
+        buffer_length: int = -1,
     ) -> None:
         """
-        Configure the structuring engine with the given schema.
+        Configure the structuring engine with a schema and optional delimiters.
+
+        Args:
+            schema: Schema to validate structured output against
+            delimiters: Optional tuple of (start, end) delimiters that indicate the start and end of the structured output
+            buffer_length: Controls when schema validation begins. Can be used with or without delimiters. Defaults to -1.
+
+        Note:
+            - buffer_length == -1: Optional buffer with no minimum length (default)
+            - buffer_length == 0: Immediate schema validation. No buffer is allowed.
+            - buffer_length > 0: Buffer must reach specified length before validation
+            - If delimiters are provided, the buffer length is ignored.
         """
-        if wait_for_acceptor and wrap_with_delimiters:
-            raise ValueError("Cannot wait for acceptor and wrap with delimiters")
 
-        self.delimiters = delimiters
-        self.is_encapsulated = wrap_with_delimiters
-        self.wait_for_acceptor = wait_for_acceptor
+        self.schema = self.get_schema_object(schema)
+        self.state_machine = get_state_machine(self.schema)
 
-        if isinstance(schema, list):
-            if all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
-                self.schema = {
-                    "oneOf": [
-                        s.model_json_schema()
-                        for s in schema
-                        if isinstance(s, type) and issubclass(s, BaseModel)
-                    ]
-                }
-            else:
-                self.schema = {"oneOf": schema}
-        elif isinstance(schema, type) and issubclass(schema, BaseModel):
-            self.schema = schema.model_json_schema()
-        elif isinstance(schema, dict):
-            if "schema" in schema:
-                self.schema = schema["schema"]
-            else:
-                self.schema = schema
-
-        if self.is_encapsulated:
+        if delimiters:
             self.state_machine = EncapsulatedStateMachine(
-                get_state_machine(self.schema),
-                self.delimiters,
+                self.state_machine,
+                delimiters,
+                buffer_length,
             )
-        elif wait_for_acceptor:
-            self.state_machine = WaitForStateMachine(get_state_machine(self.schema))
-        else:
-            self.state_machine = get_state_machine(self.schema)
+        elif buffer_length != 0:
+            self.state_machine = WaitFor(self.state_machine, buffer_length)
 
-        self.walkers = self.state_machine.get_walkers()
+        self.steppers = self.state_machine.get_steppers()
 
     def reset(self) -> None:
         """
-        Reset the state machine and walkers.
+        Reset the state machine and steppers.
         """
-        self.walkers = self.state_machine.get_walkers()
+        self.steppers = self.state_machine.get_steppers()
 
     def print_logits(self, scores: Any, top_n: int = 64, flag: str = "🔵") -> None:
         """
@@ -197,27 +183,59 @@ class StructuringEngine(Engine):
         else:
             logger.debug(f"{flag} No valid tokens found")
 
-    def read_output(self, output_type: type[OutputType] | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
+    def read_output(self, output_type: type[OutputType] | type[Any] | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
         """
         Get the current value of the structuring engine.
         """
-        should_have_scratchpad = self.is_encapsulated or self.wait_for_acceptor
-        for walker in self.walkers:
+        for stepper in self.steppers:
             scratchpad = ""
             value = None
-            walker_value = walker.get_current_value()
-            if isinstance(walker_value, tuple) and should_have_scratchpad:
-                scratchpad = walker_value[0]
-                value = walker_value[1]
+            stepper_value = stepper.get_current_value()
+            if isinstance(stepper_value, tuple):
+                scratchpad = stepper_value[0]
+                value = stepper_value[1]
             else:
-                value = walker_value
+                value = stepper_value
 
             if output_type and value is not None:
                 try:
-                    value = output_type.model_validate(value)
+                    if isinstance(output_type, type) and issubclass(
+                        output_type, BaseModel
+                    ):
+                        # Handle Pydantic models
+                        value = output_type.model_validate(value)
+                    elif type(value) is not output_type:
+                        # Handle primitive types
+                        value = output_type(value)
                     yield EngineOutput[output_type](scratchpad, value)
-                    break
                 except Exception:
-                    logger.warning(f"Failed to validate value {value} with type {output_type}")
+                    logger.warning(
+                        f"Failed to validate/cast value {value} with type {output_type}"
+                    )
 
-            yield EngineOutput[Any](scratchpad, value)
+            yield EngineOutput[type(value)](scratchpad, value)
+
+
+    @staticmethod
+    def get_schema_object(schema: SchemaType) -> dict[str, Any]:
+        """
+        Convert the given schema into an object that can be used by the engine.
+        """
+        if isinstance(schema, list):
+            if all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
+                return {
+                    "oneOf": [
+                        s.model_json_schema()
+                        for s in schema
+                        if isinstance(s, type) and issubclass(s, BaseModel)
+                    ]
+                }
+            else:
+                return {"oneOf": schema}
+        elif isinstance(schema, type) and issubclass(schema, BaseModel):
+            return schema.model_json_schema()
+        elif isinstance(schema, dict):
+            if "schema" in schema:
+                return schema["schema"]
+            else:
+                return schema

@@ -1,8 +1,8 @@
 from typing import Any
 
-from pse_core import State
+from pse_core import StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 
 class AnySchemaStateMachine(StateMachine):
@@ -12,8 +12,6 @@ class AnySchemaStateMachine(StateMachine):
 
     def __init__(self, schemas: list[dict[str, Any]], context: dict[str, Any]) -> None:
         """
-        Initialize the AnyOfAcceptor with multiple JSON schemas.
-
         This state_machine will validate JSON input against any of the provided schemas.
 
         Args:
@@ -21,18 +19,19 @@ class AnySchemaStateMachine(StateMachine):
             context (Dict[str, Any]): Contextual information for schema definitions and paths.
         """
         from pse.state_machines import get_state_machine
+
         # Construct the state machine graph with an initial state `0` that transitions
         # to the end state `$` for each schema state_machine.
-        self.acceptors = [get_state_machine(schema, context) for schema in schemas]
+        self.state_machines = [get_state_machine(schema, context) for schema in schemas]
         super().__init__(
-            {0: [(state_machine, "$") for state_machine in self.acceptors]}
+            {0: [(state_machine, "$") for state_machine in self.state_machines]}
         )
 
-    def get_walkers(self, state: State | None = None) -> list[Walker]:
-        walkers = []
+    def get_steppers(self, state: StateId | None = None) -> list[Stepper]:
+        steppers = []
         for edge, _ in self.get_edges(state or 0):
-            walkers.extend(edge.get_walkers())
-        return walkers
+            steppers.extend(edge.get_steppers())
+        return steppers
 
     def __str__(self) -> str:
         return "AnyStateMachine"

@@ -60,14 +60,14 @@ def test_get_acceptor_schema_types(
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
     state_machine = get_state_machine(schema, context)
-    assert isinstance(
-        state_machine, expected_acceptor_cls
-    ), f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
+    assert isinstance(state_machine, expected_acceptor_cls), (
+        f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
+    )
     if acceptor_len is not None:
         assert isinstance(state_machine, AnySchemaStateMachine)
-        assert (
-            len(state_machine.acceptors) == acceptor_len
-        ), f"Expected state_machine length {acceptor_len} for schema {schema}"
+        assert len(state_machine.state_machines) == acceptor_len, (
+            f"Expected state_machine length {acceptor_len} for schema {schema}"
+        )
 
 
 @pytest.fixture
@@ -89,4 +89,6 @@ def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -
     assert isinstance(
         state_machine,
         ObjectSchemaStateMachine,
-    ), "get_json_acceptor should return an ObjectSchemaAcceptor for $ref schemas referencing object definitions."
+    ), (
+        "get_json_acceptor should return an ObjectSchemaAcceptor for $ref schemas referencing object definitions."
+    )

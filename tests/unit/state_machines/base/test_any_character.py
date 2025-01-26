@@ -1,10 +1,10 @@
-"""Unit tests for AnyCharacterStateMachine and AnyCharacterWalker."""
+"""Unit tests for AnyCharacterStateMachine and AnyCharacterStepper."""
 
 import pytest
 
 from pse.state_machines.base.any_character import (
     AnyCharacterStateMachine,
-    AnyCharacterWalker,
+    AnyCharacterStepper,
 )
 
 
@@ -12,6 +12,7 @@ from pse.state_machines.base.any_character import (
 def basic_state_machine():
     """Fixture for a basic AnyCharacterStateMachine with no restrictions."""
     return AnyCharacterStateMachine()
+
 
 @pytest.fixture
 def allowed_charset_state_machine():
@@ -24,6 +25,7 @@ def disallowed_charset_state_machine():
     """Fixture for AnyCharacterStateMachine with disallowed charset."""
     return AnyCharacterStateMachine(disallowed_charset=["x", "y", "z"])
 
+
 @pytest.mark.parametrize(
     "input_str, expected_value",
     [
@@ -35,14 +37,14 @@ def disallowed_charset_state_machine():
 )
 def test_basic_character_acceptance(basic_state_machine, input_str, expected_value):
     """Test basic character acceptance with no restrictions."""
-    walker = AnyCharacterWalker(basic_state_machine)
-    walkers = list(walker.consume(input_str))
+    stepper = AnyCharacterStepper(basic_state_machine)
+    steppers = list(stepper.consume(input_str))
 
-    if not walkers:
+    if not steppers:
         assert expected_value is None
         return
 
-    assert walkers[0].get_current_value() == expected_value
+    assert steppers[0].get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -56,14 +58,14 @@ def test_basic_character_acceptance(basic_state_machine, input_str, expected_val
 )
 def test_allowed_charset(allowed_charset_state_machine, input_str, expected_value):
     """Test character acceptance with allowed charset."""
-    walker = AnyCharacterWalker(allowed_charset_state_machine)
-    walkers = walker.consume(input_str)
+    stepper = AnyCharacterStepper(allowed_charset_state_machine)
+    steppers = stepper.consume(input_str)
 
-    if not walkers:
+    if not steppers:
         assert expected_value is None
         return
 
-    assert walkers[0].get_current_value() == expected_value
+    assert steppers[0].get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -79,14 +81,14 @@ def test_disallowed_charset(
     disallowed_charset_state_machine, input_str, expected_value
 ):
     """Test character acceptance with disallowed charset."""
-    walker = AnyCharacterWalker(disallowed_charset_state_machine)
-    walkers = list(walker.consume(input_str))
+    stepper = AnyCharacterStepper(disallowed_charset_state_machine)
+    steppers = list(stepper.consume(input_str))
 
-    if not walkers:
+    if not steppers:
         assert expected_value is None
         return
 
-    assert walkers[0].get_current_value() == expected_value
+    assert steppers[0].get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -102,14 +104,14 @@ def test_case_sensitivity(input_str, expected_value):
     case_sensitive_state_machine = AnyCharacterStateMachine(
         allowed_charset=["A", "B", "C"], case_sensitive=True
     )
-    walker = AnyCharacterWalker(case_sensitive_state_machine)
-    walkers = list(walker.consume(input_str))
+    stepper = AnyCharacterStepper(case_sensitive_state_machine)
+    steppers = list(stepper.consume(input_str))
 
-    if not walkers:
+    if not steppers:
         assert expected_value is None
         return
 
-    assert walkers[0].get_current_value() == expected_value
+    assert steppers[0].get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -125,59 +127,59 @@ def test_case_sensitivity(input_str, expected_value):
 def test_character_limits(input_str, should_accept):
     """Test character length limits."""
     limited_state_machine = AnyCharacterStateMachine(char_min=2, char_limit=4)
-    walker = AnyCharacterWalker(limited_state_machine)
-    walkers = walker.consume(input_str)
+    stepper = AnyCharacterStepper(limited_state_machine)
+    steppers = stepper.consume(input_str)
 
-    assert len(walkers) == 1
-    assert walkers[0].get_current_value() == input_str
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == input_str
     if should_accept:
-        assert walkers[0].has_reached_accept_state()
+        assert steppers[0].has_reached_accept_state()
     else:
-        assert not walkers[0].has_reached_accept_state()
+        assert not steppers[0].has_reached_accept_state()
 
 
-def test_walker_clone(basic_state_machine):
-    """Test walker cloning functionality."""
-    walker = AnyCharacterWalker(basic_state_machine, "test")
-    cloned = walker.clone()
+def test_stepper_clone(basic_state_machine):
+    """Test stepper cloning functionality."""
+    stepper = AnyCharacterStepper(basic_state_machine, "test")
+    cloned = stepper.clone()
 
-    assert walker.get_current_value() == cloned.get_current_value()
-    assert walker is not cloned
+    assert stepper.get_current_value() == cloned.get_current_value()
+    assert stepper is not cloned
 
     # Verify independent advancement
-    walker = walker.consume("a")[0]
-    assert walker.get_current_value() == "testa"
+    stepper = stepper.consume("a")[0]
+    assert stepper.get_current_value() == "testa"
     assert cloned.get_current_value() == "test"
 
 
-def test_walker_is_within_value(basic_state_machine):
+def test_stepper_is_within_value(basic_state_machine):
     """Test is_within_value method."""
-    walker = AnyCharacterWalker(basic_state_machine)
-    assert walker.is_within_value()
+    stepper = AnyCharacterStepper(basic_state_machine)
+    assert stepper.is_within_value()
 
-    list(walker.consume("test"))
-    assert walker.is_within_value()
+    list(stepper.consume("test"))
+    assert stepper.is_within_value()
 
 
 def test_should_start_transition(basic_state_machine):
-    """Test should_start_transition method."""
-    walker = AnyCharacterWalker(basic_state_machine)
+    """Test should_start_step method."""
+    stepper = AnyCharacterStepper(basic_state_machine)
 
-    assert walker.should_start_transition("a")
-    assert walker.should_start_transition("1")
-    assert walker.should_start_transition("!")
-    assert not walker.should_start_transition("")
+    assert stepper.should_start_step("a")
+    assert stepper.should_start_step("1")
+    assert stepper.should_start_step("!")
+    assert not stepper.should_start_step("")
 
 
 def test_optional_state_machine():
     """Test optional AnyCharacterStateMachine."""
     sm = AnyCharacterStateMachine(is_optional=True)
-    walker = AnyCharacterWalker(sm)
+    stepper = AnyCharacterStepper(sm)
 
     # Should accept empty input
-    assert walker.get_current_value() is None
+    assert stepper.get_current_value() is None
 
     # Should also accept valid input
-    walkers = list(walker.consume("a"))
-    assert len(walkers) == 1
-    assert walkers[0].get_current_value() == "a"
+    steppers = list(stepper.consume("a"))
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "a"

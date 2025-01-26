@@ -18,9 +18,9 @@ def test_init_custom_min_length():
     schema = {"minLength": 5}
     state_machine = StringSchemaStateMachine(schema=schema)
     assert state_machine.min_length() == 5, "Custom min_length should be set to 5."
-    assert (
-        state_machine.max_length() == 10000
-    ), "Default max_length should remain 10000 when only min_length is set."
+    assert state_machine.max_length() == 10000, (
+        "Default max_length should remain 10000 when only min_length is set."
+    )
 
 
 def test_init_custom_max_length():
@@ -29,9 +29,9 @@ def test_init_custom_max_length():
     """
     schema = {"maxLength": 50}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert (
-        state_machine.min_length() == 0
-    ), "Default min_length should remain 0 when only max_length is set."
+    assert state_machine.min_length() == 0, (
+        "Default min_length should remain 0 when only max_length is set."
+    )
     assert state_machine.max_length() == 50, "Custom max_length should be set to 50."
 
 
@@ -41,9 +41,9 @@ def test_validate_value_success():
     """
     schema = {"minLength": 3, "maxLength": 10}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert state_machine.validate_value(
-        "test"
-    ), "String 'test' should be valid as it meets min and max length requirements."
+    assert state_machine.validate_value("test"), (
+        "String 'test' should be valid as it meets min and max length requirements."
+    )
 
 
 def test_validate_value_too_short():
@@ -52,9 +52,9 @@ def test_validate_value_too_short():
     """
     schema = {"minLength": 5}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "hey"
-    ), "String 'hey' should be invalid as it is shorter than min_length."
+    assert not state_machine.validate_value("hey"), (
+        "String 'hey' should be invalid as it is shorter than min_length."
+    )
 
 
 def test_validate_value_too_long():
@@ -63,9 +63,9 @@ def test_validate_value_too_long():
     """
     schema = {"maxLength": 5}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "exceeds"
-    ), "String 'exceeds' should be invalid as it exceeds max_length."
+    assert not state_machine.validate_value("exceeds"), (
+        "String 'exceeds' should be invalid as it exceeds max_length."
+    )
 
 
 def test_validate_value_pattern_match():
@@ -74,9 +74,9 @@ def test_validate_value_pattern_match():
     """
     schema = {"pattern": r"^\d{3}-\d{2}-\d{4}$"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert state_machine.validate_value(
-        "123-45-6789"
-    ), "String '123-45-6789' should match the pattern."
+    assert state_machine.validate_value("123-45-6789"), (
+        "String '123-45-6789' should match the pattern."
+    )
 
 
 def test_validate_value_pattern_no_match():
@@ -85,9 +85,9 @@ def test_validate_value_pattern_no_match():
     """
     schema = {"pattern": r"^\d{3}-\d{2}-\d{4}$"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "123456789"
-    ), "String '123456789' should not match the pattern."
+    assert not state_machine.validate_value("123456789"), (
+        "String '123456789' should not match the pattern."
+    )
 
 
 def test_validate_value_format_email_valid():
@@ -96,9 +96,9 @@ def test_validate_value_format_email_valid():
     """
     schema = {"format": "email"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert state_machine.validate_value(
-        "test@example.com"
-    ), "Email 'test@example.com' should be valid."
+    assert state_machine.validate_value("test@example.com"), (
+        "Email 'test@example.com' should be valid."
+    )
 
 
 def test_validate_value_format_email_invalid():
@@ -107,9 +107,9 @@ def test_validate_value_format_email_invalid():
     """
     schema = {"format": "email"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "test@com"
-    ), "Email 'test@com' should be invalid."
+    assert not state_machine.validate_value("test@com"), (
+        "Email 'test@com' should be invalid."
+    )
 
 
 def test_validate_value_format_date_time_valid():
@@ -118,9 +118,9 @@ def test_validate_value_format_date_time_valid():
     """
     schema = {"format": "date-time"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert state_machine.validate_value(
-        "2023-10-20T12:34:56"
-    ), "Date-time '2023-10-20T12:34:56' should be valid."
+    assert state_machine.validate_value("2023-10-20T12:34:56"), (
+        "Date-time '2023-10-20T12:34:56' should be valid."
+    )
 
 
 def test_validate_value_format_date_time_invalid():
@@ -129,9 +129,9 @@ def test_validate_value_format_date_time_invalid():
     """
     schema = {"format": "date-time"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "20-10-2023 12:34:56"
-    ), "Date-time '20-10-2023 12:34:56' should be invalid."
+    assert not state_machine.validate_value("20-10-2023 12:34:56"), (
+        "Date-time '20-10-2023 12:34:56' should be invalid."
+    )
 
 
 def test_validate_value_format_uri_valid():
@@ -140,9 +140,9 @@ def test_validate_value_format_uri_valid():
     """
     schema = {"format": "uri"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert state_machine.validate_value(
-        "https://www.example.com"
-    ), "URI 'https://www.example.com' should be valid."
+    assert state_machine.validate_value("https://www.example.com"), (
+        "URI 'https://www.example.com' should be valid."
+    )
 
 
 def test_validate_value_format_uri_invalid():
@@ -151,58 +151,51 @@ def test_validate_value_format_uri_invalid():
     """
     schema = {"format": "uri"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    assert not state_machine.validate_value(
-        "www.example.com"
-    ), "URI 'www.example.com' should be invalid."
+    assert not state_machine.validate_value("www.example.com"), (
+        "URI 'www.example.com' should be invalid."
+    )
 
 
-def test_walker_rejects_on_pattern_mismatch_during_parsing():
+def test_stepper_rejects_on_pattern_mismatch_during_parsing():
     """
-    Test that the walker rejects input early if pattern does not match during parsing.
+    Test that the stepper rejects input early if pattern does not match during parsing.
     """
     schema = {"pattern": r"abc.*"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walkers = state_machine.get_walkers()
-    input_string = '"abx'
+    steppers = state_machine.get_steppers()
+    input_string = '"ab'
 
-    for idx, char in enumerate(input_string):
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        if idx == len(input_string) - 1:
-            assert (
-                len(walkers) == 0
-            ), f"Walkers should be empty after input '{input_string[:idx+1]}' due to pattern mismatch"
-        else:
-            assert (
-                len(walkers) > 0
-            ), f"Walkers should not be empty after input '{input_string[:idx+1]}', idx: {idx}"
+    steppers = state_machine.advance_all_basic(steppers, input_string)
+    steppers = state_machine.advance_all_basic(steppers, "x")
+    assert len(steppers) == 0, "Steppers should be empty after input 'abx'"
 
-    accepted = any(walker.has_reached_accept_state() for walker in walkers)
-    assert not accepted, "Walker should have rejected input due to pattern mismatch"
+    accepted = any(stepper.has_reached_accept_state() for stepper in steppers)
+    assert not accepted, "Stepper should have rejected input due to pattern mismatch"
 
 
-def test_walker_accepts_on_pattern_match_during_parsing() -> None:
+def test_stepper_accepts_on_pattern_match_during_parsing() -> None:
     """
-    Test that the walker accepts input when pattern matches during parsing.
+    Test that the stepper accepts input when pattern matches during parsing.
 
     Ensures that the state_machine correctly accepts input that matches the pattern.
     """
 
     schema: dict = {"pattern": r"abc.*"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     input_string: str = '"abcd"'
 
     for idx, char in enumerate(input_string):
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        assert (
-            len(walkers) > 0
-        ), f"Walkers should not be empty after input '{input_string[:idx+1]}'"
+        steppers = state_machine.advance_all_basic(steppers, char)
+        assert len(steppers) > 0, (
+            f"Steppers should not be empty after input '{input_string[: idx + 1]}'"
+        )
 
-    accepted: bool = any(walker.has_reached_accept_state() for walker in walkers)
-    assert accepted, "Walker should accept input as it matches pattern during parsing."
+    accepted: bool = any(stepper.has_reached_accept_state() for stepper in steppers)
+    assert accepted, "Stepper should accept input as it matches pattern during parsing."
 
 
-def test_walker_start_transition_min_length_met() -> None:
+def test_stepper_start_transition_min_length_met() -> None:
     """
     Test that the state_machine accepts a string when `min_length` is met.
 
@@ -213,18 +206,16 @@ def test_walker_start_transition_min_length_met() -> None:
     state_machine = StringSchemaStateMachine(schema=schema)
     input_string: str = '"abc"'  # length 3
 
-    walkers = state_machine.get_walkers()
-    advanced_walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, input_string)
-    ]
+    steppers = state_machine.get_steppers()
+    advanced_steppers = state_machine.advance_all_basic(steppers, input_string)
 
     accepted: bool = any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
     )
-    assert accepted, "Walker should accept input when min_length is met."
+    assert accepted, "Stepper should accept input when min_length is met."
 
 
-def test_walker_start_transition_min_length_not_met() -> None:
+def test_stepper_start_transition_min_length_not_met() -> None:
     """
     Test that the state_machine rejects a string when `min_length` is not met.
 
@@ -235,18 +226,16 @@ def test_walker_start_transition_min_length_not_met() -> None:
     state_machine = StringSchemaStateMachine(schema=schema)
     input_string: str = '"abc"'  # length 3, less than minLength 4
 
-    walkers = state_machine.get_walkers()
-    advanced_walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, input_string)
-    ]
+    steppers = state_machine.get_steppers()
+    advanced_steppers = state_machine.advance_all_basic(steppers, input_string)
 
     accepted: bool = any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
     )
-    assert not accepted, "Walker should reject input when min_length is not met."
+    assert not accepted, "Stepper should reject input when min_length is not met."
 
 
-def test_walker_start_transition_max_length_met() -> None:
+def test_stepper_start_transition_max_length_met() -> None:
     """
     Test that the state_machine accepts a string when `max_length` is met.
 
@@ -257,18 +246,16 @@ def test_walker_start_transition_max_length_met() -> None:
     state_machine = StringSchemaStateMachine(schema=schema)
     input_string: str = '"abcde"'  # length 5
 
-    walkers = state_machine.get_walkers()
-    advanced_walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, input_string)
-    ]
+    steppers = state_machine.get_steppers()
+    advanced_steppers = state_machine.advance_all_basic(steppers, input_string)
 
     accepted: bool = any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
     )
-    assert accepted, "Walker should accept input when max_length is met."
+    assert accepted, "Stepper should accept input when max_length is met."
 
 
-def test_walker_start_transition_max_length_exceeded():
+def test_stepper_start_transition_max_length_exceeded():
     """
     Test that the state_machine rejects a string when max_length is exceeded.
     """
@@ -276,10 +263,8 @@ def test_walker_start_transition_max_length_exceeded():
     state_machine = StringSchemaStateMachine(schema=schema)
     input_string = '"abcdef"'  # length 6, exceeds maxLength
 
-    walkers = state_machine.get_walkers()
-    advanced_walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, input_string)
-    ]
+    steppers = state_machine.get_steppers()
+    advanced_steppers = state_machine.advance_all_basic(steppers, input_string)
 
-    accepted = any(walker.has_reached_accept_state() for walker in advanced_walkers)
-    assert not accepted, "Walker should reject input when max_length is exceeded."
+    accepted = any(stepper.has_reached_accept_state() for stepper in advanced_steppers)
+    assert not accepted, "Stepper should reject input when max_length is exceeded."

@@ -25,15 +25,15 @@ def test_integer_acceptor_multi_char_advancement(input_string, expected_value):
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
-    ), f"IntegerAcceptor should accept input '{input_string}'."
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
+        f"IntegerAcceptor should accept input '{input_string}'."
+    )
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -56,16 +56,16 @@ def test_integer_acceptor(input_string, expected_value):
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"IntegerAcceptor should accept input '{input_string}'."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"IntegerAcceptor should accept input '{input_string}'."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
 
 
@@ -82,12 +82,10 @@ def test_integer_acceptor_invalid_input():
     invalid_inputs = ["abc", "12a4", "3.14", "-123", "", "@@@", "123abc456"]
 
     for input_string in invalid_inputs:
-        walkers = sm.get_walkers()
-        advanced_walkers = [
-            walker for _, walker in sm.advance_all(walkers, input_string)
-        ]
+        steppers = sm.get_steppers()
+        advanced_steppers = sm.advance_all_basic(steppers, input_string)
         assert not any(
-            walker.has_reached_accept_state() for walker in advanced_walkers
+            stepper.has_reached_accept_state() for stepper in advanced_steppers
         ), f"Input '{input_string}' should not be accepted."
 
 
@@ -103,11 +101,11 @@ def test_integer_acceptor_empty_input():
 
     input_string = ""
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
     assert not any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
     ), "Empty input should not be accepted."
 
 
@@ -123,11 +121,11 @@ def test_integer_acceptor_partial_input():
 
     input_string = "12a34"
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
     assert not any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
     ), "Input with invalid characters should not be accepted."
 
 
@@ -146,19 +144,19 @@ def test_integer_acceptor_in_state_machine_sequence():
 
     input_string = "Number: 42"
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
-    ), "Combined text and integer input should be accepted."
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
+        "Combined text and integer input should be accepted."
+    )
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             expected_value = "Number: 42"
-            assert (
-                value == expected_value
-            ), f"Expected '{expected_value}', got '{value}'"
+            assert value == expected_value, (
+                f"Expected '{expected_value}', got '{value}'"
+            )
 
 
 def test_integer_acceptor_char_by_char_in_state_machine():
@@ -175,20 +173,20 @@ def test_integer_acceptor_char_by_char_in_state_machine():
     )
 
     input_string = "Value: 9876"
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Combined text and integer input should be accepted when advancing char by char."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Combined text and integer input should be accepted when advancing char by char."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             expected_value = "Value: 9876"
-            assert (
-                value == expected_value
-            ), f"Expected '{expected_value}', got '{value}'"
+            assert value == expected_value, (
+                f"Expected '{expected_value}', got '{value}'"
+            )
 
 
 def test_integer_acceptor_zero():
@@ -202,15 +200,15 @@ def test_integer_acceptor_zero():
 
     input_string = "0"
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
-    ), "Zero should be accepted."
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
+        "Zero should be accepted."
+    )
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             assert value == 0, f"Expected 0, got {value}"
 
 
@@ -225,18 +223,18 @@ def test_integer_acceptor_large_number():
 
     input_string = "12345678901234567890"
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
-    ), "Large numbers should be accepted."
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
-            assert (
-                int(value) == 1.2345678901234567e19
-            ), f"Expected 12345678901234567890, got {value}"
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
+        "Large numbers should be accepted."
+    )
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert int(value) == 1.2345678901234567e19, (
+                f"Expected 12345678901234567890, got {value}"
+            )
 
 
 @pytest.mark.parametrize(
@@ -258,13 +256,13 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
-    advanced_walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in advanced_walkers
-    ), f"IntegerAcceptor should accept input '{input_string}'."
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
+        f"IntegerAcceptor should accept input '{input_string}'."
+    )
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"

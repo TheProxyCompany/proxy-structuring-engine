@@ -26,11 +26,11 @@ def parse_input(state_machine: AnySchemaStateMachine, json_string: str) -> Any:
     Raises:
         JSONParsingError: If the JSON input is invalid or does not match any schema.
     """
-    walkers = state_machine.get_walkers()
-    walkers = state_machine.advance_all(walkers, json_string)
-    for _, walker in walkers:
-        if walker.has_reached_accept_state():
-            return walker.get_current_value()
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, json_string)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            return stepper.get_current_value()
 
     raise ValueError(f"Invalid JSON input for AnyOfAcceptor: {json_string}")
 
@@ -54,9 +54,9 @@ def test_accept_input_matching_single_schema(context, schemas, token, expected_r
     """Test that input matching a single schema is accepted."""
     state_machine = AnySchemaStateMachine(schemas=schemas, context=context)
     result = parse_input(state_machine, token)
-    assert (
-        result == expected_result
-    ), f"AnyOfAcceptor should accept valid input {token}."
+    assert result == expected_result, (
+        f"AnyOfAcceptor should accept valid input {token}."
+    )
 
 
 def test_accept_input_matching_multiple_schemas(context):
@@ -146,8 +146,8 @@ def test_partial_input(context):
         ("123", 123),  # Matches number schema
     ],
 )
-def test_multiple_accepted_walkers(context, token, expected_result):
-    """Test that AnyOfAcceptor handles multiple accepted walkers correctly."""
+def test_multiple_accepted_steppers(context, token, expected_result):
+    """Test that AnyOfAcceptor handles multiple accepted steppers correctly."""
     schema1 = {"type": "string"}
     schema2 = {"type": "number"}
     state_machine = AnySchemaStateMachine(schemas=[schema1, schema2], context=context)

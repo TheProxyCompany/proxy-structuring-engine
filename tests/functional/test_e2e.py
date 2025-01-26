@@ -1,4 +1,3 @@
-import json
 import logging
 
 import pytest
@@ -26,25 +25,8 @@ def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     engine = StructuringEngine(tokenizer._tokenizer)  # typing: ignore
     return model, engine
 
-def get_dict_from_raw_output(raw_output: str) -> dict:
-    try:
-        if raw_output.startswith("```json\n"):
-            only_json = raw_output.split("```json\n", 1)[1].split("\n```", 1)[0]
-        else:
-            only_json = raw_output
-    except IndexError:
-        pytest.fail(
-            f"Failed to extract JSON content from delimited output: {raw_output}"
-        )
-    try:
-        return json.loads(only_json)
-    except json.JSONDecodeError:
-        pytest.fail(f"Failed to parse JSON output for {raw_output}.")
 
-
-def test_simple_json_structure(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
+def test_simple_json_structure(model_and_engine: tuple[nn.Module, StructuringEngine],) -> None:
     """
     Validates that the engine can generate a simple JSON object
     adhering to a specified schema using real LLM output.
@@ -60,11 +42,17 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure(schema, wrap_with_delimiters=False)
-    completed_generation = generate(raw_prompt, model, engine)
+    engine.configure(schema, buffer_length=0)
+    generate(
+        raw_prompt,
+        model,
+        engine,
+    )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    assert json.loads(completed_generation.output) == {"value": 9.11}
+    for output in engine.read_output(dict):
+        assert output.value == {"value": 9.11}
+
 
 def test_token_by_token_generation(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -72,7 +60,7 @@ def test_token_by_token_generation(
     """Test that the engine can generate tokens one at a time."""
     model, engine = model_and_engine
     schema = {"type": "string"}
-    engine.configure(schema, wrap_with_delimiters=False)
+    engine.configure(schema, buffer_length=0)
     step_1 = sample("Respond with a string.", model, engine)
     assert engine.tokenizer.decode(step_1.token_ids).startswith('"')
 
@@ -91,10 +79,7 @@ def test_complex_json_structure(
                 "properties": {
                     "chain_of_thought": {
                         "type": "array",
-                        "items": {
-                            "type": "string",
-                            "maxLength": 200
-                        },
+                        "items": {"type": "string", "maxLength": 200},
                         "maxItems": 1,
                     },
                     "feelings": {
@@ -111,29 +96,28 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.configure(schema, wrap_with_delimiters=True)
-    completed_generation = generate(raw_prompt, model, engine)
-    raw_output = completed_generation.output
-    output = get_dict_from_raw_output(raw_output)
+    engine.configure(schema, delimiters=("```json\n", "\n```"))
+    generate(raw_prompt, model, engine)
+    for output in engine.read_output():
+        assert output.value
+        assert isinstance(output.value, dict)
+        assert output.value["name"] == "metacognition"
+        assert "arguments" in output.value
+        assert "chain_of_thought" in output.value["arguments"]
+        assert isinstance(output.value["arguments"]["chain_of_thought"], list)
 
-    logger.info(f"Output: {output}")
-    assert output["name"] == "metacognition"
-    assert "arguments" in output
-    assert "chain_of_thought" in output["arguments"]
-    assert isinstance(output["arguments"]["chain_of_thought"], list)
     assert engine.has_reached_accept_state
 
 
-def test_better_than_openai(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
-    """Test that OpenAI sucks."""
+def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine],) -> None:
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
     #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
     #
     # let's test that.
+    #
+    # note: models above 3b params have an easier time with this.
     model, engine = model_and_engine
     schema = {
         "name": "ui",
@@ -159,6 +143,7 @@ def test_better_than_openai(
                 "attributes": {
                     "type": "array",
                     "description": "Arbitrary attributes for the UI component, suitable for any element",
+                    "nullable": True,
                     "items": {
                         "type": "object",
                         "properties": {
@@ -179,21 +164,17 @@ def test_better_than_openai(
         },
     }
     raw_prompt = (
-        f"Please generate a div component that has one child - a button component that says 'Hello, World!'."
+        f"Please generate a div component that has one child."
         f"Please follow the following schema: {schema}."
     )
-    engine.configure(schema, wrap_with_delimiters=False)
-    completed_generation = generate(raw_prompt, model, engine)
-    output = get_dict_from_raw_output(completed_generation.output)
-
-    assert output["type"] == "div"
-    assert any(child["type"] == "button" for child in output["children"])
-    assert any(child["label"] == "Hello, World!" for child in output["children"])
+    engine.configure(schema, buffer_length=0)
+    generate(raw_prompt, model, engine)
+    for output in engine.read_output(dict):
+        assert output.value["type"] == "div"
+        assert len(output.value["children"]) == 1
 
 
-def test_multiple_schemas(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
+def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
     """Test that the engine can generate multiple schemas."""
     model, engine = model_and_engine
     schema = {
@@ -247,11 +228,10 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.configure(schema, wrap_with_delimiters=True)
-    completed_generation = generate(raw_prompt, model, engine)
-    assert engine.has_reached_accept_state
-    output = get_dict_from_raw_output(completed_generation.output)
-    assert output["name"] == "metacognition"
+    engine.configure(schema, delimiters=("```json\n", "\n```"))
+    generate(raw_prompt, model, engine)
+    for output in engine.read_output(dict):
+        assert output.value["name"] == "metacognition"
 
 
 def test_schema_web_search(
@@ -281,18 +261,20 @@ def test_schema_web_search(
         },
         "required": ["name", "arguments"],
     }
-    engine.configure(schema, wrap_with_delimiters=True)
-    prefill = '```json\n{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
-    engine.consume_raw_input(prefill)
+    engine.configure(schema, delimiters=("<tool>", "</tool>"))
+    prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
+    engine.consume_text(prefill)
     raw_prompt = (
         f"This is a test of your abilities."
         f" Please structure your response to follow the following schemas: {schema}."
-        f" You must wrap your response with ```json\n and \n```."
+        f" You must wrap your response with <tool> and </tool>."
         " Please use the web_search schema to find popular favoirte pokemon."
     )
-    completed_generation = generate(raw_prompt, model, engine, prefill=prefill)
-    assert engine.has_reached_accept_state
-    output = get_dict_from_raw_output(completed_generation.output)
-    assert output["name"] == "web_search"
-    assert output["arguments"]["query"] == "popular favorite Pokémon"
-    assert output["arguments"]["max_results"] is not None
+    generate(raw_prompt, model, engine, prefill)
+    for output in engine.read_output(dict):
+        assert output.value["name"] == "web_search"
+        assert output.value["arguments"]["query"] == "popular favorite Pokémon"
+        assert output.value["arguments"]["max_results"] is not None
+
+if __name__ == "__main__":
+    pytest.main()

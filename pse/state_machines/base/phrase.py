@@ -3,9 +3,10 @@ from __future__ import annotations
 import logging
 
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 logger = logging.getLogger(__name__)
+
 
 class PhraseStateMachine(StateMachine):
     """
@@ -38,8 +39,8 @@ class PhraseStateMachine(StateMachine):
 
         self.phrase = phrase
 
-    def get_new_walker(self, state: int | str | None = None) -> PhraseWalker:
-        return PhraseWalker(self)
+    def get_new_stepper(self, state: int | str | None = None) -> PhraseStepper:
+        return PhraseStepper(self)
 
     def __str__(self) -> str:
         """
@@ -51,27 +52,12 @@ class PhraseStateMachine(StateMachine):
         return f"Phrase({self.phrase!r})"
 
 
-class PhraseWalker(Walker):
-    """
-    Represents the current position within the TextAcceptor's text during validation.
-
-    Attributes:
-        state_machine (TextAcceptor): The TextAcceptor instance that owns this Walker.
-        consumed_character_count (int): The current position in the text being validated.
-    """
-
+class PhraseStepper(Stepper):
     def __init__(
         self,
         state_machine: PhraseStateMachine,
         consumed_character_count: int | None = None,
     ):
-        """
-        Initialize a new Walker instance.
-
-        Args:
-            state_machine (TextAcceptor): The TextAcceptor instance associated with this walker.
-            consumed_character_count (int, optional): The initial position in the text. Defaults to 0.
-        """
         super().__init__(state_machine)
         if consumed_character_count is not None and consumed_character_count < 0:
             raise ValueError("Consumed character count must be non-negative")
@@ -82,11 +68,11 @@ class PhraseWalker(Walker):
 
     def can_accept_more_input(self) -> bool:
         """
-        Check if the walker can accept more input.
+        Check if the stepper can accept more input.
         """
         return self.consumed_character_count < len(self.state_machine.phrase)
 
-    def should_start_transition(self, token: str) -> bool:
+    def should_start_step(self, token: str) -> bool:
         """
         Start a transition if the token is not empty and matches the remaining text.
         """
@@ -96,7 +82,7 @@ class PhraseWalker(Walker):
         valid_length = self._get_valid_match_length(token)
         return valid_length > 0
 
-    def should_complete_transition(self) -> bool:
+    def should_complete_step(self) -> bool:
         return self.consumed_character_count == len(self.state_machine.phrase)
 
     def get_valid_continuations(self, depth: int = 0) -> list[str]:
@@ -116,14 +102,14 @@ class PhraseWalker(Walker):
 
         return valid_continuations
 
-    def consume(self, token: str) -> list[Walker]:
+    def consume(self, token: str) -> list[Stepper]:
         """
-        Advances the walker if the token matches the expected text at the current position.
+        Advances the stepper if the token matches the expected text at the current position.
         Args:
             token (str): The string to match against the expected text.
 
         Returns:
-            list[Walker]: A walker if the token matches, empty otherwise.
+            list[Stepper]: A stepper if the token matches, empty otherwise.
         """
         valid_length = self._get_valid_match_length(token)
         if valid_length <= 0:
@@ -131,8 +117,8 @@ class PhraseWalker(Walker):
 
         new_value = self.get_raw_value() + token[:valid_length]
         remaining_input = token[valid_length:] if valid_length < len(token) else None
-        new_walker = self.transition(new_value, remaining_input)
-        return [new_walker]
+        new_stepper = self.step(new_value, remaining_input)
+        return [new_stepper]
 
     def get_raw_value(self) -> str:
         return self.state_machine.phrase[: self.consumed_character_count]
@@ -151,7 +137,7 @@ class PhraseWalker(Walker):
         return valid_length
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PhraseWalker):
+        if not isinstance(other, PhraseStepper):
             return other.__eq__(self)
 
         return (

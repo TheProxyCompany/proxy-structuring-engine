@@ -16,8 +16,6 @@ class WhitespaceStateMachine(CharacterStateMachine):
 
     def __init__(self, min_whitespace: int = 0, max_whitespace: int = 40):
         """
-        Initialize the WhitespaceAcceptor.
-
         Args:
             min_whitespace (int, optional): Minimum allowable whitespace characters.
                 Defaults to 0.

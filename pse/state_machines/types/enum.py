@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-from pse_core import State, StateGraph
+from pse_core import StateGraph, StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 
@@ -15,19 +15,6 @@ class EnumStateMachine(StateMachine):
     """
 
     def __init__(self, enum_values: list[str], require_quotes: bool = True) -> None:
-        """
-        Initialize the EnumSchemaAcceptor with a dictionary-based transition graph.
-
-        Args:
-            schema (dict): A dictionary containing the 'enum' key with a list of allowed values.
-            require_quotes (bool):
-                Flag to determine if enum values should be wrapped in quotes.
-                Defaults to True.
-
-        Raises:
-            KeyError: If the 'enum' key is not present in the schema.
-            TypeError: If the 'enum' value is not a list.
-        """
         if not enum_values:
             raise ValueError("Enum values must be provided.")
 
@@ -38,8 +25,8 @@ class EnumStateMachine(StateMachine):
 
         super().__init__(state_graph)
 
-    def get_walkers(self, state: State | None = None) -> list[Walker]:
-        walkers = []
+    def get_steppers(self, state: StateId | None = None) -> list[Stepper]:
+        steppers = []
         for edge, _ in self.get_edges(state or 0):
-            walkers.extend(edge.get_walkers())
-        return walkers
+            steppers.extend(edge.get_steppers())
+        return steppers

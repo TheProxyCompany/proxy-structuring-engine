@@ -20,20 +20,20 @@ def integer_schema() -> dict[str, Any]:
 def test_integer_schema_decimal_transition() -> None:
     """
     Test that integer schema prevents transitions to decimal states.
-    This tests the should_start_transition override in NumberSchemaWalker.
+    This tests the should_start_step override in NumberSchemaStepper.
     """
     schema = {"type": "integer"}
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test that integer part advances normally
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "123":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        assert len(walkers) > 0, f"Should accept digit {char}"
+        steppers = state_machine.advance_all_basic(steppers, char)
+        assert len(steppers) > 0, f"Should accept digit {char}"
 
     # Test that decimal point is rejected
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, ".")]
-    assert len(walkers) == 0, "Integer schema should reject decimal point transition"
+    steppers = state_machine.advance_all_basic(steppers, ".")
+    assert len(steppers) == 0, "Integer schema should reject decimal point transition"
 
 
 def test_integer_schema_exponential_transition() -> None:
@@ -44,43 +44,43 @@ def test_integer_schema_exponential_transition() -> None:
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test integer with exponential notation that results in integer
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1e2":  # 100
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        assert len(walkers) > 0, f"Should accept char {char}"
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+        assert len(steppers) > 0, f"Should accept char {char}"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test integer with exponential notation that results in decimal
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1e-1":  # 0.1
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_schema_validation_during_transitions() -> None:
     """
     Test that schema validation happens at the right time during transitions.
-    This tests the should_complete_transition override in NumberSchemaWalker.
+    This tests the should_complete_step override in NumberSchemaStepper.
     """
     schema = {"type": "number", "minimum": 10, "maximum": 20}
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test partial number (should not validate constraints yet)
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1":  # Below minimum but incomplete
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        assert len(walkers) > 0, "Should allow partial numbers during transitions"
+        steppers = state_machine.advance_all_basic(steppers, char)
+        assert len(steppers) > 0, "Should allow partial numbers during transitions"
 
     # Complete the number to valid value
     for char in "5":  # Now 15, within range
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test complete number outside range
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "25":  # Above maximum
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_multiple_constraints_during_transitions() -> None:
@@ -91,16 +91,16 @@ def test_multiple_constraints_during_transitions() -> None:
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test building up to valid number
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "15":  # Valid: integer, >= 10, <= 100, multiple of 5
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test building up to invalid number
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "23":  # Invalid: not multiple of 5
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_decimal_validation_with_integer_schema() -> None:
@@ -112,16 +112,16 @@ def test_decimal_validation_with_integer_schema() -> None:
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test integer-like decimal (1.0)
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1.0":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test obvious decimal (1.5)
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1.5":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_negative_number_transitions() -> None:
@@ -132,16 +132,16 @@ def test_negative_number_transitions() -> None:
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test valid negative number
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "-5":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test negative number below minimum
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "-15":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_exponential_notation_transitions() -> None:
@@ -152,16 +152,16 @@ def test_exponential_notation_transitions() -> None:
     state_machine = NumberSchemaStateMachine(schema)
 
     # Test valid exponential notation
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1e2":  # 100
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
     # Test exponential notation exceeding maximum
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in "1e4":  # 10000
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_validation_timing() -> None:
@@ -171,32 +171,32 @@ def test_validation_timing() -> None:
     schema = {"type": "number", "minimum": 100}
     state_machine = NumberSchemaStateMachine(schema)
 
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
 
     # Test that partial numbers don't trigger validation
     for char in "12":  # Below minimum but incomplete
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-        assert len(walkers) > 0, "Should allow partial numbers"
+        steppers = state_machine.advance_all_basic(steppers, char)
+        assert len(steppers) > 0, "Should allow partial numbers"
 
     # Test that completing the number triggers validation
     for char in "3":  # Now 123, above minimum
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
-def test_schema_walker_creation() -> None:
+def test_schema_stepper_creation() -> None:
     """
-    Test that NumberSchemaStateMachine creates the correct walker type.
+    Test that NumberSchemaStateMachine creates the correct stepper type.
     """
     schema = {"type": "number"}
     state_machine = NumberSchemaStateMachine(schema)
-    walker = state_machine.get_new_walker()
+    stepper = state_machine.get_new_stepper()
 
-    # Test walker type
-    assert walker.__class__.__name__ == "NumberSchemaWalker"
+    # Test stepper type
+    assert stepper.__class__.__name__ == "NumberSchemaStepper"
 
-    # Test walker behavior
-    walkers = state_machine.get_walkers()
+    # Test stepper behavior
+    steppers = state_machine.get_steppers()
     for char in "12.34":
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = state_machine.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)

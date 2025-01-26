@@ -25,15 +25,15 @@ def parse_array(state_machine: ArrayStateMachine, json_string: str) -> list[Any]
     Raises:
         AssertionError: If the JSON array is invalid.
     """
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     for char in json_string:
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    if not any(walker.has_reached_accept_state() for walker in walkers):
-        raise AssertionError("No walker in accepted state")
-    # Assuming the first accepted walker contains the parsed value
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            return walker.get_current_value()
+        steppers = state_machine.advance_all_basic(steppers, char)
+    if not any(stepper.has_reached_accept_state() for stepper in steppers):
+        raise AssertionError("No stepper in accepted state")
+    # Assuming the first accepted stepper contains the parsed value
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            return stepper.get_current_value()
     return []
 
 

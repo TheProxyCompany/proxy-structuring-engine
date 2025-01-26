@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pse_core import State
-from pse_core.walker import Walker
+from pse_core import StateId
+from pse_core.stepper import Stepper
 
 from pse.state_machines.types.number import NumberStateMachine
 
@@ -26,8 +26,8 @@ class NumberSchemaStateMachine(NumberStateMachine):
             ]
         )
 
-    def get_new_walker(self, state: State | None = None) -> NumberSchemaWalker:
-        return NumberSchemaWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> NumberSchemaStepper:
+        return NumberSchemaStepper(self, state)
 
     def validate_value(self, value: float) -> bool:
         """
@@ -64,27 +64,26 @@ class NumberSchemaStateMachine(NumberStateMachine):
     def __str__(self) -> str:
         return super().__str__() + "Schema"
 
-class NumberSchemaWalker(Walker):
-    """
-    Walker for NumberAcceptor
-    """
+
+class NumberSchemaStepper(Stepper):
+    """ """
 
     def __init__(
         self,
         state_machine: NumberSchemaStateMachine,
-        current_state: State | None = None,
+        current_state: StateId | None = None,
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: NumberSchemaStateMachine = state_machine
 
-    def should_start_transition(self, token: str) -> bool:
+    def should_start_step(self, token: str) -> bool:
         if self.state_machine.is_integer and self.target_state == 3:
             return False
 
-        return super().should_start_transition(token)
+        return super().should_start_step(token)
 
-    def should_complete_transition(self) -> bool:
-        if not super().should_complete_transition():
+    def should_complete_step(self) -> bool:
+        if not super().should_complete_step():
             return False
 
         return self.state_machine.validate_value(self.get_current_value())

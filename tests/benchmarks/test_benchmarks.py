@@ -64,23 +64,19 @@ def run_benchmark(
     return output, timing
 
 
-def generate_local_pse(prompt: str, schema: Any) -> tuple[dict[str, Any], float]:
+def generate_local_pse(prompt: str, schema: Any) -> tuple[Any, float]:
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
     engine = StructuringEngine(tokenizer._tokenizer)
-    engine.configure(schema, wrap_with_delimiters=False)
+    engine.configure(schema)
 
     start_time = timeit.default_timer()
-    completed_generation = generate_mlx(prompt, model, engine)
-    end_time = timeit.default_timer()
-    total_time = end_time - start_time
-
-    # Validate the generated output
-    try:
-        output = json.loads(completed_generation.output)
-        return output, total_time
-    except json.JSONDecodeError:
-        pytest.fail(f"Failed to parse JSON output: {completed_generation.output}")
+    generate_mlx(prompt, model, engine)
+    for output in engine.read_output():
+        end_time = timeit.default_timer()
+        total_time = end_time - start_time
+        return output.value, total_time
+    return None, 0
 
 
 def generate_outlines(prompt: str, schema: Any) -> tuple[dict[str, Any], float]:
@@ -187,10 +183,10 @@ def generate_openai_structured_output(
 @pytest.mark.parametrize(
     "generator_name,generator_func",
     [
-        ("PSE", generate_local_pse),
         ("Outlines", generate_outlines),
         ("OpenAI Instructor", generate_openai_instructor),
         ("OpenAI Structured", generate_openai_structured_output),
+        ("PSE", generate_local_pse),
     ],
 )
 def test_simple_json_object(generator_name: str, generator_func: Callable) -> None:
@@ -213,39 +209,6 @@ def test_simple_json_object(generator_name: str, generator_func: Callable) -> No
         logger.info(f"✅ {generator_name}: {timing:.4f}s")
     except Exception as e:
         pytest.fail(f"❌ {generator_name} benchmark failed with error: {e}")
-
-
-# @pytest.mark.parametrize(
-#     "generator_name,generator_func",
-#     [
-#         ("PSE", generate_local_pse),
-#         ("Outlines", generate_outlines),
-#         ("OpenAI Instructor", generate_openai_instructor),
-#         ("OpenAI Structured", generate_openai_structured_output),
-#     ],
-# )
-# def test_dynamic_UI(generator_name: str, generator_func: Callable) -> None:
-#     """
-#     Validates that the engine can generate a simple JSON object
-#     adhering to a specified schema using real LLM output.
-#     """
-#     prompt = (
-#         f"Please return a div that has one child element - a button that says 'Hello, World!'."
-#         f"Please format your response to follow the following schema: {DynamicUI.model_json_schema()}."
-#     )
-
-#     try:
-#         output, timing = run_benchmark(
-#             generator_name, generator_func, prompt, DynamicUI
-#         )
-#         assert output["type"] == "div"
-#         assert len(output["children"]) == 1
-#         assert output["children"][0]["type"] == "button"
-#         assert output["children"][0]["label"] == "Hello, World!"
-#         logger.info(f"✅ {generator_name}: {timing:.4f}s")
-#     except Exception as e:
-#         logger.error(f"❌ {generator_name} benchmark failed with error: {str(e)}")
-
 
 if __name__ == "__main__":
     pytest.main()

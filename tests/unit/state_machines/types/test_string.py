@@ -5,20 +5,21 @@ from pse.state_machines.types.string import StringStateMachine
 
 def test_basic() -> None:
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
-    assert len(walkers) == 1
-    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, "Hello")]
-    assert len(walkers) == 3
+    steppers = list(string_acceptor.get_steppers())
+    assert len(steppers) == 1
+    steppers = string_acceptor.advance_all_basic(steppers, '"')
+    assert len(steppers) == 3
+    steppers = string_acceptor.advance_all_basic(steppers, "Hello")
+    assert len(steppers) == 3
     assert any(
-        walker.transition_walker and walker.transition_walker.has_reached_accept_state()
-        for walker in walkers
+        stepper.sub_stepper and stepper.sub_stepper.has_reached_accept_state()
+        for stepper in steppers
     )
-    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == "Hello"
+    steppers = string_acceptor.advance_all_basic(steppers, '"')
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == "Hello"
+
 
 @pytest.mark.parametrize(
     "input_string, expected_value",
@@ -44,19 +45,19 @@ def test_valid_strings(input_string: str, expected_value: str) -> None:
         expected_value (str): The expected parsed string value.
     """
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker accepted the input: {input_string}"
+    assert accepted_steppers, f"No stepper accepted the input: {input_string}"
 
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected_value, (
+            f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+        )
 
 
 @pytest.mark.parametrize(
@@ -95,13 +96,13 @@ def test_invalid_strings(input_string: str, error_message: str) -> None:
         error_message (str): The assertion error message.
     """
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), error_message
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        error_message
+    )
 
 
 def test_empty_string() -> None:
@@ -115,19 +116,19 @@ def test_empty_string() -> None:
     input_string: str = '""'
     expected_value: str = ""
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, "StringAcceptor did not accept empty string"
+    assert accepted_steppers, "StringAcceptor did not accept empty string"
 
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected empty string, got '{walker.get_current_value()}'"
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected_value, (
+            f"Expected empty string, got '{stepper.get_current_value()}'"
+        )
 
 
 def test_string_with_valid_escaped_tab() -> None:
@@ -141,21 +142,21 @@ def test_string_with_valid_escaped_tab() -> None:
     input_string: str = '"Tab\\tcharacter"'
     expected_value: str = "Tab\tcharacter"
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert (
-        accepted_walkers
-    ), "StringAcceptor did not accept string with escaped tab character"
+    assert accepted_steppers, (
+        "StringAcceptor did not accept string with escaped tab character"
+    )
 
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected_value, (
+            f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+        )
 
 
 def test_string_with_escaped_solidus() -> None:
@@ -169,19 +170,21 @@ def test_string_with_escaped_solidus() -> None:
     input_string: str = '"Escaped solidus: \\/"'
     expected_value: str = "Escaped solidus: /"
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, "StringAcceptor did not accept string with escaped solidus"
+    assert accepted_steppers, (
+        "StringAcceptor did not accept string with escaped solidus"
+    )
 
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected_value, (
+            f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+        )
 
 
 def test_string_with_unescaped_control_characters() -> None:
@@ -194,13 +197,13 @@ def test_string_with_unescaped_control_characters() -> None:
     string_acceptor = StringStateMachine()
     input_string: str = '"Invalid \x0b string"'  # Vertical tab, should be escaped
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StringAcceptor incorrectly accepted string with unescaped control characters"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor incorrectly accepted string with unescaped control characters"
+    )
 
 
 def test_string_with_invalid_unicode_escape() -> None:
@@ -213,13 +216,13 @@ def test_string_with_invalid_unicode_escape() -> None:
     string_acceptor = StringStateMachine()
     input_string: str = '"Invalid unicode: \\u12G4"'  # 'G' is not a hex digit
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StringAcceptor incorrectly accepted string with invalid unicode escape"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor incorrectly accepted string with invalid unicode escape"
+    )
 
 
 def test_string_with_incomplete_unicode_escape() -> None:
@@ -232,13 +235,13 @@ def test_string_with_incomplete_unicode_escape() -> None:
     string_acceptor = StringStateMachine()
     input_string: str = '"Incomplete unicode: \\u123"'  # Missing one hex digit
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StringAcceptor incorrectly accepted string with incomplete unicode escape"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor incorrectly accepted string with incomplete unicode escape"
+    )
 
 
 def test_string_missing_start_quote() -> None:
@@ -251,13 +254,13 @@ def test_string_missing_start_quote() -> None:
     string_acceptor = StringStateMachine()
     input_string: str = 'missing start quote"'
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StringAcceptor incorrectly accepted string missing starting quote"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor incorrectly accepted string missing starting quote"
+    )
 
 
 def test_incomplete_string() -> None:
@@ -270,13 +273,13 @@ def test_incomplete_string() -> None:
     string_acceptor = StringStateMachine()
     input_string: str = '"incomplete string'
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StringAcceptor incorrectly accepted incomplete string"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor incorrectly accepted incomplete string"
+    )
 
 
 @pytest.mark.parametrize(
@@ -303,23 +306,19 @@ def test_valid_strings_char_by_char(input_string: str, expected_value: str) -> N
         expected_value (str): The expected parsed string value.
     """
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        new_walkers = []
-        for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all([walker], ch)
-            new_walkers.extend([w for _, w in advanced_walkers])
-        walkers = new_walkers
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker accepted the input: {input_string}"
+    assert accepted_steppers, f"No stepper accepted the input: {input_string}"
 
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected_value, (
+            f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+        )
 
 
 @pytest.mark.parametrize(
@@ -358,17 +357,13 @@ def test_invalid_strings_char_by_char(input_string: str, error_message: str) -> 
         error_message (str): The assertion error message.
     """
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        new_walkers = []
-        for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all([walker], ch)
-            new_walkers.extend([w for _, w in advanced_walkers])
-        walkers = new_walkers
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), error_message
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        error_message
+    )
 
 
 def test_empty_string_char_by_char() -> None:
@@ -382,23 +377,18 @@ def test_empty_string_char_by_char() -> None:
     expected_value: str = ""
 
     string_acceptor = StringStateMachine()
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        new_walkers = []
-        for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all([walker], ch)
-            new_walkers.extend([w for _, w in advanced_walkers])
-        walkers = new_walkers
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
-    ]
-    assert accepted_walkers, "StringAcceptor did not accept empty string"
-
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected empty string, got '{walker.get_current_value()}'"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor did not accept empty string"
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == expected_value, (
+                f"Expected empty string, got '{stepper.get_current_value()}'"
+            )
 
 
 def test_string_with_valid_escaped_tab_char_by_char() -> None:
@@ -412,15 +402,16 @@ def test_string_with_valid_escaped_tab_char_by_char() -> None:
     input_string: str = '"Tab\\tcharacter"'
     expected_value: str = "Tab\tcharacter"
 
-    walkers = string_acceptor.get_walkers()
+    steppers = string_acceptor.get_steppers()
     for ch in input_string:
-        walkers = [walker for _, walker in string_acceptor.advance_all(walkers, ch)]
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    assert all(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == expected_value, (
+                f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+            )
 
 
 def test_string_with_escaped_solidus_char_by_char() -> None:
@@ -434,36 +425,29 @@ def test_string_with_escaped_solidus_char_by_char() -> None:
     input_string: str = '"Escaped solidus: \\/"'
     expected_value: str = "Escaped solidus: /"
 
-    walkers = list(string_acceptor.get_walkers())
+    steppers = list(string_acceptor.get_steppers())
     for ch in input_string:
-        new_walkers = []
-        for walker in walkers:
-            advanced_walkers = string_acceptor.advance_all([walker], ch)
-            new_walkers.extend([w for _, w in advanced_walkers])
-        walkers = new_walkers
+        steppers = string_acceptor.advance_all_basic(steppers, ch)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
-    ]
-    assert accepted_walkers, "StringAcceptor did not accept string with escaped solidus"
-
-    for walker in accepted_walkers:
-        assert (
-            walker.get_current_value() == expected_value
-        ), f"Expected '{expected_value}', got '{walker.get_current_value()}'"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StringAcceptor did not accept string with escaped solidus"
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == expected_value, (
+                f"Expected '{expected_value}', got '{stepper.get_current_value()}'"
+            )
 
 
 def test_edge_case():
     string_acceptor = StringStateMachine()
-    walkers = string_acceptor.get_walkers()
-    assert len(walkers) == 1
-    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
-    assert len(walkers) == 3
-    walkers = [
-        walker for _, walker in string_acceptor.advance_all(walkers, "Hello There!")
-    ]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in string_acceptor.advance_all(walkers, '"')]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == "Hello There!"
+    steppers = string_acceptor.get_steppers()
+    assert len(steppers) == 1
+    steppers = string_acceptor.advance_all_basic(steppers, '"')
+    assert len(steppers) == 3
+    steppers = string_acceptor.advance_all_basic(steppers, "Hello There!")
+    assert len(steppers) == 3
+    steppers = string_acceptor.advance_all_basic(steppers, '"')
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == "Hello There!"

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from pse_core import State
+from pse_core import StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 from pse.state_machines.base.any_character import AnyCharacterStateMachine
 from pse.state_machines.base.character import CharacterStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
 
 INVALID_CHARS: set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
+
 
 class StringStateMachine(StateMachine):
     """
@@ -17,15 +18,13 @@ class StringStateMachine(StateMachine):
     The length of the string is measured excluding the surrounding quotation marks.
     """
 
-    # State constants
+    # StateId constants
     STRING_CONTENTS = 1
     ESCAPED_SEQUENCE = 2
     HEX_CODE = 3
 
     def __init__(self):
         """
-        Initialize the StringAcceptor with its state transitions.
-
         The state machine is configured to parse JSON strings, handling escape sequences
         and Unicode characters appropriately.
         """
@@ -65,20 +64,19 @@ class StringStateMachine(StateMachine):
             }
         )
 
-    def get_new_walker(self, state: int | str | None = None) -> Walker:
-        return StringWalker(self, state)
+    def get_new_stepper(self, state: int | str | None = None) -> Stepper:
+        return StringStepper(self, state)
 
     def __str__(self) -> str:
         return "String"
 
 
-class StringWalker(Walker):
-
+class StringStepper(Stepper):
     def __init__(
-        self, state_machine: StringStateMachine, current_state: State | None = None
+        self, state_machine: StringStateMachine, current_state: StateId | None = None
     ) -> None:
         super().__init__(state_machine, current_state)
         self.state_machine: StringStateMachine = state_machine
 
     def is_within_value(self) -> bool:
-        return self.current_state == self.state_machine.STRING_CONTENTS
+        return self.current_state == 1

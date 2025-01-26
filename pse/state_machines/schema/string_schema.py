@@ -5,12 +5,13 @@ import re
 from collections.abc import Callable
 
 import regex
-from pse_core import State
-from pse_core.walker import Walker
+from pse_core import StateId
+from pse_core.stepper import Stepper
 
 from pse.state_machines.types.string import StringStateMachine
 
 logger = logging.getLogger(__name__)
+
 
 class StringSchemaStateMachine(StringStateMachine):
     """
@@ -40,8 +41,8 @@ class StringSchemaStateMachine(StringStateMachine):
             if self.format not in ["email", "date-time", "uri"]:
                 raise ValueError(f"Format '{self.format}' not implemented")
 
-    def get_new_walker(self, state: State | None = None) -> StringSchemaWalker:
-        return StringSchemaWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> StringSchemaStepper:
+        return StringSchemaStepper(self, state)
 
     def min_length(self) -> int:
         """
@@ -108,44 +109,47 @@ class StringSchemaStateMachine(StringStateMachine):
     def __str__(self) -> str:
         return super().__str__() + "Schema"
 
-class StringSchemaWalker(Walker):
-    """
-    Walker for StringSchemaAcceptor.
-    """
 
+class StringSchemaStepper(Stepper):
     def __init__(
         self,
         state_machine: StringSchemaStateMachine,
-        current_state: State | None = None,
+        current_state: StateId | None = None,
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: StringSchemaStateMachine = state_machine
 
-    def should_start_transition(self, token: str) -> bool:
-        if super().should_start_transition(token):
-            assert self.transition_walker
-            raw_value = self.transition_walker.get_raw_value()
+    def should_start_step(self, token: str) -> bool:
+        if super().should_start_step(token):
+            assert self.sub_stepper
+            raw_value = self.sub_stepper.get_raw_value()
             if self.is_within_value():
-                return self.is_pattern_prefix(raw_value + token)
+                valid_prefix = self.valid_prefix(raw_value + token)
+                return valid_prefix is not None and raw_value != valid_prefix
             return True
 
         return False
 
-    def should_complete_transition(self) -> bool:
-        if super().should_complete_transition():
+    def should_complete_step(self) -> bool:
+        if super().should_complete_step():
             if self.target_state in self.state_machine.end_states:
                 return self.state_machine.validate_value(self.get_current_value())
             return True
 
         return False
 
-    def is_pattern_prefix(self, s: str) -> bool:
+    def valid_prefix(self, s: str) -> str | None:
         """
         Check whether the string 's' can be a prefix of any string matching the pattern.
         """
-        if self.is_within_value() and self.state_machine.pattern and self.target_state not in self.state_machine.end_states:
-            pattern_str = self.state_machine.pattern.pattern
-            # Use partial matching
+        if not self.is_within_value() or not self.state_machine.pattern:
+            return s
+
+        match = None
+        pattern_str = self.state_machine.pattern.pattern
+        while not match and s:
             match = regex.match(pattern_str, s, partial=True)
-            return match is not None
-        return True  # If no pattern, always return True
+            if not match:
+                s = s[:-1]
+
+        return s if match else None

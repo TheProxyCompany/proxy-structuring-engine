@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pse_core import State, StateGraph
+from pse_core import StateGraph, StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
@@ -21,13 +21,6 @@ class ArrayStateMachine(StateMachine):
     """
 
     def __init__(self, state_graph: StateGraph | None = None) -> None:
-        """
-        Initialize the ArrayAcceptor with a state transition graph.
-
-        Args:
-            graph (Optional[Dict[StateMachineAcceptor.StateType, List[Tuple[TokenAcceptor, StateMachineAcceptor.StateType]]]], optional):
-                Custom state transition graph. If None, a default graph is used to parse JSON arrays.
-        """
         base_array_state_graph: StateGraph = {
             0: [(PhraseStateMachine("["), 1)],
             1: [
@@ -39,62 +32,44 @@ class ArrayStateMachine(StateMachine):
             4: [
                 (
                     ChainStateMachine(
-                        [
-                            PhraseStateMachine(","),
-                            WhitespaceStateMachine()
-                        ]
-                    ), 2,
+                        [PhraseStateMachine(","), WhitespaceStateMachine()]
+                    ),
+                    2,
                 ),
                 (PhraseStateMachine("]"), "$"),
             ],
         }
         super().__init__(state_graph or base_array_state_graph)
 
-    def get_new_walker(self, state: State | None = None) -> ArrayWalker:
-        return ArrayWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> ArrayStepper:
+        return ArrayStepper(self, state)
 
     def __str__(self) -> str:
         return "Array"
 
 
-class ArrayWalker(Walker):
-    """
-    Walker for ArrayAcceptor that maintains the current state and accumulated values.
-    """
-
+class ArrayStepper(Stepper):
     def __init__(
         self,
         state_machine: ArrayStateMachine,
-        current_state: State | None = None,
+        current_state: StateId | None = None,
     ):
-        """
-        Initialize the ArrayAcceptor.Walker with the parent state_machine and an empty list.
-
-        Args:
-            state_machine (ArrayAcceptor): The parent ArrayAcceptor instance.
-        """
         super().__init__(state_machine, current_state)
         self.state_machine: ArrayStateMachine = state_machine
         self.value: list[Any] = []
 
-    def clone(self) -> ArrayWalker:
-        """
-        Clone the current walker, duplicating its state and accumulated values.
-
-        Returns:
-            ArrayAcceptor.Walker: A new instance of the cloned walker.
-        """
-        cloned_walker = super().clone()
-        cloned_walker.value = self.value[:]
-        return cloned_walker
+    def clone(self) -> ArrayStepper:
+        cloned_stepper = super().clone()
+        cloned_stepper.value = self.value[:]
+        return cloned_stepper
 
     def is_within_value(self) -> bool:
         return self.current_state == 3
 
-    def add_to_history(self, walker: Walker) -> None:
+    def add_to_history(self, stepper: Stepper) -> None:
         if self.is_within_value():
-            self.value.append(walker.get_current_value())
-        super().add_to_history(walker)
+            self.value.append(stepper.get_current_value())
+        super().add_to_history(stepper)
 
     def get_current_value(self) -> list:
         """

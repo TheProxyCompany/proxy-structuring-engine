@@ -27,12 +27,12 @@ def test_initialization_valid_schema(base_context: dict[str, Any]) -> None:
     state_machine = ObjectSchemaStateMachine(schema, base_context)
     assert state_machine.schema == schema, "Schema should be set correctly."
     assert state_machine.context == base_context, "Context should be set correctly."
-    assert (
-        state_machine.properties == schema["properties"]
-    ), "Properties should be extracted correctly."
-    assert state_machine.required_property_names == [
-        "name"
-    ], "Required properties should be set correctly."
+    assert state_machine.properties == schema["properties"], (
+        "Properties should be extracted correctly."
+    )
+    assert state_machine.required_property_names == ["name"], (
+        "Required properties should be set correctly."
+    )
 
 
 def test_initialization_missing_required_property_in_properties(
@@ -67,17 +67,17 @@ def test_initialization_missing_required_property_in_properties(
 #     }
 
 #     state_machine = ObjectSchemaStateMachine(schema, base_context)
-#     walkers = list(state_machine.get_walkers())
+#     steppers = list(state_machine.get_steppers())
 #     for char in '{"id':
-#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#         steppers = [stepper for _, stepper in state_machine.advance_all(steppers, char)]
 #     # The hook should not be called yet
 
 #     # Continue parsing
 #     for char in '": 123}':
-#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#         steppers = [stepper for _, stepper in state_machine.advance_all(steppers, char)]
 
 #     assert any(
-#         walker.has_reached_accept_state() for walker in walkers
+#         stepper.has_reached_accept_state() for stepper in steppers
 #     ), "Transition to end state should return True when required properties are present."
 #     started_hook.assert_not_called()
 
@@ -96,13 +96,13 @@ def test_initialization_missing_required_property_in_properties(
 #     state_machine = ObjectSchemaStateMachine(
 #         schema, base_context, start_hook=started_hook
 #     )
-#     walkers = list(state_machine.get_walkers())
+#     steppers = list(state_machine.get_steppers())
 #     for char in '{"email": ':
-#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#         steppers = [stepper for _, stepper in state_machine.advance_all(steppers, char)]
 
 #     started_hook.assert_not_called()
 #     # Simulate starting a string value
-#     walkers = [walker for _, walker in state_machine.advance_all(walkers, '"')]
+#     steppers = [stepper for _, stepper in state_machine.advance_all(steppers, '"')]
 #     # The hook should be called now
 #     started_hook.assert_called_once()
 
@@ -119,19 +119,19 @@ def test_initialization_missing_required_property_in_properties(
 #     }
 #     ended_hook: MagicMock = MagicMock()
 #     state_machine = ObjectSchemaStateMachine(schema, base_context, end_hook=ended_hook)
-#     walkers = list(state_machine.get_walkers())
+#     steppers = list(state_machine.get_steppers())
 
 #     additional_chars = '{"id": "hi'
 #     for char in additional_chars:
-#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#         steppers = [stepper for _, stepper in state_machine.advance_all(steppers, char)]
 #     ended_hook.assert_not_called()
 
 #     # Finish the string and the object
 #     for char in '"}':
-#         walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+#         steppers = [stepper for _, stepper in state_machine.advance_all(steppers, char)]
 
 #     assert any(
-#         walker.has_reached_accept_state() for walker in walkers
+#         stepper.has_reached_accept_state() for stepper in steppers
 #     ), "Transition to end state should return True when all properties are present."
 #     ended_hook.assert_called_once()
 
@@ -165,26 +165,26 @@ def test_complex_json_structure(base_context: dict[str, Any]) -> None:
     # Test initialization
     assert state_machine.schema == schema, "Schema should be set correctly."
     assert state_machine.context == base_context, "Context should be set correctly."
-    assert (
-        state_machine.properties == schema["properties"]
-    ), "Properties should be extracted correctly."
+    assert state_machine.properties == schema["properties"], (
+        "Properties should be extracted correctly."
+    )
     assert state_machine.required_property_names == [
         "name",
         "arguments",
     ], "Required properties should be set correctly."
 
     # Test parsing valid JSON input
-    walkers = list(state_machine.get_walkers())
+    steppers = list(state_machine.get_steppers())
     valid_json = '{"name": "metacognition", "arguments": {"chain_of_thought": ["Thought 1", "Thought 2"]}}'
     for char in valid_json:
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
+        steppers = state_machine.advance_all_basic(steppers, char)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Transition to end state should return True for valid input."
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Transition to end state should return True for valid input."
+    )
 
-    for walker in walkers:
-        assert walker.get_current_value() == {
+    for stepper in steppers:
+        assert stepper.get_current_value() == {
             "name": "metacognition",
             "arguments": {
                 "chain_of_thought": [
@@ -213,21 +213,18 @@ def test_complex_structure_partial_advancement():
         "additionalProperties": False,
     }
     state_machine = ObjectSchemaStateMachine(schema, {})
-    walkers = list(state_machine.get_walkers())
+    steppers = list(state_machine.get_steppers())
     valid_json = '{\n  "'
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, valid_json)]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "type")]
-    assert len(walkers) == 1
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '": "div"')]
-    assert len(walkers) == 2
-    walkers = [
-        walker
-        for _, walker in state_machine.advance_all(walkers, ', "label": "hello!" \n}')
-    ]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == {"type": "div", "label": "hello!"}
+    steppers = state_machine.advance_all_basic(steppers, valid_json)
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, "type")
+    assert len(steppers) == 1
+    steppers = state_machine.advance_all_basic(steppers, '": "div"')
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, ', "label": "hello!" \n}')
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == {"type": "div", "label": "hello!"}
 
 
 @pytest.mark.parametrize(
@@ -263,21 +260,18 @@ def test_object_schema_acceptor_edge_case(
         "required": ["query"],
     }
     state_machine = ObjectSchemaStateMachine(schema, {})
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     raw_input = '{"query": "popular favorite Pokémon",  "max_results": '
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
+    steppers = state_machine.advance_all_basic(steppers, raw_input)
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, str(value))
 
-    walkers = [
-        walker
-        for _, walker in state_machine.advance_all(
-            walkers, str(followup_value or "") + "}"
-        )
-    ]
+    steppers = state_machine.advance_all_basic(
+        steppers, str(followup_value or "") + "}"
+    )
 
-    assert len(walkers) == 1, "Should have one walker."
-    assert walkers[0].has_reached_accept_state()
+    assert len(steppers) == 1, "Should have one stepper."
+    assert steppers[0].has_reached_accept_state()
 
 
 @pytest.mark.parametrize(
@@ -312,17 +306,15 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
         "required": ["name", "arguments"],
     }
     state_machine = ObjectSchemaStateMachine(schema, {})
-    walkers = state_machine.get_walkers()
+    steppers = state_machine.get_steppers()
     raw_input = '{"name": "send_message", "arguments": {"message": "'
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, raw_input)]
-    assert len(walkers) == 3
+    steppers = state_machine.advance_all_basic(steppers, raw_input)
+    assert len(steppers) == 3
 
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, str(value))]
-    assert len(walkers) == 3
+    steppers = state_machine.advance_all_basic(steppers, str(value))
+    assert len(steppers) == 3
 
-    walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, followup_value)
-    ]
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"}}')]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
+    steppers = state_machine.advance_all_basic(steppers, followup_value)
+    steppers = state_machine.advance_all_basic(steppers, '"}}')
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()

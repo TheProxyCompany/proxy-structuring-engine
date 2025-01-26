@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from pse_core import State
-from pse_core.walker import Walker
+from pse_core import StateId
+from pse_core.stepper import Stepper
 
 from pse.state_machines import get_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.types.array import ArrayStateMachine, ArrayWalker
+from pse.state_machines.types.array import ArrayStateMachine, ArrayStepper
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
@@ -33,10 +33,8 @@ class ArraySchemaStateMachine(ArrayStateMachine):
                 ],
                 4: [
                     (
-                        ChainStateMachine([
-                                PhraseStateMachine(","),
-                                WhitespaceStateMachine()
-                            ]
+                        ChainStateMachine(
+                            [PhraseStateMachine(","), WhitespaceStateMachine()]
                         ),
                         2,
                     ),
@@ -45,40 +43,40 @@ class ArraySchemaStateMachine(ArrayStateMachine):
             }
         )
 
-    def get_transitions(self, walker: Walker) -> list[tuple[Walker, State]]:
-        """Retrieve transition walkers from the current state.
+    def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
+        """Retrieve transition steppers from the current state.
 
-        For each edge from the current state, returns walkers that can traverse that edge.
-        Handles optional acceptors and pass-through transitions appropriately.
-
+        For each edge from the current state, returns steppers that can traverse that edge.
         Args:
-            walker: The walker initiating the transition.
-            state: Optional starting state. If None, uses the walker's current state.
+            stepper: The stepper initiating the transition.
+            state: Optional starting state. If None, uses the stepper's current state.
 
         Returns:
-            list[tuple[Walker, State]]: A list of tuples representing transitions.
+            list[tuple[Stepper, StateId]]: A list of tuples representing transitions.
         """
-        if walker.current_state == 4:
-            transitions: list[tuple[Walker, State]] = []
-            if len(walker.get_current_value()) >= self.min_items():
-                for transition in PhraseStateMachine("]").get_walkers():
+        if stepper.current_state == 4:
+            transitions: list[tuple[Stepper, StateId]] = []
+            if len(stepper.get_current_value()) >= self.min_items():
+                for transition in PhraseStateMachine("]").get_steppers():
                     transitions.append((transition, "$"))
 
-            if len(walker.get_current_value()) < self.max_items():
-                for transition in ChainStateMachine([PhraseStateMachine(","), WhitespaceStateMachine()]).get_walkers():
+            if len(stepper.get_current_value()) < self.max_items():
+                for transition in ChainStateMachine(
+                    [PhraseStateMachine(","), WhitespaceStateMachine()]
+                ).get_steppers():
                     transitions.append((transition, 2))
 
             return transitions
-        elif walker.current_state == 1 and self.min_items() > 0:
+        elif stepper.current_state == 1 and self.min_items() > 0:
             transitions = []
-            for transition in WhitespaceStateMachine().get_walkers():
+            for transition in WhitespaceStateMachine().get_steppers():
                 transitions.append((transition, 2))
             return transitions
         else:
-            return super().get_transitions(walker)
+            return super().get_transitions(stepper)
 
-    def get_new_walker(self, state: State | None = None) -> ArraySchemaWalker:
-        return ArraySchemaWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> ArraySchemaStepper:
+        return ArraySchemaStepper(self, state)
 
     def min_items(self) -> int:
         """
@@ -95,15 +93,14 @@ class ArraySchemaStateMachine(ArrayStateMachine):
     def __str__(self) -> str:
         return super().__str__() + "Schema"
 
-class ArraySchemaWalker(ArrayWalker):
-    """
-    Walker for ArrayAcceptor
-    """
+
+class ArraySchemaStepper(ArrayStepper):
+    """ """
 
     def __init__(
         self,
         state_machine: ArraySchemaStateMachine,
-        current_state: State | None = None,
+        current_state: StateId | None = None,
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: ArraySchemaStateMachine = state_machine

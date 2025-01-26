@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Self
 
-from pse_core import State
+from pse_core import StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.wait_for import WaitForStateMachine
+from pse.state_machines.composite.wait_for import WaitFor
 
 
 class EncapsulatedStateMachine(StateMachine):
@@ -15,17 +15,16 @@ class EncapsulatedStateMachine(StateMachine):
     Accepts JSON data within a larger text, delimited by specific markers.
 
     This class encapsulates an state_machine that recognizes JSON content framed by
-    specified opening and closing delimiters. Stores text before the delimiters as
-    scratchpad.
+    specified opening and closing delimiters. Stores text before the delimiters in the WaitForStateMachine's buffer.
     """
 
     def __init__(
         self,
         state_machine: StateMachine,
         delimiters: tuple[str, str],
+        min_buffer_length: int = 0,
     ) -> None:
         """
-        Initialize the EncapsulatedAcceptor with delimiters and the JSON state_machine.
 
         Args:
             state_machine: The state_machine responsible for validating the JSON content.
@@ -35,19 +34,24 @@ class EncapsulatedStateMachine(StateMachine):
         super().__init__(
             {
                 0: [
-                    (WaitForStateMachine(PhraseStateMachine(delimiters[0])), 1),
+                    (
+                        WaitFor(
+                            PhraseStateMachine(delimiters[0]),
+                            min_buffer_length=min_buffer_length,
+                        ),
+                        1,
+                    ),
                 ],
-                1: [
-                    (state_machine, 2),
-                ],
+                1: [(state_machine, 2)],
                 2: [(PhraseStateMachine(delimiters[1]), "$")],
             }
         )
         self.inner_state_machine = state_machine
         self.delimiters = delimiters
+        self.min_buffer_length = min_buffer_length
 
-    def get_new_walker(self, state: State | None = None) -> EncapsulatedWalker:
-        return EncapsulatedWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
+        return EncapsulatedStepper(self, state)
 
     def __str__(self) -> str:
         components = []
@@ -62,36 +66,37 @@ class EncapsulatedStateMachine(StateMachine):
         return f"Encapsulated({', '.join(components)})"
 
 
-class EncapsulatedWalker(Walker):
-
-    def __init__(self, state_machine: EncapsulatedStateMachine, state: State | None = None) -> None:
+class EncapsulatedStepper(Stepper):
+    def __init__(
+        self, state_machine: EncapsulatedStateMachine, state: StateId | None = None
+    ) -> None:
         super().__init__(state_machine, state)
         self.state_machine: EncapsulatedStateMachine = state_machine
         self.scratch_pad = ""
-        self.inner_walker: Walker | None = None
+        self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:
         clone = super().clone()
         clone.scratch_pad = self.scratch_pad
-        clone.inner_walker = self.inner_walker
+        clone.inner_stepper = self.inner_stepper
         return clone
 
     def is_within_value(self) -> bool:
         return (
-            self.transition_walker is not None
-            and self.transition_walker.state_machine == self.state_machine.inner_state_machine
+            self.sub_stepper is not None
+            and self.sub_stepper.state_machine == self.state_machine.inner_state_machine
         )
 
-    def add_to_history(self, walker: Walker) -> None:
+    def add_to_history(self, stepper: Stepper) -> None:
         if self.current_state == 2:
-            self.inner_walker = walker
+            self.inner_stepper = stepper
         elif self.current_state == 1:
-            value = walker.get_current_value()
+            value = stepper.get_current_value()
             assert isinstance(value, tuple)
             self.scratch_pad += value[0]
-        return super().add_to_history(walker)
+        return super().add_to_history(stepper)
 
     def get_current_value(self) -> tuple[str, Any]:
-        if self.inner_walker:
-            return self.scratch_pad, self.inner_walker.get_current_value()
+        if self.inner_stepper:
+            return self.scratch_pad, self.inner_stepper.get_current_value()
         return self.scratch_pad, None

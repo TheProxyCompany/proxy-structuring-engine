@@ -4,7 +4,7 @@ from typing import Any
 
 from pse.state_machines.base.character import (
     CharacterStateMachine,
-    CharacterWalker,
+    CharacterStepper,
 )
 
 
@@ -17,16 +17,14 @@ class IntegerStateMachine(CharacterStateMachine):
         super().__init__("0123456789")
         self.drop_leading_zeros = drop_leading_zeros
 
-    def get_new_walker(self, state: int | str) -> IntegerWalker:
-        return IntegerWalker(self)
+    def get_new_stepper(self, state: int | str) -> IntegerStepper:
+        return IntegerStepper(self)
 
     def __str__(self) -> str:
         return "Integer"
 
-class IntegerWalker(CharacterWalker):
-    """
-    Walker for IntegerAcceptor.
-    """
+
+class IntegerStepper(CharacterStepper):
 
     def __init__(
         self, state_machine: IntegerStateMachine, value: str | None = None

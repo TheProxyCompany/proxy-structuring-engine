@@ -1,5 +1,4 @@
 import pytest
-from pse_core.state_machine import StateMachine
 
 from pse.state_machines.types.object import ObjectStateMachine
 
@@ -8,16 +7,17 @@ from pse.state_machines.types.object import ObjectStateMachine
 def object_acceptor() -> ObjectStateMachine:
     return ObjectStateMachine()
 
+
 def test_basic():
     sm = ObjectStateMachine()
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     input = '{"value": '
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, input)]
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "1")]
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ".2")]
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "e2}")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
+    steppers = sm.advance_all_basic(steppers, input)
+    steppers = sm.advance_all_basic(steppers, "1")
+    steppers = sm.advance_all_basic(steppers, ".2")
+    steppers = sm.advance_all_basic(steppers, "e2}")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
 
 
 @pytest.mark.parametrize(
@@ -42,18 +42,19 @@ def test_basic():
         ),
     ],
 )
-def test_valid_json_objects(object_acceptor: ObjectStateMachine, json_string, expected):
-    walkers = list(object_acceptor.get_walkers())
+def test_valid_json_objects(json_string, expected):
+    sm = ObjectStateMachine(is_optional=True) # optional is needed for empty objects
+    steppers = sm.get_steppers()
     for char in json_string:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
+    assert accepted_steppers, f"No stepper reached an accepted state for: {json_string}"
 
-    for walker in accepted_walkers:
-        assert walker.get_current_value() == expected
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -74,19 +75,18 @@ def test_valid_json_objects(object_acceptor: ObjectStateMachine, json_string, ex
         ),
     ],
 )
-def test_valid_json_objects_all_at_once(
-    object_acceptor: ObjectStateMachine, json_string, expected
-):
-    walkers = list(object_acceptor.get_walkers())
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, json_string)]
+def test_valid_json_objects_all_at_once(json_string, expected):
+    sm = ObjectStateMachine(is_optional=True)  # optional is needed for empty objects
+    steppers = list(sm.get_steppers())
+    steppers = sm.advance_all_basic(steppers, json_string)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
+    assert accepted_steppers, f"No stepper reached an accepted state for: {json_string}"
 
-    for walker in accepted_walkers:
-        assert walker.get_current_value() == expected
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected
 
 
 @pytest.mark.parametrize(
@@ -101,12 +101,12 @@ def test_valid_json_objects_all_at_once(
     ],
 )
 def test_invalid_json_objects(object_acceptor: ObjectStateMachine, json_string):
-    walkers = list(object_acceptor.get_walkers())
+    steppers = list(object_acceptor.get_steppers())
     for char in json_string:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Walkers should not be in an accepted state for invalid JSON: {json_string}"
+        steppers = object_acceptor.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Steppers should not be in an accepted state for invalid JSON: {json_string}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -130,27 +130,27 @@ def test_invalid_json_objects(object_acceptor: ObjectStateMachine, json_string):
 def test_complex_json_objects(
     object_acceptor: ObjectStateMachine, json_string, expected
 ):
-    walkers = list(object_acceptor.get_walkers())
+    steppers = list(object_acceptor.get_steppers())
     for char in json_string:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = object_acceptor.advance_all_basic(steppers, char)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker reached an accepted state for: {json_string}"
+    assert accepted_steppers, f"No stepper reached an accepted state for: {json_string}"
 
-    for walker in accepted_walkers:
-        assert walker.get_current_value() == expected
+    for stepper in accepted_steppers:
+        assert stepper.get_current_value() == expected
 
 
 def test_edge_case(object_acceptor: ObjectStateMachine):
-    walkers = list(object_acceptor.get_walkers())
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '{"":""')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
-    assert len(walkers) == 3
+    steppers = list(object_acceptor.get_steppers())
+    steppers = object_acceptor.advance_all_basic(steppers, '{"":""')
+    assert len(steppers) == 3
+    steppers = object_acceptor.advance_all_basic(steppers, ",")
+    assert len(steppers) == 2
+    steppers = object_acceptor.advance_all_basic(steppers, '"')
+    assert len(steppers) == 3
 
 
 @pytest.mark.parametrize(
@@ -167,55 +167,53 @@ def test_edge_case(object_acceptor: ObjectStateMachine):
     ],
 )
 def test_more_invalid_json_objects(object_acceptor: ObjectStateMachine, json_string):
-    walkers = list(object_acceptor.get_walkers())
+    steppers = list(object_acceptor.get_steppers())
     for char in json_string:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Walkers should not be in an accepted state for invalid JSON: {json_string}"
+        steppers = object_acceptor.advance_all_basic(steppers, char)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Steppers should not be in an accepted state for invalid JSON: {json_string}"
+    )
 
 
 def test_no_spaces(object_acceptor: ObjectStateMachine):
     input_string = '{"a":"b","c":"d"}'
-    walkers = list(object_acceptor.get_walkers())
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, input_string)]
-    assert len(walkers) == 1
-    walker = walkers[0]
-    assert walker.has_reached_accept_state()
-    assert walker.get_current_value() == {"a": "b", "c": "d"}
+    steppers = list(object_acceptor.get_steppers())
+    steppers = object_acceptor.advance_all_basic(steppers, input_string)
+    assert len(steppers) == 1
+    stepper = steppers[0]
+    assert stepper.has_reached_accept_state()
+    assert stepper.get_current_value() == {"a": "b", "c": "d"}
 
 
 def test_basic_token_by_token():
     object_acceptor = ObjectStateMachine()
-    walkers = object_acceptor.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "{")]
-    assert len(walkers) == 3
-    assert all(not walker.has_reached_accept_state() for walker in walkers)
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "\n\n")]
-    assert len(walkers) == 2
-    assert all(not walker.has_reached_accept_state() for walker in walkers)
+    steppers = object_acceptor.get_steppers()
+    steppers = object_acceptor.advance_all_basic(steppers, "{")
+    assert len(steppers) == 2
+    assert all(not stepper.has_reached_accept_state() for stepper in steppers)
+    steppers = object_acceptor.advance_all_basic(steppers, "\n\n")
+    assert len(steppers) == 2
+    assert all(not stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_whitespace_acceptor_integration_with_object_acceptor():
     """Test WhitespaceAcceptor in the context of ObjectAcceptor."""
     token = '{ "key": "value", "number": 42 }'
     state_machine = ObjectStateMachine()
-    walkers = state_machine.get_walkers()
-    advanced_walkers = [
-        walker for _, walker in StateMachine.advance_all(walkers, token)
-    ]
+    steppers = state_machine.get_steppers()
+    advanced_steppers = state_machine.advance_all_basic(steppers, token)
 
-    assert any(walker.has_reached_accept_state() for walker in advanced_walkers)
-    for walker in advanced_walkers:
-        if walker.has_reached_accept_state():
-            obj = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers)
+    for stepper in advanced_steppers:
+        if stepper.has_reached_accept_state():
+            obj = stepper.get_current_value()
             assert obj == {"key": "value", "number": 42}
 
 
 def test_nested_object():
     sm = ObjectStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, '{"a":{"b":"c')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in sm.advance_all(walkers, '"}}')]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, '{"a":{"b":"c')
+    assert len(steppers) == 3
+    steppers = sm.advance_all_basic(steppers, '"}}')
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 
 class AnyCharacterStateMachine(StateMachine):
@@ -13,16 +13,14 @@ class AnyCharacterStateMachine(StateMachine):
 
     def __init__(
         self,
-        allowed_charset: list[str] | Iterable[str] = "",
-        disallowed_charset: list[str] | Iterable[str] = "",
+        allowed_charset: str | list[str] | Iterable[str] = "",
+        disallowed_charset: str | list[str] | Iterable[str] = "",
         char_min: int | None = None,
         char_limit: int | None = None,
         is_optional: bool = False,
         case_sensitive: bool = True,
     ) -> None:
         """
-        Initialize the CharAcceptor with a set of valid characters.
-
         Args:
             charset (list[str]): A list of characters to be accepted.
         """
@@ -45,16 +43,16 @@ class AnyCharacterStateMachine(StateMachine):
                 else set(char.lower() for char in disallowed_charset)
             )
 
-    def get_new_walker(self, state: int | str) -> AnyCharacterWalker:
-        return AnyCharacterWalker(self)
+    def get_new_stepper(self, state: int | str) -> AnyCharacterStepper:
+        return AnyCharacterStepper(self)
 
     def __str__(self) -> str:
         return "AnyCharacter"
 
 
-class AnyCharacterWalker(Walker):
+class AnyCharacterStepper(Stepper):
     """
-    Walker for navigating through characters in AnyCharacterStateMachine.
+    Stepper for navigating through characters in AnyCharacterStateMachine.
     """
 
     def __init__(
@@ -63,10 +61,9 @@ class AnyCharacterWalker(Walker):
         value: str | None = None,
     ) -> None:
         """
-        Initialize the Walker.
+        Initialize the Stepper.
 
         Args:
-            state_machine (StringCharAcceptor): The parent StringCharAcceptor.
             value (Optional[str]): The accumulated string value. Defaults to None.
         """
         super().__init__(state_machine)
@@ -84,7 +81,7 @@ class AnyCharacterWalker(Walker):
 
     def can_accept_more_input(self) -> bool:
         """
-        Determines if the walker can accept more input based on the character limit.
+        Determines if the stepper can accept more input based on the character limit.
         """
         if (
             self.state_machine.char_limit > 0
@@ -100,7 +97,7 @@ class AnyCharacterWalker(Walker):
 
         return True
 
-    def should_start_transition(self, token: str) -> bool:
+    def should_start_step(self, token: str) -> bool:
         """
         Determines if a transition should start with the given token.
 
@@ -125,37 +122,40 @@ class AnyCharacterWalker(Walker):
 
         return True
 
-    def should_complete_transition(self) -> bool:
+    def should_complete_step(self) -> bool:
         """
         Determines if the transition should be completed based on the character limit.
         """
-        if self.state_machine.char_limit > 0 and self.consumed_character_count > self.state_machine.char_limit:
+        if (
+            self.state_machine.char_limit > 0
+            and self.consumed_character_count > self.state_machine.char_limit
+        ):
             return False
 
-        if self.state_machine.char_min > 0 and self.consumed_character_count < self.state_machine.char_min:
+        if (
+            self.state_machine.char_min > 0
+            and self.consumed_character_count < self.state_machine.char_min
+        ):
             return False
 
         return True
 
-    def consume(self, token: str) -> list[Walker]:
+    def consume(self, token: str) -> list[Stepper]:
         """
-        Advance the walker with the given input.
+        Advance the stepper with the given input.
 
         Args:
             token (str): The input to advance with.
 
         Returns:
-            List[Walker]: List of new walkers after advancement.
+            List[Stepper]: List of new steppers after advancement.
         """
         # Split input at first invalid character
         valid_prefix = ""
         for char in token:
-            if (
-                char in self.state_machine.disallowed_charset
-                or (
-                    self.state_machine.allowed_charset
-                    and char not in self.state_machine.allowed_charset
-                )
+            if char in self.state_machine.disallowed_charset or (
+                self.state_machine.allowed_charset
+                and char not in self.state_machine.allowed_charset
             ):
                 break
 
@@ -166,6 +166,6 @@ class AnyCharacterWalker(Walker):
 
         new_value = self.get_raw_value() + valid_prefix
         remaining_input = token[len(valid_prefix) :] or None
-        new_walker = self.transition(new_value, remaining_input)
+        new_stepper = self.step(new_value, remaining_input)
 
-        return [new_walker]
+        return [new_stepper]

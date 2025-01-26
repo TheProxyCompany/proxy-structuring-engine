@@ -1,102 +1,87 @@
 from pse_core.trie import TrieSet
 
-from pse.state_machines.base.phrase import PhraseStateMachine, PhraseWalker
+from pse.state_machines.base.phrase import PhraseStateMachine, PhraseStepper
 from pse.state_machines.composite.wait_for import (
-    WaitForStateMachine,
-    WaitForWalker,
+    WaitFor,
+    WaitForStepper,
 )
 
 
 def test_default_wait_for_acceptor() -> None:
     text_acceptor = PhraseStateMachine("Hello World")
-    state_machine = WaitForStateMachine(text_acceptor)
+    state_machine = WaitFor(text_acceptor)
 
-    walkers = list(state_machine.get_walkers())
-    assert len(walkers) == 1
-    walker = walkers[0]
-    assert isinstance(walker, WaitForWalker)
-    assert walker.accepts_any_token()
-    assert walker.transition_walker
-    assert walker.transition_walker.state_machine == text_acceptor
-    assert isinstance(walker.transition_walker, PhraseWalker)
-    assert not walker.is_within_value()
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
-    assert len(walkers) == 1
-    assert walkers[0].is_within_value()
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "World")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
+    steppers = list(state_machine.get_steppers())
+    assert len(steppers) == 1
+    stepper = steppers[0]
+    assert isinstance(stepper, WaitForStepper)
+    assert stepper.accepts_any_token()
+    assert stepper.sub_stepper
+    assert stepper.sub_stepper.state_machine == text_acceptor
+    assert isinstance(stepper.sub_stepper, PhraseStepper)
+    assert not stepper.is_within_value()
+    steppers = state_machine.advance_all_basic(steppers, "Hello ")
+    assert len(steppers) == 1
+    assert steppers[0].is_within_value()
+    steppers = state_machine.advance_all_basic(steppers, "World")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
 
 
 def test_basic_wait_for_acceptor() -> None:
     """Test that the WaitForAcceptor can accept any token."""
     text_acceptor = PhraseStateMachine("Hello World")
-    state_machine = WaitForStateMachine(text_acceptor)
-    walkers = list(state_machine.get_walkers())
-    walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, "Hello World")
-    ]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
+    state_machine = WaitFor(text_acceptor)
+    steppers = list(state_machine.get_steppers())
+    steppers = state_machine.advance_all_basic(steppers, "Hello World")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
 
 
 def test_interrupted_wait_for_acceptor() -> None:
     text_acceptor = PhraseStateMachine("Hello World")
-    state_machine = WaitForStateMachine(text_acceptor)
+    state_machine = WaitFor(text_acceptor, strict=True)
 
-    walkers = state_machine.get_walkers()
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
-    assert len(walkers) == 1
-    assert walkers[0].is_within_value()
-    walkers = [
-        walker
-        for _, walker in state_machine.advance_all(
-            walkers, "I'm gonna mess up the pattern! But i'll still be accepted!"
-        )
-    ]
-    assert len(walkers) == 1
-    assert not walkers[0].is_within_value()
-
-    walkers = [
-        walker for _, walker in state_machine.advance_all(walkers, "Hello World")
-    ]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, "Hello ")
+    assert len(steppers) == 1
+    assert steppers[0].is_within_value()
+    steppers = state_machine.advance_all_basic(steppers, "I'm gonna mess up the pattern!")
+    assert not steppers
 
 def test_wait_for_acceptor_with_break() -> None:
     """Test that the WaitForAcceptor can accept any token."""
     text_acceptor = PhraseStateMachine("Hello World")
-    state_machine = WaitForStateMachine(text_acceptor, allow_break=True)
-    walkers = list(state_machine.get_walkers())
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "Hello ")]
-    assert len(walkers) == 1
+    state_machine = WaitFor(text_acceptor, strict=False)
+    steppers = list(state_machine.get_steppers())
+    steppers = state_machine.advance_all_basic(steppers, "Hello ")
+    assert len(steppers) == 1
 
-    walkers = [
-        walker
-        for _, walker in state_machine.advance_all(
-            walkers, "I'm gonna mess up the pattern! But i'll still be accepted!"
-        )
-    ]
-    assert len(walkers) == 1
+    steppers = state_machine.advance_all_basic(
+        steppers, "I'm gonna mess up the pattern! But i'll still be accepted!"
+    )
+    assert len(steppers) == 1
 
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, "World")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
+    steppers = state_machine.advance_all_basic(steppers, "World")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
 
 
 def test_wait_for_acceptor_with_partial_match():
     """Test that the WaitForAcceptor can accept any token."""
     text_acceptor = PhraseStateMachine('"hello"')
-    state_machine = WaitForStateMachine(text_acceptor)
-    walkers = list(state_machine.get_walkers())
+    state_machine = WaitFor(text_acceptor)
+    steppers = list(state_machine.get_steppers())
     trie_set = TrieSet()
     keys = ['"hello', '"', "hello", '"c']
     trie_set = trie_set.insert_all(keys)
-    for advanced_token, walker in state_machine.advance_all(walkers, '"*', trie_set):
-        before_trigger, value = walker.get_current_value()
+    for stepper, advanced_token, healed in state_machine.advance_all(
+        steppers, '"*', trie_set
+    ):
+        assert healed
+        before_trigger, value = stepper.get_current_value()
         assert not before_trigger
         assert value == '"'
         assert advanced_token == '"'
-    assert len(walkers) == 1
-    assert not walkers[0].has_reached_accept_state()
+    assert len(steppers) == 1
+    assert not steppers[0].has_reached_accept_state()

@@ -20,7 +20,9 @@ def engine() -> StructuringEngine:
     return engine
 
 
-def generate_mock_logits(engine: StructuringEngine, input: dict[str, float], dtype: Any) -> Any:
+def generate_mock_logits(
+    engine: StructuringEngine, input: dict[str, float], dtype: Any
+) -> Any:
     import mlx.core as mx
 
     logits = mx.full(len(engine.vocabulary), float("-inf"), dtype=dtype)
@@ -42,7 +44,6 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
 
     engine.configure(
         schema={"type": "string"},
-        wrap_with_delimiters=True,
         delimiters=delimiters,
     )
 
@@ -52,9 +53,11 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
 
 def test_delimitered_acceptor(engine: StructuringEngine) -> None:
     """Test that eos_token_id is in valid tokens when in accepted state."""
-    engine.configure({"type": "string"}, wrap_with_delimiters=True)
-    engine.consume_raw_input('```json\n"test string"\n```')
-    assert engine.has_reached_accept_state, f"Engine with schema {engine.schema} should be in accepted state, walkers: {engine.walkers}"
+    engine.configure({"type": "string"}, delimiters=("```json\n", "\n```"))
+    engine.consume_text('```json\n"test string"\n```')
+    assert engine.has_reached_accept_state, (
+        f"Engine with schema {engine.schema} should be in accepted state, steppers: {engine.steppers}"
+    )
 
 
 def test_create_acceptor_with_complex_schema(
@@ -81,9 +84,9 @@ def test_create_acceptor_with_complex_schema(
         },
         "required": ["user", "active"],
     }
-    engine.configure(complex_schema, wrap_with_delimiters=False)
+    engine.configure(complex_schema)
     assert engine.state_machine is not None
-    assert engine.walkers is not None
+    assert engine.steppers is not None
 
 
 def test_pattern_schema_success(engine: StructuringEngine) -> None:
@@ -94,12 +97,12 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure(schema=pattern_schema, wrap_with_delimiters=False)
+    engine.configure(pattern_schema, delimiters=None, buffer_length=0)
     assert engine.state_machine is not None
-    assert engine.walkers is not None
+    assert engine.steppers is not None
 
     # Test valid input that matches the pattern
-    engine.consume_raw_input('"test"')
+    engine.consume_text('"test"')
     assert engine.has_reached_accept_state, "Driver should be in accepted state"
 
 
@@ -111,19 +114,19 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure(schema=pattern_schema, wrap_with_delimiters=False)
+    engine.configure(schema=pattern_schema)
     assert engine.state_machine is not None
-    assert engine.walkers is not None
+    assert engine.steppers is not None
 
     # Reset engine for invalid input test
-    engine.consume_raw_input("123")
+    engine.consume_text("123")
     assert not engine.has_reached_accept_state
 
 
-def test_in_accepted_state_with_no_walkers(engine: StructuringEngine) -> None:
-    """Test in_accepted_state when walkers are empty."""
-    engine.configure(schema={"type": "string"}, wrap_with_delimiters=False)
-    engine.walkers = []
+def test_in_accepted_state_with_no_steppers(engine: StructuringEngine) -> None:
+    """Test in_accepted_state when steppers are empty."""
+    engine.configure(schema={"type": "string"})
+    engine.steppers = []
     assert not engine.has_reached_accept_state
 
 
@@ -170,10 +173,10 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
         },
         "required": ["name", "arguments"],
     }
-    schema = {"anyOf": [schema1, schema2]}
-    engine.configure(schema, wrap_with_delimiters=True)
-    engine.consume_raw_input('Here is the response: ```json\n{\n"name":"')
-    assert len(engine.walkers) == 2
+    engine.configure({"anyOf": [schema1, schema2]}, delimiters=("```json\n", "\n```"))
+
+    engine.consume_text('Here is the response: ```json\n{\n"name":"')
+    assert len(engine.steppers) == 2
 
 
 @pytest.mark.parametrize(
@@ -213,52 +216,52 @@ def test_edge_case_1(
             }
         ]
     }
-    engine.configure(schema, wrap_with_delimiters=True)
+    engine.configure(schema, delimiters=("```json\n", "\n```"))
     raw_input = '```json\n{"name": "send_message",'
-    engine.consume_raw_input(raw_input)
+    engine.consume_text(raw_input)
 
     raw_input_2 = ' "arguments": {"message": "'
-    engine.consume_raw_input(raw_input_2)
+    engine.consume_text(raw_input_2)
 
-    token_id = engine.tokenizer.encode(str(value), add_special_tokens=False)[0]
-    advanced_token = engine.advance_token(token_id)
+    token_ids = engine.tokenizer.encode(str(value), add_special_tokens=False)
+    advanced_token = engine.consume_tokens(token_ids)
     assert advanced_token is not None
-    assert advanced_token == token_id
+    assert advanced_token == token_ids
 
-    advanced_token = engine.advance_token(
-        engine.tokenizer.encode(str(followup_value), add_special_tokens=False)[0]
-    )
+    followup_token_ids = engine.tokenizer.encode(str(followup_value), add_special_tokens=False)
+    advanced_token = engine.consume_tokens(followup_token_ids)
     assert advanced_token is not None
-    assert (
-        advanced_token
-        == engine.tokenizer.encode(str(followup_value), add_special_tokens=False)[0]
-    )
+    assert advanced_token == followup_token_ids
 
-    for token in engine.tokenizer.encode('"}}\n```', add_special_tokens=False):
-        advanced_token = engine.advance_token(token)
-        assert advanced_token is not None
-        assert advanced_token == token
+    final_token_ids = engine.tokenizer.encode('"}}\n```', add_special_tokens=False)
+    advanced_token = engine.consume_tokens(final_token_ids)
+    assert advanced_token is not None
+    assert advanced_token == final_token_ids
 
     assert engine.has_reached_accept_state
+    for final_value in engine.read_output(dict):
+        assert not final_value.buffer
+        assert final_value.value == {
+            "name": "send_message",
+            "arguments": {"message": "Hello!"},
+        }
 
 
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
-    engine.configure(
-        schema={"type": "string", "const": "Hello World!"},
-        wrap_with_delimiters=False,
-        wait_for_acceptor=True,
-    )
-    engine.consume_raw_input("Sure, here is the response: ")
-    assert len(engine.walkers) == 1
+    engine.configure({"type": "string", "const": "Hello World!"}, None)
+    buffer = "Sure, here is the response: "
+    engine.consume_text(buffer)
+    assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
-    engine.consume_raw_input('"*')
-    assert len(engine.walkers) == 1
+    engine.consume_text('"*')
+    # example of token healing
+    assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
-    assert engine.walkers[0].get_current_value() == ("", '"')
-    assert engine.walkers[0].is_within_value()
-    engine.consume_raw_input("Hello ")
-    engine.consume_raw_input('World!"')
+    assert engine.steppers[0].get_current_value() == (buffer, '"')
+    assert engine.steppers[0].is_within_value()
+    engine.consume_text("Hello ")
+    engine.consume_text('World!"')
     assert engine.has_reached_accept_state
 
 
@@ -270,7 +273,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
-        engine.configure(schema={"type": "string"}, wrap_with_delimiters=False)
+        engine.configure(schema={"type": "string"}, delimiters=None, buffer_length=0)
         # we expect only tokens that start with a " character
         scores = generate_mock_logits(
             engine,
@@ -325,7 +328,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
 #         "additionalProperties": False,
 #     }
 #     engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
-#     engine.consume_raw_input('Sure, here is the response: {"')
+#     engine.consume_text('Sure, here is the response: {"')
 #     assert not engine.has_reached_accept_state
 #     adjusted_logits = engine(scores)
 #     expected_score = generate_mock_logits(

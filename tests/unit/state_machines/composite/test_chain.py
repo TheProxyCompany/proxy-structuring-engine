@@ -28,9 +28,10 @@ def test_basic():
             WhitespaceStateMachine(),
         ]
     )
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
-    assert len(walkers) == 2
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, ",")
+    assert len(steppers) == 2
+
 
 def test_nested_chain():
     sm = StateMachine(
@@ -49,79 +50,79 @@ def test_nested_chain():
         },
         end_states=[1],
     )
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "!")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == "Hello!"
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "Hello")
+    assert len(steppers) == 2
+    steppers = sm.advance_all_basic(steppers, "!")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == "Hello!"
 
 
-def test_walker_advance(sequence_acceptor: ChainStateMachine):
-    """Test advancing the walker through the sequence of acceptors with specific inputs."""
-    walkers = sequence_acceptor.get_walkers()
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, " ")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, "H")]
-    assert len(walkers) == 1
+def test_stepper_advance(sequence_acceptor: ChainStateMachine):
+    """Test advancing the stepper through the sequence of acceptors with specific inputs."""
+    steppers = sequence_acceptor.get_steppers()
+    assert len(steppers) == 2
+    steppers = sequence_acceptor.advance_all_basic(steppers, " ")
+    assert len(steppers) == 2
+    steppers = sequence_acceptor.advance_all_basic(steppers, "H")
+    assert len(steppers) == 1
     full_input = "ello"
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, full_input)]
-    assert len(walkers) == 2
-    for walker in walkers:
-        assert not walker.has_reached_accept_state()
-        assert walker.get_current_value() == " Hello"
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, " World")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == " Hello World"
+    steppers = sequence_acceptor.advance_all_basic(steppers, full_input)
+    assert len(steppers) == 2
+    for stepper in steppers:
+        assert not stepper.has_reached_accept_state()
+        assert stepper.get_current_value() == " Hello"
+    steppers = sequence_acceptor.advance_all_basic(steppers, " World")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == " Hello World"
 
-    # Verify that at least one walker is in the accepted state
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "The full input ' Hello World' should be accepted by the SequenceAcceptor."
+    # Verify that at least one stepper is in the accepted state
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "The full input ' Hello World' should be accepted by the SequenceAcceptor."
+    )
 
 
-def test_walker_in_accepted_state(sequence_acceptor: ChainStateMachine):
-    """Test the state of the walker before and after processing a complete input sequence."""
-    initial_walker = next(iter(sequence_acceptor.get_walkers()))
-    assert (
-        not initial_walker.has_reached_accept_state()
-    ), "Initial walker should not be in an accepted state."
+def test_stepper_in_accepted_state(sequence_acceptor: ChainStateMachine):
+    """Test the state of the stepper before and after processing a complete input sequence."""
+    initial_stepper = next(iter(sequence_acceptor.get_steppers()))
+    assert not initial_stepper.has_reached_accept_state(), (
+        "Initial stepper should not be in an accepted state."
+    )
 
     # Process the complete input sequence
     input_sequence = " Hello World"
-    walkers = [initial_walker]
+    steppers = [initial_stepper]
     for char in input_sequence:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = sequence_acceptor.advance_all_basic(steppers, char)
 
-    for walker in walkers:
-        assert walker.has_reached_accept_state()
-        assert walker.get_current_value() == input_sequence
+    for stepper in steppers:
+        assert stepper.has_reached_accept_state()
+        assert stepper.get_current_value() == input_sequence
 
 
 def test_partial_match(sequence_acceptor: ChainStateMachine):
     """Test that a partial input sequence does not result in acceptance."""
     partial_input = " Hello "
-    walkers = list(sequence_acceptor.get_walkers())
+    steppers = list(sequence_acceptor.get_steppers())
     for char in partial_input:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = sequence_acceptor.advance_all_basic(steppers, char)
 
-    # Ensure no walker has reached the accepted state with partial input
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Partial input '{partial_input}' should not be accepted by the SequenceAcceptor."
+    # Ensure no stepper has reached the accepted state with partial input
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Partial input '{partial_input}' should not be accepted by the SequenceAcceptor."
+    )
 
 
 def test_no_match(sequence_acceptor: ChainStateMachine):
-    """Test that an input sequence not matching the state_machine sequence results in no accepted walkers."""
+    """Test that an input sequence not matching the state_machine sequence results in no accepted steppers."""
     non_matching_input = "Goodbye"
-    walkers = list(sequence_acceptor.get_walkers())
+    steppers = list(sequence_acceptor.get_steppers())
     for char in non_matching_input:
-        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
+        steppers = sequence_acceptor.advance_all_basic(steppers, char)
 
-    assert len(list(walkers)) == 0
+    assert len(list(steppers)) == 0
 
 
 @pytest.mark.parametrize(
@@ -133,24 +134,24 @@ def test_whitespace_variations(
     sequence_acceptor: ChainStateMachine, input_variant: str
 ):
     """Test that the SequenceAcceptor correctly handles various whitespace variations."""
-    walkers = list(sequence_acceptor.get_walkers())
+    steppers = list(sequence_acceptor.get_steppers())
     for char in input_variant:
-        walkers = [walker for _, walker in sequence_acceptor.advance_all(walkers, char)]
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Input variation '{input_variant}' should be accepted by the SequenceAcceptor."
+        steppers = sequence_acceptor.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Input variation '{input_variant}' should be accepted by the SequenceAcceptor."
+    )
 
 
 def test_single_acceptor_sequence():
     """Test that a SequenceAcceptor with a single TextAcceptor correctly accepts the input."""
     single_text = "Test"
     single_acceptor = ChainStateMachine([PhraseStateMachine(single_text)])
-    walkers = list(single_acceptor.get_walkers())
+    steppers = list(single_acceptor.get_steppers())
     for char in single_text:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Single state_machine SequenceAcceptor should accept the input '{single_text}'."
+        steppers = single_acceptor.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Single state_machine SequenceAcceptor should accept the input '{single_text}'."
+    )
 
 
 def test_whitespace_first():
@@ -158,11 +159,11 @@ def test_whitespace_first():
     sequence = ChainStateMachine(
         [WhitespaceStateMachine(), PhraseStateMachine(" Alpha")]
     )
-    walkers = sequence.get_walkers()
-    assert len(walkers) == 2
+    steppers = sequence.get_steppers()
+    assert len(steppers) == 2
     for char in " Alpha":
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = sequence.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_whitespace_middle():
@@ -174,10 +175,10 @@ def test_whitespace_middle():
             PhraseStateMachine("Gamma"),
         ]
     )
-    walkers = sequence.get_walkers()
+    steppers = sequence.get_steppers()
     for char in "Beta Gamma":
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+        steppers = sequence.advance_all_basic(steppers, char)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
 def test_optional_acceptor_advanced():
@@ -203,25 +204,25 @@ def test_optional_acceptor_advanced():
         },
         start_state=0,
     )
-    walkers = sm.get_walkers()
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ",")]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, " ")]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "World.")]
-    assert len(walkers) == 1
-    assert walkers[0].get_current_value() == "Hello, World."
-    assert walkers[0].has_reached_accept_state()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "Hello,")]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "World.")]
-    assert len(walkers) == 1
-    assert walkers[0].get_current_value() == "Hello,World."
-    assert walkers[0].has_reached_accept_state()
+    steppers = sm.get_steppers()
+    assert len(steppers) == 2
+    steppers = sm.advance_all_basic(steppers, "Hello")
+    assert len(steppers) == 2
+    steppers = sm.advance_all_basic(steppers, ",")
+    assert len(steppers) == 3
+    steppers = sm.advance_all_basic(steppers, " ")
+    assert len(steppers) == 3
+    steppers = sm.advance_all_basic(steppers, "World.")
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "Hello, World."
+    assert steppers[0].has_reached_accept_state()
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "Hello,")
+    assert len(steppers) == 3
+    steppers = sm.advance_all_basic(steppers, "World.")
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "Hello,World."
+    assert steppers[0].has_reached_accept_state()
 
 
 def test_whitespace_acceptor_sequence_acceptor():
@@ -234,21 +235,21 @@ def test_whitespace_acceptor_sequence_acceptor():
             WhitespaceStateMachine(),
         ]
     )
-    walkers = sequence_acceptor.get_walkers()
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, '"')]
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, 'test"')]
-    assert len(walkers) == 2
-    for walker in walkers:
-        assert not walker.has_reached_accept_state()
-        assert walker.get_raw_value() == '"test"'
+    steppers = sequence_acceptor.get_steppers()
+    steppers = sequence_acceptor.advance_all_basic(steppers, '"')
+    steppers = sequence_acceptor.advance_all_basic(steppers, 'test"')
+    assert len(steppers) == 2
+    for stepper in steppers:
+        assert not stepper.has_reached_accept_state()
+        assert stepper.get_raw_value() == '"test"'
 
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, "   ")]
-    assert len(walkers) == 2
-    for walker in walkers:
-        assert not walker.has_reached_accept_state()
-        assert walker.get_raw_value() == '"test"   '
+    steppers = sequence_acceptor.advance_all_basic(steppers, "   ")
+    assert len(steppers) == 2
+    for stepper in steppers:
+        assert not stepper.has_reached_accept_state()
+        assert stepper.get_raw_value() == '"test"   '
 
-    walkers = [walker for _, walker in StateMachine.advance_all(walkers, ":    ")]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert walkers[0].get_current_value() == '"test"   :    '
+    steppers = sequence_acceptor.advance_all_basic(steppers, ":    ")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert steppers[0].get_current_value() == '"test"   :    '

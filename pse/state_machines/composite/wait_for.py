@@ -3,16 +3,18 @@ from __future__ import annotations
 import logging
 from typing import Any, Self
 
-from pse_core import State
+from pse_core import StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 logger = logging.getLogger(__name__)
 
 
-class WaitForStateMachine(StateMachine):
+class WaitFor(StateMachine):
     """
-    Accept all text until a segment triggers another specified state_machine.
+    Accept all text until a segment triggers a nested StateId Machine.
+
+    Accumulates text in a buffer until a segment triggers the nested StateId Machine.
 
     This is particularly useful for allowing free-form text until a specific
     delimiter or pattern is detected, such as when parsing output from
@@ -22,73 +24,47 @@ class WaitForStateMachine(StateMachine):
     def __init__(
         self,
         state_machine: StateMachine,
-        allow_break: bool = False,
-        min_length_before_trigger: int = 0,
+        min_buffer_length: int = 0,
+        strict: bool = True,
     ):
         """
-        Initialize the WaitForAcceptor with a target state_machine to watch for.
+        Initialize with a target nested StateId Machine.
 
         Args:
-            wait_for_acceptor (TokenAcceptor): The state_machine that, when triggered,
-                stops the waiting and stops accepting further characters.
+            state_machine (StateMachine): The nested StateId Machine to watch for.
+            min_buffer_length (int): The minimum length of the buffer before the nested StateId Machine can accept input.
+            strict (bool): If True, the nested StateId Machine's progress is reset when invalid input is detected.
         """
         super().__init__()
-        self.wait_for_sm = state_machine
-        self.allow_break = allow_break
-        self.min_length_before_trigger = min_length_before_trigger
 
-    def get_transitions(self, walker: Walker) -> list[tuple[Walker, State]]:
-        """
-        Get transitions for the WaitForAcceptor.
-        """
+        self.min_buffer_length = min_buffer_length
+        self.strict = strict
+        self.wait_for_sm = state_machine
+
+    def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
         transitions = []
-        for transition in self.wait_for_sm.get_walkers():
+        for transition in self.wait_for_sm.get_steppers():
             transitions.append((transition, "$"))
         return transitions
 
-    def get_walkers(self, state: State | None = None) -> list[Walker]:
-        """
-        return:
-            Walkers for the WaitForAcceptor.
-        """
-        return self.branch_walker(WaitForWalker(self))
+    def get_steppers(self, state: StateId | None = None) -> list[Stepper]:
+        return self.branch_stepper(WaitForStepper(self))
 
     def __str__(self) -> str:
         return f"WaitFor({self.wait_for_sm})"
 
 
-class WaitForWalker(Walker):
-    """
-    Walker for handling the WaitForAcceptor.
-    Manages internal walkers that monitor for the triggering state_machine.
-    """
-
-    def __init__(self, state_machine: WaitForStateMachine):
-        """
-        Initialize the WaitForAcceptor Walker.
-
-        Args:
-            state_machine (WaitForAcceptor): The parent WaitForAcceptor.
-        """
+class WaitForStepper(Stepper):
+    def __init__(self, state_machine: WaitFor):
         super().__init__(state_machine)
         self.target_state = "$"
-        self.state_machine: WaitForStateMachine = state_machine
-        self.before_trigger = ""
+        self.state_machine: WaitFor = state_machine
+        self.buffer = ""
 
     def clone(self) -> Self:
         clone = super().clone()
-        clone.before_trigger = self.before_trigger
-        return super().clone()
-
-    def should_start_transition(self, token: str) -> bool:
-        if self.state_machine.min_length_before_trigger > 0:
-            if len(self.get_raw_value()) < self.state_machine.min_length_before_trigger:
-                return False
-
-        if self.transition_walker and self.transition_walker.is_within_value():
-            return self.transition_walker.should_start_transition(token)
-
-        return True
+        clone.buffer = self.buffer
+        return clone
 
     def accepts_any_token(self) -> bool:
         """
@@ -97,37 +73,65 @@ class WaitForWalker(Walker):
         Returns:
             bool: Always True.
         """
-        if self.transition_walker and self.transition_walker.is_within_value():
-            return self.transition_walker.accepts_any_token()
+        if self.sub_stepper and self.sub_stepper.is_within_value():
+            return self.sub_stepper.accepts_any_token()
         return True
 
-    def consume(self, token: str) -> list[Walker]:
-        """
-        Advance all internal walkers with the given input.
+    def should_start_step(self, token: str) -> bool:
+        if self.has_reached_accept_state():
+            return self.remaining_input is None
 
-        Args:
-            input (str): The input to process.
+        required_buffer_length = self.state_machine.min_buffer_length
+        should_start = super().should_start_step(token)
+        if required_buffer_length > 0:
+            if should_start and len(self.get_raw_value()) >= required_buffer_length:
+                # we have enough characters to start the transition
+                return True
+            elif not should_start and not self.is_within_value():
+                # in this case, we are not within a value, so we can start the transition
+                # to allow the buffer/scratchpad to grow
+                return True
+            else:
+                # we don't have enough characters to start the transition
+                return False
 
-        Returns:
-            list[TokenAcceptor.Walker]: Updated walkers after processing.
-        """
-        if self.transition_walker:
-            if not self.transition_walker.should_start_transition(token):
-                new_walkers = []
-                self.before_trigger += token
-                if self.state_machine.allow_break or not self.is_within_value():
-                    new_walkers.append(self)
-                else:
-                    for transition in self.state_machine.wait_for_sm.get_walkers():
-                        if new_walker := self.start_transition(transition):
-                            new_walker.target_state = "$"
-                            new_walkers.append(new_walker)
-                return new_walkers
+        # if we don't have a required buffer length, we can start the transition
+        return should_start or not self.is_within_value()
 
-        return self.state_machine.advance_walker(self, token)
+    def consume(self, token: str) -> list[Stepper]:
+        # No sub_stepper means we can't process anything
+        if not self.sub_stepper:
+            return []
+
+        # Try to find the longest valid prefix that the sub_stepper will accept
+        invalid_prefix = ""
+        valid_suffix = token
+
+        while valid_suffix and not self.sub_stepper.should_start_step(valid_suffix):
+            invalid_prefix += valid_suffix[0]
+            valid_suffix = valid_suffix[1:]
+
+        if self.state_machine.strict and self.is_within_value() and invalid_prefix:
+            return []
+
+        if invalid_prefix and (not self.is_within_value() or not self.state_machine.strict):
+            clone = self.clone()
+            clone.buffer += invalid_prefix
+            if valid_suffix:
+                return self.state_machine.advance_stepper(clone, valid_suffix)
+            else:
+                return [clone]
+        # Process the valid prefix normally
+        return self.state_machine.advance_stepper(self, valid_suffix)
 
     def get_current_value(self) -> tuple[str, Any]:
-        if self.transition_walker:
-            return self.before_trigger, self.transition_walker.get_current_value()
+        if self.sub_stepper:
+            return self.buffer, self.sub_stepper.get_current_value()
 
-        return self.before_trigger, None
+        return self.buffer, None
+
+    def get_raw_value(self) -> str:
+        value = self.buffer
+        if self.sub_stepper and self.sub_stepper.is_within_value():
+            value += self.sub_stepper.get_raw_value()
+        return value

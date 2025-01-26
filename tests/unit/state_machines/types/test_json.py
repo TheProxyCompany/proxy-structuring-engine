@@ -13,27 +13,27 @@ def json_acceptor():
 @pytest.fixture
 def parse_json(json_acceptor: JsonStateMachine):
     def parser(json_string: str) -> Any:
-        walkers = list(json_acceptor.get_walkers())
+        steppers = list(json_acceptor.get_steppers())
         for char in json_string:
-            walkers = [walker for _, walker in json_acceptor.advance_all(walkers, char)]
-            if not walkers:
-                raise AssertionError("No walkers after parsing")
+            steppers = json_acceptor.advance_all_basic(steppers, char)
+            if not steppers:
+                raise AssertionError("No steppers after parsing")
         accepted_values = [
-            walker.get_current_value()
-            for walker in walkers
-            if walker.has_reached_accept_state()
+            stepper.get_current_value()
+            for stepper in steppers
+            if stepper.has_reached_accept_state()
         ]
         if not accepted_values:
-            raise AssertionError("No accepted walkers after parsing")
+            raise AssertionError("No accepted steppers after parsing")
         return accepted_values[0]
 
     return parser
 
 
 def test_json_acceptor_initialization(json_acceptor):
-    assert isinstance(
-        json_acceptor, JsonStateMachine
-    ), "JsonAcceptor instance was not created."
+    assert isinstance(json_acceptor, JsonStateMachine), (
+        "JsonAcceptor instance was not created."
+    )
 
 
 @pytest.mark.parametrize(

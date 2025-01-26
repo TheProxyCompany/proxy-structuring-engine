@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from pse_core import Edge, State
+from pse_core import Edge, StateId
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.character import CharacterStateMachine
@@ -22,9 +22,6 @@ class NumberStateMachine(StateMachine):
     """
 
     def __init__(self):
-        """
-        Initialize the NumberAcceptor with its state transitions.
-        """
         super().__init__(
             {
                 0: [
@@ -57,7 +54,7 @@ class NumberStateMachine(StateMachine):
             end_states=[2, 3, "$"],
         )
 
-    def get_edges(self, state: State) -> list[Edge]:
+    def get_edges(self, state: StateId) -> list[Edge]:
         """
         Get the edges for a given state.
         """

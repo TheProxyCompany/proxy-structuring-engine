@@ -1,5 +1,5 @@
 import pytest
-from pse_core._core import Walker
+from pse_core._core import Stepper
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
@@ -15,6 +15,7 @@ def state_machine() -> NumberStateMachine:
         NumberAcceptor: An instance of NumberAcceptor.
     """
     return NumberStateMachine()
+
 
 # Test Cases for Valid Decimal Numbers
 @pytest.mark.parametrize(
@@ -36,18 +37,17 @@ def test_valid_decimal_numbers(input_string: str, expected_value: float) -> None
     Test parsing of valid decimal numbers.
 
     Args:
-        state_machine (NumberAcceptor): The NumberAcceptor instance.
         input_string (str): The decimal number string to parse.
         expected_value (float): The expected parsed value.
         description (str): Description of the test case.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert expected_value == pytest.approx(walker.get_current_value())
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert expected_value == pytest.approx(stepper.get_current_value())
 
 
 # Test Cases for Valid Exponential Numbers
@@ -62,7 +62,7 @@ def test_valid_decimal_numbers(input_string: str, expected_value: float) -> None
         ("0e0", 0.0),
     ],
 )
-def test_valid_exponential_numbers(input_string: str,expected_value: float) -> None:
+def test_valid_exponential_numbers(input_string: str, expected_value: float) -> None:
     """
     Test parsing of valid exponential numbers.
 
@@ -73,12 +73,12 @@ def test_valid_exponential_numbers(input_string: str,expected_value: float) -> N
         description (str): Description of the test case.
     """
     sm = NumberStateMachine()
-    walkers: list[Walker] = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert expected_value == pytest.approx(walker.get_current_value())
+    steppers: list[Stepper] = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert expected_value == pytest.approx(stepper.get_current_value())
 
 
 # Edge Case Tests
@@ -99,12 +99,12 @@ def test_zero_handling(input_string: str, expected_value: float) -> None:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert walker.get_current_value() == expected_value
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == expected_value
 
 
 @pytest.mark.parametrize(
@@ -119,18 +119,15 @@ def test_large_number_parsing(input_string: str, expected_value: float) -> None:
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    # assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert expected_value == pytest.approx(walkers[0].get_current_value())
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert steppers[0].has_reached_accept_state()
+    assert expected_value == pytest.approx(steppers[0].get_current_value())
 
 
 @pytest.mark.parametrize(
     "input_string, expected_value",
-    [("007", 7),
-     ("000.123", 0.123),
-     ("123.45000", 123.45)],
+    [("007", 7), ("000.123", 0.123), ("123.45000", 123.45)],
 )
 def test_number_with_leading_zeros(input_string: str, expected_value: float) -> None:
     """
@@ -140,12 +137,13 @@ def test_number_with_leading_zeros(input_string: str, expected_value: float) -> 
         state_machine (NumberAcceptor): The NumberAcceptor instance.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert expected_value == pytest.approx(walker.get_current_value())
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert expected_value == pytest.approx(stepper.get_current_value())
+
 
 # Error Handling Tests
 @pytest.mark.parametrize(
@@ -173,12 +171,15 @@ def test_invalid_number_parsing(input_string: str) -> None:
         input_string (str): The invalid number string to parse.
     """
     sm = NumberStateMachine()
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-    assert not any(walker.has_reached_accept_state() for walker in walkers)
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers)
+
 
 # Tests with StateMachine Integration
-def test_number_acceptor_with_state_machine_float(state_machine: NumberStateMachine,) -> None:
+def test_number_acceptor_with_state_machine_float(
+    state_machine: NumberStateMachine,
+) -> None:
     """
     Test NumberAcceptor within a StateMachine for parsing floating-point numbers.
 
@@ -191,18 +192,18 @@ def test_number_acceptor_with_state_machine_float(state_machine: NumberStateMach
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     number_string = "-123.456"
-    walkers = [walker for _, walker in sm.advance_all(walkers, number_string)]
+    steppers = sm.advance_all_basic(steppers, number_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StateMachine should accept valid floating-point number."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert (
-                walker.get_current_value() == -123.456
-            ), "Parsed value should be the float -123.456."
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StateMachine should accept valid floating-point number."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == -123.456, (
+                "Parsed value should be the float -123.456."
+            )
 
 
 def test_number_acceptor_with_state_machine_exponential(
@@ -220,18 +221,18 @@ def test_number_acceptor_with_state_machine_exponential(
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     number_string = "6.022e23"
-    walkers = [walker for _, walker in sm.advance_all(walkers, number_string)]
+    steppers = sm.advance_all_basic(steppers, number_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "StateMachine should accept valid exponential number."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            assert (
-                walker.get_current_value() == 6.022e23
-            ), "Parsed value should be the float 6.022e23."
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "StateMachine should accept valid exponential number."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            assert stepper.get_current_value() == 6.022e23, (
+                "Parsed value should be the float 6.022e23."
+            )
 
 
 def test_number_acceptor_with_state_machine_sequence(
@@ -253,19 +254,19 @@ def test_number_acceptor_with_state_machine_sequence(
     )
 
     input_string = "Value: 42.0"
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Combined text and number input should be accepted."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Combined text and number input should be accepted."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
             expected_value = "Value: 42.0"
-            assert (
-                value == expected_value
-            ), f"Expected '{expected_value}', got '{value}'"
+            assert value == expected_value, (
+                f"Expected '{expected_value}', got '{value}'"
+            )
 
 
 # Advanced Tests with Character-by-Character Advancement
@@ -301,18 +302,18 @@ def test_number_acceptor_multi_char_advancement(
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"NumberAcceptor should accept input '{input_string}'."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
-            assert value == pytest.approx(
-                expected_value
-            ), f"Expected {expected_value}, got {value}"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"NumberAcceptor should accept input '{input_string}'."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert value == pytest.approx(expected_value), (
+                f"Expected {expected_value}, got {value}"
+            )
 
 
 @pytest.mark.parametrize(
@@ -345,20 +346,20 @@ def test_number_acceptor_single_char_advancement(
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
 
     for char in input_string:
-        walkers = [walker for _, walker in sm.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"NumberAcceptor should accept input '{input_string}'."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
-            assert value == pytest.approx(
-                expected_value
-            ), f"Expected {expected_value}, got {value}"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"NumberAcceptor should accept input '{input_string}'."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert value == pytest.approx(expected_value), (
+                f"Expected {expected_value}, got {value}"
+            )
 
 
 def test_number_acceptor_invalid_input(state_machine: NumberStateMachine) -> None:
@@ -388,11 +389,11 @@ def test_number_acceptor_invalid_input(state_machine: NumberStateMachine) -> Non
             start_state=0,
             end_states=[1],
         )
-        walkers = sm.get_walkers()
-        walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
-        assert not any(
-            walker.has_reached_accept_state() for walker in walkers
-        ), f"Input '{input_string}' should not be accepted."
+        steppers = sm.get_steppers()
+        steppers = state_machine.advance_all_basic(steppers, input_string)
+        assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+            f"Input '{input_string}' should not be accepted."
+        )
 
 
 def test_number_acceptor_empty_input(state_machine: NumberStateMachine) -> None:
@@ -409,12 +410,12 @@ def test_number_acceptor_empty_input(state_machine: NumberStateMachine) -> None:
     )
     input_string = ""
 
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, input_string)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Empty input should not be accepted."
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Empty input should not be accepted."
+    )
 
 
 def test_number_acceptor_partial_invalid_input(
@@ -434,12 +435,12 @@ def test_number_acceptor_partial_invalid_input(
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, input_string)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Input with invalid characters should not be accepted."
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Input with invalid characters should not be accepted."
+    )
 
 
 def test_number_acceptor_large_floating_point(
@@ -460,18 +461,18 @@ def test_number_acceptor_large_floating_point(
         end_states=[1],
     )
 
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, input_string)]
+    steppers = sm.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, input_string)
 
-    assert any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), "Large floating-point numbers should be accepted."
-    for walker in walkers:
-        if walker.has_reached_accept_state():
-            value = walker.get_current_value()
-            assert value == pytest.approx(
-                expected_value
-            ), f"Expected {expected_value}, got {value}"
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Large floating-point numbers should be accepted."
+    )
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert value == pytest.approx(expected_value), (
+                f"Expected {expected_value}, got {value}"
+            )
 
 
 @pytest.mark.parametrize(
@@ -502,21 +503,21 @@ def test_number_acceptor(
         end_states=[3],
     )
 
-    walkers = sm.get_walkers()
-    walkers = [walker for _, walker in sm.advance_all(walkers, "Value: ")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in sm.advance_all(walkers, str(value))]
+    steppers = sm.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, "Value: ")
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, str(value))
 
-    assert len(walkers) == 4, "Should have four walkers."
+    assert len(steppers) == 4, "Should have four steppers."
     if followup_value is not None:
-        walkers = [walker for _, walker in sm.advance_all(walkers, str(followup_value))]
+        steppers = state_machine.advance_all_basic(steppers, str(followup_value))
 
-    walkers = [walker for _, walker in sm.advance_all(walkers, "!")]
-    assert any(walker.has_reached_accept_state() for walker in walkers)
+    steppers = state_machine.advance_all_basic(steppers, "!")
+    assert any(stepper.has_reached_accept_state() for stepper in steppers)
 
-    for walker in walkers:
-        if walker.has_reached_accept_state():
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
             assert (
-                walker.get_current_value()
-                == f"Value: {str(value) + str(followup_value or "")}!"
+                stepper.get_current_value()
+                == f"Value: {str(value) + str(followup_value or '')}!"
             )

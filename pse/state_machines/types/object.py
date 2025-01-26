@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from pse_core import State
+from pse_core import StateId
 from pse_core.state_machine import StateMachine
-from pse_core.walker import Walker
+from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
@@ -23,9 +23,8 @@ class ObjectStateMachine(StateMachine):
     and maintaining the current object properties being parsed.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, is_optional: bool = False) -> None:
         """
-        Initialize the ObjectAcceptor with a predefined state transition graph.
 
         Sets up the state transition graph for parsing JSON objects.
         """
@@ -36,7 +35,6 @@ class ObjectStateMachine(StateMachine):
                 ],
                 1: [
                     (WhitespaceStateMachine(), 2),
-                    (PhraseStateMachine("}"), "$"),  # Empty object
                 ],
                 2: [
                     (KeyValueStateMachine(), 3),
@@ -53,47 +51,45 @@ class ObjectStateMachine(StateMachine):
                     ),
                     (PhraseStateMachine("}"), "$"),  # End of object
                 ],
-            }
+            },
+            is_optional=is_optional,
         )
 
-    def get_new_walker(self, state: State | None = None) -> ObjectWalker:
-        return ObjectWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> ObjectStepper:
+        return ObjectStepper(self, state)
+
+    def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
+        transitions = super().get_transitions(stepper)
+        if stepper.current_state == 1 and self.is_optional:
+            for transition in PhraseStateMachine("}").get_steppers():
+                transitions.append((transition, "$"))
+        return transitions
 
     def __str__(self) -> str:
         return "Object"
 
 
-class ObjectWalker(Walker):
-    """
-    Walker for ObjectAcceptor that maintains the current state and accumulated key-value pairs.
-    """
-
+class ObjectStepper(Stepper):
     def __init__(
-        self, state_machine: ObjectStateMachine, current_state: State | None = None
+        self, state_machine: ObjectStateMachine, current_state: StateId | None = None
     ) -> None:
-        """
-        Initialize the ObjectAcceptor.Walker with the parent state_machine and an empty dictionary.
-
-        Args:
-            state_machine (ObjectAcceptor): The parent ObjectAcceptor instance.
-        """
         super().__init__(state_machine, current_state)
         self.value: dict[str, Any] = {}
 
-    def clone(self) -> ObjectWalker:
-        cloned_walker = super().clone()
-        cloned_walker.value = self.value.copy()
-        return cloned_walker
+    def clone(self) -> ObjectStepper:
+        cloned_stepper = super().clone()
+        cloned_stepper.value = self.value.copy()
+        return cloned_stepper
 
     def is_within_value(self) -> bool:
-        return self.current_state == 3
+        return self.consumed_character_count > 0
 
-    def add_to_history(self, walker: Walker) -> None:
-        if self.is_within_value():
-            prop_name, prop_value = walker.get_current_value()
+    def add_to_history(self, stepper: Stepper) -> None:
+        if self.current_state == 3:
+            prop_name, prop_value = stepper.get_current_value()
             logger.debug(f"🟢 Adding {prop_name}: {prop_value} to {self.value}")
             self.value[prop_name] = prop_value
-        super().add_to_history(walker)
+        super().add_to_history(stepper)
 
     def get_current_value(self) -> dict[str, Any]:
         """

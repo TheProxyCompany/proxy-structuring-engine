@@ -16,17 +16,19 @@ from pse.state_machines.types.key_value import KeyValueStateMachine
 )
 def test_property_parsing(input_string, expected_name, expected_value):
     sm = KeyValueStateMachine()
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     for char in input_string:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    accepted_walkers = [
-        walker for walker in walkers if walker.has_reached_accept_state()
+    accepted_steppers = [
+        stepper for stepper in steppers if stepper.has_reached_accept_state()
     ]
-    assert accepted_walkers, f"No walker reached an accepted state for: {input_string}"
+    assert accepted_steppers, (
+        f"No stepper reached an accepted state for: {input_string}"
+    )
 
-    for walker in accepted_walkers:
-        name, value = walker.get_current_value()
+    for stepper in accepted_steppers:
+        name, value = stepper.get_current_value()
         assert name == expected_name
         assert value == expected_value
 
@@ -43,10 +45,10 @@ def test_property_parsing(input_string, expected_name, expected_value):
 )
 def test_invalid_property_formats(invalid_input):
     sm = KeyValueStateMachine()
-    walkers = sm.get_walkers()
+    steppers = sm.get_steppers()
     for char in invalid_input:
-        walkers = [walker for _, walker in StateMachine.advance_all(walkers, char)]
+        steppers = sm.advance_all_basic(steppers, char)
 
-    assert not any(
-        walker.has_reached_accept_state() for walker in walkers
-    ), f"Walker should not reach accepted state for invalid input: {invalid_input}"
+    assert not any(stepper.has_reached_accept_state() for stepper in steppers), (
+        f"Stepper should not reach accepted state for invalid input: {invalid_input}"
+    )

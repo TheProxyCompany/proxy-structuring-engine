@@ -4,24 +4,20 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from pse_core import State
+from pse_core import StateId
 
 from pse.state_machines import get_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueWalker
+from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueStepper
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
 class KeyValueSchemaStateMachine(KeyValueStateMachine):
     """
-    Acceptor for an object property according to the schema.
-
     Args:
         prop_name (str): The name of the property.
         prop_schema (Dict[str, Any]): The schema of the property.
         context (Dict[str, Any]): The parsing context.
-        value_started_hook (Callable | None, optional): Hook called when value parsing starts.
-        value_ended_hook (Callable | None, optional): Hook called when value parsing ends.
     """
 
     def __init__(
@@ -29,8 +25,6 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
         prop_name: str,
         prop_schema: dict[str, Any],
         context: dict[str, Any],
-        value_started_hook: Callable | None = None,
-        value_ended_hook: Callable | None = None,
     ):
         self.prop_name = prop_name
         self.prop_schema = prop_schema
@@ -44,38 +38,29 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
                 WhitespaceStateMachine(max_whitespace=10),
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(max_whitespace=10),
-                get_state_machine(
-                    self.prop_schema,
-                    self.prop_context,
-                    value_started_hook,
-                    value_ended_hook,
-                ),
+                get_state_machine(self.prop_schema, self.prop_context),
             ],
         )
 
-    def get_new_walker(self, state: State | None = None) -> KeyValueSchemaWalker:
-        return KeyValueSchemaWalker(self, state)
+    def get_new_stepper(self, state: StateId | None = None) -> KeyValueSchemaStepper:
+        return KeyValueSchemaStepper(self, state)
 
     @property
     def is_optional(self) -> bool:
         return super().is_optional or self.prop_schema.get("nullable", False)
 
 
-class KeyValueSchemaWalker(KeyValueWalker):
-    """
-    Walker for PropertySchemaAcceptor
-    """
-
+class KeyValueSchemaStepper(KeyValueStepper):
     def __init__(
         self,
         state_machine: KeyValueSchemaStateMachine,
-        current_state: State | None = None,
+        current_state: StateId | None = None,
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: KeyValueSchemaStateMachine = state_machine
 
-    def should_complete_transition(self) -> bool:
-        if not super().should_complete_transition():
+    def should_complete_step(self) -> bool:
+        if not super().should_complete_step():
             return False
 
         hooks: dict[str, Callable] = self.state_machine.prop_schema.get("__hooks", {})

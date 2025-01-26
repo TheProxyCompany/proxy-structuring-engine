@@ -27,17 +27,17 @@ def parse_array(state_machine: ArraySchemaStateMachine, json_string: str) -> lis
     Raises:
         ValueError: If the JSON array is invalid or does not meet schema constraints.
     """
-    walkers = list(state_machine.get_walkers())
+    steppers = list(state_machine.get_steppers())
     for char in json_string:
-        walkers = [walker for _, walker in state_machine.advance_all(walkers, char)]
-    if not any(walker.has_reached_accept_state() for walker in walkers):
+        steppers = state_machine.advance_all_basic(steppers, char)
+    if not any(stepper.has_reached_accept_state() for stepper in steppers):
         raise ValueError(
             "Invalid JSON array or schema constraints not met.", len(json_string)
         )
     parsed_value = next(
-        walker.get_current_value()
-        for walker in walkers
-        if walker.has_reached_accept_state()
+        stepper.get_current_value()
+        for stepper in steppers
+        if stepper.has_reached_accept_state()
     )
     return parsed_value
 
@@ -101,9 +101,9 @@ def test_array_parsing_success(schema, json_array, expected, base_context):
     """
     state_machine = ArraySchemaStateMachine(schema, base_context)
     parsed_array = parse_array(state_machine, json_array)
-    assert (
-        parsed_array == expected
-    ), f"Array {json_array} should be parsed as {expected}."
+    assert parsed_array == expected, (
+        f"Array {json_array} should be parsed as {expected}."
+    )
 
 
 @pytest.mark.parametrize(
@@ -150,22 +150,23 @@ def test_array_schema_str(base_context):
         "minItems": 1,
     }
     state_machine = ArraySchemaStateMachine(schema, base_context)
-    walkers = state_machine.get_walkers()
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '["')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, 'a')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, 'b')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, 'c')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, 'd')]
-    assert len(walkers) == 3
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"]')]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert isinstance(walkers[0].get_current_value(), list)
-    assert len(walkers[0].get_current_value()) == 1
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, '["')
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, "a")
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, "b")
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, "c")
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, "d")
+    assert len(steppers) == 3
+    steppers = state_machine.advance_all_basic(steppers, '"]')
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert isinstance(steppers[0].get_current_value(), list)
+    assert len(steppers[0].get_current_value()) == 1
+
 
 def test_array_schema_multiple_str(base_context):
     """
@@ -178,21 +179,21 @@ def test_array_schema_multiple_str(base_context):
         "maxItems": 3,
     }
     state_machine = ArraySchemaStateMachine(schema, base_context)
-    walkers = state_machine.get_walkers()
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '[')]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"test1",')]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"test2",')]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, '"test3"')]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, " ")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, " ")]
-    assert len(walkers) == 2
-    walkers = [walker for _, walker in state_machine.advance_all(walkers, ']')]
-    assert len(walkers) == 1
-    assert walkers[0].has_reached_accept_state()
-    assert isinstance(walkers[0].get_current_value(), list)
-    assert len(walkers[0].get_current_value()) == 3
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, "[")
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, '"test1",')
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, '"test2",')
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, '"test3"')
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, " ")
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, " ")
+    assert len(steppers) == 2
+    steppers = state_machine.advance_all_basic(steppers, "]")
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+    assert isinstance(steppers[0].get_current_value(), list)
+    assert len(steppers[0].get_current_value()) == 3
