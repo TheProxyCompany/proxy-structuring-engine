@@ -108,7 +108,7 @@ class StructuringEngine(Engine):
 
     def configure(
         self,
-        schema: StructureType,
+        schema: StructureType | None = None,
         delimiters: tuple[str, str] | None = None,
         buffer_length: int = -1,
     ) -> None:
@@ -126,6 +126,8 @@ class StructuringEngine(Engine):
             - buffer_length > 0: Buffer must reach specified length before validation
             - If delimiters are provided, the buffer length is ignored.
         """
+        if schema is None:
+            return
 
         self.schema = self.get_schema_object(schema)
         self.state_machine = get_state_machine(self.schema)

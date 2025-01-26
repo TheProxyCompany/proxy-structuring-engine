@@ -181,6 +181,8 @@ def _get_json_type(py_type: Any) -> str:
         float: "number",
         list: "array",
         dict: "object",
+        tuple: "array",
+        set: "set",
         type(None): "null",
     }
 

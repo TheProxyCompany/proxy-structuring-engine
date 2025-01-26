@@ -62,6 +62,8 @@ def _get_state_machine(
     schema: dict[str, Any],
     context: dict[str, Any]
 ) -> StateMachine:
+    from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
+    from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
 
     # handle nullable
     if schema.get("nullable"):
@@ -115,12 +117,13 @@ def _get_state_machine(
         else:
             state_machine = StringSchemaStateMachine(schema)
     elif schema_type == "object" and "properties" in schema:
-        from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
         state_machine = ObjectSchemaStateMachine(schema, context)
     elif schema_type == "array" and "items" in schema:
-        from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
         state_machine = ArraySchemaStateMachine(schema, context)
-    elif schema_type == "array":
+    elif schema_type == "set":
+        schema["uniqueItems"] = True
+        state_machine = ArraySchemaStateMachine(schema, context)
+    elif schema_type == "array" or schema_type == "tuple":
         state_machine = ArrayStateMachine()
     elif schema_type == "object":
         state_machine = ObjectStateMachine()

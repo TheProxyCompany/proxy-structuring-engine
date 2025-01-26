@@ -90,6 +90,12 @@ class ArraySchemaStateMachine(ArrayStateMachine):
         """
         return self.schema.get("maxItems", 2**32)
 
+    def unique_items(self) -> bool:
+        """
+        Returns whether the items in the array must be unique, according to the schema
+        """
+        return self.schema.get("uniqueItems", False)
+
     def __str__(self) -> str:
         return super().__str__() + "Schema"
 
@@ -104,3 +110,14 @@ class ArraySchemaStepper(ArrayStepper):
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: ArraySchemaStateMachine = state_machine
+
+    def add_to_history(self, stepper: Stepper) -> None:
+        """
+        Adds an item to the array.
+        """
+        item = stepper.get_current_value()
+        if self.state_machine.unique_items() and self.is_within_value():
+            if item in self.value:
+                return
+
+        super().add_to_history(stepper)
