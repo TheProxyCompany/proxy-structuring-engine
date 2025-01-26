@@ -1,7 +1,9 @@
 import json
+from collections.abc import Callable
 from typing import Any
 
 from pse_core.state_machine import StateMachine
+from pydantic import BaseModel
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
@@ -13,10 +15,11 @@ from pse.state_machines.types.array import ArrayStateMachine
 from pse.state_machines.types.boolean import BooleanStateMachine
 from pse.state_machines.types.enum import EnumStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
+from pse.util.generate_schema import callable_to_json_schema, pydantic_to_json_schema
 
 
 def get_state_machine(
-    schema: dict[str, Any],
+    schema: dict[str, Any] | type[BaseModel] | Callable[..., Any],
     context: dict[str, Any] | None = None,
     delimiters: tuple[str, str] | None = None,
     buffer_length: int = -1,
@@ -36,6 +39,11 @@ def get_state_machine(
     """
     if context is None:
         context = {"defs": {"#": schema}, "path": ""}
+
+    if isinstance(schema, type) and issubclass(schema, BaseModel):
+        schema = pydantic_to_json_schema(schema)
+    elif callable(schema):
+        schema = callable_to_json_schema(schema)
 
     state_machine = _get_state_machine(schema, context)
     if delimiters:

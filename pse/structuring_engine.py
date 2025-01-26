@@ -13,6 +13,7 @@ from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 from pse.state_machines import get_state_machine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitFor
+from pse.util.generate_schema import callable_to_json_schema, pydantic_to_json_schema
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
@@ -40,14 +41,12 @@ class EngineOutput[T]:
 
 class StructuringEngine(Engine):
 
-    SchemaType: TypeAlias = type[BaseModel] | list[type[BaseModel]] | dict[str, Any] | list[dict[str, Any]]
+    StructureType: TypeAlias = type[BaseModel] | list[type[BaseModel]] | dict[str, Any] | list[dict[str, Any]] | Callable[..., Any]
     """
     The types of objects that the engine can use as a schema.
     """
 
-    def __init__(
-        self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase
-    ) -> None:
+    def __init__(self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
@@ -109,7 +108,7 @@ class StructuringEngine(Engine):
 
     def configure(
         self,
-        schema: SchemaType,
+        schema: StructureType,
         delimiters: tuple[str, str] | None = None,
         buffer_length: int = -1,
     ) -> None:
@@ -216,7 +215,7 @@ class StructuringEngine(Engine):
 
 
     @staticmethod
-    def get_schema_object(schema: SchemaType) -> dict[str, Any]:
+    def get_schema_object(schema: StructureType) -> dict[str, Any]:
         """
         Convert the given schema into an object that can be used by the engine.
         """
@@ -224,7 +223,7 @@ class StructuringEngine(Engine):
             if all(isinstance(s, type) and issubclass(s, BaseModel) for s in schema):
                 return {
                     "oneOf": [
-                        s.model_json_schema()
+                        pydantic_to_json_schema(s)
                         for s in schema
                         if isinstance(s, type) and issubclass(s, BaseModel)
                     ]
@@ -232,7 +231,9 @@ class StructuringEngine(Engine):
             else:
                 return {"oneOf": schema}
         elif isinstance(schema, type) and issubclass(schema, BaseModel):
-            return schema.model_json_schema()
+            return pydantic_to_json_schema(schema)
+        elif callable(schema):
+            return callable_to_json_schema(schema)
         elif isinstance(schema, dict):
             if "schema" in schema:
                 return schema["schema"]
