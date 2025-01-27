@@ -302,46 +302,13 @@ def test_logits_processing(engine: StructuringEngine) -> None:
         assert mx.allclose(adjusted_logits, expected_score)
 
 
-# @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
-# def test_real_world_logits_processing(engine: StructuringEngine) -> None:
-#     """Test that the logits processing is working correctly."""
-#     import mlx.core as mx
-
-#     scores = generate_mock_logits(
-#         engine,
-#         {
-#             "val": 10.0,
-#             "type": 3.0,
-#             "value": 8.0,
-#             "validate": 4.0,
-#             "required": 1.0,
-#             "values": 1.0,
-#             '"': 1.0,
-#         },
-#         mx.bfloat16,
-#     )
-
-#     schema = {
-#         "type": "object",
-#         "properties": {"value": {"type": "number"}},
-#         "required": ["value"],
-#         "additionalProperties": False,
-#     }
-#     engine.configure(schema, wrap_with_delimiters=False, wait_for_acceptor=True)
-#     engine.consume_text('Sure, here is the response: {"')
-#     assert not engine.has_reached_accept_state
-#     adjusted_logits = engine(scores)
-#     expected_score = generate_mock_logits(
-#         engine,
-#         {
-#             "val": 10.0,
-#             "type": float("-inf"),
-#             "value": 8.0,
-#             "validate": 4.0,
-#             "values": 1.0,
-#             '"': 1.0,
-#         },
-#         mx.bfloat16,
-#     )
-#     expected_scores_match = mx.allclose(adjusted_logits, expected_score)
-#     assert expected_scores_match
+def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> None:
+    """Test that the wait for acceptor is working correctly with a min buffer length."""
+    engine.configure({"const": "Hello World!"}, None, 10)
+    engine.tokenizer.encode('"Hello', add_special_tokens=False)
+    engine.consume_text("Sure, here is the response: ")
+    assert len(engine.steppers) == 1
+    assert not engine.has_reached_accept_state
+    engine.consume_text('"Hello')
+    assert len(engine.steppers) == 1
+    assert not engine.has_reached_accept_state

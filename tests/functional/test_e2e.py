@@ -139,6 +139,7 @@ def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine
                     "type": "array",
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
+                    "minItems": 1,
                 },
                 "attributes": {
                     "type": "array",
@@ -169,7 +170,7 @@ def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine
     )
     engine.configure(schema, buffer_length=0)
     generate(raw_prompt, model, engine)
-    for output in engine.read_output(dict):
+    for output in engine.read_output():
         assert output.value["type"] == "div"
         assert len(output.value["children"]) == 1
 
@@ -230,7 +231,7 @@ def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine])
     )
     engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    for output in engine.read_output(dict):
+    for output in engine.read_output():
         assert output.value["name"] == "metacognition"
 
 
@@ -271,7 +272,7 @@ def test_schema_web_search(
         " Please use the web_search schema to find popular favoirte pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
-    for output in engine.read_output(dict):
+    for output in engine.read_output():
         assert output.value["name"] == "web_search"
         assert output.value["arguments"]["query"] == "popular favorite Pokémon"
         assert output.value["arguments"]["max_results"] is not None

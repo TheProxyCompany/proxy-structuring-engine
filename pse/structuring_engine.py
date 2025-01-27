@@ -81,24 +81,24 @@ class StructuringEngine(Engine):
 
     def process_logits(self, scores: LogitType) -> LogitType:
         self.multi_token_mapping: dict[int, list[int]] = {}
-        self.print_logits(scores, 10, "🔵 Before")
+        logger.debug(self.chart_model_output(scores, 3, "🔵 Before processing"))
         tic = time.perf_counter()
         adjusted_logits = super().process_logits(scores)
         toc = time.perf_counter()
-        self.print_logits(adjusted_logits, 10, "🟢 After")
+        logger.debug(self.chart_model_output(adjusted_logits, 3, "🟢 After processing"))
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(
-        self, logprobs: object, sampler: Callable[..., object], **kwargs
-    ) -> list[int]:
+    def sample(self, logprobs: object, sampler: Callable[..., object], **kwargs) -> list[int]:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
         """
         logger.debug(f"Sampling with kwargs: {kwargs}")
         tic = time.perf_counter()
+        logger.debug(self.chart_model_output(logprobs, 3, "🔵 Before sampling"))
         token = super().sample(logprobs, sampler, **kwargs)
+        logger.debug(self.chart_model_output(logprobs, 3, "🟢 After sampling"))
         toc = time.perf_counter()
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
         decoded_token = self.tokenizer.decode(token)
@@ -148,41 +148,6 @@ class StructuringEngine(Engine):
         """
         self.steppers = self.state_machine.get_steppers()
 
-    def print_logits(self, scores: Any, top_n: int = 64, flag: str = "🔵") -> None:
-        """
-        Print the top logits for the given input and scores.
-        """
-        if logger.getEffectiveLevel() > logging.DEBUG:
-            return
-
-        rows = []
-        top_logits = get_top_logits(scores, top_n)
-
-        for token_id, score in top_logits.items():
-            # Get token from token_id using reverse vocabulary map
-            if not (token := self.reverse_vocabulary.get(token_id)):
-                logger.warning(f"Unknown token ID: {token_id}")
-                continue
-
-            if score == float("-inf"):
-                continue
-
-            if token_id in self.multi_token_mapping:
-                multiple_token_ids = self.multi_token_mapping[token_id]
-                token = repr(self.tokenizer.decode(multiple_token_ids)) + " *️⃣"
-            else:
-                token = repr(token)
-
-            rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
-
-        header = f"{'Token ID':<8} | {'Score':>10} | Token"
-        separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
-        chart = "\n".join([header, separator] + rows[:top_n])
-        if rows:
-            logger.debug(f"{flag} Top logits:\n{chart}")
-        else:
-            logger.debug(f"{flag} No valid tokens found")
-
     def read_output(self, output_type: OutputType | None = None) -> Iterable[EngineOutput[Any]] | Iterable[EngineOutput[OutputType]]:
         """
         Get the current value of the structuring engine.
@@ -207,10 +172,7 @@ class StructuringEngine(Engine):
                         value = output_type(value)
                     yield EngineOutput[output_type](buffer, value)
                 except Exception:
-                    breakpoint()
-                    logger.warning(
-                        f"Failed to validate/cast value {value} with type {output_type}"
-                    )
+                    logger.warning(f"Failed to validate/cast value {value} with type {output_type}")
 
             yield EngineOutput[type(value)](buffer, value)
 
@@ -240,3 +202,38 @@ class StructuringEngine(Engine):
                 return schema["schema"]
             else:
                 return schema
+
+    def chart_model_output(self, scores: Any, top_n: int = 10, flag: str = "🔵") -> str:
+        """
+        Print the top logits for the given input and scores.
+        """
+        if logger.getEffectiveLevel() > logging.DEBUG:
+            return ""
+
+        rows = []
+        top_logits = get_top_logits(scores, top_n)
+
+        for token_id, score in top_logits.items():
+            # Get token from token_id using reverse vocabulary map
+            if not (token := self.reverse_vocabulary.get(token_id)):
+                logger.warning(f"Unknown token ID: {token_id}")
+                continue
+
+            if score == float("-inf"):
+                continue
+
+            if token_id in self.multi_token_mapping:
+                multiple_token_ids = self.multi_token_mapping[token_id]
+                token = repr(self.tokenizer.decode(multiple_token_ids)) + " *️⃣"
+            else:
+                token = repr(token)
+
+            rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
+
+        header = f"{'Token ID':<8} | {'Score':>10} | Token"
+        separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
+        chart = "\n".join([header, separator] + rows[:top_n])
+        if rows:
+            return f"{flag}\n{chart}"
+        else:
+            return f"{flag} No valid tokens found"
