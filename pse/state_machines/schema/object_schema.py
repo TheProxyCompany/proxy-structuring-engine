@@ -3,11 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from pse_core import StateId
+from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.schema.key_value_schema import KeyValueSchemaStateMachine
+from pse.state_machines.types.key_value import KeyValueStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
@@ -22,21 +24,15 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         self.schema = schema
         self.context = context
         self.properties: dict[str, Any] = schema.get("properties", {})
+        self.required_property_names: list[str] = schema.get("required", [])
+        self.additional_properties: dict[str, Any] | bool = schema.get("additionalProperties", {})
+        if any(prop not in self.properties for prop in self.required_property_names):
+            raise ValueError("Required property not defined in schema")
 
-        # Determine if additional properties are allowed based on the schema
-        self.allow_additional_properties = (
-            schema.get("additionalProperties", True) is not False
-        )
-
-        # Validate required properties
-        self.required_property_names = schema.get("required", [])
-        undefined_required_properties = [
-            prop for prop in self.required_property_names if prop not in self.properties
-        ]
-        if undefined_required_properties:
-            raise ValueError(
-                f"Required properties not defined in schema: {', '.join(undefined_required_properties)}"
-            )
+        for prop, schema in self.properties.items():
+            if prop in self.required_property_names and schema:
+                if schema.get("nullable", False) or "default" in schema:
+                    self.required_property_names.remove(prop)
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
         """Retrieve transition steppers from the current state.
@@ -47,15 +43,10 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         value = stepper.get_current_value()
         transitions: list[tuple[Stepper, StateId]] = []
         if stepper.current_state == 2:
-            for prop_name, prop_schema in self.properties.items():
-                if prop_name not in value:
-                    property = KeyValueSchemaStateMachine(
-                        prop_name,
-                        prop_schema,
-                        self.context,
-                    )
-                    for transition in property.get_steppers():
-                        transitions.append((transition, 3))
+            for property in self.get_property_state_machines(value):
+                for transition in property.get_steppers():
+                    transitions.append((transition, 3))
+
         elif stepper.current_state == 4:
             if all(prop_name in value for prop_name in self.required_property_names):
                 for transition in PhraseStateMachine("}").get_steppers():
@@ -70,6 +61,31 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
             return super().get_transitions(stepper)
 
         return transitions
+
+    def get_property_state_machines(self, value: dict[str, Any]) -> list[StateMachine]:
+        property_state_machines: list[StateMachine] = []
+        for prop_name, prop_schema in self.properties.items():
+            if prop_name not in value:
+                property = KeyValueSchemaStateMachine(
+                    prop_name,
+                    prop_schema,
+                    self.context,
+                )
+                property_state_machines.append(property)
+
+        if all(prop_name in value for prop_name in self.required_property_names) and self.additional_properties:
+            # non-schema kv property to represent the additional properties
+            if isinstance(self.additional_properties, dict):
+                property = KeyValueSchemaStateMachine(
+                    None,
+                    self.additional_properties,
+                    self.context,
+                )
+            else:
+                property = KeyValueStateMachine()
+            property_state_machines.append(property)
+
+        return property_state_machines
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ObjectSchemaStateMachine):

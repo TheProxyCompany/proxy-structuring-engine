@@ -19,7 +19,9 @@ try:
 
     from pse.util.generate_mlx import generate as generate_mlx
 except ImportError:
-    pytest.skip("mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True)
+    pytest.skip(
+        "mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True
+    )
 
 
 class UiType(str, Enum):
@@ -72,7 +74,7 @@ def generate_local_pse(prompt: str, schema: Any) -> tuple[Any, float]:
 
     start_time = timeit.default_timer()
     generate_mlx(prompt, model, engine)
-    for output in engine.read_output():
+    for output in engine.output():
         end_time = timeit.default_timer()
         total_time = end_time - start_time
         return output.value, total_time
@@ -209,6 +211,7 @@ def test_simple_json_object(generator_name: str, generator_func: Callable) -> No
         logger.info(f"✅ {generator_name}: {timing:.4f}s")
     except Exception as e:
         pytest.fail(f"❌ {generator_name} benchmark failed with error: {e}")
+
 
 if __name__ == "__main__":
     pytest.main()

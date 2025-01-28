@@ -135,7 +135,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     schema1 = {
         "type": "object",
         "properties": {
-            "name": {"type": "const", "const": "send_message"},
+            "name": {"const": "send_message"},
             "arguments": {
                 "type": "object",
                 "properties": {
@@ -152,7 +152,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     schema2 = {
         "type": "object",
         "properties": {
-            "name": {"type": "const", "const": "metacognition"},
+            "name": {"const": "metacognition"},
             "arguments": {
                 "type": "object",
                 "properties": {
@@ -162,10 +162,9 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
                         "description": "A sequence of high-level thoughts, reasoning, and internal dialogue.\nIncludes complex ideas, strategic considerations, and conceptual frameworks.\nSupports all Unicode characters, including emojis.",
                     },
                     "feelings": {
-                        "type": ["string"],
+                        "type": "string",
                         "description": "A reflection of the agent's emotional state.\nSupports all Unicode characters, including emojis.",
                         "nullable": True,
-                        "default": None,
                     },
                 },
                 "required": ["chain_of_thought"],
@@ -200,7 +199,7 @@ def test_edge_case_1(
             {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "const", "const": "send_message"},
+                    "name": {"const": "send_message"},
                     "arguments": {
                         "type": "object",
                         "properties": {
@@ -228,7 +227,9 @@ def test_edge_case_1(
     assert advanced_token is not None
     assert advanced_token == token_ids
 
-    followup_token_ids = engine.tokenizer.encode(str(followup_value), add_special_tokens=False)
+    followup_token_ids = engine.tokenizer.encode(
+        str(followup_value), add_special_tokens=False
+    )
     advanced_token = engine.consume_tokens(followup_token_ids)
     assert advanced_token is not None
     assert advanced_token == followup_token_ids
@@ -239,7 +240,7 @@ def test_edge_case_1(
     assert advanced_token == final_token_ids
 
     assert engine.has_reached_accept_state
-    for final_value in engine.read_output(dict):
+    for final_value in engine.output(dict):
         assert not final_value.buffer
         assert final_value.value == {
             "name": "send_message",

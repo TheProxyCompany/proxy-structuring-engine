@@ -82,10 +82,10 @@ class EncapsulatedStepper(Stepper):
         return clone
 
     def is_within_value(self) -> bool:
-        return (
-            self.sub_stepper is not None
-            and self.sub_stepper.state_machine == self.state_machine.inner_state_machine
-        )
+        within_value = self.current_state == 1
+        if self.sub_stepper:
+            within_value = within_value or self.sub_stepper.is_within_value()
+        return within_value
 
     def add_to_history(self, stepper: Stepper) -> None:
         if self.current_state == 2:

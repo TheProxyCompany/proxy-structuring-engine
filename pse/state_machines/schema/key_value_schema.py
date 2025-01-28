@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from typing import Any
 
 from pse_core import StateId
 
-from pse.state_machines import get_state_machine
+from pse.state_machines import schema_to_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueStepper
+from pse.state_machines.types.string import StringStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
 
 
@@ -22,7 +22,7 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
 
     def __init__(
         self,
-        prop_name: str,
+        prop_name: str | None,
         prop_schema: dict[str, Any],
         context: dict[str, Any],
     ):
@@ -32,13 +32,18 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
             "defs": context.get("defs", {}),
             "path": f"{context.get('path', '')}/{prop_name}",
         }
+        key_state_machine = (
+            PhraseStateMachine(json.dumps(self.prop_name))
+            if self.prop_name
+            else StringStateMachine()
+        )
         super().__init__(
             [
-                PhraseStateMachine(json.dumps(self.prop_name)),
+                key_state_machine,
                 WhitespaceStateMachine(max_whitespace=10),
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(max_whitespace=10),
-                get_state_machine(self.prop_schema, self.prop_context),
+                schema_to_state_machine(self.prop_schema, self.prop_context),
             ],
         )
 
@@ -58,20 +63,3 @@ class KeyValueSchemaStepper(KeyValueStepper):
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: KeyValueSchemaStateMachine = state_machine
-
-    def should_complete_step(self) -> bool:
-        if not super().should_complete_step():
-            return False
-
-        hooks: dict[str, Callable] = self.state_machine.prop_schema.get("__hooks", {})
-        prop_name = self.state_machine.prop_name
-        if self.target_state == 4:
-            if "value_start" in hooks:
-                hooks["value_start"](prop_name)
-        elif self.target_state and self.target_state in self.state_machine.end_states:
-            if "value_end" in hooks:
-                hooks["value_end"](prop_name, self.prop_value)
-        return True
-
-    def get_current_value(self):
-        return (self.state_machine.prop_name, self.prop_value)

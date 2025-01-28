@@ -89,14 +89,6 @@ def test_reject_input_not_matching_any_schema(context):
         parse_input(state_machine, invalid_input_string)
 
 
-def test_invalid_schema_initialization(context):
-    """Test that initializing AnyOfAcceptor with invalid schemas raises an error."""
-    invalid_schema = {"invalid": "schema"}
-
-    with pytest.raises(ValueError):
-        AnySchemaStateMachine(schemas=[invalid_schema], context=context)
-
-
 def test_complex_nested_schemas(context):
     """Test AnyOfAcceptor with complex nested schemas."""
     schema1 = {

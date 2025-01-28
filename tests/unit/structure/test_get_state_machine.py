@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from pse.state_machines import get_state_machine
+from pse.state_machines import build_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
 from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
@@ -59,7 +59,7 @@ def test_get_acceptor_schema_types(
     context: dict[str, Any],
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
-    state_machine = get_state_machine(schema, context)
+    state_machine = build_state_machine(schema, context)
     assert isinstance(state_machine, expected_acceptor_cls), (
         f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
     )
@@ -85,7 +85,7 @@ def context_with_definition() -> dict[str, Any]:
 def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
-    state_machine = get_state_machine(schema, context_with_definition)
+    state_machine = build_state_machine(schema, context_with_definition)
     assert isinstance(
         state_machine,
         ObjectSchemaStateMachine,

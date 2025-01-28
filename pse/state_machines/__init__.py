@@ -1,5 +1,5 @@
 import json
-from collections.abc import Callable
+import logging
 from typing import Any
 
 from pse_core.state_machine import StateMachine
@@ -14,38 +14,43 @@ from pse.state_machines.schema.string_schema import StringSchemaStateMachine
 from pse.state_machines.types.array import ArrayStateMachine
 from pse.state_machines.types.boolean import BooleanStateMachine
 from pse.state_machines.types.enum import EnumStateMachine
+from pse.state_machines.types.json import JsonStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
-from pse.util.generate_schema import callable_to_json_schema, pydantic_to_json_schema
+from pse.structures import SchemaType
+from pse.structures.function import callable_to_schema
+from pse.structures.pydantic import pydantic_to_schema
 
+logger = logging.getLogger(__name__)
 
-def get_state_machine(
-    schema: dict[str, Any] | type[BaseModel] | Callable[..., Any],
+def build_state_machine(
+    schema: SchemaType,
     context: dict[str, Any] | None = None,
     delimiters: tuple[str, str] | None = None,
     buffer_length: int = -1,
 ) -> StateMachine:
     """
-    Create a state_machine to validate input based on the provided schema.
+    Build a state_machine based on the provided schema.
 
     Args:
-        schema (Dict[str, Any]): The schema to validate against.
-        context (Optional[Dict[str, Any]]): Contextual information for schema definitions and path.
-            Defaults to {"defs": defaultdict(dict), "path": ""}.
-        delimiters (Optional[Tuple[str, str]]): The delimiters to use for encapsulation.
-        buffer_length (int): The length of the buffer to use for encapsulation.
+        structure (SchemaType): The schema to validate against.
+        context (dict[str, Any] | None): Contextual information for schema definitions and path.
+        delimiters (tuple[str, str] | None): The delimiters to indicate the start and end of the schema.
+        buffer_length (int): The buffer size before enforcing the schema.
 
     Returns:
-        StateMachine: An state_machine that validates input based on the schema.
+        StateMachine: An state_machine based on the schema.
     """
     if context is None:
         context = {"defs": {"#": schema}, "path": ""}
 
     if isinstance(schema, type) and issubclass(schema, BaseModel):
-        schema = pydantic_to_json_schema(schema)
+        schema = pydantic_to_schema(schema)
     elif callable(schema):
-        schema = callable_to_json_schema(schema)
+        schema = callable_to_schema(schema)
+    else:
+        assert isinstance(schema, dict)
 
-    state_machine = _get_state_machine(schema, context)
+    state_machine = schema_to_state_machine(schema, context)
     if delimiters:
         return EncapsulatedStateMachine(
             state_machine,
@@ -58,18 +63,14 @@ def get_state_machine(
         return state_machine
 
 
-def _get_state_machine(
-    schema: dict[str, Any],
-    context: dict[str, Any]
-) -> StateMachine:
+def schema_to_state_machine(schema: dict[str, Any], context: dict[str, Any]) -> StateMachine:
     from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
     from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
 
     # handle nullable
     if schema.get("nullable"):
-        non_nullable_schema: dict[str, Any] = schema.copy()
-        del non_nullable_schema["nullable"]
-        return AnySchemaStateMachine([{"type": "null"}, non_nullable_schema], context)
+        del schema["nullable"]
+        return AnySchemaStateMachine([{"type": "null"}, schema], context)
 
     # handle $defs
     if "$defs" in schema:
@@ -78,30 +79,28 @@ def _get_state_machine(
             context["defs"][f"#/$defs{context['path']}/{def_name}"] = def_schema
             context["defs"][f"#/$defs/{def_name}"] = def_schema
 
-    # resolve subschemas
-    schemas = resolve_subschemas(schema, context["defs"], {})
-    if len(schemas) == 1:
-        schema = schemas[0]
-    else:
-        return AnySchemaStateMachine(schemas, context)
+    processed_schema = process_schema(schema, context["defs"], {})
 
-    if "not" in schema:
-        raise ValueError("The 'not' keyword is not supported due to limitations with autoregressive generation.")
+    if len(processed_schema) > 1:
+        return AnySchemaStateMachine(processed_schema, context)
+    elif not processed_schema:
+        raise ValueError("no schemas found")
 
-    schema_type: Any | None = schema.get("type")
-
+    schema = processed_schema[0]
+    schema_type = schema.get("type", None)
     if isinstance(schema_type, list):
         merged_schemas: list[dict[str, Any]] = [
             {**schema, "type": type_} for type_ in schema_type
         ]
         return AnySchemaStateMachine(merged_schemas, context)
 
-    # Infer schema type based on properties if not explicitly defined
-    if schema_type is None:
+    if not schema_type:
         if "properties" in schema:
             schema_type = "object"
         elif "items" in schema:
             schema_type = "array"
+        else:
+            schema_type = "any"
 
     if schema_type == "boolean":
         state_machine = BooleanStateMachine()
@@ -128,43 +127,41 @@ def _get_state_machine(
     elif schema_type == "object":
         state_machine = ObjectStateMachine()
     else:
-        raise ValueError(f"unknown schema type: {schema}")
+        state_machine = JsonStateMachine()
 
     return state_machine
 
-
-def resolve_subschemas(
-    schema: dict[str, Any],
-    defs: dict[str, Any],
-    visited_refs: dict[str, Any],
+def process_schema(
+    schema: dict[str, Any] | None,
+    definitions: dict[str, dict[str, Any]],
+    visited: dict[str, list[dict[str, Any]]],
 ) -> list[dict[str, Any]]:
     """
-    Resolve references and combine subschemas within a JSON schema.
-
-    This function processes the JSON schema to resolve any "$ref" references
-    and combine schemas using combinators like "allOf", "anyOf", and "oneOf".
+    Resolve references and combine subschemas within a schema.
 
     Args:
-        schema (Dict[str, Any]): The JSON schema to resolve.
-        defs (dict[str, Any]): Definitions available for resolving "$ref" references.
-        visited_refs (dict[str, Any]): Tracks visited references to prevent infinite recursion.
+        schema (dict[str, Any]): The schema to resolve.
+        definitions (dict[str, dict[str, Any]]): Definitions available for resolving "$ref" references.
+        visited (dict[str, list[dict[str, Any]]]): Tracks visited schemas to prevent infinite recursion.
 
     Returns:
-        List[Dict[str, Any]]: A list of resolved subschemas.
-
-    Raises:
-        DefinitionNotFoundError: If a referenced definition is not found in defs.
+        list[dict[str, Any]]: A list of resolved subschemas.
     """
+    if schema is None:
+        return []
+
     if "$ref" in schema:
-        schema_ref: str = schema["$ref"]
-        if schema_ref in visited_refs:
-            return visited_refs[schema_ref]
-        schema_def: dict[str, Any] | None = defs.get(schema_ref)
-        if schema_def is None:
-            raise ValueError(f"definition not found: {schema_ref}")
-        visited_refs[schema_ref] = []
-        resolved: list[dict[str, Any]] = resolve_subschemas(schema_def, defs, visited_refs)
-        visited_refs[schema_ref].extend(resolved)
+        schema_reference: str = schema["$ref"]
+        if schema_reference in visited:
+            return visited[schema_reference]
+        else:
+            visited[schema_reference] = []
+
+        if schema_reference not in definitions:
+            raise ValueError(f"definition not found: {schema_reference}")
+
+        resolved = process_schema(definitions.get(schema_reference), definitions, visited)
+        visited[schema_reference] = resolved
         return resolved
 
     for key in ["allOf", "anyOf", "oneOf"]:
@@ -172,13 +169,17 @@ def resolve_subschemas(
             continue
 
         base_schema = {k: v for k, v in schema.items() if k != key}
-        base_schemas = resolve_subschemas(base_schema, defs, visited_refs)
+        base_schemas = process_schema(base_schema, definitions, visited)
         combined_schemas = base_schemas if key == "allOf" else []
 
         for subschema in schema[key]:
-            resolved_subschemas = resolve_subschemas(subschema, defs, visited_refs)
+            resolved_subschemas = process_schema(subschema, definitions, visited)
             if key == "allOf":
-                combined_schemas = [{**ms, **rs} for ms in combined_schemas for rs in resolved_subschemas]
+                combined_schemas = [
+                    {**ms, **rs}
+                    for ms in combined_schemas
+                    for rs in resolved_subschemas
+                ]
             else:
                 combined_schemas.extend([{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas])
 

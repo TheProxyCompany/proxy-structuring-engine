@@ -5,7 +5,7 @@ from typing import Any
 from pse_core import StateId
 from pse_core.stepper import Stepper
 
-from pse.state_machines import get_state_machine
+from pse.state_machines import schema_to_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.types.array import ArrayStateMachine, ArrayStepper
@@ -26,7 +26,7 @@ class ArraySchemaStateMachine(ArrayStateMachine):
                     (PhraseStateMachine("]"), "$"),
                 ],
                 2: [
-                    (get_state_machine(self.schema["items"], self.context), 3),
+                    (schema_to_state_machine(self.schema["items"], self.context), 3),
                 ],
                 3: [
                     (WhitespaceStateMachine(), 4),

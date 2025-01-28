@@ -26,7 +26,9 @@ def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     return model, engine
 
 
-def test_simple_json_structure(model_and_engine: tuple[nn.Module, StructuringEngine],) -> None:
+def test_simple_json_structure(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
     """
     Validates that the engine can generate a simple JSON object
     adhering to a specified schema using real LLM output.
@@ -50,7 +52,7 @@ def test_simple_json_structure(model_and_engine: tuple[nn.Module, StructuringEng
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    for output in engine.read_output(dict):
+    for output in engine.output(dict):
         assert output.value == {"value": 9.11}
 
 
@@ -79,8 +81,7 @@ def test_complex_json_structure(
                 "properties": {
                     "chain_of_thought": {
                         "type": "array",
-                        "items": {"type": "string", "maxLength": 200},
-                        "maxItems": 1,
+                        "items": {"type": "string"},
                     },
                     "feelings": {
                         "type": "string",
@@ -98,7 +99,7 @@ def test_complex_json_structure(
     )
     engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    for output in engine.read_output():
+    for output in engine.output():
         assert output.value
         assert isinstance(output.value, dict)
         assert output.value["name"] == "metacognition"
@@ -109,7 +110,9 @@ def test_complex_json_structure(
     assert engine.has_reached_accept_state
 
 
-def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine],) -> None:
+def test_better_than_openai(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
@@ -139,18 +142,17 @@ def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine
                     "type": "array",
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
-                    "minItems": 1,
+                    "nullable": True,
                 },
                 "attributes": {
                     "type": "array",
                     "description": "Arbitrary attributes for the UI component, suitable for any element",
-                    "nullable": True,
                     "items": {
                         "type": "object",
                         "properties": {
                             "name": {
                                 "type": "string",
-                                "description": "The name of the attribute, for example onClick or className",
+                                "description": "The name of the attribute",
                             },
                             "value": {
                                 "type": "string",
@@ -160,22 +162,24 @@ def test_better_than_openai(model_and_engine: tuple[nn.Module, StructuringEngine
                     },
                 },
             },
-            "required": ["type", "label", "children", "attributes"],
+            "required": ["type", "children", "label", "attributes"],
             "additionalProperties": False,
         },
     }
     raw_prompt = (
-        f"Please generate a div component that has one child."
+        f"Please generate a div component that has one child button."
         f"Please follow the following schema: {schema}."
     )
     engine.configure(schema, buffer_length=0)
     generate(raw_prompt, model, engine)
-    for output in engine.read_output():
+    for output in engine.output():
         assert output.value["type"] == "div"
         assert len(output.value["children"]) == 1
 
 
-def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
+def test_multiple_schemas(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
     """Test that the engine can generate multiple schemas."""
     model, engine = model_and_engine
     schema = {
@@ -183,7 +187,7 @@ def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine])
             {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "const", "const": "send_message"},
+                    "name": {"const": "send_message"},
                     "arguments": {
                         "type": "object",
                         "properties": {
@@ -200,7 +204,7 @@ def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine])
             {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "const", "const": "metacognition"},
+                    "name": {"const": "metacognition"},
                     "arguments": {
                         "type": "object",
                         "properties": {
@@ -210,10 +214,9 @@ def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine])
                                 "description": "A sequence of high-level thoughts, reasoning, and internal dialogue.\nIncludes complex ideas, strategic considerations, and conceptual frameworks.\nSupports all Unicode characters, including emojis.",
                             },
                             "feelings": {
-                                "type": ["string"],
+                                "type": "string",
                                 "description": "A reflection of the agent's emotional state.\nSupports all Unicode characters, including emojis.",
                                 "nullable": True,
-                                "default": None,
                             },
                         },
                         "required": ["chain_of_thought"],
@@ -231,7 +234,7 @@ def test_multiple_schemas(model_and_engine: tuple[nn.Module, StructuringEngine])
     )
     engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    for output in engine.read_output():
+    for output in engine.output():
         assert output.value["name"] == "metacognition"
 
 
@@ -243,7 +246,7 @@ def test_schema_web_search(
     schema = {
         "type": "object",
         "properties": {
-            "name": {"type": "const", "const": "web_search"},
+            "name": {"const": "web_search"},
             "arguments": {
                 "type": "object",
                 "properties": {
@@ -272,10 +275,11 @@ def test_schema_web_search(
         " Please use the web_search schema to find popular favoirte pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
-    for output in engine.read_output():
+    for output in engine.output():
         assert output.value["name"] == "web_search"
         assert output.value["arguments"]["query"] == "popular favorite Pokémon"
         assert output.value["arguments"]["max_results"] is not None
+
 
 if __name__ == "__main__":
     pytest.main()

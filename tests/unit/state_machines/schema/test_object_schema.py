@@ -291,7 +291,7 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
     schema = {
         "type": "object",
         "properties": {
-            "name": {"type": "const", "const": "send_message"},
+            "name": {"const": "send_message"},
             "arguments": {
                 "type": "object",
                 "properties": {
