@@ -5,7 +5,7 @@ import mlx.core as mx
 import mlx.nn as nn
 from mlx_lm.sample_utils import categorical_sampling
 
-from pse.structuring_engine import StructuringEngine
+from pse.structure.structuring_engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 

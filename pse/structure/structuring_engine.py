@@ -13,7 +13,7 @@ from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 from pse.state_machines import build_state_machine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitFor
-from pse.structures import SchemaType, get_schema
+from pse.structure import SchemaType, get_schema
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
@@ -129,12 +129,6 @@ class StructuringEngine(Engine):
 
         self.steppers = self.state_machine.get_steppers()
 
-    def reset(self) -> None:
-        """
-        Reset the state machine and steppers.
-        """
-        self.steppers = self.state_machine.get_steppers()
-
     def output(self, output_type: type[OutputType] | Any = Any) -> Iterator[EngineOutput[OutputType]]:
         """
         Get the current values of the structuring engine.
@@ -160,6 +154,19 @@ class StructuringEngine(Engine):
                     logger.warning(f"Failed to cast value {value} with type {output_type}")
 
             yield EngineOutput[OutputType](value, buffer)
+
+    def reset(self) -> None:
+        """
+        Reset the state machine and steppers.
+        """
+        self.steppers = self.state_machine.get_steppers()
+
+    @property
+    def in_accepted_state(self) -> bool:
+        """
+        Check if the state machine is in an accepted state.
+        """
+        return self.has_reached_accept_state
 
     def chart_model_output(self, scores: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
