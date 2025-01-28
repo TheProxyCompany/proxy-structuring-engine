@@ -10,7 +10,7 @@ from openai import OpenAI
 from outlines import generate, models
 from pydantic import BaseModel, Field
 
-from pse.structure.structuring_engine import StructuringEngine
+from pse.structure.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 

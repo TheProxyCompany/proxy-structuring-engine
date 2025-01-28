@@ -17,8 +17,8 @@ from pse.state_machines.types.enum import EnumStateMachine
 from pse.state_machines.types.json import JsonStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
 from pse.structure import SchemaType
-from pse.structure.function import callable_to_schema
-from pse.structure.pydantic import pydantic_to_schema
+from pse.structure.from_function import callable_to_schema
+from pse.structure.from_pydantic import pydantic_to_schema
 
 logger = logging.getLogger(__name__)
 

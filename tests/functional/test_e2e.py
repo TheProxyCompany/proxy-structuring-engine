@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from pse.structure.structuring_engine import StructuringEngine
+from pse.structure.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 

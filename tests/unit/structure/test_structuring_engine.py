@@ -8,7 +8,7 @@ try:
 except ImportError:
     _has_mlx = False
 
-from pse.structure.structuring_engine import StructuringEngine
+from pse.structure.engine import StructuringEngine
 
 
 @pytest.fixture(scope="module")

@@ -17,22 +17,25 @@ from pse.state_machines.types.whitespace import WhitespaceStateMachine
 class ObjectSchemaStateMachine(ObjectStateMachine):
     def __init__(
         self,
-        schema: dict[str, Any],
+        property_schema: dict[str, Any],
         context: dict[str, Any],
     ):
-        super().__init__(is_optional=schema.get("nullable", False))
-        self.schema = schema
+        self.schema = property_schema
         self.context = context
-        self.properties: dict[str, Any] = schema.get("properties", {})
-        self.required_property_names: list[str] = schema.get("required", [])
-        self.additional_properties: dict[str, Any] | bool = schema.get("additionalProperties", {})
+        self.properties: dict[str, Any] = property_schema.get("properties", {})
+        self.required_property_names: list[str] = property_schema.get("required", [])
+        self.additional_properties: dict[str, Any] | bool = property_schema.get("additionalProperties", {})
         if any(prop not in self.properties for prop in self.required_property_names):
             raise ValueError("Required property not defined in schema")
 
-        for prop, schema in self.properties.items():
-            if prop in self.required_property_names and schema:
-                if schema.get("nullable", False) or "default" in schema:
-                    self.required_property_names.remove(prop)
+        for property_name, property_schema in self.properties.items():
+            if property_name in self.required_property_names and property_schema:
+                if property_schema.get("nullable", False) or "default" in property_schema:
+                    self.required_property_names.remove(property_name)
+
+        is_optional = property_schema.get("nullable", False) or not self.required_property_names
+        super().__init__(is_optional)
+
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
         """Retrieve transition steppers from the current state.

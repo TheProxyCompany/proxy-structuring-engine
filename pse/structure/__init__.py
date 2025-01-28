@@ -20,8 +20,8 @@ def get_schema(schema: SchemaType) -> dict[str, Any]:
     """
     Convert the given schema into an object that can be used by the engine.
     """
-    from pse.structure.function import callable_to_schema
-    from pse.structure.pydantic import pydantic_to_schema
+    from pse.structure.from_function import callable_to_schema
+    from pse.structure.from_pydantic import pydantic_to_schema
 
     if isinstance(schema, type) and issubclass(schema, BaseModel):
         return pydantic_to_schema(schema)

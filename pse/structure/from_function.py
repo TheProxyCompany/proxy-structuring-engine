@@ -7,7 +7,7 @@ from typing import Any, get_args, get_origin
 from docstring_parser import Docstring, DocstringParam, parse
 from pydantic import BaseModel
 
-from pse.structure.pydantic import pydantic_to_schema
+from pse.structure.from_pydantic import pydantic_to_schema
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,11 @@ def callable_to_schema(function: Callable) -> dict[str, Any]:
 
         if param.default is inspect.Parameter.empty and param_schema.get("nullable", False) is False:
             schema["parameters"]["required"].append(param.name)
+
+        if not schema["parameters"]["required"]:
+            del schema["parameters"]["required"]
+            schema["parameters"]["nullable"] = True
+
         param_index += 1
     return schema
 
@@ -97,7 +102,8 @@ def parameter_to_schema(
                 if index > 0:
                     break
                 parameter_type_schema["type"] = parameter_type
-                parameter_type_schema["items"] = {"type": get_type(argument)}
+                item_type = get_args(argument)[0]
+                parameter_type_schema["items"] = {"type": get_type(item_type)}
             case "enum":
                 assert issubclass(argument, enum.Enum)
                 parameter_type_schema["enum"] = [
