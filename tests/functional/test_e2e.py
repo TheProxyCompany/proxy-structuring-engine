@@ -52,8 +52,8 @@ def test_simple_json_structure(
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    for output in engine.output(dict):
-        assert output.value == {"value": 9.11}
+    final_output = engine.output(dict)
+    assert final_output.value == {"value": 9.11}
 
 
 def test_token_by_token_generation(
@@ -99,13 +99,13 @@ def test_complex_json_structure(
     )
     engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    for output in engine.output():
-        assert output.value
-        assert isinstance(output.value, dict)
-        assert output.value["name"] == "metacognition"
-        assert "arguments" in output.value
-        assert "chain_of_thought" in output.value["arguments"]
-        assert isinstance(output.value["arguments"]["chain_of_thought"], list)
+    final_output = engine.output(dict)
+    assert final_output.value
+    assert isinstance(final_output.value, dict)
+    assert final_output.value["name"] == "metacognition"
+    assert "arguments" in final_output.value
+    assert "chain_of_thought" in final_output.value["arguments"]
+    assert isinstance(final_output.value["arguments"]["chain_of_thought"], list)
 
     assert engine.has_reached_accept_state
 
@@ -172,9 +172,9 @@ def test_better_than_openai(
     )
     engine.configure(schema, buffer_length=0)
     generate(raw_prompt, model, engine)
-    for output in engine.output():
-        assert output.value["type"] == "div"
-        assert len(output.value["children"]) == 1
+    final_output = engine.output(dict)
+    assert final_output.value["type"] == "div"
+    assert len(final_output.value["children"]) == 1
 
 
 def test_multiple_schemas(
@@ -234,8 +234,8 @@ def test_multiple_schemas(
     )
     engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    for output in engine.output():
-        assert output.value["name"] == "metacognition"
+    final_output = engine.output(dict)
+    assert final_output.value["name"] == "metacognition"
 
 
 def test_schema_web_search(
@@ -275,10 +275,10 @@ def test_schema_web_search(
         " Please use the web_search schema to find popular favoirte pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
-    for output in engine.output():
-        assert output.value["name"] == "web_search"
-        assert output.value["arguments"]["query"] == "popular favorite Pokémon"
-        assert output.value["arguments"]["max_results"] is not None
+    final_output = engine.output(dict)
+    assert final_output.value["name"] == "web_search"
+    assert final_output.value["arguments"]["query"] == "popular favorite Pokémon"
+    assert final_output.value["arguments"]["max_results"] is not None
 
 
 if __name__ == "__main__":

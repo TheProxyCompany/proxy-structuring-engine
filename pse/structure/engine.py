@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
@@ -129,7 +129,7 @@ class StructuringEngine(Engine):
 
         self.steppers = self.state_machine.get_steppers()
 
-    def output(self, output_type: type[OutputType] | Any = Any) -> Iterator[EngineOutput[OutputType]]:
+    def output(self, output_type: type[OutputType] | Any = Any) -> EngineOutput[OutputType]:
         """
         Get the current values of the structuring engine.
 
@@ -137,9 +137,12 @@ class StructuringEngine(Engine):
             output_type: The type of the output to return. If None, return the raw values.
         """
 
+        buffer: str = ""
+        value: OutputType | Any = None
+        if not self.steppers:
+            return EngineOutput[OutputType](value, buffer)
+
         for stepper in self.steppers:
-            buffer: str = ""
-            value: OutputType | Any = None
             stepper_value = stepper.get_current_value()
             if isinstance(stepper_value, tuple):
                 buffer = stepper_value[0]
@@ -147,13 +150,15 @@ class StructuringEngine(Engine):
             else:
                 value = stepper_value
 
-            if output_type is not None and issubclass(output_type, BaseModel):
+            if not value:
+                value = buffer
+            elif output_type is not None and issubclass(output_type, BaseModel):
                 try:
                     value = output_type.model_validate(value)
                 except Exception:
                     logger.warning(f"Failed to cast value {value} with type {output_type}")
 
-            yield EngineOutput[OutputType](value, buffer)
+        return EngineOutput[OutputType](value, buffer)
 
     def reset(self) -> None:
         """

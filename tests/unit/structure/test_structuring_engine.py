@@ -240,12 +240,12 @@ def test_edge_case_1(
     assert advanced_token == final_token_ids
 
     assert engine.has_reached_accept_state
-    for final_value in engine.output(dict):
-        assert not final_value.buffer
-        assert final_value.value == {
-            "name": "send_message",
-            "arguments": {"message": "Hello!"},
-        }
+    final_output = engine.output(dict)
+    assert not final_output.buffer
+    assert final_output.value == {
+        "name": "send_message",
+        "arguments": {"message": "Hello!"},
+    }
 
 
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:

@@ -99,4 +99,8 @@ class EncapsulatedStepper(Stepper):
     def get_current_value(self) -> tuple[str, Any]:
         if self.inner_stepper:
             return self.scratch_pad, self.inner_stepper.get_current_value()
+
+        if self.current_state == 0 and self.sub_stepper:
+            return self.sub_stepper.get_current_value(), None
+
         return self.scratch_pad, None
