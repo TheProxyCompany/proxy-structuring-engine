@@ -79,8 +79,7 @@ def test_wait_for_acceptor_with_partial_match():
         steppers, '"*', trie_set
     ):
         assert healed
-        before_trigger, value = stepper.get_current_value()
-        assert not before_trigger
+        value = stepper.get_current_value()
         assert value == '"'
         assert advanced_token == '"'
     assert len(steppers) == 1

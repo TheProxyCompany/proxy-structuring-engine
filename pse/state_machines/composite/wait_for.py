@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Self
+from typing import Self
 
 from pse_core import StateId
 from pse_core.state_machine import StateMachine
@@ -84,7 +84,7 @@ class WaitForStepper(Stepper):
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)
         if required_buffer_length > 0:
-            if should_start and len(self.get_raw_value()) >= required_buffer_length:
+            if should_start and len(self.buffer) >= required_buffer_length:
                 # we have enough characters to start the transition
                 return True
             elif not should_start and not self.is_within_value():
@@ -123,15 +123,3 @@ class WaitForStepper(Stepper):
                 return [clone]
         # Process the valid prefix normally
         return self.state_machine.advance_stepper(self, valid_suffix)
-
-    def get_current_value(self) -> tuple[str, Any]:
-        if self.sub_stepper:
-            return self.buffer, self.sub_stepper.get_current_value()
-
-        return self.buffer, None
-
-    def get_raw_value(self) -> str:
-        value = self.buffer
-        if self.sub_stepper and self.sub_stepper.is_within_value():
-            value += self.sub_stepper.get_raw_value()
-        return value

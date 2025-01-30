@@ -77,29 +77,27 @@ class EncapsulatedStepper(Stepper):
     def clone(self) -> Self:
         clone = super().clone()
         clone.scratch_pad = self.scratch_pad
-        clone.inner_stepper = self.inner_stepper
+        clone.inner_stepper = self.inner_stepper.clone() if self.inner_stepper else None
         return clone
 
-    def is_within_value(self) -> bool:
-        within_value = self.current_state == 1
+    def accepts_any_token(self) -> bool:
         if self.sub_stepper:
-            within_value = within_value or self.sub_stepper.is_within_value()
-        return within_value
+            within_value = self.sub_stepper.accepts_any_token()
+            return within_value
+
+        return self.current_state == 0
+
+    def is_within_value(self) -> bool:
+        return self.current_state == 1
 
     def add_to_history(self, stepper: Stepper) -> None:
         if self.current_state == 2:
             self.inner_stepper = stepper
-        elif self.current_state == 1:
-            value = stepper.get_current_value()
-            assert isinstance(value, tuple)
-            self.scratch_pad += value[0]
+
         return super().add_to_history(stepper)
 
     def get_current_value(self) -> tuple[str, Any]:
         if self.inner_stepper:
-            return self.scratch_pad, self.inner_stepper.get_current_value()
+            return self.inner_stepper.get_current_value()
 
-        if self.current_state == 0 and self.sub_stepper:
-            return self.sub_stepper.get_current_value(), None
-
-        return self.scratch_pad, None
+        return super().get_current_value()

@@ -74,9 +74,9 @@ def generate_local_pse(prompt: str, schema: Any) -> tuple[Any, float]:
 
     start_time = timeit.default_timer()
     generate_mlx(prompt, model, engine)
-    output = engine.output(dict)
+    output = engine.cast_output()
     end_time = timeit.default_timer()
-    return output.value, end_time - start_time
+    return output, end_time - start_time
 
 
 def generate_outlines(prompt: str, schema: Any) -> tuple[dict[str, Any], float]:

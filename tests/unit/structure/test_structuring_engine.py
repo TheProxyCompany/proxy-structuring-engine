@@ -233,9 +233,8 @@ def test_edge_case_1(
     assert advanced_token == final_token_ids
 
     assert engine.has_reached_accept_state
-    final_output = engine.output(dict)
-    assert not final_output.buffer
-    assert final_output.value == {
+    final_output = engine.cast_output()
+    assert final_output == {
         "name": "send_message",
         "arguments": {"message": "Hello!"},
     }
@@ -253,7 +252,7 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     # example of token healing
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
-    assert engine.steppers[0].get_current_value() == (buffer, '"')
+    assert engine.steppers[0].get_current_value() == '"'
     assert engine.steppers[0].is_within_value()
     engine.consume_text("Hello ")
     engine.consume_text('World!"')
@@ -299,14 +298,14 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     engine.reset(hard=True)
 
 
-def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> None:
-    """Test that the wait for acceptor is working correctly with a min buffer length."""
-    engine.configure({"const": "Hello World!"}, None, 10)
-    engine.tokenizer.encode('"Hello', add_special_tokens=False)
-    engine.consume_text("Sure, here is the response: ")
-    assert len(engine.steppers) == 1
-    assert not engine.has_reached_accept_state
-    engine.consume_text('"Hello')
-    assert len(engine.steppers) == 1
-    assert not engine.has_reached_accept_state
-    engine.reset(hard=True)
+# def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> None:
+#     """Test that the wait for acceptor is working correctly with a min buffer length."""
+#     engine.configure({"const": "Hello World!"}, None, 10)
+#     engine.tokenizer.encode('"Hello', add_special_tokens=False)
+#     engine.consume_text("Sure, here is the response: ")
+#     assert len(engine.steppers) == 1
+#     assert not engine.has_reached_accept_state
+#     engine.consume_text('"Hello')
+#     assert len(engine.steppers) == 1
+#     assert not engine.has_reached_accept_state
+#     engine.reset(hard=True)

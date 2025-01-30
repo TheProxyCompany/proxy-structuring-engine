@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
@@ -18,21 +18,6 @@ logger = logging.getLogger(__name__)
 
 LogitType = TypeVar("LogitType")
 OutputType = TypeVar("OutputType")
-
-
-@dataclass
-class EngineOutput[OutputType]:
-    """
-    The value output by the engine.
-    """
-
-    value: OutputType | Any
-
-    """
-    The buffer is input that was not used by the state machine.
-    """
-    buffer: str
-
 
 class StructuringEngine(Engine):
     """
@@ -121,40 +106,31 @@ class StructuringEngine(Engine):
         )
         self.steppers = self.state_machine.get_steppers()
 
-    def output(
-        self, output_type: type[OutputType] | Any = Any
-    ) -> EngineOutput[OutputType]:
+    def cast_output(
+        self,
+        output: Any | None = None,
+        output_type: type[OutputType] | Any = Any,
+    ) -> Any:
         """
-        Get the current values of the structuring engine.
+        Cast the output to the given type.
 
         Args:
             output_type: The type of the output to return. If None, return the raw values.
         """
+        value = output
+        if value is None:
+            for stepper in self.steppers:
+                value = stepper.get_current_value()
+                if value is not None:
+                    break
+        try:
+            value = json.loads(value) if isinstance(value, str) else value
+            if output_type is not None and issubclass(output_type, BaseModel):
+                value = output_type.model_validate(value)
+        except Exception:
+            logger.warning(f"Failed to cast value {value} with type {output_type}")
 
-        buffer: str = ""
-        value: OutputType | Any = None
-        if not self.steppers:
-            return EngineOutput[OutputType](value, buffer)
-
-        for stepper in self.steppers:
-            stepper_value = stepper.get_current_value()
-            if isinstance(stepper_value, tuple):
-                buffer = stepper_value[0]
-                value = stepper_value[1]
-            else:
-                value = stepper_value
-
-            if not value:
-                value = buffer
-            elif output_type is not None and issubclass(output_type, BaseModel):
-                try:
-                    value = output_type.model_validate(value)
-                except Exception:
-                    logger.warning(
-                        f"Failed to cast value {value} with type {output_type}"
-                    )
-
-        return EngineOutput[OutputType](value, buffer)
+        return value
 
     def reset(self, hard: bool = False) -> None:
         """
