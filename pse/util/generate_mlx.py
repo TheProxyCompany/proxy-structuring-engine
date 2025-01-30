@@ -124,7 +124,9 @@ def generate(
             encoded_prompt = mx.concatenate([encoded_prompt, result.token])
             generation_results.append(result)
             decoded_tokens = engine.tokenizer.decode(result.token_ids)
-            logger.debug(f"Decoded tokens: {decoded_tokens!r}")
+            print("\033[1;33m", end="")
+            print(decoded_tokens, end="", flush=True)
+            print("\033[0m", end="")
         except Exception as e:
             logger.warning(f"Token rejected: {e}")
             break

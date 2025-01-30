@@ -16,7 +16,7 @@ The different object types that can be used as a schema in the structuring engin
 """
 
 
-def get_schema(schema: SchemaType) -> dict[str, Any]:
+def get_schema_dict(schema: SchemaType) -> dict[str, Any]:
     """
     Convert the given schema into an object that can be used by the engine.
     """

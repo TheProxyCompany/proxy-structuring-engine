@@ -44,7 +44,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure(schema, buffer_length=0)
+    engine.configure(schema)
     generate(
         raw_prompt,
         model,
@@ -62,7 +62,7 @@ def test_token_by_token_generation(
     """Test that the engine can generate tokens one at a time."""
     model, engine = model_and_engine
     schema = {"type": "string"}
-    engine.configure(schema, buffer_length=0)
+    engine.configure(schema)
     step_1 = sample("Respond with a string.", model, engine)
     assert engine.tokenizer.decode(step_1.token_ids).startswith('"')
 
@@ -97,7 +97,7 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.configure(schema, delimiters=("```json\n", "\n```"))
+    engine.configure(schema, delimiters=("```json\n", "\n```"), min_buffer_length=0)
     generate(raw_prompt, model, engine)
     final_output = engine.output(dict)
     assert final_output.value
@@ -170,7 +170,7 @@ def test_better_than_openai(
         f"Please generate a div component that has one child button."
         f"Please follow the following schema: {schema}."
     )
-    engine.configure(schema, buffer_length=0)
+    engine.configure(schema)
     generate(raw_prompt, model, engine)
     final_output = engine.output(dict)
     assert final_output.value["type"] == "div"
@@ -232,7 +232,7 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.configure(schema, delimiters=("```json\n", "\n```"))
+    engine.configure(schema, delimiters=("```json\n", "\n```"), min_buffer_length=0)
     generate(raw_prompt, model, engine)
     final_output = engine.output(dict)
     assert final_output.value["name"] == "metacognition"

@@ -11,15 +11,14 @@ from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
 from pse.state_machines import build_state_machine
-from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
-from pse.state_machines.composite.wait_for import WaitFor
-from pse.structure import SchemaType, get_schema
+from pse.structure import SchemaType
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
 LogitType = TypeVar("LogitType")
 OutputType = TypeVar("OutputType")
+
 
 @dataclass
 class EngineOutput[OutputType]:
@@ -41,7 +40,8 @@ class StructuringEngine(Engine):
     """
 
     def __init__(
-        self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase
+        self,
+        tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
     ) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
@@ -96,7 +96,7 @@ class StructuringEngine(Engine):
         self,
         schema: SchemaType,
         delimiters: tuple[str, str] | None = None,
-        buffer_length: int = -1,
+        min_buffer_length: int = -1,
     ) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
@@ -106,30 +106,24 @@ class StructuringEngine(Engine):
             delimiters:
                 Tuple (start, end) delimiters that indicate the start and end of the structured output.
                 Defaults to None.
-            buffer_length:
+            min_buffer_length:
                 Controls when schema validation begins. Can be used with or without delimiters. Defaults to -1.
         Note:
-            - buffer_length == -1: Optional buffer with no minimum length (default)
-            - buffer_length == 0: Immediate schema validation. No buffer is allowed.
-            - buffer_length > 0: Buffer must reach specified length before validation
-            - If delimiters are provided, the buffer length is ignored.
+            - min_buffer_length == -1: Buffer validation disabled (default)
+            - min_buffer_length == 0: Optional buffer with no minimum length
+            - min_buffer_length > 0: Buffer must reach specified length before validation
+            - If delimiters are provided, the buffer length is respected.
         """
-
-        self.schema = get_schema(schema)
-        self.state_machine = build_state_machine(self.schema)
-
-        if delimiters:
-            self.state_machine = EncapsulatedStateMachine(
-                self.state_machine,
-                delimiters,
-                buffer_length,
-            )
-        elif buffer_length != 0:
-            self.state_machine = WaitFor(self.state_machine, buffer_length)
-
+        self.state_machine = build_state_machine(
+            schema,
+            delimiters=delimiters,
+            min_buffer_length=min_buffer_length,
+        )
         self.steppers = self.state_machine.get_steppers()
 
-    def output(self, output_type: type[OutputType] | Any = Any) -> EngineOutput[OutputType]:
+    def output(
+        self, output_type: type[OutputType] | Any = Any
+    ) -> EngineOutput[OutputType]:
         """
         Get the current values of the structuring engine.
 
@@ -156,15 +150,20 @@ class StructuringEngine(Engine):
                 try:
                     value = output_type.model_validate(value)
                 except Exception:
-                    logger.warning(f"Failed to cast value {value} with type {output_type}")
+                    logger.warning(
+                        f"Failed to cast value {value} with type {output_type}"
+                    )
 
         return EngineOutput[OutputType](value, buffer)
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = False) -> None:
         """
         Reset the state machine and steppers.
         """
-        self.steppers = self.state_machine.get_steppers()
+        if not hard:
+            self.steppers = self.state_machine.get_steppers()
+        else:
+            self.steppers = []
 
     @property
     def in_accepted_state(self) -> bool:

@@ -54,7 +54,7 @@ class StringSchemaStateMachine(StringStateMachine):
         """
         Returns the maximum string length according to the schema.
         """
-        return self.schema.get("maxLength", 10000)  # Arbitrary default
+        return self.schema.get("maxLength", 10000)
 
     def validate_value(self, value: str) -> bool:
         """

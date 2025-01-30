@@ -16,17 +16,16 @@ from pse.state_machines.types.boolean import BooleanStateMachine
 from pse.state_machines.types.enum import EnumStateMachine
 from pse.state_machines.types.json import JsonStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
-from pse.structure import SchemaType
-from pse.structure.from_function import callable_to_schema
-from pse.structure.from_pydantic import pydantic_to_schema
+from pse.structure import SchemaType, get_schema_dict
 
 logger = logging.getLogger(__name__)
+
 
 def build_state_machine(
     schema: SchemaType,
     context: dict[str, Any] | None = None,
     delimiters: tuple[str, str] | None = None,
-    buffer_length: int = -1,
+    min_buffer_length: int = -1,
 ) -> StateMachine:
     """
     Build a state_machine based on the provided schema.
@@ -43,27 +42,23 @@ def build_state_machine(
     if context is None:
         context = {"defs": {"#": schema}, "path": ""}
 
-    if isinstance(schema, type) and issubclass(schema, BaseModel):
-        schema = pydantic_to_schema(schema)
-    elif callable(schema):
-        schema = callable_to_schema(schema)
-    else:
-        assert isinstance(schema, dict)
-
-    state_machine = schema_to_state_machine(schema, context)
+    structured_schema = get_schema_dict(schema)
+    state_machine = schema_to_state_machine(structured_schema, context)
     if delimiters:
         return EncapsulatedStateMachine(
             state_machine,
             delimiters,
-            buffer_length,
+            min_buffer_length,
         )
-    elif buffer_length > 0:
-        return WaitFor(state_machine, buffer_length)
+    elif min_buffer_length >= 0:
+        return WaitFor(state_machine, min_buffer_length)
     else:
         return state_machine
 
 
-def schema_to_state_machine(schema: dict[str, Any], context: dict[str, Any]) -> StateMachine:
+def schema_to_state_machine(
+    schema: dict[str, Any], context: dict[str, Any]
+) -> StateMachine:
     from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
     from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
 
@@ -131,6 +126,7 @@ def schema_to_state_machine(schema: dict[str, Any], context: dict[str, Any]) -> 
 
     return state_machine
 
+
 def process_schema(
     schema: dict[str, Any] | None,
     definitions: dict[str, dict[str, Any]],
@@ -160,7 +156,9 @@ def process_schema(
         if schema_reference not in definitions:
             raise ValueError(f"definition not found: {schema_reference}")
 
-        resolved = process_schema(definitions.get(schema_reference), definitions, visited)
+        resolved = process_schema(
+            definitions.get(schema_reference), definitions, visited
+        )
         visited[schema_reference] = resolved
         return resolved
 
@@ -181,7 +179,9 @@ def process_schema(
                     for rs in resolved_subschemas
                 ]
             else:
-                combined_schemas.extend([{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas])
+                combined_schemas.extend(
+                    [{**ms, **rs} for rs in resolved_subschemas for ms in base_schemas]
+                )
 
         return combined_schemas
 

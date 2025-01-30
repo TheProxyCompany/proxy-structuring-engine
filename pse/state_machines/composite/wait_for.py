@@ -24,7 +24,7 @@ class WaitFor(StateMachine):
     def __init__(
         self,
         state_machine: StateMachine,
-        min_buffer_length: int = 0,
+        min_buffer_length: int = -1,
         strict: bool = True,
     ):
         """

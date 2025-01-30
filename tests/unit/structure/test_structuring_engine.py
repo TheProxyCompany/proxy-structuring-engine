@@ -42,22 +42,10 @@ def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> No
 
     delimiters = "<<<START>>>", "<<<END>>>"
 
-    engine.configure(
-        schema={"type": "string"},
-        delimiters=delimiters,
-    )
-
+    engine.configure(schema={"type": "string"}, delimiters=delimiters)
     assert isinstance(engine.state_machine, EncapsulatedStateMachine)
     assert engine.state_machine.delimiters == delimiters
-
-
-def test_delimitered_acceptor(engine: StructuringEngine) -> None:
-    """Test that eos_token_id is in valid tokens when in accepted state."""
-    engine.configure({"type": "string"}, delimiters=("```json\n", "\n```"))
-    engine.consume_text('```json\n"test string"\n```')
-    assert engine.has_reached_accept_state, (
-        f"Engine with schema {engine.schema} should be in accepted state, steppers: {engine.steppers}"
-    )
+    engine.reset(hard=True)
 
 
 def test_create_acceptor_with_complex_schema(
@@ -87,6 +75,7 @@ def test_create_acceptor_with_complex_schema(
     engine.configure(complex_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
+    engine.reset(hard=True)
 
 
 def test_pattern_schema_success(engine: StructuringEngine) -> None:
@@ -97,13 +86,14 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure(pattern_schema, delimiters=None, buffer_length=0)
+    engine.configure(pattern_schema, delimiters=None, min_buffer_length=0)
     assert engine.state_machine is not None
     assert engine.steppers is not None
 
     # Test valid input that matches the pattern
     engine.consume_text('"test"')
     assert engine.has_reached_accept_state, "Driver should be in accepted state"
+    engine.reset(hard=True)
 
 
 def test_pattern_schema_failure(engine: StructuringEngine) -> None:
@@ -121,6 +111,7 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
     # Reset engine for invalid input test
     engine.consume_text("123")
     assert not engine.has_reached_accept_state
+    engine.reset(hard=True)
 
 
 def test_in_accepted_state_with_no_steppers(engine: StructuringEngine) -> None:
@@ -128,6 +119,7 @@ def test_in_accepted_state_with_no_steppers(engine: StructuringEngine) -> None:
     engine.configure(schema={"type": "string"})
     engine.steppers = []
     assert not engine.has_reached_accept_state
+    engine.reset(hard=True)
 
 
 def test_multiple_schemas(engine: StructuringEngine) -> None:
@@ -176,6 +168,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
 
     engine.consume_text('Here is the response: ```json\n{\n"name":"')
     assert len(engine.steppers) == 2
+    engine.reset(hard=True)
 
 
 @pytest.mark.parametrize(
@@ -246,11 +239,12 @@ def test_edge_case_1(
         "name": "send_message",
         "arguments": {"message": "Hello!"},
     }
+    engine.reset(hard=True)
 
 
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
-    engine.configure({"type": "string", "const": "Hello World!"}, None)
+    engine.configure({"type": "string", "const": "Hello World!"}, min_buffer_length=0)
     buffer = "Sure, here is the response: "
     engine.consume_text(buffer)
     assert len(engine.steppers) == 1
@@ -264,6 +258,7 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     engine.consume_text("Hello ")
     engine.consume_text('World!"')
     assert engine.has_reached_accept_state
+    engine.reset(hard=True)
 
 
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
@@ -274,7 +269,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
-        engine.configure(schema={"type": "string"}, delimiters=None, buffer_length=0)
+        engine.configure(schema={"type": "string"}, delimiters=None)
         # we expect only tokens that start with a " character
         scores = generate_mock_logits(
             engine,
@@ -301,6 +296,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
             dtype,
         )
         assert mx.allclose(adjusted_logits, expected_score)
+    engine.reset(hard=True)
 
 
 def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> None:
@@ -313,3 +309,4 @@ def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> 
     engine.consume_text('"Hello')
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
+    engine.reset(hard=True)

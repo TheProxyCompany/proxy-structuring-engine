@@ -22,7 +22,7 @@ class EncapsulatedStateMachine(StateMachine):
         self,
         state_machine: StateMachine,
         delimiters: tuple[str, str],
-        min_buffer_length: int = 0,
+        min_buffer_length: int = -1,
     ) -> None:
         """
 
@@ -48,7 +48,6 @@ class EncapsulatedStateMachine(StateMachine):
         )
         self.inner_state_machine = state_machine
         self.delimiters = delimiters
-        self.min_buffer_length = min_buffer_length
 
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
