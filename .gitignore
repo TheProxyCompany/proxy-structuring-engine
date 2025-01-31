@@ -10,3 +10,4 @@ __pycache__
 Cargo.lock
 target
 .cache
+uv.lock

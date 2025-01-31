@@ -69,7 +69,7 @@ def run_benchmark(
 def generate_local_pse(prompt: str, schema: Any) -> tuple[Any, float]:
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
-    engine = StructuringEngine(tokenizer._tokenizer)
+    engine = StructuringEngine(tokenizer._tokenizer)  # noqa: SLF001
     engine.configure(schema)
 
     start_time = timeit.default_timer()

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -20,17 +20,16 @@ dependencies = [
     "tqdm",
     "transformers",
     "typing_extensions",
-    "urllib3",
     "wheel",
     "protobuf",
     "pydantic",
-    "flake8",
+    "docstring-parser",
     "pse-core>=1.0.0",
-    "docstring-parser"
 ]
 
 [project.optional-dependencies]
 dev = [
+    "flake8",
     "coverage",
     "docstring-parser",
     "flake8",
@@ -57,11 +56,13 @@ source = "https://github.com/TheProxyCompany/proxy-structuring-engine"
 
 [tool.ruff.lint]
 extend-select = [
-  "B",    # flake8-bugbear
-  "I",    # isort
-  "PGH",  # pygrep-hooks
-  "RUF",  # Ruff-specific
-  "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "I",    # isort
+    "PGH",  # pygrep-hooks
+    "RUF",  # Ruff-specific
+    "UP",   # pyupgrade
+    "SLF",  # string-literal-format
+    "F8",
 ]
 
 [tool.hatch.build.targets.sdist]
