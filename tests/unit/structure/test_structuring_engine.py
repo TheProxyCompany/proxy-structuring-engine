@@ -296,16 +296,3 @@ def test_logits_processing(engine: StructuringEngine) -> None:
         )
         assert mx.allclose(adjusted_logits, expected_score)
     engine.reset(hard=True)
-
-
-# def test_wait_for_acceptor_with_min_buffer_length(engine: StructuringEngine) -> None:
-#     """Test that the wait for acceptor is working correctly with a min buffer length."""
-#     engine.configure({"const": "Hello World!"}, None, 10)
-#     engine.tokenizer.encode('"Hello', add_special_tokens=False)
-#     engine.consume_text("Sure, here is the response: ")
-#     assert len(engine.steppers) == 1
-#     assert not engine.has_reached_accept_state
-#     engine.consume_text('"Hello')
-#     assert len(engine.steppers) == 1
-#     assert not engine.has_reached_accept_state
-#     engine.reset(hard=True)

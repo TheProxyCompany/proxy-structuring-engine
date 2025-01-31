@@ -3,7 +3,6 @@ import logging
 from typing import Any
 
 from pse_core.state_machine import StateMachine
-from pydantic import BaseModel
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine

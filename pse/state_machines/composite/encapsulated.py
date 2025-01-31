@@ -66,9 +66,8 @@ class EncapsulatedStateMachine(StateMachine):
 
 
 class EncapsulatedStepper(Stepper):
-    def __init__(
-        self, state_machine: EncapsulatedStateMachine, state: StateId | None = None
-    ) -> None:
+
+    def __init__(self, state_machine: EncapsulatedStateMachine, state: StateId | None = None) -> None:
         super().__init__(state_machine, state)
         self.state_machine: EncapsulatedStateMachine = state_machine
         self.scratch_pad = ""
@@ -87,8 +86,16 @@ class EncapsulatedStepper(Stepper):
 
         return self.current_state == 0
 
+    def get_invalid_continuations(self) -> list[str]:
+        if self.current_state == 0 and self.sub_stepper:
+            return self.sub_stepper.get_invalid_continuations()
+        return []
+
     def is_within_value(self) -> bool:
-        return self.current_state == 1
+        if self.current_state == 0 and self.sub_stepper:
+            return self.sub_stepper.is_within_value()
+
+        return self.current_state != 0
 
     def add_to_history(self, stepper: Stepper) -> None:
         if self.current_state == 2:

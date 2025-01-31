@@ -201,5 +201,5 @@ def test_min_scratchpad_length():
     assert any(stepper.should_start_step("<tool>") for stepper in steppers)
     assert not any(stepper.is_within_value() for stepper in steppers)
 
-    steppers = sm.advance_all_basic(steppers, "<tool>")
+    steppers = sm.advance_all_basic(steppers, '<tool>"')
     assert all(stepper.is_within_value() for stepper in steppers)

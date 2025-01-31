@@ -75,7 +75,30 @@ class WaitForStepper(Stepper):
         """
         if self.sub_stepper and self.sub_stepper.is_within_value():
             return self.sub_stepper.accepts_any_token()
-        return True
+
+        return len(self.buffer) >= self.state_machine.min_buffer_length
+
+    def get_valid_continuations(self) -> list[str]:
+        """
+        If the buffer is long enough, we can accept any valid continuations.
+
+        If the buffer is not long enough, we can accept everything.
+        """
+        if len(self.buffer) >= self.state_machine.min_buffer_length:
+            return super().get_valid_continuations()
+        return []
+
+    def get_invalid_continuations(self) -> list[str]:
+        """
+        If the buffer is not long enough yet,
+        any valid continuation is inversed and
+        invalid to allow the buffer to grow.
+
+        If the buffer is long enough, there are no invalid continuations.
+        """
+        if len(self.buffer) < self.state_machine.min_buffer_length and self.sub_stepper:
+            return self.sub_stepper.get_valid_continuations()
+        return []
 
     def should_start_step(self, token: str) -> bool:
         if self.has_reached_accept_state():

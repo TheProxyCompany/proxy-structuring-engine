@@ -31,7 +31,7 @@ def sample(
     prompt: str | mx.array,
     model: nn.Module,
     engine: StructuringEngine,
-    temp: float = 1.0,
+    temp: float = 0.5,
 ) -> GenerateStepResult:
     """
     A generator producing token ids based on the given prompt from the model.

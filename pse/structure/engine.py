@@ -33,7 +33,11 @@ class StructuringEngine(Engine):
         """
         self.tokenizer = tokenizer
         reverse_vocab: dict[int, str] = {}
+        added_vocab = self.tokenizer.all_special_tokens_extended
         for token, token_id in self.tokenizer.get_vocab().items():
+            if token in added_vocab:
+                continue
+
             if "▁" == token:
                 token = " "
             else:
@@ -63,9 +67,7 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(
-        self, logprobs: object, sampler: Callable[..., object], **kwargs
-    ) -> list[int]:
+    def sample(self, logprobs: object, sampler: Callable[..., object], **kwargs) -> list[int]:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
@@ -99,6 +101,8 @@ class StructuringEngine(Engine):
             - min_buffer_length > 0: Buffer must reach specified length before validation
             - If delimiters are provided, the buffer length is respected.
         """
+        self.delimiters = delimiters
+        self.min_buffer_length = min_buffer_length
         self.state_machine = build_state_machine(
             schema,
             delimiters=delimiters,
@@ -117,20 +121,35 @@ class StructuringEngine(Engine):
         Args:
             output_type: The type of the output to return. If None, return the raw values.
         """
-        value = output
-        if value is None:
+        # if no input to cast, find accepted stepper and use its value
+        if output is None and any(stepper.has_reached_accept_state() for stepper in self.steppers):
             for stepper in self.steppers:
-                value = stepper.get_current_value()
-                if value is not None:
+                output = stepper.get_current_value()
+                if stepper.has_reached_accept_state():
                     break
+
+        # clean delimiters if present
+        if self.delimiters and isinstance(output, str):
+            if output.startswith(self.delimiters[0]):
+                output = output[len(self.delimiters[0]) :]
+
+            if output.endswith(self.delimiters[1]):
+                output = output[: -len(self.delimiters[1])]
+
+        if not output:
+            return None
+
         try:
-            value = json.loads(value) if isinstance(value, str) else value
+            # cast to json if string
+            value = json.loads(output) if isinstance(output, str) else output
+
+            # validate with pydantic if BaseModel
             if output_type is not None and issubclass(output_type, BaseModel):
                 value = output_type.model_validate(value)
+            return value
         except Exception:
-            logger.warning(f"Failed to cast value {value} with type {output_type}")
-
-        return value
+            logger.warning(f"Failed to cast value {output} with type {output_type}")
+            return None
 
     def reset(self, hard: bool = False) -> None:
         """
@@ -139,6 +158,8 @@ class StructuringEngine(Engine):
         if not hard:
             self.steppers = self.state_machine.get_steppers()
         else:
+            self.delimiters = None
+            self.min_buffer_length = -1
             self.steppers = []
 
     @property

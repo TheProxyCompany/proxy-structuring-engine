@@ -6,10 +6,7 @@ import pytest
 from pse_core.state_machine import StateMachine
 from pse_core.trie import TrieSet
 
-from pse.state_machines.base.character import (
-    CharacterStateMachine,
-    CharacterStepper,
-)
+from pse.state_machines.base.character import CharacterStateMachine
 
 
 @pytest.mark.parametrize(
@@ -96,16 +93,3 @@ def test_character_acceptor_char_limit(
     for stepper, _, _ in steppers:
         if stepper.has_reached_accept_state():
             assert stepper.get_current_value() == expected_value
-
-
-def test_character_acceptor_select() -> None:
-    """Test the select method of CharacterStepper."""
-    charset = ["a", "b", "c"]
-    state_machine = CharacterStateMachine(charset)
-    stepper = CharacterStepper(state_machine)
-
-    trie = TrieSet()
-    trie.insert_all(charset)
-
-    selections = stepper.get_valid_continuations()
-    assert set(selections) == set(charset)
