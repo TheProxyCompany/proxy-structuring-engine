@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Bringing Order to Chaos: Efficient Schema-Guided Sampling for LLMs</strong>
+  <strong>Stateful Structured Sampling for Large Language Models</strong>
 </p>
 
 <p align="center">
@@ -25,11 +25,12 @@
 
 The Proxy Structuring Engine (PSE) works in tandem with Large Language Models (LLMs) to ensure generated outputs adhere to predefined schemas without compromising creativity, speed, or context. This enables error-free custom tool calling, complex multi-step reasoning, and unlocks new creative possibilities for AI applications.
 
-PSE achieves this through a novel schema-guided sampling approach, leveraging Directed Acyclic Word Graphs (DAWGs) and finite state machines to enforce constraints during text generation.
+PSE achieves this through an advanced hierarchical state machine and non-deterministic schema-guided sampling approach.
 
 ## Installation
 
-PSE supports multiple backends such as **PyTorch**, **JAX**, and **MLX** for maximum flexibility and performance.
+PSE supports multiple machine learning frameworks such as **PyTorch**, **JAX**, and **MLX** for maximum flexibility and performance.
+The Structuring Engine is designed to be used as a logit processor and sampler for any LLM.
 
 To install the base package:
 
@@ -37,41 +38,20 @@ To install the base package:
 pip install pse
 ```
 
-To install with optional backend support, use one of the following:
-
+To install the structuring engine for unit testing & local development:
 ```bash
-pip install pse[torch]  # PyTorch support
-pip install pse[jax]    # JAX support
-pip install pse[mlx]    # MLX support
-pip install pse[all]    # All optional features
+pip install pse[dev]
 ```
 
 ## Features
 
-- 🚀 **Multi-Backend Support**: Compatible with **PyTorch**, **JAX**, and **MLX** backends.
-- 🛠 **Schema-Guided Sampling**: Enforces JSON schema constraints during text generation.
-- ⚡ **High Performance**: Minimal overhead ensures fast generation speeds.
-- 🎨 **Maintains Creativity**: Preserves model creativity while enforcing structure.
-- 🤖 **Easy Integration**: Seamlessly integrates with Hugging Face Transformers.
-- 📚 **Expanded Schema Support**: Supports JSON Schema with plans to expand to other formats (SQL, Cypher, Python, U-DIFF).
-- ✅ **Comprehensive Testing**: Ensures code reliability with 90% test coverage.
-- 🔍 **Detailed Documentation**: Improves readability and developer experience.
-- 🧩 **Customizable Hooks**: `start_hook` and `end_hook` enable custom logic injection.
-- 🔄 **Robust Error Handling**: Facilitates debugging and integration.
-
-## Benchmarks
-
-The Proxy Structuring Engine consistently outperforms traditional sampling methods in both speed and accuracy:
-
-*(Benchmarks will be added soon.)*
+- **Platform Agnostic**: Compatible with any backend, just needs logits and scores.
+- **Maintains Creativity**: Preserves model creativity while enforcing structure.
+- **Easy Integration**: Hugging Face Transformer integration.
 
 ## License
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgements
-
-PSE builds upon the groundwork laid by [LLM Structured Output](https://github.com/otriscon/llm-structured-output) and utilizes [lexpy](https://github.com/aosingh/lexpy) for efficient lexicon analysis.
 
 ---
 
@@ -80,7 +60,7 @@ PSE builds upon the groundwork laid by [LLM Structured Output](https://github.co
 </p>
 
 <p align="center">
-  <a href="https://x.com/whatisproxy">Twitter</a> •
-  <a href="https://www.what-is-proxy.com">Website</a> •
-  <a href="mailto:contact@what-is-proxy.com">Contact</a>
+  <a href="https://x.com/TheProxyCompany">Twitter</a> •
+  <a href="https://www.theproxycompany.com">Website</a> •
+  <a href="mailto:contact@theproxycompany.com">Contact</a>
 </p>
