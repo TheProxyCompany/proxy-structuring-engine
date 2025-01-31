@@ -4,19 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "0.9.0"
+version = "1.0.0"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
 ]
-description = "Proxy Structuring Engine: Ensures AI-generated output adheres to predefined schemas without compromising creativity, speed, or context."
+description = "Proxy Structuring Engine: Stateful AI-generated output with a focus on creativity, speed, and structure."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 
 dependencies = [
     "regex",
-    "setuptools",
     "tokenizers",
     "tqdm",
     "transformers",
@@ -26,7 +25,7 @@ dependencies = [
     "protobuf",
     "pydantic",
     "flake8",
-    "pse-core",
+    "pse-core>=1.0.0",
     "docstring-parser"
 ]
 
@@ -44,11 +43,11 @@ dev = [
     "numpy",
     "openai",
     "outlines",
-    "pse-core",
     "pytest",
     "ruff",
     "sentencepiece",
-    "torch"
+    "torch",
+    "pse-core>=1.0.0",
 ]
 
 [project.urls]
