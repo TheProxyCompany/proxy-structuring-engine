@@ -1,7 +1,7 @@
 import pytest
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
-from pse_core.trie import TrieSet
+from pse_core.trie import TrieMap
 
 from pse.state_machines.base.character import CharacterStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine, PhraseStepper
@@ -393,9 +393,16 @@ def test_state_machine_advance_stepper_with_remaining_input():
 def test_trie_token_healing():
     """Test StateMachine with WhitespaceAcceptor."""
 
-    trie = TrieSet()
-    keys = ["\n", "\n\n", " ", "(", "(.", ")"]
-    trie = trie.insert_all(keys)
+    trie = TrieMap()
+    items = [
+        ("\n", 1),
+        ("\n\n", 2),
+        (" ", 3),
+        ("(", 4),
+        ("(.", 5),
+        (")", 6),
+    ]
+    trie = trie.insert_all(items)
     sm = StateMachine(
         {
             0: [(PhraseStateMachine("("), 1)],
@@ -434,9 +441,13 @@ def test_simple_number_acceptor():
         }
     )
 
-    trie = TrieSet()
-    keys = ["-", "-1", "1"]
-    trie = trie.insert_all(keys)
+    trie = TrieMap()
+    items = [
+        ("-", 1),
+        ("-1", 2),
+        ("1", 3),
+    ]
+    trie = trie.insert_all(items)
     steppers = sm.get_steppers()
     assert len(steppers) == 2
     text_acceptor_stepper = steppers[0]

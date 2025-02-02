@@ -16,7 +16,7 @@ from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
-LogitType = TypeVar("LogitType")
+Array_Type = TypeVar("Array_Type")
 OutputType = TypeVar("OutputType")
 
 class StructuringEngine(Engine):
@@ -45,39 +45,44 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def __call__(self, scores: LogitType) -> LogitType:
+    def __call__(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         """
-        Merge invalid token scores with the valid token scores.
-        i.e
-            Hi: 10.0
-            "Hi: 5.0
-            _______
-            Hi: -inf
-            "Hi: 15.0
-        """
-        return self.process_logits(scores)
+        Logit Processing api: (input, logits) -> new_logits
 
-    def process_logits(self, scores: LogitType) -> LogitType:
+        Args:
+            raw_logits: The logits to process.
+
+        Returns:
+            The processed logits.
+        """
+        return self.process_logits(None, raw_logits)
+
+    def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
-        logger.debug(self.chart_model_output(scores, 3, "🔵 Before processing"))
-        adjusted_logits = super().process_logits(scores)
+        logger.debug(self.chart_model_output(raw_logits, 3, "🔵 Before processing"))
+        adjusted_logits = super().process_logits(raw_logits)
         logger.debug(self.chart_model_output(adjusted_logits, 3, "🟢 After processing"))
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(self, logprobs: object, sampler: Callable[..., object], **kwargs) -> list[int]:
+    def sample(
+        self,
+        logprobs: Array_Type,
+        sampler: Callable[..., Array_Type] | None = None,
+        **kwargs: Any,
+    ) -> Array_Type:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
         """
         logger.debug(f"Sampling with kwargs: {kwargs}")
         tic = time.perf_counter()
-        token = super().sample(logprobs, sampler, **kwargs)
+        token = super().sample(logprobs, sampler)
         toc = time.perf_counter()
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
-        return token
+        return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
     def configure(
         self,
@@ -178,7 +183,6 @@ class StructuringEngine(Engine):
 
         rows = []
         top_logits = get_top_logits(scores, top_n)
-
         for token_id, score in top_logits.items():
             # Get token from token_id using reverse vocabulary map
             if not (token := self.reverse_vocabulary.get(token_id)):

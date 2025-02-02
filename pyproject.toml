@@ -34,18 +34,14 @@ dev = [
     "docstring-parser",
     "flake8",
     "instructor",
-    "jax",
-    "jaxlib",
     "lm-format-enforcer",
     "mlx",
-    "mlx-lm",
-    "numpy",
+    "mlx-lm @ git+https://github.com/TheProxyCompany/mlx-examples.git#subdirectory=llms",
     "openai",
     "outlines",
     "pytest",
     "ruff",
     "sentencepiece",
-    "torch",
     "pse-core>=1.0.0",
 ]
 
@@ -64,6 +60,9 @@ extend-select = [
     "SLF",  # string-literal-format
     "F8",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -84,31 +83,7 @@ python = "3.11"
 env-vars = { PYTHONOPTIMIZE = "2" }
 
 [tool.pytest.ini_options]
-log_cli = true
+log_cli = false
 log_cli_level = "INFO"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
-
-# [tool.hatch.build]
-# dev-mode-dirs = ["pse"]
-# artifacts = ["pse/**/*.py[cod]", "pse/**/*.so"]
-
-# [tool.hatch.build.targets.wheel.hooks.mypyc]
-# dependencies = ["mypy[mypyc]", "hatch-mypyc"]
-# mypy-args = [
-#     "--ignore-missing-imports",
-#     "--verbose",
-#     "--allow-redefinition",
-#     "--disable-error-code=attr-defined",
-#     "--disable-error-code=assignment",
-#     "--disable-error-code=type-var",
-#     "--disable-error-code=method-assign",
-#     "--disable-error-code=misc",
-#     "--disable-error-code=no-untyped-def",
-#     "--disable-error-code=no-untyped-call",
-#     "--disable-error-code=assert-type",
-# ]
-# exclude = [
-#     "pse/util/*",
-#     "pse/state_machines/schema/*"
-# ]

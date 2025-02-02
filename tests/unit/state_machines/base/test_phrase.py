@@ -1,5 +1,5 @@
 import pytest
-from pse_core.trie import TrieSet
+from pse_core.trie import TrieMap
 
 from pse.state_machines.base.phrase import PhraseStateMachine, PhraseStepper
 
@@ -141,10 +141,15 @@ def test_partial_match():
     """Test that the TextAcceptor correctly handles partial matches."""
     text_acceptor = PhraseStateMachine('"hello"')
     steppers = text_acceptor.get_steppers()
-    vocab = TrieSet()
-    keys = ['"hello', '"', "hello", '"c']
-    vocab = vocab.insert_all(keys)
-    advanced = text_acceptor.advance_all(steppers, '"*', vocab)
+    trie = TrieMap()
+    items = [
+        ('"hello', 1),
+        ('"', 2),
+        ("hello", 3),
+        ('"c', 4),
+    ]
+    trie = trie.insert_all(items)
+    advanced = text_acceptor.advance_all(steppers, '"*', vocab=trie)
     assert len(advanced) == 1
     for stepper, token, healed in advanced:
         assert healed

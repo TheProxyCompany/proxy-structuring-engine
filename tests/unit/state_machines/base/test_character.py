@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 from pse_core.state_machine import StateMachine
-from pse_core.trie import TrieSet
+from pse_core.trie import TrieMap
 
 from pse.state_machines.base.character import CharacterStateMachine
 
@@ -82,8 +82,12 @@ def test_character_acceptor_char_limit(
         end_states=[1],
     )
 
-    trie = TrieSet()
-    trie.insert_all([str(expected_value), str(input_string)])
+    trie = TrieMap()
+    items = [
+        (str(expected_value), 1),
+        (str(input_string), 2),
+    ]
+    trie = trie.insert_all(items)
 
     steppers = sm.get_steppers()
     steppers = StateMachine.advance_all(steppers, input_string, trie, token_healing=True)
