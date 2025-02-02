@@ -16,7 +16,7 @@ def get_top_logits(logits, top_k: int = 64) -> dict[int, float]:
     This function dispatches to the appropriate implementation based on the type of `logits`.
 
     Args:
-        logits: The logits array of shape (vocab_size,), which can be an array from MLX, NumPy, JAX, or PyTorch.
+        logits: The logits array of shape (vocab_size,), which can be an array from MLX.
         top_k (int): The number of top tokens to return.
 
     Returns:
