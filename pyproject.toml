@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "1.1.2"
+version = "1.1.5"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -15,34 +15,33 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 
 dependencies = [
+    "docstring-parser",
+    "protobuf",
+    "pse-core",
+    "pydantic",
     "regex",
     "tokenizers",
-    "tqdm",
     "transformers",
+    "tqdm",
     "typing_extensions",
     "wheel",
-    "protobuf",
-    "pydantic",
-    "docstring-parser",
-    "pse-core>=1.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "flake8",
     "coverage",
     "docstring-parser",
     "flake8",
     "instructor",
     "lm-format-enforcer",
     "mlx",
-    "mlx-lm @ git+https://github.com/TheProxyCompany/mlx-examples.git#subdirectory=llms",
+    "mlx-lm",
     "openai",
     "outlines",
+    "pse-core",
     "pytest",
     "ruff",
     "sentencepiece",
-    "pse-core>=1.0.0",
 ]
 
 [project.urls]

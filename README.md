@@ -29,9 +29,7 @@ PSE achieves this through an advanced hierarchical state machine and non-determi
 
 ## Installation
 
-PSE supports multiple machine learning frameworks such as **PyTorch**, **JAX**, and **MLX** for maximum flexibility and performance.
 The Structuring Engine is designed to be used as a logit processor and sampler for any LLM.
-
 To install the base package:
 
 ```bash
@@ -41,6 +39,7 @@ pip install pse
 To install the structuring engine for unit testing & local development:
 ```bash
 pip install pse[dev]
+pip install -r requirements.txt
 ```
 
 ## Features
