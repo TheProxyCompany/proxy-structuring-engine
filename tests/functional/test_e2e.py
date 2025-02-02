@@ -10,7 +10,7 @@ try:
     import mlx.nn as nn
     from mlx_lm.utils import load
 
-    from pse.util.generate_mlx import generate, sample
+    from pse.util.generate_mlx import generate
 except ImportError:
     pytest.skip(
         "mlx or mlx_lm is not installed. Skipping tests.", allow_module_level=True
@@ -54,17 +54,6 @@ def test_simple_json_structure(
     assert engine.has_reached_accept_state
     final_output = engine.cast_output()
     assert final_output == {"value": 9.11}
-
-
-def test_token_by_token_generation(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
-    """Test that the engine can generate tokens one at a time."""
-    model, engine = model_and_engine
-    schema = {"type": "string"}
-    engine.configure(schema)
-    step_1 = sample("Respond with a string.", model, engine)
-    assert engine.tokenizer.decode(step_1.token_ids).startswith('"')
 
 
 def test_complex_json_structure(

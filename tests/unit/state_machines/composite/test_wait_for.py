@@ -1,4 +1,4 @@
-from pse_core.trie import TrieSet
+from pse_core.trie import TrieMap
 
 from pse.state_machines.base.phrase import PhraseStateMachine, PhraseStepper
 from pse.state_machines.composite.wait_for import (
@@ -72,11 +72,16 @@ def test_wait_for_acceptor_with_partial_match():
     text_acceptor = PhraseStateMachine('"hello"')
     state_machine = WaitFor(text_acceptor)
     steppers = list(state_machine.get_steppers())
-    trie_set = TrieSet()
-    keys = ['"hello', '"', "hello", '"c']
-    trie_set = trie_set.insert_all(keys)
+    trie_map = TrieMap()
+    items = [
+        ('"hello', 1),
+        ('"', 2),
+        ('hello', 3),
+        ('"c', 4),
+    ]
+    trie_map = trie_map.insert_all(items)
     for stepper, advanced_token, healed in state_machine.advance_all(
-        steppers, '"*', trie_set
+        steppers, '"*', trie_map
     ):
         assert healed
         value = stepper.get_current_value()

@@ -21,15 +21,20 @@ def engine() -> StructuringEngine:
 
 
 def generate_mock_logits(
-    engine: StructuringEngine, input: dict[str, float], dtype: Any
+    engine: StructuringEngine,
+    input: dict[str, float],
+    dtype: Any
 ) -> Any:
     import mlx.core as mx
 
-    logits = mx.full(len(engine.vocabulary), float("-inf"), dtype=dtype)
-    for token, score in input.items():
-        token_id = engine.vocabulary.get(token)
-        if token_id is not None:
-            logits[token_id] = score
+    reverse_vocab: dict[int, str] = engine.reverse_vocabulary
+    logits = mx.full(len(reverse_vocab), float("-inf"), dtype=dtype)
+    for text, score in input.items():
+        tokens = engine.break_into_tokens(text)
+        for token in tokens:
+            token_id = reverse_vocab.get(token)
+            if token_id is not None:
+                logits[token_id] = score
 
     return logits
 
@@ -283,7 +288,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
             },
             dtype,
         )
-        adjusted_logits = engine(scores)
+        adjusted_logits = engine(None, scores[None])
         expected_score = generate_mock_logits(
             engine,
             {
