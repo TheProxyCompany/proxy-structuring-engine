@@ -101,8 +101,8 @@ class WaitForStepper(Stepper):
         return []
 
     def should_start_step(self, token: str) -> bool:
-        if self.has_reached_accept_state():
-            return self.remaining_input is None
+        if self.remaining_input:
+            return False
 
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)

@@ -1,10 +1,10 @@
-import json
 import logging
 from typing import Any
 
 from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitFor
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
@@ -106,7 +106,13 @@ def schema_to_state_machine(
         if "enum" in schema:
             state_machine = EnumStateMachine(schema["enum"])
         elif "const" in schema:
-            state_machine = PhraseStateMachine(json.dumps(schema["const"]))
+            state_machine = ChainStateMachine(
+                [
+                    PhraseStateMachine('"'),
+                    PhraseStateMachine(schema["const"]),
+                    PhraseStateMachine('"'),
+                ]
+            )
         else:
             state_machine = StringSchemaStateMachine(schema)
     elif schema_type == "object" and "properties" in schema:

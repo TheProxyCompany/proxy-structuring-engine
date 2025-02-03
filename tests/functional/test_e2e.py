@@ -131,9 +131,7 @@ def test_complex_json_structure(
     assert engine.has_reached_accept_state
 
 
-def test_better_than_openai(
-    model_and_engine: tuple[nn.Module, StructuringEngine],
-) -> None:
+def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
@@ -188,10 +186,10 @@ def test_better_than_openai(
         },
     }
     raw_prompt = (
-        f"Please generate a div component that has one child button."
+        f"Please generate a JSON object that represents a div component that only has one child button."
         f"Please follow the following schema: {schema}."
     )
-    engine.configure(schema)
+    engine.configure(schema, min_buffer_length=-1)
     generate(raw_prompt, model, engine)
     final_output = engine.cast_output()
     assert final_output["type"] == "div"

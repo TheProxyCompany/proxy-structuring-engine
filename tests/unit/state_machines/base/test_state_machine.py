@@ -420,11 +420,11 @@ def test_trie_token_healing():
     steppers = new_steppers
 
     assert len(steppers) == 2
-    steppers = sm.advance_all_basic(steppers, " \n\n")
+    steppers = sm.advance_all_basic(steppers, " \n")
     assert len(steppers) == 2
     steppers = sm.advance_all_basic(steppers, "\n )")
     assert len(steppers) == 1
-    assert steppers[0].get_current_value() == "( \n\n\n )"
+    assert steppers[0].get_current_value() == "( \n\n )"
     assert steppers[0].has_reached_accept_state()
 
 

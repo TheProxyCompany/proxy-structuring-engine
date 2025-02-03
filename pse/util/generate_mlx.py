@@ -34,6 +34,7 @@ def generate(
         model=model,
         logits_processors=[engine.process_logits],
         sampler=sampler(engine),
+        max_tokens=-1,
     ):
         assert isinstance(tokens, mx.array)
         assert tokens.ndim == 1

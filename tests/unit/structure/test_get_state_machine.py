@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from pse.state_machines import build_state_machine
-from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.schema.any_schema import AnySchemaStateMachine
 from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
 from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
@@ -49,7 +49,7 @@ def context() -> dict[str, Any]:
             None,
         ),
         ({"oneOf": [{"type": "string"}, {"type": "number"}]}, AnySchemaStateMachine, 2),
-        ({"type": "string", "const": "fixed_value"}, PhraseStateMachine, None),
+        ({"type": "string", "const": "fixed_value"}, ChainStateMachine, None),
     ],
 )
 def test_get_acceptor_schema_types(

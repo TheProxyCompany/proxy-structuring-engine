@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
-
 from pse_core import StateGraph, StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
+from pse.state_machines.composite.chain import ChainStateMachine
 
 
 class EnumStateMachine(StateMachine):
@@ -20,8 +19,18 @@ class EnumStateMachine(StateMachine):
 
         state_graph: StateGraph = {0: []}
         for value in enum_values:
-            enum_value = json.dumps(value) if require_quotes else value
-            state_graph[0].append((PhraseStateMachine(enum_value), "$"))
+            sm = (
+                PhraseStateMachine(value)
+                if not require_quotes
+                else ChainStateMachine(
+                    [
+                        PhraseStateMachine('"'),
+                        PhraseStateMachine(value),
+                        PhraseStateMachine('"'),
+                    ]
+                )
+            )
+            state_graph[0].append((sm, "$"))
 
         super().__init__(state_graph)
 

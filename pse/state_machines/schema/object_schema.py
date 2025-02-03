@@ -24,18 +24,24 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         self.context = context
         self.properties: dict[str, Any] = property_schema.get("properties", {})
         self.required_property_names: list[str] = property_schema.get("required", [])
-        self.additional_properties: dict[str, Any] | bool = property_schema.get("additionalProperties", {})
+        self.additional_properties: dict[str, Any] | bool = property_schema.get(
+            "additionalProperties", {}
+        )
         if any(prop not in self.properties for prop in self.required_property_names):
             raise ValueError("Required property not defined in schema")
 
         for property_name, property_schema in self.properties.items():
             if property_name in self.required_property_names and property_schema:
-                if property_schema.get("nullable", False) or "default" in property_schema:
+                if (
+                    property_schema.get("nullable", False)
+                    or "default" in property_schema
+                ):
                     self.required_property_names.remove(property_name)
 
-        is_optional = property_schema.get("nullable", False) or not self.required_property_names
+        is_optional = (
+            property_schema.get("nullable", False) or not self.required_property_names
+        )
         super().__init__(is_optional)
-
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
         """Retrieve transition steppers from the current state.
@@ -76,7 +82,10 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
                 )
                 property_state_machines.append(property)
 
-        if all(prop_name in value for prop_name in self.required_property_names) and self.additional_properties:
+        if (
+            all(prop_name in value for prop_name in self.required_property_names)
+            and self.additional_properties
+        ):
             # non-schema kv property to represent the additional properties
             if isinstance(self.additional_properties, dict):
                 property = KeyValueSchemaStateMachine(

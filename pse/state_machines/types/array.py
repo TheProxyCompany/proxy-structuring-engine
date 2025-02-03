@@ -49,7 +49,6 @@ class ArrayStateMachine(StateMachine):
 
 
 class ArrayStepper(Stepper):
-
     def __init__(
         self,
         state_machine: ArrayStateMachine,
