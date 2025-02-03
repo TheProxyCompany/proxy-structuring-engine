@@ -15,7 +15,7 @@ from pse.structure.engine import StructuringEngine
 logger = logging.getLogger(__name__)
 
 try:
-    from mlx_lm.utils import load
+    from mlx_proxy.utils import load
 
     from pse.util.generate_mlx import generate as generate_mlx
 except ImportError:
