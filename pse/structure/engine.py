@@ -56,9 +56,9 @@ class StructuringEngine(Engine):
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
-        logger.debug(self.chart_model_output(raw_logits, 3, "🔵 Before processing"))
+        logger.debug(self.chart_model_output(raw_logits, 5, "🔵 Before processing"))
         adjusted_logits = super().process_logits(raw_logits)
-        logger.debug(self.chart_model_output(adjusted_logits, 3, "🟢 After processing"))
+        logger.debug(self.chart_model_output(adjusted_logits, 5, "🟢 After processing"))
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
@@ -77,7 +77,7 @@ class StructuringEngine(Engine):
         tic = time.perf_counter()
         token = super().sample(logprobs, sampler)
         toc = time.perf_counter()
-        logger.debug(f"Sampling took {toc - tic:0.4f} seconds")
+        logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
         return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
     def configure(
@@ -178,19 +178,14 @@ class StructuringEngine(Engine):
         rows = []
         top_logits = get_top_logits(scores, top_n)
         for token_id, score in top_logits.items():
-            # Get token from token_id using reverse vocabulary map
-            if not (token := self.reverse_vocabulary.get(token_id)):
-                logger.warning(f"Unknown token ID: {token_id}")
+            # check if score is too low to be considered
+            if score == float("-inf") or score < -1e10:
                 continue
-
-            if score == float("-inf"):
-                continue
-
+            token = repr(self.tokenizer.decode(token_id))
             if token_id in self.multi_token_mapping:
                 multiple_token_ids = self.multi_token_mapping[token_id]
-                token = repr(self.tokenizer.decode(multiple_token_ids)) + " *️⃣"
-            else:
-                token = repr(token)
+                representation = repr(self.tokenizer.decode(multiple_token_ids))
+                token = f"{token} -📶-> {representation}"
 
             rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
 

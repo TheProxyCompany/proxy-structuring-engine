@@ -42,7 +42,6 @@ def context() -> dict[str, Any]:
             ArraySchemaStateMachine,
             None,
         ),
-        ({"const": "fixed_value"}, PhraseStateMachine, None),
         ({"enum": ["red", "green", "blue"]}, EnumStateMachine, None),
         (
             {"allOf": [{"type": "string"}, {"minLength": 5}]},
@@ -50,6 +49,7 @@ def context() -> dict[str, Any]:
             None,
         ),
         ({"oneOf": [{"type": "string"}, {"type": "number"}]}, AnySchemaStateMachine, 2),
+        ({"type": "string", "const": "fixed_value"}, PhraseStateMachine, None),
     ],
 )
 def test_get_acceptor_schema_types(

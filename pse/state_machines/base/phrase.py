@@ -89,18 +89,8 @@ class PhraseStepper(Stepper):
         if self.consumed_character_count >= len(self.state_machine.phrase):
             return []
 
-        valid_continuations = []
-
         remaining_text = self.state_machine.phrase[self.consumed_character_count :]
-        valid_continuations.append(remaining_text)
-
-        # Check if the exact partial prefixes exist in the DAWG
-        max_possible_match_len = len(remaining_text)
-        for i in range(1, max_possible_match_len):
-            partial = remaining_text[:i]
-            valid_continuations.append(partial)
-
-        return valid_continuations
+        return [remaining_text]
 
     def consume(self, token: str) -> list[Stepper]:
         """

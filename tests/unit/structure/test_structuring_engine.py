@@ -30,11 +30,8 @@ def generate_mock_logits(
     reverse_vocab: dict[int, str] = engine.reverse_vocabulary
     logits = mx.full(len(reverse_vocab), float("-inf"), dtype=dtype)
     for text, score in input.items():
-        tokens = engine.break_into_tokens(text)
-        for token in tokens:
-            token_id = reverse_vocab.get(token)
-            if token_id is not None:
-                logits[token_id] = score
+        token_ids = engine.tokenizer.encode(text, add_special_tokens=False)
+        logits[token_ids[0]] = score
 
     return logits
 
