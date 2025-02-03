@@ -95,12 +95,11 @@ class StructuringEngine(Engine):
                 Tuple (start, end) delimiters that indicate the start and end of the structured output.
                 Defaults to None.
             min_buffer_length:
-                Controls when schema validation begins. Can be used with or without delimiters. Defaults to -1.
+                Controls when structured output begins. Can be used with or without delimiters.
         Note:
-            - min_buffer_length == -1: Buffer validation disabled (default)
+            - min_buffer_length == -1: Buffer disabled (default)
             - min_buffer_length == 0: Optional buffer with no minimum length
-            - min_buffer_length > 0: Buffer must reach specified length before validation
-            - If delimiters are provided, the buffer length is respected.
+            - min_buffer_length > 0: Buffer must reach specified length before structured output
         """
         self.delimiters = delimiters
         self.min_buffer_length = min_buffer_length
@@ -137,9 +136,7 @@ class StructuringEngine(Engine):
             if output.endswith(self.delimiters[1]):
                 output = output[: -len(self.delimiters[1])]
 
-        if not output:
-            return None
-
+        assert output is not None
         try:
             # cast to json if string
             value = json.loads(output) if isinstance(output, str) else output

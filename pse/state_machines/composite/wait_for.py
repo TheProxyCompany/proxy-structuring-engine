@@ -73,7 +73,7 @@ class WaitForStepper(Stepper):
         Returns:
             bool: Always True.
         """
-        if self.sub_stepper and self.sub_stepper.is_within_value():
+        if self.sub_stepper and (self.sub_stepper.is_within_value() or self.state_machine.min_buffer_length == -1):
             return self.sub_stepper.accepts_any_token()
 
         return len(self.buffer) >= self.state_machine.min_buffer_length

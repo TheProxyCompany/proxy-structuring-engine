@@ -169,7 +169,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
         },
         "required": ["name", "arguments"],
     }
-    engine.configure({"anyOf": [schema1, schema2]}, delimiters=("```json\n", "\n```"))
+    engine.configure({"anyOf": [schema1, schema2]}, delimiters=("```json\n", "\n```"), min_buffer_length=0)
 
     engine.consume_text('Here is the response: ```json\n{\n"name":"')
     assert len(engine.steppers) == 2

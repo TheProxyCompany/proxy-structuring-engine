@@ -9,7 +9,7 @@ from pse.state_machines.composite.wait_for import (
 
 def test_default_wait_for_acceptor() -> None:
     text_acceptor = PhraseStateMachine("Hello World")
-    state_machine = WaitFor(text_acceptor)
+    state_machine = WaitFor(text_acceptor, min_buffer_length=0)
 
     steppers = list(state_machine.get_steppers())
     assert len(steppers) == 1

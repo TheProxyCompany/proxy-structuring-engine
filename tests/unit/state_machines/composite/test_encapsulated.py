@@ -152,6 +152,7 @@ def test_accepts_any_token_when_within_value(default_delimiters: tuple[str, str]
     sm = EncapsulatedStateMachine(
         StringStateMachine(),
         delimiters=default_delimiters,
+        min_buffer_length=0,
     )
     steppers = sm.get_steppers()
     assert all(stepper.accepts_any_token() for stepper in steppers)
@@ -175,6 +176,7 @@ def test_edge_case():
     sm = EncapsulatedStateMachine(
         ObjectStateMachine(),
         delimiters=("<tool>", "</tool>"),
+        min_buffer_length=0,
     )
     steppers = sm.get_steppers()
     assert any(stepper.accepts_any_token() for stepper in steppers)

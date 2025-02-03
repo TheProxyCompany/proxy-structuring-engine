@@ -4,8 +4,8 @@ from typing import Any
 
 import mlx.core as mx
 import mlx.nn as nn
-from mlx_lm.sample_utils import make_sampler
-from mlx_lm.utils import generate_step
+from mlx_proxy.generate_step import generate_step
+from mlx_proxy.samplers import make_sampler
 
 from pse.structure.engine import StructuringEngine
 
@@ -35,16 +35,19 @@ def generate(
         logits_processors=[engine.process_logits],
         sampler=sampler(engine),
     ):
-        if isinstance(tokens, int):
-            # single token
-            encoded_prompt.append(tokens)
-            output_tokens.append(tokens)
+        assert isinstance(tokens, mx.array)
+        assert tokens.ndim == 1
+        if tokens.shape[0] == 1:
+            token_value = tokens.item()
+            assert isinstance(token_value, int)
+            encoded_prompt.append(token_value)
+            output_tokens.append(token_value)
         else:
             # multiple tokens
-            tokens = tokens
-            assert isinstance(tokens, list)
-            encoded_prompt.extend(tokens)
-            output_tokens.extend(tokens)
+            token_list = tokens.tolist()
+            assert isinstance(token_list, list)
+            encoded_prompt.extend(token_list)
+            output_tokens.extend(token_list)
 
         if engine.has_reached_accept_state:
             break
@@ -61,7 +64,7 @@ def sampler(engine: StructuringEngine, **kwargs: Any) -> Callable[..., Any]:
     If structured is True, use the structured sampler.
     Otherwise, use the simple sampler.
     """
-    temp = float(kwargs.get("temp", 1.0))
+    temp = float(kwargs.get("temp", 0.5))
     min_p = float(kwargs.get("min_p", 0.0))
     min_tokens_to_keep = int(kwargs.get("min_tokens_to_keep", 1))
     sampler = make_sampler(

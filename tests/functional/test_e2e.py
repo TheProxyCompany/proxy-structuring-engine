@@ -70,10 +70,13 @@ def test_simple_json_structure_with_delimiters(
         "required": ["value"],
         "additionalProperties": False,
     }
+    delimiters = ("<tool_call>\n", "\n</tool_call>")
     raw_prompt = (
-        f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
+        "Generate a JSON object with the number 9.11."
+        f"Wrap your output in {delimiters[0]} and {delimiters[1]}."
+        f"Follow this schema: {schema}"
     )
-    engine.configure(schema, delimiters=("<tool_call>\n", "\n</tool_call>"))
+    engine.configure(schema, delimiters=delimiters)
     generate(
         raw_prompt,
         model,
