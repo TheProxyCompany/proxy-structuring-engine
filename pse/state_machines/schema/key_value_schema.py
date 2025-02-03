@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from pse_core import StateId
 
 from pse.state_machines import schema_to_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueStepper
 from pse.state_machines.types.string import StringStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
@@ -32,20 +32,13 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
             "defs": context.get("defs", {}),
             "path": f"{context.get('path', '')}/{prop_name}",
         }
-        key_state_machine = (
-            ChainStateMachine(
-                [
-                    PhraseStateMachine('"'),
-                    PhraseStateMachine(self.prop_name),
-                    PhraseStateMachine('"'),
-                ]
-            )
-            if self.prop_name
-            else StringStateMachine()
-        )
         super().__init__(
             [
-                key_state_machine,
+                (
+                    PhraseStateMachine(json.dumps(self.prop_name))
+                    if self.prop_name
+                    else StringStateMachine()
+                ),
                 WhitespaceStateMachine(max_whitespace=10),
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(max_whitespace=10),
