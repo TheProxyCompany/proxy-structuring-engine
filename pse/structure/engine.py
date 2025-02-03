@@ -33,11 +33,7 @@ class StructuringEngine(Engine):
         """
         self.tokenizer = tokenizer
         reverse_vocab: dict[int, str] = {}
-        added_vocab = self.tokenizer.all_special_tokens_extended
         for token, token_id in self.tokenizer.get_vocab().items():
-            if token in added_vocab:
-                continue
-
             if "▁" == token:
                 token = " "
             else:
@@ -136,7 +132,7 @@ class StructuringEngine(Engine):
         # clean delimiters if present
         if self.delimiters and isinstance(output, str):
             if output.startswith(self.delimiters[0]):
-                output = output[len(self.delimiters[0]) :]
+                output = output[len(self.delimiters[0]):]
 
             if output.endswith(self.delimiters[1]):
                 output = output[: -len(self.delimiters[1])]
@@ -153,6 +149,7 @@ class StructuringEngine(Engine):
                 value = output_type.model_validate(value)
             return value
         except Exception:
+            breakpoint()
             logger.warning(f"Failed to cast value {output} with type {output_type}")
             return None
 

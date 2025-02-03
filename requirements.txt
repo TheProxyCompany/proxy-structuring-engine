@@ -1,1 +1,0 @@
-mlx-lm @ git+https://github.com/TheProxyCompany/mlx-examples.git#subdirectory=llms

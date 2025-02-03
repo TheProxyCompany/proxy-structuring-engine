@@ -55,6 +55,35 @@ def test_simple_json_structure(
     final_output = engine.cast_output()
     assert final_output == {"value": 9.11}
 
+def test_simple_json_structure_with_delimiters(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """
+    Validates that the engine can generate a simple JSON object
+    adhering to a specified schema using real LLM output.
+    """
+    model, engine = model_and_engine
+    # Define schema and prompt
+    schema = {
+        "type": "object",
+        "properties": {"value": {"type": "number"}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    raw_prompt = (
+        f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
+    )
+    engine.configure(schema, delimiters=("<tool_call>\n", "\n</tool_call>"))
+    generate(
+        raw_prompt,
+        model,
+        engine,
+    )
+    # Validate the generated output
+    assert engine.has_reached_accept_state
+    final_output = engine.cast_output()
+    assert final_output == {"value": 9.11}
+
 
 def test_complex_json_structure(
     model_and_engine: tuple[nn.Module, StructuringEngine],
