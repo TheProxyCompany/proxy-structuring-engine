@@ -66,7 +66,7 @@ class StructuringEngine(Engine):
     def sample(
         self,
         logprobs: Array_Type,
-        sampler: Callable[..., Array_Type] | None = None,
+        sampler: Callable[..., Array_Type],
         **kwargs: Any,
     ) -> Array_Type:
         """

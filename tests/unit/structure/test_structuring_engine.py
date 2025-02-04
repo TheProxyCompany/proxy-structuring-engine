@@ -246,8 +246,8 @@ def test_edge_case_1(
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
     engine.configure({"type": "string", "const": "Hello World!"}, min_buffer_length=0)
-    # buffer = "Sure, here is the response: "
-    # engine.consume_text(buffer)
+    buffer = "Sure, here is the response: "
+    engine.consume_text(buffer)
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
     engine.consume_text('"*')
