@@ -128,6 +128,12 @@ class StructuringEngine(Engine):
                 if stepper.has_reached_accept_state():
                     break
 
+        if not output:
+            return None
+
+        if isinstance(output, str):
+            output = output.strip()
+
         # clean delimiters if present
         if self.delimiters and isinstance(output, str):
             if output.startswith(self.delimiters[0]):
