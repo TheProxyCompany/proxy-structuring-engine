@@ -125,7 +125,8 @@ class StringSchemaStepper(Stepper):
             raw_value = self.sub_stepper.get_raw_value()
             if self.is_within_value():
                 valid_prefix = self.valid_prefix(raw_value + token)
-                return valid_prefix is not None and raw_value != valid_prefix
+                if self.state_machine.validate_value(raw_value + token):
+                    return valid_prefix is not None and raw_value != valid_prefix
             return True
 
         return False
