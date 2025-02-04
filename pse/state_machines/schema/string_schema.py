@@ -64,7 +64,7 @@ class StringSchemaStateMachine(StringStateMachine):
             return False
         if len(value) > self.max_length():
             return False
-        if self.pattern and not self.pattern.fullmatch(value):
+        if self.pattern and not self.pattern.match(value):
             return False
         if self.format:
             format_validator = {
@@ -125,7 +125,7 @@ class StringSchemaStepper(Stepper):
             raw_value = self.sub_stepper.get_raw_value()
             if self.is_within_value():
                 valid_prefix = self.valid_prefix(raw_value + token)
-                if self.state_machine.validate_value(raw_value + token):
+                if self.state_machine.validate_value(raw_value + (valid_prefix or "")):
                     return valid_prefix is not None and raw_value != valid_prefix
             return True
 

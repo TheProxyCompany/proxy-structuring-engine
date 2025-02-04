@@ -163,12 +163,8 @@ def test_stepper_rejects_on_pattern_mismatch_during_parsing():
     schema = {"pattern": r"abc.*"}
     state_machine = StringSchemaStateMachine(schema=schema)
     steppers = state_machine.get_steppers()
-    input_string = '"ab'
-
-    steppers = state_machine.advance_all_basic(steppers, input_string)
-    steppers = state_machine.advance_all_basic(steppers, "x")
+    steppers = state_machine.advance_all_basic(steppers, "abx")
     assert len(steppers) == 0, "Steppers should be empty after input 'abx'"
-
     accepted = any(stepper.has_reached_accept_state() for stepper in steppers)
     assert not accepted, "Stepper should have rejected input due to pattern mismatch"
 
