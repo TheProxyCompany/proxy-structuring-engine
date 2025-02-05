@@ -7,7 +7,7 @@ from pse_core.state_machine import StateMachine
 
 from pse.state_machines.base.character import CharacterStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.chain import ChainStateMachine
+from pse.state_machines.base.chain import ChainStateMachine
 from pse.state_machines.types.integer import IntegerStateMachine
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.wait_for import WaitFor
+from pse.state_machines.base.wait_for import WaitFor
 
 
 class EncapsulatedStateMachine(StateMachine):

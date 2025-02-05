@@ -62,7 +62,7 @@ class NumberSchemaStateMachine(NumberStateMachine):
         return True
 
     def __str__(self) -> str:
-        return super().__str__() + "Schema"
+        return "JSON" + super().__str__()
 
 
 class NumberSchemaStepper(Stepper):

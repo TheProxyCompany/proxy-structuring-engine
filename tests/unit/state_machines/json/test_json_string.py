@@ -1,4 +1,4 @@
-from pse.state_machines.json_schema.string_schema import StringSchemaStateMachine
+from pse.state_machines.json.json_string import StringSchemaStateMachine
 
 
 def test_init_default_schema():

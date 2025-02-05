@@ -4,9 +4,9 @@ from typing import Any
 
 from pse_core import StateId
 
-from pse.state_machines import schema_to_state_machine
+from pse.state_machines import json_schema_to_state_machine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.chain import ChainStateMachine
+from pse.state_machines.base.chain import ChainStateMachine
 from pse.state_machines.types.key_value import KeyValueStateMachine, KeyValueStepper
 from pse.state_machines.types.string import StringStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
@@ -48,7 +48,7 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
                 WhitespaceStateMachine(),
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(),
-                schema_to_state_machine(self.prop_schema, self.prop_context),
+                json_schema_to_state_machine(self.prop_schema, self.prop_context),
             ],
         )
 

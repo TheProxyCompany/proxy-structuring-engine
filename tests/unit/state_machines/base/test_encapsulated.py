@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
-from pse.state_machines.composite.wait_for import WaitFor
+from pse.state_machines.base.encapsulated import EncapsulatedStateMachine
+from pse.state_machines.base.wait_for import WaitFor
 from pse.state_machines.types.object import ObjectStateMachine
 from pse.state_machines.types.string import StringStateMachine
 

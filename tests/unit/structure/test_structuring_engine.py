@@ -38,7 +38,7 @@ def generate_mock_logits(
 
 def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
     """Test creating an state_machine with custom delimiters."""
-    from pse.state_machines.composite.encapsulated import (
+    from pse.state_machines.base.encapsulated import (
         EncapsulatedStateMachine,
     )
 

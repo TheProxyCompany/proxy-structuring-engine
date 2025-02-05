@@ -1,6 +1,4 @@
-from pse_core.state_machine import StateMachine
-
-from pse.state_machines.json_schema.key_value_schema import KeyValueSchemaStateMachine
+from pse.state_machines.json.json_key_value import KeyValueSchemaStateMachine
 
 
 def test_property_parsing():

@@ -1,7 +1,7 @@
 from pse_core.trie import TrieMap
 
 from pse.state_machines.base.phrase import PhraseStateMachine, PhraseStepper
-from pse.state_machines.composite.wait_for import (
+from pse.state_machines.base.wait_for import (
     WaitFor,
     WaitForStepper,
 )

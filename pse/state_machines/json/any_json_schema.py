@@ -18,22 +18,17 @@ class AnySchemaStateMachine(StateMachine):
             schemas (List[Dict[str, Any]]): A list of JSON schemas to validate against.
             context (Dict[str, Any]): Contextual information for schema definitions and paths.
         """
-        from pse.state_machines import schema_to_state_machine
+        from pse.state_machines import json_schema_to_state_machine
 
         # Construct the state machine graph with an initial state `0` that transitions
         # to the end state `$` for each schema state_machine.
         self.state_machines: list[StateMachine] = []
         for schema in schemas:
-            sm = schema_to_state_machine(schema, context)
+            sm = json_schema_to_state_machine(schema, context)
             self.state_machines.append(sm)
 
         super().__init__(
-            {
-                0: [
-                    (state_machine, "$")
-                    for state_machine in self.state_machines
-                ]
-            }
+            {0: [(state_machine, "$") for state_machine in self.state_machines]}
         )
 
     def get_steppers(self, state: StateId | None = None) -> list[Stepper]:
@@ -43,4 +38,4 @@ class AnySchemaStateMachine(StateMachine):
         return steppers
 
     def __str__(self) -> str:
-        return "AnyStateMachine"
+        return "AnyJsonSchema"

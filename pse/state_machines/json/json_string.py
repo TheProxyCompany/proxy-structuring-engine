@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-from collections.abc import Callable
 
 import regex
 from pse_core import StateId
@@ -18,28 +17,31 @@ class StringSchemaStateMachine(StringStateMachine):
     Accept a JSON string that conforms to a JSON schema, including 'pattern' and 'format' constraints.
     """
 
+    # Class-level constants
+    EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    SUPPORTED_FORMATS = frozenset(["email", "date-time", "uri"])
+
     def __init__(
         self,
         schema: dict,
-        start_hook: Callable | None = None,
-        end_hook: Callable | None = None,
     ):
         super().__init__()
         self.schema = schema or {}
-        self.start_hook = start_hook
-        self.end_hook = end_hook
-
         self.pattern: re.Pattern | None = None
         self.format: str | None = None
 
         if "pattern" in self.schema:
-            pattern_str = self.schema["pattern"]
-            self.pattern = re.compile(pattern_str)
+            try:
+                self.pattern = re.compile(self.schema["pattern"])
+            except re.error as e:
+                raise ValueError(f"Invalid pattern in schema: {e}") from e
+
         if "format" in self.schema:
             self.format = self.schema["format"]
-            # support 'email', 'date-time', 'uri' formats
-            if self.format not in ["email", "date-time", "uri"]:
-                raise ValueError(f"Format '{self.format}' not implemented")
+            if self.format not in self.SUPPORTED_FORMATS:
+                raise ValueError(
+                    f"Format '{self.format}' not supported. Supported formats: {', '.join(self.SUPPORTED_FORMATS)}"
+                )
 
     def get_new_stepper(self, state: StateId | None = None) -> StringSchemaStepper:
         return StringSchemaStepper(self, state)
@@ -60,8 +62,7 @@ class StringSchemaStateMachine(StringStateMachine):
         """
         Validate that the value is a valid email address.
         """
-        email_regex = re.compile(r"[^@]+@[^@]+\.[^@]+")
-        return email_regex.fullmatch(value) is not None
+        return bool(self.EMAIL_PATTERN.fullmatch(value))
 
     def validate_date_time(self, value: str) -> bool:
         """
@@ -85,7 +86,7 @@ class StringSchemaStateMachine(StringStateMachine):
         return all([result.scheme, result.netloc])
 
     def __str__(self) -> str:
-        return super().__str__() + "Schema"
+        return "JSON" + super().__str__()
 
 
 class StringSchemaStepper(StringStepper):
@@ -96,6 +97,11 @@ class StringSchemaStepper(StringStepper):
     ):
         super().__init__(state_machine, current_state)
         self.state_machine: StringSchemaStateMachine = state_machine
+        self._format_validators = {
+            "email": self.state_machine.validate_email,
+            "date-time": self.state_machine.validate_date_time,
+            "uri": self.state_machine.validate_uri,
+        }
 
     def should_start_step(self, token: str) -> bool:
         if super().should_start_step(token):
@@ -125,17 +131,29 @@ class StringSchemaStepper(StringStepper):
         return steppers
 
     def clean_value(self, value: str) -> str:
-        if value.startswith('"') and value.endswith('"'):
-            try:
-                value = json.loads(value) or ""
-            except Exception:
-                return ""
-        elif value.startswith('"'):
-            value = value[value.index('"') + 1:]
-            if '"' in value:
-                value = value[:value.rindex('"')]
+        """
+        Clean and normalize the input value.
 
-        return value
+        Args:
+            value: The string value to clean
+
+        Returns:
+            str: The cleaned value
+
+        Raises:
+            ValueError: If the value cannot be properly cleaned
+        """
+        try:
+
+            if value.startswith('"') and value.endswith('"'):
+                return json.loads(value) or ""
+            elif value.startswith('"'):
+                value = value[value.index('"') + 1 :]
+                return value[: value.rindex('"')] if '"' in value else value
+            return value
+        except Exception as e:
+            logger.debug(f"Error cleaning value: {e}")
+            return value
 
     def get_valid_prefix(self, s: str) -> str | None:
         """
@@ -149,7 +167,6 @@ class StringSchemaStepper(StringStepper):
             return s
 
         match = None
-
         s = self.clean_value(s)
         current_value = self.sub_stepper.get_raw_value()
         while not match and s:
@@ -166,28 +183,41 @@ class StringSchemaStepper(StringStepper):
     def validate_value(self, value: str | None = None) -> bool:
         """
         Validate the string value according to the schema.
+
+        Args:
+            value: Optional string to append to current value before validation
+
+        Returns:
+            bool: True if the value meets all schema constraints
+
+        Note:
+            Validates length, pattern, and format constraints in sequence
         """
-        # Extract content before the last quote if present, otherwise use as-is
         value = self.clean_value(self.get_raw_value() + (value or ""))
         if not value:
             return False
 
-        if len(value) < self.state_machine.min_length():
-            return False
-        if len(value) > self.state_machine.max_length():
+        # Length validation
+        if not (
+            self.state_machine.min_length()
+            <= len(value)
+            <= self.state_machine.max_length()
+        ):
             return False
 
+        # Pattern validation
         if not self.is_within_value() and self.state_machine.pattern:
-            return self.state_machine.pattern.match(value) is not None
-
-        if self.state_machine.format:
-            format_validator = {
-                "email": self.state_machine.validate_email,
-                "date-time": self.state_machine.validate_date_time,
-                "uri": self.state_machine.validate_uri,
-            }.get(self.state_machine.format)
-            if format_validator and not format_validator(value):
+            if not self.state_machine.pattern.match(value):
                 return False
-            elif not format_validator:
-                raise ValueError(f"Format '{self.state_machine.format}' not implemented")
+
+        # Format validation
+        if self.state_machine.format:
+            validator = self._format_validators.get(self.state_machine.format)
+            if not validator:
+                raise ValueError(
+                    f"No validator found for format: {self.state_machine.format}"
+                )
+            if not validator(value):
+                return False
+
         return True

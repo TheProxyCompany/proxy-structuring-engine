@@ -3,13 +3,16 @@ from typing import Any, TypeAlias
 
 from pydantic import BaseModel
 
-SchemaDefinition: TypeAlias = type[BaseModel] | dict[str, Any] | Callable[..., Any] | str
+SchemaDefinition: TypeAlias = (
+    type[BaseModel] | dict[str, Any] | Callable[..., Any] | str
+)
 SchemaType: TypeAlias = SchemaDefinition | list[SchemaDefinition]
 """
 The different object types that can be used as a schema in the structuring engine.
 """
 
-def get_json_schema(schema: SchemaType) -> dict[str, Any]:
+
+def generate_json_schema(source: SchemaType) -> dict[str, Any]:
     """
     Convert the given schema into an object that can be used by the engine.
 
@@ -23,15 +26,15 @@ def get_json_schema(schema: SchemaType) -> dict[str, Any]:
     from pse.structure.from_function import callable_to_schema
     from pse.structure.from_pydantic import pydantic_to_schema
 
-    if isinstance(schema, type) and issubclass(schema, BaseModel):
-        return pydantic_to_schema(schema)
-    elif callable(schema):
-        return callable_to_schema(schema)
-    elif isinstance(schema, dict):
-        return schema["schema"] if "schema" in schema else schema
-    elif isinstance(schema, list):
+    if isinstance(source, type) and issubclass(source, BaseModel):
+        return pydantic_to_schema(source)
+    elif callable(source):
+        return callable_to_schema(source)
+    elif isinstance(source, dict):
+        return source["schema"] if "schema" in source else source
+    elif isinstance(source, list):
         schemas = []
-        for s in schema:
+        for s in source:
             if isinstance(s, type) and issubclass(s, BaseModel):
                 schemas.append(pydantic_to_schema(s))
             elif isinstance(s, dict):
@@ -42,6 +45,7 @@ def get_json_schema(schema: SchemaType) -> dict[str, Any]:
     else:
         try:
             import json
-            return json.loads(schema)
+
+            return json.loads(source)
         except Exception as e:
-            raise ValueError(f"Invalid schema: {schema}") from e
+            raise ValueError(f"Invalid schema: {source}") from e

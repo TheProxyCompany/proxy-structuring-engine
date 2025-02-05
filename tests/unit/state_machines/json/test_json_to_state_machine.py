@@ -3,20 +3,14 @@ from typing import Any
 
 import pytest
 
-from pse.state_machines import build_state_machine
-from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.json_schema.any_schema import AnySchemaStateMachine
-from pse.state_machines.json_schema.array_schema import ArraySchemaStateMachine
-from pse.state_machines.json_schema.number_schema import NumberSchemaStateMachine
-from pse.state_machines.json_schema.object_schema import ObjectSchemaStateMachine
-from pse.state_machines.json_schema.string_schema import StringSchemaStateMachine
+from pse.state_machines.base.chain import ChainStateMachine
+from pse.state_machines.json import json_schema_to_state_machine
+from pse.state_machines.json.any_json_schema import AnySchemaStateMachine
+from pse.state_machines.json.json_array import ArraySchemaStateMachine
+from pse.state_machines.json.json_number import NumberSchemaStateMachine
+from pse.state_machines.json.json_object import ObjectSchemaStateMachine
+from pse.state_machines.json.json_string import StringSchemaStateMachine
 from pse.state_machines.types.enum import EnumStateMachine
-
-
-@pytest.fixture
-def context() -> dict[str, Any]:
-    """Fixture providing the default context for tests."""
-    return {"defs": defaultdict(dict), "path": ""}
 
 
 @pytest.mark.parametrize(
@@ -56,10 +50,9 @@ def test_get_acceptor_schema_types(
     schema: dict[str, Any],
     expected_acceptor_cls: type[Any],
     acceptor_len: int | None,
-    context: dict[str, Any],
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
-    state_machine = build_state_machine(schema, context)
+    state_machine = json_schema_to_state_machine(schema)
     assert isinstance(state_machine, expected_acceptor_cls), (
         f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
     )
@@ -85,7 +78,7 @@ def context_with_definition() -> dict[str, Any]:
 def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
-    state_machine = build_state_machine(schema, context_with_definition)
+    state_machine = json_schema_to_state_machine(schema, context_with_definition)
     assert isinstance(
         state_machine,
         ObjectSchemaStateMachine,

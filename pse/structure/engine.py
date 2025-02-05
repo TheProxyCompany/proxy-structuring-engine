@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 Array_Type = TypeVar("Array_Type")
 OutputType = TypeVar("OutputType")
 
+
 class StructuringEngine(Engine):
     """
     The types of objects that the engine can use as a schema.
@@ -54,6 +55,9 @@ class StructuringEngine(Engine):
         return self.process_logits(None, raw_logits)
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
+        """
+        Process the logits and return the processed logits.
+        """
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
         logger.debug(self.chart_model_output(raw_logits, 5, "🔵 Before processing"))
@@ -63,12 +67,7 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(
-        self,
-        logprobs: Array_Type,
-        sampler: Callable[..., Array_Type],
-        **kwargs: Any,
-    ) -> Array_Type:
+    def sample(self, logprobs: Array_Type, sampler: Callable[..., Array_Type], **kwargs: Any) -> Array_Type:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
@@ -80,41 +79,17 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
         return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
-    def configure(
-        self,
-        schema: SchemaType,
-        delimiters: tuple[str, str] | None = None,
-        min_buffer_length: int = -1,
-    ) -> None:
+    def configure(self, schema: SchemaType, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
         Args:
             schema: Schema to use when structuring output
-            delimiters:
-                Tuple (start, end) delimiters that indicate the start and end of the structured output.
-                Defaults to None.
-            min_buffer_length:
-                Controls when structured output begins. Can be used with or without delimiters.
-        Note:
-            - min_buffer_length == -1: Buffer disabled (default)
-            - min_buffer_length == 0: Optional buffer with no minimum length
-            - min_buffer_length > 0: Buffer must reach specified length before structured output
         """
-        self.delimiters = delimiters
-        self.min_buffer_length = min_buffer_length
-        self.state_machine = build_state_machine(
-            schema,
-            delimiters=delimiters,
-            min_buffer_length=min_buffer_length,
-        )
+        self.state_machine = build_state_machine(schema, **kwargs)
         self.steppers = self.state_machine.get_steppers()
 
-    def cast_output(
-        self,
-        output: Any | None = None,
-        output_type: type[OutputType] | Any = Any,
-    ) -> Any:
+    def cast_output(self, output: Any | None = None, output_type: type[OutputType] | Any = Any) -> Any:
         """
         Cast the output to the given type.
 
@@ -122,11 +97,8 @@ class StructuringEngine(Engine):
             output_type: The type of the output to return. If None, return the raw values.
         """
         # if no input to cast, find accepted stepper and use its value
-        if output is None and any(stepper.has_reached_accept_state() for stepper in self.steppers):
-            for stepper in self.steppers:
-                output = stepper.get_current_value()
-                if stepper.has_reached_accept_state():
-                    break
+        if output is None and self.steppers:
+            output = self.steppers[0].get_current_value()
 
         if not output:
             return None
@@ -135,18 +107,17 @@ class StructuringEngine(Engine):
             output = output.strip()
 
         # clean delimiters if present
-        if self.delimiters and isinstance(output, str):
-            if output.startswith(self.delimiters[0]):
-                output = output[len(self.delimiters[0]):]
+        # if self.delimiters and isinstance(output, str):
+        #     if output.startswith(self.delimiters[0]):
+        #         output = output[len(self.delimiters[0]) :]
 
-            if output.endswith(self.delimiters[1]):
-                output = output[: -len(self.delimiters[1])]
+        #     if output.endswith(self.delimiters[1]):
+        #         output = output[: -len(self.delimiters[1])]
 
         assert output is not None
         try:
             # cast to json if string
             value = json.loads(output) if isinstance(output, str) else output
-
             # validate with pydantic if BaseModel
             if output_type is not None and issubclass(output_type, BaseModel):
                 value = output_type.model_validate(value)
@@ -160,12 +131,11 @@ class StructuringEngine(Engine):
         """
         Reset the state machine and steppers.
         """
-        if not hard:
-            self.steppers = self.state_machine.get_steppers()
-        else:
-            self.delimiters = None
-            self.min_buffer_length = -1
+        if hard:
+            self.state_machine = None
             self.steppers = []
+        elif self.state_machine:
+            self.steppers = self.state_machine.get_steppers()
 
     @property
     def in_accepted_state(self) -> bool:

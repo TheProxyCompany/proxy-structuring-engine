@@ -5,7 +5,7 @@ from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.chain import ChainStateMachine
+from pse.state_machines.base.chain import ChainStateMachine
 
 
 class EnumStateMachine(StateMachine):

@@ -6,9 +6,9 @@ from pse_core import StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
+from pse.state_machines.base.chain import ChainStateMachine
 from pse.state_machines.base.phrase import PhraseStateMachine
-from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.json_schema.key_value_schema import KeyValueSchemaStateMachine
+from pse.state_machines.json.json_key_value import KeyValueSchemaStateMachine
 from pse.state_machines.types.key_value import KeyValueStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine
@@ -24,23 +24,16 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         self.context = context
         self.properties: dict[str, Any] = schema.get("properties", {})
         self.required_property_names: list[str] = schema.get("required", [])
-        self.additional_properties: dict[str, Any] | bool = schema.get(
-            "additionalProperties", {}
-        )
+        self.additional_properties: dict[str, Any] | bool = schema.get("additionalProperties", {})
         if any(prop not in self.properties for prop in self.required_property_names):
             raise ValueError("Required property not defined in schema")
 
         for property_name, property_schema in self.properties.items():
             if property_name in self.required_property_names and property_schema:
-                if (
-                    property_schema.get("nullable", False)
-                    or "default" in property_schema
-                ):
+                if property_schema.get("nullable", False) or "default" in property_schema:
                     self.required_property_names.remove(property_name)
 
-        is_optional = (
-            property_schema.get("nullable", False) or not self.required_property_names
-        )
+        is_optional = property_schema.get("nullable", False) or not self.required_property_names
         super().__init__(is_optional)
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
@@ -106,4 +99,4 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         return super().__eq__(other) and self.schema == other.schema
 
     def __str__(self) -> str:
-        return super().__str__() + "Schema"
+        return "JSON" + super().__str__()
