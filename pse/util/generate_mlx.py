@@ -7,7 +7,7 @@ import mlx.nn as nn
 from mlx_proxy.generate_step import generate_step
 from mlx_proxy.samplers import make_sampler
 
-from pse.structure.engine import StructuringEngine
+from pse.engine import StructuringEngine
 
 logger = logging.getLogger(__name__)
 
