@@ -17,14 +17,14 @@ from pse.state_machines.types.whitespace import WhitespaceStateMachine
 class ObjectSchemaStateMachine(ObjectStateMachine):
     def __init__(
         self,
-        property_schema: dict[str, Any],
+        schema: dict[str, Any],
         context: dict[str, Any],
     ):
-        self.schema = property_schema
+        self.schema = schema
         self.context = context
-        self.properties: dict[str, Any] = property_schema.get("properties", {})
-        self.required_property_names: list[str] = property_schema.get("required", [])
-        self.additional_properties: dict[str, Any] | bool = property_schema.get(
+        self.properties: dict[str, Any] = schema.get("properties", {})
+        self.required_property_names: list[str] = schema.get("required", [])
+        self.additional_properties: dict[str, Any] | bool = schema.get(
             "additionalProperties", {}
         )
         if any(prop not in self.properties for prop in self.required_property_names):
