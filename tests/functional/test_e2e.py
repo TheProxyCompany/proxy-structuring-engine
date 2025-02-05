@@ -162,7 +162,6 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
                     "nullable": True,
-                    "minItems": 1,
                     "maxItems": 1,
                 },
                 "attributes": {
