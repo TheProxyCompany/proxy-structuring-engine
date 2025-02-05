@@ -1,3 +1,0 @@
-from pse import StructuringEngine
-
-
