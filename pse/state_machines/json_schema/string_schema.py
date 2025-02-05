@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections.abc import Callable
 
 import regex
 from pse_core import StateId
-from pse_core.stepper import Stepper
 
-from pse.state_machines.types.string import StringStateMachine
+from pse.state_machines.types.string import StringStateMachine, StringStepper
 
 logger = logging.getLogger(__name__)
 
@@ -56,28 +56,6 @@ class StringSchemaStateMachine(StringStateMachine):
         """
         return self.schema.get("maxLength", 10000)
 
-    def validate_value(self, value: str) -> bool:
-        """
-        Validate the string value according to the schema.
-        """
-        if len(value) < self.min_length():
-            return False
-        if len(value) > self.max_length():
-            return False
-        if self.pattern and not self.pattern.match(value):
-            return False
-        if self.format:
-            format_validator = {
-                "email": self.validate_email,
-                "date-time": self.validate_date_time,
-                "uri": self.validate_uri,
-            }.get(self.format)
-            if format_validator and not format_validator(value):
-                return False
-            elif not format_validator:
-                raise ValueError(f"Format '{self.format}' not implemented")
-        return True
-
     def validate_email(self, value: str) -> bool:
         """
         Validate that the value is a valid email address.
@@ -110,7 +88,7 @@ class StringSchemaStateMachine(StringStateMachine):
         return super().__str__() + "Schema"
 
 
-class StringSchemaStepper(Stepper):
+class StringSchemaStepper(StringStepper):
     def __init__(
         self,
         state_machine: StringSchemaStateMachine,
@@ -121,36 +99,95 @@ class StringSchemaStepper(Stepper):
 
     def should_start_step(self, token: str) -> bool:
         if super().should_start_step(token):
-            assert self.sub_stepper
-            raw_value = self.sub_stepper.get_raw_value()
             if self.is_within_value():
-                valid_prefix = self.valid_prefix(raw_value + token)
-                if self.state_machine.validate_value(raw_value + (valid_prefix or "")):
-                    return valid_prefix is not None and raw_value != valid_prefix
+                valid_prefix = self.get_valid_prefix(token)
+                return self.validate_value(valid_prefix)
             return True
 
         return False
 
-    def should_complete_step(self) -> bool:
-        if super().should_complete_step():
-            if self.target_state in self.state_machine.end_states:
-                return self.state_machine.validate_value(self.get_current_value())
-            return True
+    def consume(self, token: str):
+        """
+        Consume the token and return the new stepper.
+        """
+        if self.is_within_value():
+            valid_prefix = self.get_valid_prefix(token)
+            if not valid_prefix:
+                return []
+        else:
+            valid_prefix = token
 
-        return False
+        steppers = super().consume(valid_prefix)
+        for stepper in steppers:
+            if token != valid_prefix:
+                stepper.remaining_input = token[len(valid_prefix) :]
 
-    def valid_prefix(self, s: str) -> str | None:
+        return steppers
+
+    def clean_value(self, value: str) -> str:
+        if value.startswith('"') and value.endswith('"'):
+            try:
+                value = json.loads(value) or ""
+            except Exception:
+                return ""
+        elif value.startswith('"'):
+            value = value[value.index('"') + 1:]
+            if '"' in value:
+                value = value[:value.rindex('"')]
+
+        return value
+
+    def get_valid_prefix(self, s: str) -> str | None:
         """
         Check whether the string 's' can be a prefix of any string matching the pattern.
         """
-        if not self.is_within_value() or not self.state_machine.pattern:
+        if (
+            not self.is_within_value()
+            or not self.state_machine.pattern
+            or not self.sub_stepper
+        ):
             return s
 
         match = None
-        pattern_str = self.state_machine.pattern.pattern
+
+        s = self.clean_value(s)
+        current_value = self.sub_stepper.get_raw_value()
         while not match and s:
-            match = regex.match(pattern_str, s, partial=True)
+            match = regex.match(
+                self.state_machine.pattern.pattern,
+                current_value + s,
+                partial=True,
+            )
             if not match:
                 s = s[:-1]
 
         return s if match else None
+
+    def validate_value(self, value: str | None = None) -> bool:
+        """
+        Validate the string value according to the schema.
+        """
+        # Extract content before the last quote if present, otherwise use as-is
+        value = self.clean_value(self.get_raw_value() + (value or ""))
+        if not value:
+            return False
+
+        if len(value) < self.state_machine.min_length():
+            return False
+        if len(value) > self.state_machine.max_length():
+            return False
+
+        if not self.is_within_value() and self.state_machine.pattern:
+            return self.state_machine.pattern.match(value) is not None
+
+        if self.state_machine.format:
+            format_validator = {
+                "email": self.state_machine.validate_email,
+                "date-time": self.state_machine.validate_date_time,
+                "uri": self.state_machine.validate_uri,
+            }.get(self.state_machine.format)
+            if format_validator and not format_validator(value):
+                return False
+            elif not format_validator:
+                raise ValueError(f"Format '{self.state_machine.format}' not implemented")
+        return True
