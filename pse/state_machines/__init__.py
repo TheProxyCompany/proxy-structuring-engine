@@ -7,9 +7,9 @@ from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
 from pse.state_machines.composite.encapsulated import EncapsulatedStateMachine
 from pse.state_machines.composite.wait_for import WaitFor
-from pse.state_machines.schema.any_schema import AnySchemaStateMachine
-from pse.state_machines.schema.number_schema import NumberSchemaStateMachine
-from pse.state_machines.schema.string_schema import StringSchemaStateMachine
+from pse.state_machines.json_schema.any_schema import AnySchemaStateMachine
+from pse.state_machines.json_schema.number_schema import NumberSchemaStateMachine
+from pse.state_machines.json_schema.string_schema import StringSchemaStateMachine
 from pse.state_machines.types.array import ArrayStateMachine
 from pse.state_machines.types.boolean import BooleanStateMachine
 from pse.state_machines.types.enum import EnumStateMachine
@@ -58,8 +58,8 @@ def build_state_machine(
 def schema_to_state_machine(
     schema: dict[str, Any], context: dict[str, Any]
 ) -> StateMachine:
-    from pse.state_machines.schema.array_schema import ArraySchemaStateMachine
-    from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
+    from pse.state_machines.json_schema.array_schema import ArraySchemaStateMachine
+    from pse.state_machines.json_schema.object_schema import ObjectSchemaStateMachine
 
     # handle nullable
     if schema.get("nullable"):

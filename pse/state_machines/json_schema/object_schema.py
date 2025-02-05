@@ -8,7 +8,7 @@ from pse_core.stepper import Stepper
 
 from pse.state_machines.base.phrase import PhraseStateMachine
 from pse.state_machines.composite.chain import ChainStateMachine
-from pse.state_machines.schema.key_value_schema import KeyValueSchemaStateMachine
+from pse.state_machines.json_schema.key_value_schema import KeyValueSchemaStateMachine
 from pse.state_machines.types.key_value import KeyValueStateMachine
 from pse.state_machines.types.object import ObjectStateMachine
 from pse.state_machines.types.whitespace import WhitespaceStateMachine

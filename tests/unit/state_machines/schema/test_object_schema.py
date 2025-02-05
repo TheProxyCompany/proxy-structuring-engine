@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from pse.state_machines.schema.object_schema import ObjectSchemaStateMachine
+from pse.state_machines.json_schema.object_schema import ObjectSchemaStateMachine
 
 
 @pytest.fixture

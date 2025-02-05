@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from pse.state_machines.schema.any_schema import AnySchemaStateMachine
+from pse.state_machines.json_schema.any_schema import AnySchemaStateMachine
 
 
 @pytest.fixture
