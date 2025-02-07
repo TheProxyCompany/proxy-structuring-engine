@@ -18,7 +18,7 @@ from pse.util.get_top_logits import get_top_logits
 logger = logging.getLogger(__name__)
 
 Array_Type = TypeVar("Array_Type")
-
+OutputType = TypeVar("OutputType")
 
 class StructuringEngine(Engine):
     """
@@ -94,8 +94,8 @@ class StructuringEngine(Engine):
     def parse_structured_output(
         self,
         raw_output: str | None = None,
-        output_type: type[BaseModel] | None = None,
-    ) -> Any:
+        output_type: type[OutputType] | None = None,
+    ) -> OutputType | Any:
         """
         Parse and cast the output to the given type.
 
@@ -121,7 +121,6 @@ class StructuringEngine(Engine):
             return None
 
         current_state = self.get_current_state()
-
         # Handle JSON parsing
         if current_state == "json" and isinstance(raw_output, str):
             if self.state_machine and self.state_machine.json_delimiters:
