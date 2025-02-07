@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 
 from pse_core import StateId
 from pse_core.stepper import Stepper
@@ -17,6 +18,16 @@ class GrammarStateMachine(AnyCharacterStateMachine):
         self.parser = grammar.lark_grammar
         self.validator = grammar.validator_function
 
+    def validate_input(
+        self,
+        input: str,
+        strict: bool = False,
+        start: str = "file_input",
+    ) -> bool:
+        result = self.validator(input, strict, start)
+
+        return result
+
     def get_new_stepper(self, state: StateId | None) -> GrammarStepper:
         return GrammarStepper(self)
 
@@ -31,8 +42,11 @@ class GrammarStepper(AnyCharacterStepper):
         return valid_prefix is not None
 
     def has_reached_accept_state(self) -> bool:
-        return super().has_reached_accept_state() and self.validate_input(
-            self.get_raw_value(), strict=True
+        return (
+            super().has_reached_accept_state()
+            and self.state_machine.validate_input(
+                self.get_raw_value(), strict=True
+            )
         )
 
     def consume(self, token: str) -> list[Stepper]:
@@ -46,20 +60,17 @@ class GrammarStepper(AnyCharacterStepper):
         return [new_stepper]
 
     def get_valid_prefix(self, new_input: str) -> tuple[str | None, str]:
-        """
-        Identify the smallest valid prefix of the new_input.
-        Optimized to reduce redundant string slicing.
-        """
         cur_input = self.get_raw_value()
         candidate = cur_input
-        # Incrementally add one character at a time.
+
+        # Pre-check if the entire input is valid to avoid character-by-character validation
+        if self.state_machine.validate_input(cur_input + new_input, strict=False):
+            return new_input, ""
+
+        # Only do character-by-character if full validation fails
         for i, ch in enumerate(new_input, 1):
             candidate += ch
-            if self.validate_input(candidate, strict=False):
+            if self.state_machine.validate_input(candidate, strict=False):
                 return new_input[:i], new_input[i:]
-        return None, ""
 
-    def validate_input(
-        self, input: str, strict: bool = False, start: str = "file_input"
-    ) -> bool:
-        return self.state_machine.validator(input, strict, start)
+        return None, ""
