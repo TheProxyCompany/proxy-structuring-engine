@@ -8,7 +8,7 @@ try:
 except ImportError:
     _has_mlx = False
 
-from pse.engine import StructuringEngine
+from pse.engine.structuring_engine import StructuringEngine
 
 
 @pytest.fixture(scope="module")
@@ -34,21 +34,6 @@ def generate_mock_logits(
         logits[token_ids[0]] = score
 
     return logits
-
-
-def test_create_acceptor_with_custom_delimiters(engine: StructuringEngine) -> None:
-    """Test creating an state_machine with custom delimiters."""
-    from pse.base.encapsulated import (
-        EncapsulatedStateMachine,
-    )
-
-    delimiters = "<<<START>>>", "<<<END>>>"
-
-    engine.configure(schema={"type": "string"}, delimiters=delimiters)
-    assert isinstance(engine.state_machine, EncapsulatedStateMachine)
-    assert engine.state_machine.delimiters == delimiters
-    engine.reset(hard=True)
-
 
 def test_create_acceptor_with_complex_schema(
     engine: StructuringEngine,

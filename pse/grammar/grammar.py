@@ -23,7 +23,7 @@ class GrammarStateMachine(CharacterStateMachine):
         return GrammarStepper(self)
 
     def __str__(self) -> str:
-        return f"Grammar({self.grammar.name})"
+        return self.grammar.name
 
 class GrammarStepper(CharacterStepper):
     def __init__(self, state_machine: GrammarStateMachine):

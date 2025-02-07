@@ -5,9 +5,9 @@ from typing import Any
 from pse_core import StateId
 from pse_core.stepper import Stepper
 
-from pse.state_machine import json_schema_to_state_machine
 from pse.base.chain import ChainStateMachine
 from pse.base.phrase import PhraseStateMachine
+from pse.engine.structuring_machine import json_schema_to_state_machine
 from pse.types.array import ArrayStateMachine, ArrayStepper
 from pse.types.whitespace import WhitespaceStateMachine
 

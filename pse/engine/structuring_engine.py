@@ -10,8 +10,8 @@ from pse_core.engine import Engine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
+from pse.engine.structuring_machine import StructuringMachine
 from pse.json import JSONSchemaSource
-from pse.state_machine import build_state_machine
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
@@ -88,11 +88,13 @@ class StructuringEngine(Engine):
         Args:
             schema: Schema to use when structuring output
         """
-        self.state_machine = build_state_machine(schema or {}, **kwargs)
+        self.state_machine = StructuringMachine(schema or {}, **kwargs)
         self.steppers = self.state_machine.get_steppers()
 
     def cast_output(
-        self, output: Any | None = None, output_type: type[OutputType] | Any = Any
+        self,
+        output: Any | None = None,
+        output_type: type[OutputType] | Any = Any,
     ) -> Any:
         """
         Cast the output to the given type.
