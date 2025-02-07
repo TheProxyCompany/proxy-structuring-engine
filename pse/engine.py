@@ -10,7 +10,7 @@ from pse_core.engine import Engine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.json import SchemaType
+from pse.json import JSONSchemaSource
 from pse.state_machine import build_state_machine
 from pse.util.get_top_logits import get_top_logits
 
@@ -67,7 +67,9 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(self, logprobs: Array_Type, sampler: Callable[..., Array_Type], **kwargs: Any) -> Array_Type:
+    def sample(
+        self, logprobs: Array_Type, sampler: Callable[..., Array_Type], **kwargs: Any
+    ) -> Array_Type:
         """
         Sample a token from the logits using the given sampler.
         kwargs are passed to the sampler function.
@@ -79,7 +81,7 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
         return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
-    def configure(self, schema: SchemaType, **kwargs: Any) -> None:
+    def configure(self, schema: JSONSchemaSource, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
@@ -89,7 +91,9 @@ class StructuringEngine(Engine):
         self.state_machine = build_state_machine(schema, **kwargs)
         self.steppers = self.state_machine.get_steppers()
 
-    def cast_output(self, output: Any | None = None, output_type: type[OutputType] | Any = Any) -> Any:
+    def cast_output(
+        self, output: Any | None = None, output_type: type[OutputType] | Any = Any
+    ) -> Any:
         """
         Cast the output to the given type.
 

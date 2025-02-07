@@ -25,6 +25,7 @@ dependencies = [
     "tqdm",
     "typing_extensions",
     "wheel",
+    "lark>=1.2.2",
 ]
 
 [project.optional-dependencies]

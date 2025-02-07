@@ -52,45 +52,20 @@ class EncapsulatedStateMachine(StateMachine):
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
 
-    def __str__(self) -> str:
-        components = []
-        if self.delimiters[0]:
-            components.append(f"{self.delimiters[0]!r}")
-
-        if self.inner_state_machine:
-            components.append(str(self.inner_state_machine))
-
-        if self.delimiters[1]:
-            components.append(f"{self.delimiters[1]!r}")
-        return f"Encapsulated({', '.join(components)})"
-
-
 class EncapsulatedStepper(Stepper):
+
     def __init__(
         self, state_machine: EncapsulatedStateMachine, state: StateId | None = None
     ) -> None:
         super().__init__(state_machine, state)
         self.state_machine: EncapsulatedStateMachine = state_machine
-        self.scratch_pad = ""
         self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:
         clone = super().clone()
-        clone.scratch_pad = self.scratch_pad
-        clone.inner_stepper = self.inner_stepper.clone() if self.inner_stepper else None
+        if self.inner_stepper:
+            clone.inner_stepper = self.inner_stepper.clone()
         return clone
-
-    def accepts_any_token(self) -> bool:
-        if self.sub_stepper:
-            within_value = self.sub_stepper.accepts_any_token()
-            return within_value
-
-        return self.current_state == 0
-
-    def get_invalid_continuations(self) -> list[str]:
-        if self.current_state == 0 and self.sub_stepper:
-            return self.sub_stepper.get_invalid_continuations()
-        return []
 
     def is_within_value(self) -> bool:
         if self.current_state == 0 and self.sub_stepper:

@@ -18,13 +18,13 @@ from pse.types.object import ObjectStateMachine
 SchemaDefinition: TypeAlias = (
     type[BaseModel] | dict[str, Any] | Callable[..., Any] | str
 )
-SchemaType: TypeAlias = SchemaDefinition | list[SchemaDefinition]
+JSONSchemaSource: TypeAlias = SchemaDefinition | list[SchemaDefinition]
 """
 The different object types that can be used as a schema in the structuring engine.
 """
 
 
-def generate_json_schema(source: SchemaType) -> dict[str, Any]:
+def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
     """
     Convert the given schema into an object that can be used by the engine.
 
@@ -61,6 +61,7 @@ def generate_json_schema(source: SchemaType) -> dict[str, Any]:
             return json.loads(source)
         except Exception as e:
             raise ValueError(f"Invalid schema: {source}") from e
+
 
 def json_schema_to_state_machine(
     schema: dict[str, Any], context: dict[str, Any] | None = None
