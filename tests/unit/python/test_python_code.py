@@ -1,9 +1,8 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.grammar import Grammar
 from pse.grammar.grammar import GrammarStateMachine
-from pse.grammar.python import python_parser, validate_python_code
+from pse.grammar.python import PythonGrammar
 
 
 @pytest.mark.parametrize(
@@ -47,14 +46,9 @@ from pse.grammar.python import python_parser, validate_python_code
 )
 def test_python_source_validation(code, should_accept):
     """Test validation of Python source code."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(python_grammar), "$")],
+            0: [(GrammarStateMachine(PythonGrammar), "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -72,14 +66,9 @@ def test_python_source_validation(code, should_accept):
 
 def test_incremental_parsing():
     """Test incremental parsing of Python code."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(python_grammar), "$")],
+            0: [(GrammarStateMachine(PythonGrammar), "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -114,14 +103,9 @@ def test_incremental_parsing():
 
 def test_empty_input():
     """Test handling of empty input."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(python_grammar), "$")],
+            0: [(GrammarStateMachine(PythonGrammar), "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -144,14 +128,9 @@ def test_empty_input():
 )
 def test_incomplete_but_valid_code(incomplete_code):
     """Test handling of incomplete but syntactically valid code."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(python_grammar), "$")],
+            0: [(GrammarStateMachine(PythonGrammar), "$")],
         }
     )
     steppers = source_code_sm.get_steppers()

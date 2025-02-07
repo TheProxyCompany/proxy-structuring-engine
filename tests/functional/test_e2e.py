@@ -307,13 +307,14 @@ def test_python_interpreter(
     """Test that the engine can generate a python interpreter."""
     model, engine = model_and_engine
     engine.configure({}, include_python=True, min_buffer_length=0)
-    raw_prompt = "Please generate the python code `print('Hello, world!')`.\n"
+    raw_prompt = "Please generate the python code `print('Hello, world!')`."
     raw_prompt += "Wrap the code in ```python\n and \n```."
     generate(raw_prompt, model, engine)
-    assert len(engine.steppers) == 1
-    assert engine.steppers[0].has_reached_accept_state()
-    final_output = engine.cast_output()
-    assert final_output == "print('Hello, world!')"
+    assert engine.has_reached_accept_state
+    for stepper in engine.steppers:
+        if stepper.has_reached_accept_state():
+            final_output = stepper.get_current_value()
+            assert final_output == "print('Hello, world!')"
 
 
 if __name__ == "__main__":

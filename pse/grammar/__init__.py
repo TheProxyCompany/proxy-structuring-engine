@@ -10,9 +10,13 @@ class Grammar:
     name: str
     lark_grammar: Lark
     validator_function: Callable[[Lark, str, bool, str], bool]
+    delimiters: tuple[str, str]
 
     def validate(
-        self, input: str, strict: bool = False, start: str = "file_input"
+        self,
+        input: str,
+        strict: bool = False,
+        start: str = "file_input",
     ) -> bool:
         """
         Validate the input against the grammar.

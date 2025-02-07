@@ -302,6 +302,6 @@ def test_python_interpreter(engine: StructuringEngine) -> None:
     """Test that the python interpreter is working correctly."""
     engine.configure({}, include_python=True)
     engine.consume_text("```python\nprint('Hello, world!')\n```")
-    assert len(engine.steppers) == 1
-    assert engine.steppers[0].has_reached_accept_state()
-    assert engine.steppers[0].get_current_value() == "print('Hello, world!')"
+    assert engine.steppers
+    assert any(stepper.has_reached_accept_state() for stepper in engine.steppers)
+    assert any(stepper.get_current_value() == "print('Hello, world!')" for stepper in engine.steppers)

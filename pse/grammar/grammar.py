@@ -25,10 +25,6 @@ class GrammarStateMachine(CharacterStateMachine):
     def __str__(self) -> str:
         return f"Grammar({self.grammar.name})"
 
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
 class GrammarStepper(CharacterStepper):
     def __init__(self, state_machine: GrammarStateMachine):
         """
@@ -72,14 +68,7 @@ class GrammarStepper(CharacterStepper):
         """
         Get the valid prefix for the new input.
         """
-        cur_input = self.get_raw_value()
-        candidate = cur_input
-
-        # Pre-check if the entire input is valid to avoid character-by-character validation
-        if self.state_machine.grammar.validate(cur_input + new_input, False):
-            return new_input, ""
-
-        # Only do character-by-character if full validation fails
+        candidate = self.get_raw_value()
         for i, ch in enumerate(new_input, 1):
             candidate += ch
             if self.state_machine.grammar.validate(candidate, False):

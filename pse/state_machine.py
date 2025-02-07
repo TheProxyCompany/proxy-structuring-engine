@@ -38,8 +38,8 @@ def build_state_machine(
     if include_python:
         python_state_machine = EncapsulatedStateMachine(
             GrammarStateMachine(PythonGrammar),
-            delimiters=("```python\n", "\n```"),
-            min_buffer_length=min_buffer_length,
+            delimiters=PythonGrammar.delimiters,
+            min_buffer_length=0,
         )
         state_machines.append(python_state_machine)
 

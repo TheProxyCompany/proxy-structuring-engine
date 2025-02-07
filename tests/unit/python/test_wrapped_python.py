@@ -1,21 +1,15 @@
 import pytest
 
 from pse.base.encapsulated import EncapsulatedStateMachine
-from pse.grammar import Grammar
 from pse.grammar.grammar import GrammarStateMachine
-from pse.grammar.python import python_parser, validate_python_code
+from pse.grammar.python import PythonGrammar
 
 
 def test_basic_python_block():
     """Test basic Python code block parsing."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
 
@@ -23,7 +17,7 @@ def test_basic_python_block():
     steppers = python_sm.advance_all_basic(steppers, "```python\n")
     assert len(steppers) > 0
     # Test Python code
-    steppers = python_sm.advance_all_basic(steppers, "x = 1\n")
+    steppers = python_sm.advance_all_basic(steppers, "x = 1")
     assert len(steppers) > 0
 
     # Test closing delimiter
@@ -42,14 +36,9 @@ def test_basic_python_block():
 )
 def test_complete_python_blocks(code_block):
     """Test various complete Python code blocks."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+            delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, code_block)
@@ -58,13 +47,8 @@ def test_complete_python_blocks(code_block):
 
 def test_custom_delimiters():
     """Test PythonStateMachine with custom delimiters."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
+        GrammarStateMachine(PythonGrammar),
         delimiters=("<python>", "</python>")
     )
     steppers = sm.get_steppers()
@@ -76,14 +60,9 @@ def test_custom_delimiters():
 
 def test_stepper_clone():
     """Test cloning of PythonStepper."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, "```python\nx = 1\n")
@@ -106,14 +85,9 @@ def test_stepper_clone():
 )
 def test_invalid_python_blocks(invalid_block):
     """Test handling of invalid Python code blocks."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, invalid_block)
@@ -122,14 +96,9 @@ def test_invalid_python_blocks(invalid_block):
 
 def test_incremental_parsing():
     """Test incremental parsing of Python code block."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
 
@@ -149,14 +118,9 @@ def test_incremental_parsing():
 
 def test_can_accept_more_input():
     """Test that the stepper can accept more input."""
-    python_grammar = Grammar(
-        name="Python",
-        lark_grammar=python_parser,
-        validator_function=validate_python_code,
-    )
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(python_grammar),
-        delimiters=("```python\n", "\n```")
+        GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, "```python\n")
