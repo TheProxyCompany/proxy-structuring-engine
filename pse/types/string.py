@@ -4,7 +4,6 @@ from pse_core import StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
-from pse.base.any_character import AnyCharacterStateMachine
 from pse.base.character import CharacterStateMachine
 from pse.base.phrase import PhraseStateMachine
 
@@ -35,7 +34,7 @@ class StringStateMachine(StateMachine):
                 ],
                 self.STRING_CONTENTS: [
                     (
-                        AnyCharacterStateMachine(disallowed_charset=INVALID_CHARS),
+                        CharacterStateMachine(blacklist_charset=INVALID_CHARS),
                         self.STRING_CONTENTS,
                     ),  # Regular characters
                     (PhraseStateMachine('"'), "$"),  # End quote

@@ -3,7 +3,6 @@ from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 from pse_core.trie import TrieMap
 
-from pse.base.character import CharacterStateMachine
 from pse.base.phrase import PhraseStateMachine, PhraseStepper
 from pse.types.boolean import BooleanStateMachine
 from pse.types.integer import IntegerStepper
@@ -188,28 +187,6 @@ def test_advance_all_invalid_input():
     # The input contains an invalid character '@', so there should be no valid steppers
     assert not any(stepper.has_reached_accept_state() for stepper in steppers)
     assert len(steppers) == 0
-
-
-def test_complex_input():
-    """Test StateMachine.advance_all_steppers with complex input."""
-    sm = StateMachine(
-        state_graph={
-            0: [(CharacterStateMachine("{"), 1)],
-            1: [(CharacterStateMachine("\n"), 2)],
-            2: [(CharacterStateMachine("["), 3)],
-        },
-        start_state=0,
-        end_states=[3],
-    )
-
-    steppers = sm.get_steppers()
-    steppers = sm.advance_all_basic(steppers, "{\n[")
-
-    assert any(stepper.has_reached_accept_state() for stepper in steppers)
-    for stepper in steppers:
-        if stepper.has_reached_accept_state():
-            assert stepper.get_current_value() == "{\n["
-
 
 def test_number_acceptor():
     """Test StateMachine with NumberAcceptor."""

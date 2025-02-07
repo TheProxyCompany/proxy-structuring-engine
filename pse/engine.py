@@ -81,14 +81,14 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
         return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
-    def configure(self, schema: JSONSchemaSource, **kwargs: Any) -> None:
+    def configure(self, schema: JSONSchemaSource | None, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
         Args:
             schema: Schema to use when structuring output
         """
-        self.state_machine = build_state_machine(schema, **kwargs)
+        self.state_machine = build_state_machine(schema or {}, **kwargs)
         self.steppers = self.state_machine.get_steppers()
 
     def cast_output(

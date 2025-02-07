@@ -24,8 +24,8 @@ class WhitespaceStateMachine(CharacterStateMachine):
         """
         super().__init__(
             WHITESPACE_CHARS,
-            min_whitespace,
-            max_whitespace,
+            char_min=min_whitespace,
+            char_limit=max_whitespace,
             is_optional=(min_whitespace == 0),
         )
 

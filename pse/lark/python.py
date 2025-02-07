@@ -23,7 +23,12 @@ python_parser = Lark.open_from_package(
 
 
 @lru_cache(maxsize=4096)
-def validate_python_code(code: str, strict: bool, start: str = "file_input") -> bool:
+def validate_python_code(
+    parser: Lark,
+    code: str,
+    strict: bool = False,
+    start: str = "file_input",
+) -> bool:
     """
     Attempts to parse the given code and caches the result.
 
@@ -31,7 +36,7 @@ def validate_python_code(code: str, strict: bool, start: str = "file_input") -> 
     non-strict mode (e.g. UnexpectedEOF or _DEDENT errors).
     """
     try:
-        python_parser.parse(code, start=start)
+        parser.parse(code, start=start)
         return True
     except Exception as e:
         if not strict:
@@ -44,7 +49,7 @@ def validate_python_code(code: str, strict: bool, start: str = "file_input") -> 
                 return True
 
         if not code.endswith("\n"):
-            return validate_python_code(code + "\n", strict, start)
+            return validate_python_code(parser, code + "\n", strict, start)
 
         return False
 
