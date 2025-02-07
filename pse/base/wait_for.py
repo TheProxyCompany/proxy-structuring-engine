@@ -104,6 +104,7 @@ class WaitForStepper(Stepper):
         if self.remaining_input:
             return False
 
+        # breakpoint()
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)
         if required_buffer_length > 0:
@@ -118,7 +119,6 @@ class WaitForStepper(Stepper):
                 # we don't have enough characters to start the transition
                 return False
 
-        # if we don't have a required buffer length, we can start the transition
         return should_start or not self.is_within_value()
 
     def consume(self, token: str) -> list[Stepper]:
@@ -144,5 +144,5 @@ class WaitForStepper(Stepper):
                 return self.state_machine.advance_stepper(clone, valid_suffix)
             else:
                 return [clone]
-        # Process the valid prefix normally
+
         return self.state_machine.advance_stepper(self, valid_suffix)

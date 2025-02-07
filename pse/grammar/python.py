@@ -4,11 +4,10 @@ import logging
 from functools import lru_cache
 
 from lark import Lark
-from lark.exceptions import UnexpectedEOF, UnexpectedToken
+from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
 from lark.indenter import PythonIndenter
 
-from pse.lark.grammar import Grammar
-from pse.lark.grammar.grammar import GrammarStateMachine
+from pse.grammar import Grammar
 
 logger = logging.getLogger(__name__)
 # only load the parser once
@@ -40,6 +39,7 @@ def validate_python_code(
         return True
     except Exception as e:
         if not strict:
+            # Handle incomplete strings and other incomplete constructs
             if isinstance(e, UnexpectedEOF):
                 return True
             if (
@@ -54,4 +54,8 @@ def validate_python_code(
         return False
 
 
-PythonStateMachine = GrammarStateMachine(Grammar(python_parser, validate_python_code))
+PythonGrammar = Grammar(
+    name="Python",
+    lark_grammar=python_parser,
+    validator_function=validate_python_code,
+)

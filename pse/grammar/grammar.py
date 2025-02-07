@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import logging
-from functools import lru_cache
 
 from pse_core import StateId
 from pse_core.stepper import Stepper
 
 from pse.base.character import CharacterStateMachine, CharacterStepper
-from pse.lark.grammar import Grammar
+from pse.grammar import Grammar
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +21,12 @@ class GrammarStateMachine(CharacterStateMachine):
         Get a new stepper for the grammar.
         """
         return GrammarStepper(self)
+
+    def __str__(self) -> str:
+        return f"Grammar({self.grammar.name})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class GrammarStepper(CharacterStepper):

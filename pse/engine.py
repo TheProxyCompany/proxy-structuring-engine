@@ -110,14 +110,6 @@ class StructuringEngine(Engine):
         if isinstance(output, str):
             output = output.strip()
 
-        # clean delimiters if present
-        # if self.delimiters and isinstance(output, str):
-        #     if output.startswith(self.delimiters[0]):
-        #         output = output[len(self.delimiters[0]) :]
-
-        #     if output.endswith(self.delimiters[1]):
-        #         output = output[: -len(self.delimiters[1])]
-
         assert output is not None
         try:
             # cast to json if string
@@ -126,10 +118,9 @@ class StructuringEngine(Engine):
             if output_type is not None and issubclass(output_type, BaseModel):
                 value = output_type.model_validate(value)
             return value
-        except Exception:
-            breakpoint()
-            logger.warning(f"Failed to cast value {output} with type {output_type}")
-            return None
+        except Exception as e:
+            logger.warning(f"Failed to cast value {output} with type {output_type}: {e}")
+            return output
 
     def reset(self, hard: bool = False) -> None:
         """

@@ -165,6 +165,7 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "maxItems": 1,
                 },
                 "attributes": {
+                    "nullable": True,
                     "type": "array",
                     "description": "Arbitrary attributes for the UI component, suitable for any element",
                     "items": {
@@ -299,6 +300,21 @@ def test_schema_web_search(
     assert final_output["name"] == "web_search"
     assert final_output["arguments"]["query"] == "popular favorite Pokémon"
     assert final_output["arguments"]["max_results"] is not None
+
+def test_python_interpreter(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that the engine can generate a python interpreter."""
+    model, engine = model_and_engine
+    engine.configure({}, include_python=True, min_buffer_length=0)
+    raw_prompt = "Please generate the python code `print('Hello, world!')`.\n"
+    raw_prompt += "Wrap the code in ```python\n and \n```."
+    generate(raw_prompt, model, engine)
+    assert len(engine.steppers) == 1
+    assert engine.steppers[0].has_reached_accept_state()
+    final_output = engine.cast_output()
+    assert final_output == "print('Hello, world!')"
+
 
 if __name__ == "__main__":
     pytest.main()

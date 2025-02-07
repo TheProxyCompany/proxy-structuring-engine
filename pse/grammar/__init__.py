@@ -3,9 +3,11 @@ from dataclasses import dataclass
 
 from lark import Lark
 
+
 @dataclass(frozen=True, slots=True)
 class Grammar:
 
+    name: str
     lark_grammar: Lark
     validator_function: Callable[[Lark, str, bool, str], bool]
 

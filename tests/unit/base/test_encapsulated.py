@@ -166,16 +166,22 @@ def test_accepts_any_token_when_within_value(
     steppers = sm.get_steppers()
     assert all(stepper.accepts_any_token() for stepper in steppers)
 
-    input_sequence = "Wow, proxy is such a cool company! I would love to work there. Let's see if this unit test passes!"
+    # Test initial state before delimiters
+    input_sequence = "Some text before delimiters"
     steppers = sm.advance_all_basic(steppers, input_sequence)
+    assert len(steppers) == 1
     assert all(stepper.accepts_any_token() for stepper in steppers)
     assert not any(stepper.is_within_value() for stepper in steppers)
+
+    # Test after opening delimiter
     steppers = sm.advance_all_basic(steppers, default_delimiters[0])
-
-    assert all(not stepper.accepts_any_token() for stepper in steppers)
+    assert len(steppers) > 0
     assert all(stepper.is_within_value() for stepper in steppers)
+    assert not any(stepper.accepts_any_token() for stepper in steppers)
 
+    # Test after string opening quote
     steppers = sm.advance_all_basic(steppers, '"')
+    assert len(steppers) > 0
     assert all(stepper.is_within_value() for stepper in steppers)
     assert any(stepper.accepts_any_token() for stepper in steppers)
 

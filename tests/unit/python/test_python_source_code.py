@@ -1,9 +1,8 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.grammar import Grammar
 from pse.grammar.grammar import GrammarStateMachine
-from pse.grammar.python import python_parser, validate_python_code
+from pse.grammar.python import Grammar, python_parser, validate_python_code
 
 
 @pytest.mark.parametrize(
