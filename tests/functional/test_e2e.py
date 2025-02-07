@@ -52,8 +52,9 @@ def test_simple_json_structure(
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output == {"value": 9.11}
+
 
 def test_simple_json_structure_with_delimiters(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -76,7 +77,7 @@ def test_simple_json_structure_with_delimiters(
         f"Wrap your output in {delimiters[0]} and {delimiters[1]}."
         f"Follow this schema: {schema}"
     )
-    engine.configure(schema, delimiters=delimiters)
+    engine.configure(schema, json_delimiters=delimiters)
     generate(
         raw_prompt,
         model,
@@ -84,7 +85,7 @@ def test_simple_json_structure_with_delimiters(
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output == {"value": 9.11}
 
 
@@ -103,6 +104,7 @@ def test_complex_json_structure(
                     "chain_of_thought": {
                         "type": "array",
                         "items": {"type": "string"},
+                        "maxItems": 3,
                     },
                     "feelings": {
                         "type": "string",
@@ -118,9 +120,9 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.configure(schema, delimiters=("```json\n", "\n```"), min_buffer_length=0)
+    engine.configure(schema, json_delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output
     assert isinstance(final_output, dict)
     assert final_output["name"] == "metacognition"
@@ -164,26 +166,8 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "nullable": True,
                     "maxItems": 1,
                 },
-                "attributes": {
-                    "nullable": True,
-                    "type": "array",
-                    "description": "Arbitrary attributes for the UI component, suitable for any element",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "The name of the attribute",
-                            },
-                            "value": {
-                                "type": "string",
-                                "description": "The value of the attribute",
-                            },
-                        },
-                    },
-                },
             },
-            "required": ["type", "children", "label", "attributes"],
+            "required": ["type"],
             "additionalProperties": False,
         },
     }
@@ -193,7 +177,7 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
     )
     engine.configure(schema, min_buffer_length=-1)
     generate(raw_prompt, model, engine)
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output["type"] == "div"
     assert len(final_output["children"]) == 1
 
@@ -253,9 +237,11 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.configure(schema, delimiters=("```json\n", "\n```"), min_buffer_length=0)
+    engine.configure(
+        schema, json_delimiters=("```json\n", "\n```"), min_buffer_length=0
+    )
     generate(raw_prompt, model, engine)
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output["name"] == "metacognition"
 
 
@@ -286,7 +272,7 @@ def test_schema_web_search(
         },
         "required": ["name", "arguments"],
     }
-    engine.configure(schema, delimiters=("<tool>", "</tool>"))
+    engine.configure(schema, json_delimiters=("<tool>", "</tool>"))
     prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
     engine.consume_text(prefill)
     raw_prompt = (
@@ -296,10 +282,11 @@ def test_schema_web_search(
         " Please use the web_search schema to find popular favoirte pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
-    final_output = engine.cast_output()
+    final_output = engine.parse_structured_output()
     assert final_output["name"] == "web_search"
     assert final_output["arguments"]["query"] == "popular favorite Pokémon"
     assert final_output["arguments"]["max_results"] is not None
+
 
 def test_python_interpreter(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -311,11 +298,8 @@ def test_python_interpreter(
     raw_prompt += "Wrap the code in ```python\n and \n```."
     generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
-    for stepper in engine.steppers:
-        if stepper.has_reached_accept_state():
-            final_output = stepper.get_current_value()
-            assert final_output == "print('Hello, world!')"
-
+    output = engine.parse_structured_output()
+    assert output == "print('Hello, world!')"
 
 if __name__ == "__main__":
     pytest.main()

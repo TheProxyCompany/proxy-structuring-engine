@@ -5,7 +5,9 @@ from pse_core.state_machine import StateMachine
 from pydantic import BaseModel
 
 from pse.base.chain import ChainStateMachine
+from pse.base.encapsulated import EncapsulatedStateMachine
 from pse.base.phrase import PhraseStateMachine
+from pse.base.wait_for import WaitFor
 from pse.json.any_json_schema import AnySchemaStateMachine
 from pse.json.json_number import NumberSchemaStateMachine
 from pse.json.json_string import StringSchemaStateMachine
@@ -22,6 +24,24 @@ JSONSchemaSource: TypeAlias = SchemaDefinition | list[SchemaDefinition]
 """
 The different object types that can be used as a schema in the structuring engine.
 """
+
+def schema_state_machine(
+    json_schemable: JSONSchemaSource,
+    json_delimiters: tuple[str, str] | None = None,
+    min_buffer_length: int = -1,
+) -> StateMachine:
+    json_schema = generate_json_schema(json_schemable)
+    json_state_machine = json_schema_to_state_machine(json_schema)
+    if json_delimiters:
+        return EncapsulatedStateMachine(
+            json_state_machine,
+            json_delimiters,
+            min_buffer_length,
+        )
+    elif min_buffer_length >= 0:
+        return WaitFor(json_state_machine, min_buffer_length)
+    else:
+        return json_state_machine
 
 
 def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:

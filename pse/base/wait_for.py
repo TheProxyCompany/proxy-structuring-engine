@@ -104,7 +104,6 @@ class WaitForStepper(Stepper):
         if self.remaining_input:
             return False
 
-        # breakpoint()
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)
         if required_buffer_length > 0:

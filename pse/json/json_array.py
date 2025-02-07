@@ -7,7 +7,7 @@ from pse_core.stepper import Stepper
 
 from pse.base.chain import ChainStateMachine
 from pse.base.phrase import PhraseStateMachine
-from pse.engine.structuring_machine import json_schema_to_state_machine
+from pse.json import json_schema_to_state_machine
 from pse.types.array import ArrayStateMachine, ArrayStepper
 from pse.types.whitespace import WhitespaceStateMachine
 

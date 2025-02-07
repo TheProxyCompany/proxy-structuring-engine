@@ -10,14 +10,14 @@ from pse_core.engine import Engine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.engine.structuring_machine import StructuringMachine
+from pse.engine import StructuringMachine
+from pse.grammar.python import PythonGrammar
 from pse.json import JSONSchemaSource
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
 Array_Type = TypeVar("Array_Type")
-OutputType = TypeVar("OutputType")
 
 
 class StructuringEngine(Engine):
@@ -42,27 +42,15 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def __call__(self, _: Any, raw_logits: Array_Type) -> Array_Type:
-        """
-        Logit Processing api: (input, logits) -> new_logits
-
-        Args:
-            raw_logits: The logits to process.
-
-        Returns:
-            The processed logits.
-        """
-        return self.process_logits(None, raw_logits)
-
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         """
         Process the logits and return the processed logits.
         """
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
-        logger.debug(self.chart_model_output(raw_logits, 5, "🔵 Before processing"))
+        logger.debug(self._print_top_logits(raw_logits, 5, "🔵 Before processing"))
         adjusted_logits = super().process_logits(raw_logits)
-        logger.debug(self.chart_model_output(adjusted_logits, 5, "🟢 After processing"))
+        logger.debug(self._print_top_logits(adjusted_logits, 5, "🟢 After processing"))
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
@@ -81,67 +69,106 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
         return type(logprobs)(token)  # type: ignore[reportCallIssue]
 
-    def configure(self, schema: JSONSchemaSource | None, **kwargs: Any) -> None:
+    def configure(self, schema: JSONSchemaSource, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
         Args:
             schema: Schema to use when structuring output
         """
-        self.state_machine = StructuringMachine(schema or {}, **kwargs)
-        self.steppers = self.state_machine.get_steppers()
+        self.state_machine: StructuringMachine | None = StructuringMachine(
+            schema, **kwargs
+        )
+        self.steppers = self.state_machine.get_steppers() if self.state_machine else []
 
-    def cast_output(
+    def get_current_state(self) -> str:
+        non_accepted_state = ""
+        for stepper in self.steppers:
+            if stepper.has_reached_accept_state():
+                return str(stepper.current_state)
+            else:
+                non_accepted_state = str(stepper.current_state)
+
+        return non_accepted_state
+
+    def parse_structured_output(
         self,
-        output: Any | None = None,
-        output_type: type[OutputType] | Any = Any,
+        raw_output: str | None = None,
+        output_type: type[BaseModel] | None = None,
     ) -> Any:
         """
-        Cast the output to the given type.
+        Parse and cast the output to the given type.
 
         Args:
-            output_type: The type of the output to return. If None, return the raw values.
-        """
-        # if no input to cast, find accepted stepper and use its value
-        if output is None and self.steppers:
-            output = self.steppers[0].get_current_value()
+            raw_output: The raw string output to parse. If None, attempts to get from steppers.
+            output_type: The type to cast the output to. If None, returns parsed but uncast value.
 
-        if not output:
+        Returns:
+            Parsed and optionally cast output value.
+
+        Raises:
+            ValueError: If parsing fails in an unexpected way
+            TypeError: If output type conversion fails
+        """
+        # Get output from steppers if none provided
+        if not raw_output and self.steppers:
+            for stepper in self.steppers:
+                if stepper.has_reached_accept_state():
+                    raw_output = stepper.get_current_value()
+                    break
+
+        if not raw_output:
             return None
 
-        if isinstance(output, str):
-            output = output.strip()
+        current_state = self.get_current_state()
 
-        assert output is not None
-        try:
-            # cast to json if string
-            value = json.loads(output) if isinstance(output, str) else output
-            # validate with pydantic if BaseModel
-            if output_type is not None and issubclass(output_type, BaseModel):
-                value = output_type.model_validate(value)
-            return value
-        except Exception as e:
-            logger.warning(f"Failed to cast value {output} with type {output_type}: {e}")
-            return output
+        # Handle JSON parsing
+        if current_state == "json" and isinstance(raw_output, str):
+            if self.state_machine and self.state_machine.json_delimiters:
+                raw_output = self._extract_between_delimiters(
+                    raw_output,
+                    self.state_machine.json_delimiters
+                )
+            try:
+                raw_output = json.loads(raw_output)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse JSON: {e}")
+                pass
+        elif current_state == "python":
+            raw_output = self._extract_between_delimiters(
+                raw_output,
+                PythonGrammar.delimiters
+            )
+            return raw_output
 
-    def reset(self, hard: bool = False) -> None:
-        """
-        Reset the state machine and steppers.
-        """
-        if hard:
-            self.state_machine = None
-            self.steppers = []
-        elif self.state_machine:
-            self.steppers = self.state_machine.get_steppers()
+        # Handle type conversion if needed
+        if (
+            output_type
+            and issubclass(output_type, BaseModel)
+            and isinstance(raw_output, dict)
+        ):
+            try:
+                return output_type.model_validate(raw_output)
+            except Exception as e:
+                logger.error(f"Failed to convert to {output_type}: {e}")
+                pass
 
-    @property
-    def in_accepted_state(self) -> bool:
-        """
-        Check if the state machine is in an accepted state.
-        """
-        return self.has_reached_accept_state
+        return raw_output
 
-    def chart_model_output(self, scores: Any, top_n: int = 10, flag: str = "🔵") -> str:
+    def _extract_between_delimiters(
+        self, text: str, delimiters: tuple[str, str]
+    ) -> str:
+        """Extract content between start and end delimiters."""
+        start, end = delimiters
+
+        if start in text:
+            text = text.split(start, 1)[1]
+        if end in text:
+            text = text.split(end, 1)[0]
+
+        return text
+
+    def _print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Print the top logits for the given input and scores.
         """
@@ -149,7 +176,7 @@ class StructuringEngine(Engine):
             return ""
 
         rows = []
-        top_logits = get_top_logits(scores, top_n)
+        top_logits = get_top_logits(logits, top_n)
         for token_id, score in top_logits.items():
             # check if score is too low to be considered
             if score == float("-inf") or score < -1e10:
