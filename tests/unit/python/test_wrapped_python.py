@@ -1,12 +1,12 @@
 import pytest
 
 from pse.lark.grammar.wrapped_grammar import WrappedGrammarStateMachine
-from pse.lark.python import Grammar, cached_parse_validation, python_parser
+from pse.lark.python import Grammar, python_parser, validate_python_code
 
 
 def test_basic_python_block():
     """Test basic Python code block parsing."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     python_sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("```python\n", "\n```")
     )
@@ -35,7 +35,7 @@ def test_basic_python_block():
 )
 def test_complete_python_blocks(code_block):
     """Test various complete Python code blocks."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     python_sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("```python\n", "\n```")
     )
@@ -46,7 +46,7 @@ def test_complete_python_blocks(code_block):
 
 def test_custom_delimiters():
     """Test PythonStateMachine with custom delimiters."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("<python>", "</python>")
     )
@@ -59,7 +59,7 @@ def test_custom_delimiters():
 
 def test_stepper_clone():
     """Test cloning of PythonStepper."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     python_sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("```python\n", "\n```")
     )
@@ -84,7 +84,7 @@ def test_stepper_clone():
 )
 def test_invalid_python_blocks(invalid_block):
     """Test handling of invalid Python code blocks."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     python_sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("```python\n", "\n```")
     )
@@ -95,7 +95,7 @@ def test_invalid_python_blocks(invalid_block):
 
 def test_incremental_parsing():
     """Test incremental parsing of Python code block."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     python_sm = WrappedGrammarStateMachine(
         grammar=python_grammar, delimiters=("```python\n", "\n```")
     )

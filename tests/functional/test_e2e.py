@@ -300,6 +300,5 @@ def test_schema_web_search(
     assert final_output["arguments"]["query"] == "popular favorite Pokémon"
     assert final_output["arguments"]["max_results"] is not None
 
-
 if __name__ == "__main__":
     pytest.main()

@@ -48,14 +48,15 @@ class GrammarStepper(AnyCharacterStepper):
     def get_valid_prefix(self, new_input: str) -> tuple[str | None, str]:
         """
         Identify the smallest valid prefix of the new_input.
+        Optimized to reduce redundant string slicing.
         """
         cur_input = self.get_raw_value()
-        # find first valid prefix
-        for i in range(1, len(new_input) + 1):
-            candidate = cur_input + new_input[:i]
+        candidate = cur_input
+        # Incrementally add one character at a time.
+        for i, ch in enumerate(new_input, 1):
+            candidate += ch
             if self.validate_input(candidate, strict=False):
                 return new_input[:i], new_input[i:]
-
         return None, ""
 
     def validate_input(

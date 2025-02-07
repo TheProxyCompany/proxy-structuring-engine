@@ -2,7 +2,7 @@ import pytest
 from pse_core.state_machine import StateMachine
 
 from pse.lark.grammar.grammar import GrammarStateMachine
-from pse.lark.python import Grammar, cached_parse_validation, python_parser
+from pse.lark.python import Grammar, python_parser, validate_python_code
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ from pse.lark.python import Grammar, cached_parse_validation, python_parser
 )
 def test_python_source_validation(code, should_accept):
     """Test validation of Python source code."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     source_code_sm = StateMachine(
         {
             0: [(GrammarStateMachine(python_grammar), "$")],
@@ -67,7 +67,7 @@ def test_python_source_validation(code, should_accept):
 
 def test_incremental_parsing():
     """Test incremental parsing of Python code."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     source_code_sm = StateMachine(
         {
             0: [(GrammarStateMachine(python_grammar), "$")],
@@ -105,7 +105,7 @@ def test_incremental_parsing():
 
 def test_empty_input():
     """Test handling of empty input."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     source_code_sm = StateMachine(
         {
             0: [(GrammarStateMachine(python_grammar), "$")],
@@ -131,7 +131,7 @@ def test_empty_input():
 )
 def test_incomplete_but_valid_code(incomplete_code):
     """Test handling of incomplete but syntactically valid code."""
-    python_grammar = Grammar(python_parser, cached_parse_validation)
+    python_grammar = Grammar(python_parser, validate_python_code)
     source_code_sm = StateMachine(
         {
             0: [(GrammarStateMachine(python_grammar), "$")],
