@@ -272,6 +272,7 @@ def test_schema_web_search(
         },
         "required": ["name", "arguments"],
     }
+    engine.reset(hard_reset=True)
     engine.configure(schema, json_delimiters=("<tool>", "</tool>"))
     prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
     engine.consume_text(prefill)
@@ -293,6 +294,7 @@ def test_python_interpreter(
 ) -> None:
     """Test that the engine can generate a python interpreter."""
     model, engine = model_and_engine
+    engine.reset(hard_reset=True)
     engine.configure({}, include_python=True, min_buffer_length=0)
     raw_prompt = "Please generate the python code `print('Hello, world!')`."
     raw_prompt += "Wrap the code in ```python\n and \n```."
@@ -304,6 +306,7 @@ def test_python_interpreter(
 def test_python_edge_case(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
     """Test that the engine can generate a python strawberry."""
     model, engine = model_and_engine
+    engine.reset(hard_reset=True)
     engine.configure({}, include_python=True, min_buffer_length=-1)
     requested_code = '"strawberry".count("r")'
     raw_prompt = f"Please return the following: ```python\n{requested_code}\n```"

@@ -17,6 +17,7 @@ def generate(
     engine: StructuringEngine,
     prefill: str | None = None,
 ) -> str:
+    mx.metal.clear_cache()
     messages = [{"role": "user", "content": prompt}]
     formatted_prompt = engine.tokenizer.apply_chat_template(
         conversation=messages,
