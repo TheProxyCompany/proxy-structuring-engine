@@ -156,7 +156,6 @@ def get_type(python_type: Any) -> str:
             return type_map[type(python_type)]
 
         logger.warning(f"Unknown type: {python_type}")
-        breakpoint()
         return "any"
 
     return type_map[type_name]

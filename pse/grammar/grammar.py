@@ -25,10 +25,14 @@ class GrammarStateMachine(CharacterStateMachine):
     def __str__(self) -> str:
         return self.grammar.name
 
+
 class GrammarStepper(CharacterStepper):
     def __init__(self, state_machine: GrammarStateMachine):
         """
-        Initialize the stepper.
+        Initialize the grammar stepper with a state machine.
+
+        Args:
+            state_machine: The grammar state machine that defines the valid transitions
         """
         super().__init__(state_machine)
         self.state_machine: GrammarStateMachine = state_machine
@@ -51,7 +55,14 @@ class GrammarStepper(CharacterStepper):
 
     def consume(self, token: str) -> list[Stepper]:
         """
-        Consume the token.
+        Consume the input token and return possible next states.
+
+        Args:
+            token: The input string to consume
+
+        Returns:
+            A list of new steppers representing valid next states after consuming the token.
+            Returns empty list if no valid transitions are possible.
         """
         valid_input, remaining_input = self.get_valid_prefix(token)
         if not valid_input:
@@ -66,7 +77,14 @@ class GrammarStepper(CharacterStepper):
 
     def get_valid_prefix(self, new_input: str) -> tuple[str | None, str]:
         """
-        Get the valid prefix for the new input.
+        Get the longest valid prefix of the new input that maintains a valid grammar state.
+
+        Args:
+            new_input: The input string to validate
+
+        Returns:
+            A tuple of (valid_prefix, remaining_input) where valid_prefix is None if no
+            valid prefix exists
         """
         candidate = self.get_raw_value()
         for i, ch in enumerate(new_input, 1):

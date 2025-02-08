@@ -37,7 +37,6 @@ def generate(
         max_tokens=-1,
     ):
         assert isinstance(tokens, mx.array)
-        assert tokens.ndim == 1
         if tokens.shape[0] == 1:
             token_value = tokens.item()
             assert isinstance(token_value, int)
@@ -69,6 +68,8 @@ def sampler(engine: StructuringEngine, **kwargs: Any) -> Callable[..., Any]:
     min_p = float(kwargs.get("min_p", 0.0))
     min_tokens_to_keep = int(kwargs.get("min_tokens_to_keep", 1))
     sampler = make_sampler(
-        temp=temp, min_p=min_p, min_tokens_to_keep=min_tokens_to_keep
+        temp=temp,
+        min_p=min_p,
+        min_tokens_to_keep=min_tokens_to_keep
     )
     return lambda x: engine.sample(x, sampler)

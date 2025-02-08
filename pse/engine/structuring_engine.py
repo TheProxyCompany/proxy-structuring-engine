@@ -17,7 +17,7 @@ from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)
 
-Array_Type = TypeVar("Array_Type")
+Array_Type = TypeVar("Array_Type", bound=Any)
 OutputType = TypeVar("OutputType")
 
 class StructuringEngine(Engine):
@@ -42,33 +42,6 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
-        """
-        Process the logits and return the processed logits.
-        """
-        self.multi_token_mapping: dict[int, list[int]] = {}
-        tic = time.perf_counter()
-        logger.debug(self._print_top_logits(raw_logits, 5, "🔵 Before processing"))
-        adjusted_logits = super().process_logits(raw_logits)
-        logger.debug(self._print_top_logits(adjusted_logits, 5, "🟢 After processing"))
-        toc = time.perf_counter()
-        logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
-        return adjusted_logits
-
-    def sample(
-        self, logprobs: Array_Type, sampler: Callable[..., Array_Type], **kwargs: Any
-    ) -> Array_Type:
-        """
-        Sample a token from the logits using the given sampler.
-        kwargs are passed to the sampler function.
-        """
-        logger.debug(f"Sampling with kwargs: {kwargs}")
-        tic = time.perf_counter()
-        token = super().sample(logprobs, sampler)
-        toc = time.perf_counter()
-        logger.debug(f"Sampling took {toc - tic:0.4f} seconds: \033[33m{token}\033[0m")
-        return type(logprobs)(token)  # type: ignore[reportCallIssue]
-
     def configure(self, schema: JSONSchemaSource, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
@@ -76,20 +49,44 @@ class StructuringEngine(Engine):
         Args:
             schema: Schema to use when structuring output
         """
-        self.state_machine: StructuringMachine | None = StructuringMachine(
-            schema, **kwargs
-        )
-        self.steppers = self.state_machine.get_steppers() if self.state_machine else []
+        self.state_machine: StructuringMachine = StructuringMachine(schema, **kwargs)
+        self.steppers = self.state_machine.get_steppers()
 
-    def get_current_state(self) -> str:
-        non_accepted_state = ""
-        for stepper in self.steppers:
-            if stepper.has_reached_accept_state():
-                return str(stepper.current_state)
-            else:
-                non_accepted_state = str(stepper.current_state)
+    def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
+        """
+        Process the logits and return the processed logits.
+        """
+        self.multi_token_mapping: dict[int, list[int]] = {}
+        tic = time.perf_counter()
+        logger.debug(self.print_top_logits(raw_logits, 5, "🔵 Before processing"))
+        adjusted_logits = super().process_logits(raw_logits)
+        logger.debug(self.print_top_logits(adjusted_logits, 5, "🟢 After processing"))
+        toc = time.perf_counter()
+        logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
+        return adjusted_logits
 
-        return non_accepted_state
+    def sample(self, logprobs: Array_Type, sampler: Callable[..., Array_Type]) -> Array_Type:
+        """
+        Sample tokens from logprobs using the provided sampler function.
+
+        Args:
+            logprobs: 2D array of shape (batch_size, sequence_length) containing log probabilities
+            sampler: Callable that implements the sampling strategy
+
+        Returns:
+            Array of sampled token indices with same type as input logprobs
+
+        Note:
+            Parent class expects single-batch input of shape (1, sequence_length)
+        """
+        tic = time.perf_counter()
+        # Process each batch item individually through engine's c++ sampler
+        samples = [super().sample(batch[None], sampler) for batch in logprobs]
+        # Unwrap single batch case
+        result = samples[0] if len(samples) == 1 else samples
+        toc = time.perf_counter()
+        logger.debug(f"Sampling completed in {toc - tic:.4f}s: \033[33m{result}\033[0m")
+        return type(logprobs)(result)
 
     def parse_structured_output(
         self,
@@ -120,25 +117,29 @@ class StructuringEngine(Engine):
         if not raw_output:
             return None
 
-        current_state = self.get_current_state()
+        # remove delimiters from raw_output
+        match self.current_state:
+            case "json" if self.state_machine and self.state_machine.json_delimiters:
+                delimiters = self.state_machine.json_delimiters
+            case "python":
+                delimiters = PythonGrammar.delimiters
+            case _:
+                delimiters = None
+
+        if delimiters and isinstance(raw_output, str):
+            start, end = delimiters
+            if start in raw_output:
+                raw_output = raw_output.split(start, 1)[1]
+            if end in raw_output:
+                raw_output = raw_output.split(end, 1)[0]
+
         # Handle JSON parsing
-        if current_state == "json" and isinstance(raw_output, str):
-            if self.state_machine and self.state_machine.json_delimiters:
-                raw_output = self._extract_between_delimiters(
-                    raw_output,
-                    self.state_machine.json_delimiters
-                )
+        if self.current_state == "json" and isinstance(raw_output, str):
             try:
                 raw_output = json.loads(raw_output)
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse JSON: {e}")
                 pass
-        elif current_state == "python":
-            raw_output = self._extract_between_delimiters(
-                raw_output,
-                PythonGrammar.delimiters
-            )
-            return raw_output
 
         # Handle type conversion if needed
         if (
@@ -154,44 +155,34 @@ class StructuringEngine(Engine):
 
         return raw_output
 
-    def _extract_between_delimiters(
-        self, text: str, delimiters: tuple[str, str]
-    ) -> str:
-        """Extract content between start and end delimiters."""
-        start, end = delimiters
-
-        if start in text:
-            text = text.split(start, 1)[1]
-        if end in text:
-            text = text.split(end, 1)[0]
-
-        return text
-
-    def _print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
+    def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
-        Print the top logits for the given input and scores.
+        Format and return a string showing the top token logits and their scores.
+        Only prints when logger level is DEBUG or lower.
         """
         if logger.getEffectiveLevel() > logging.DEBUG:
             return ""
 
-        rows = []
         top_logits = get_top_logits(logits, top_n)
+        rows = []
+
         for token_id, score in top_logits.items():
-            # check if score is too low to be considered
-            if score == float("-inf") or score < -1e10:
+            if score <= float("-inf") or score < -1e10:
                 continue
+
             token = repr(self.tokenizer.decode(token_id))
+
             if token_id in self.multi_token_mapping:
-                multiple_token_ids = self.multi_token_mapping[token_id]
-                representation = repr(self.tokenizer.decode(multiple_token_ids))
-                token = f"{token} -📶-> {representation}"
+                multi_tokens = self.multi_token_mapping[token_id]
+                multi_repr = repr(self.tokenizer.decode(multi_tokens))
+                token = f"{token} -📶-> {multi_repr}"
 
             rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
 
+        if not rows:
+            return f"{flag} No valid tokens found"
+
         header = f"{'Token ID':<8} | {'Score':>10} | Token"
         separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
-        chart = "\n".join([header, separator] + rows[:top_n])
-        if rows:
-            return f"{flag}\n{chart}"
-        else:
-            return f"{flag} No valid tokens found"
+
+        return f"{flag}\n" + "\n".join([header, separator, *rows])

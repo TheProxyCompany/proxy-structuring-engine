@@ -148,7 +148,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
         min_buffer_length=0,
     )
 
-    engine.consume_text('Here is the response: ```json\n{\n"name":"')
+    engine.consume_text('Here is the response: ```json\n{\n"name":"', token_healing=False)
     assert len(engine.steppers) == 2
     engine.reset(hard_reset=True)
 

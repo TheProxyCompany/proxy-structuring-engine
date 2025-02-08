@@ -301,5 +301,18 @@ def test_python_interpreter(
     output = engine.parse_structured_output()
     assert output == "print('Hello, world!')"
 
+def test_python_edge_case(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
+    """Test that the engine can generate a python strawberry."""
+    model, engine = model_and_engine
+    engine.configure({}, include_python=True, min_buffer_length=-1)
+    requested_code = '"strawberry".count("r")'
+    raw_prompt = f"Please return the following: ```python\n{requested_code}\n```"
+    prefill = '```python\n"strawberry".count("r")\n``'
+    engine.consume_text(prefill)
+    generate(raw_prompt, model, engine, prefill)
+    assert engine.has_reached_accept_state
+    output = engine.parse_structured_output()
+    assert output == '"strawberry".count("r")'
+
 if __name__ == "__main__":
     pytest.main()
