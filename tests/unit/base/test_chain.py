@@ -60,7 +60,12 @@ def test_nested_chain():
 
 
 def test_stepper_advance(sequence_acceptor: ChainStateMachine):
-    """Test advancing the stepper through the sequence of acceptors with specific inputs."""
+    """
+    Test advancing the stepper through the sequence of acceptors with specific inputs.
+
+    This is a more complex test that ensures the stepper can handle various inputs and
+    whitespace variations.
+    """
     steppers = sequence_acceptor.get_steppers()
     assert len(steppers) == 2
     steppers = sequence_acceptor.advance_all_basic(steppers, " ")

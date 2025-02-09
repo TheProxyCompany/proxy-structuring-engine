@@ -158,7 +158,9 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                 },
                 "label": {
                     "type": "string",
-                    "description": "The label of the UI component, used for buttons or form fields",
+                    "description": (
+                        "The label of the UI component, used for buttons or form fields"
+                    ),
                 },
                 "children": {
                     "type": "array",
@@ -174,7 +176,8 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
         },
     }
     raw_prompt = (
-        f"Please generate a JSON object that represents a div component that only has one child button."
+        "Please generate a JSON object that represents a div component that only has "
+        "one child button. "
         f"Please follow the following schema: {schema}."
     )
     engine.configure(schema, min_buffer_length=-1)
@@ -200,7 +203,11 @@ def test_multiple_schemas(
                         "properties": {
                             "message": {
                                 "type": "string",
-                                "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
+                                "description": (
+                                    "The final message content to be sent to the recipient.\n"
+                                    "This should be a packaged, markdown-formatted summary of the agent's work.\n"
+                                    "Supports all Unicode characters, including emojis."
+                                ),
                             }
                         },
                         "required": ["message"],
@@ -218,11 +225,18 @@ def test_multiple_schemas(
                             "chain_of_thought": {
                                 "type": "array",
                                 "items": {"type": "string"},
-                                "description": "A sequence of high-level thoughts, reasoning, and internal dialogue.\nIncludes complex ideas, strategic considerations, and conceptual frameworks.\nSupports all Unicode characters, including emojis.",
+                                "description": (
+                                    "A sequence of high-level thoughts, reasoning, and internal dialogue.\n"
+                                    "Includes complex ideas, strategic considerations, and conceptual "
+                                    "frameworks.\nSupports all Unicode characters, including emojis."
+                                ),
                             },
                             "feelings": {
                                 "type": "string",
-                                "description": "A reflection of the agent's emotional state.\nSupports all Unicode characters, including emojis.",
+                                "description": (
+                                    "A reflection of the agent's emotional state.\n"
+                                    "Supports all Unicode characters, including emojis."
+                                ),
                                 "nullable": True,
                             },
                         },
@@ -261,7 +275,10 @@ def test_schema_web_search(
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The search query string. Text only. An artificial assistant will be created to perform the search.",
+                        "description": (
+                            "The search query string. Text only. An artificial assistant will be "
+                            "created to perform the search."
+                        ),
                     },
                     "max_results": {
                         "type": "integer",
@@ -305,7 +322,10 @@ def test_python_interpreter(
     output = engine.parse_structured_output()
     assert output == "print('Hello, world!')"
 
-def test_python_edge_case(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
+
+def test_python_edge_case(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
     """Test that the engine can generate a python strawberry."""
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
@@ -318,6 +338,7 @@ def test_python_edge_case(model_and_engine: tuple[nn.Module, StructuringEngine])
     assert engine.has_reached_accept_state
     output = engine.parse_structured_output()
     assert output == '"strawberry".count("r")'
+
 
 if __name__ == "__main__":
     pytest.main()

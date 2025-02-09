@@ -25,19 +25,15 @@ dependencies = [
     "tqdm",
     "typing_extensions",
     "wheel",
-    "lark>=1.2.2",
+    "lark",
 ]
 
 [project.optional-dependencies]
 dev = [
     "coverage",
     "flake8",
-    "instructor",
-    "lm-format-enforcer",
     "mlx",
     "mlx-proxy",
-    "openai",
-    "outlines",
     "pse-core",
     "pytest",
     "ruff",
@@ -57,9 +53,7 @@ extend-select = [
     "RUF",  # Ruff-specific
     "UP",   # pyupgrade
     "SLF",  # string-literal-format
-    "F8",
-    "E",
-    "F",
+    "F8",   # flake8-comprehensions
 ]
 
 [tool.hatch.build.targets.sdist]
