@@ -4,17 +4,17 @@ from typing import Any, TypeAlias
 from pse_core.state_machine import StateMachine
 from pydantic import BaseModel
 
+from pse.types.array import ArrayStateMachine
 from pse.types.base.chain import ChainStateMachine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
 from pse.types.base.phrase import PhraseStateMachine
 from pse.types.base.wait_for import WaitFor
+from pse.types.boolean import BooleanStateMachine
+from pse.types.enum import EnumStateMachine
 from pse.types.json.any_json_schema import AnySchemaStateMachine
 from pse.types.json.json_number import NumberSchemaStateMachine
 from pse.types.json.json_string import StringSchemaStateMachine
 from pse.types.json.json_value import JsonStateMachine
-from pse.types.array import ArrayStateMachine
-from pse.types.boolean import BooleanStateMachine
-from pse.types.enum import EnumStateMachine
 from pse.types.object import ObjectStateMachine
 
 SchemaDefinition: TypeAlias = (

@@ -56,6 +56,9 @@ class StructuringEngine(Engine):
         """
         Process the logits and return the processed logits.
         """
+        if not self.state_machine:
+            return raw_logits
+
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
         logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
@@ -79,6 +82,9 @@ class StructuringEngine(Engine):
         Note:
             Parent class expects single-batch input of shape (1, sequence_length)
         """
+        if not self.state_machine:
+            return sampler(logprobs)
+
         tic = time.perf_counter()
         # Process each batch item individually through engine's c++ sampler
         samples = [super().sample(batch[None], sampler) for batch in logprobs]

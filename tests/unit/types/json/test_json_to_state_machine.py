@@ -4,13 +4,13 @@ from typing import Any
 import pytest
 
 from pse.types.base.chain import ChainStateMachine
+from pse.types.enum import EnumStateMachine
 from pse.types.json import json_schema_to_state_machine
 from pse.types.json.any_json_schema import AnySchemaStateMachine
 from pse.types.json.json_array import ArraySchemaStateMachine
 from pse.types.json.json_number import NumberSchemaStateMachine
 from pse.types.json.json_object import ObjectSchemaStateMachine
 from pse.types.json.json_string import StringSchemaStateMachine
-from pse.types.enum import EnumStateMachine
 
 
 @pytest.mark.parametrize(
