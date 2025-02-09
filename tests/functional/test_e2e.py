@@ -167,7 +167,6 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
                     "nullable": True,
-                    "minItems": 1,
                     "maxItems": 1,
                 },
             },
@@ -176,15 +175,17 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
         },
     }
     raw_prompt = (
-        "Please generate a JSON object that represents a div component that only has "
-        "one child button. "
-        f"Please follow the following schema: {schema}."
+        f"Please generate a JSON object that follows the following schema: {schema}."
+        "The object should be a div component that only has one child component."
+        "The child component should be a button with a label of 'Click me'."
     )
     engine.configure(schema, min_buffer_length=-1)
     generate(raw_prompt, model, engine)
     final_output = engine.parse_structured_output()
     assert final_output["type"] == "div"
     assert len(final_output["children"]) == 1
+    assert final_output["children"][0]["type"] == "button"
+    assert final_output["children"][0]["label"] == "Click me"
 
 
 def test_multiple_schemas(
