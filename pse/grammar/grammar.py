@@ -48,10 +48,14 @@ class GrammarStepper(CharacterStepper):
         """
         Has the stepper reached the accept state?
         """
-        return (
-            super().has_reached_accept_state()
-            and self.state_machine.grammar.validate(self.get_raw_value(), strict=True)
-        )
+        if not super().has_reached_accept_state():
+            return False
+
+        valid_input = self.get_raw_value()
+        if not valid_input.endswith("\n"):
+            valid_input += "\n"
+
+        return self.state_machine.grammar.validate(valid_input, strict=True)
 
     def consume(self, token: str) -> list[Stepper]:
         """
@@ -86,10 +90,23 @@ class GrammarStepper(CharacterStepper):
             A tuple of (valid_prefix, remaining_input) where valid_prefix is None if no
             valid prefix exists
         """
-        candidate = self.get_raw_value()
-        for i, ch in enumerate(new_input, 1):
-            candidate += ch
+        candidate_base = self.get_raw_value()
+
+        # Handle newline case first, but validate it
+        if "\n" in new_input:
+            newline_idx = new_input.index("\n") + 1
+            candidate = candidate_base + new_input[:newline_idx]
             if self.state_machine.grammar.validate(candidate, False):
-                return new_input[:i], new_input[i:]
+                return new_input[:newline_idx], new_input[newline_idx:]
+
+        # If newline validation failed or no newline present, try character by character
+        max_valid_index = None
+        for i in range(1, len(new_input) + 1):
+            candidate = candidate_base + new_input[:i]
+            if self.state_machine.grammar.validate(candidate, False):
+                max_valid_index = i
+
+        if max_valid_index is not None:
+            return new_input[:max_valid_index], new_input[max_valid_index:]
 
         return None, ""

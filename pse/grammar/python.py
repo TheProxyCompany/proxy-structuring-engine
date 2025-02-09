@@ -28,9 +28,6 @@ def validate_python_code(
     strict: bool = False,
     start: str = "file_input",
 ) -> bool:
-    if strict and not code.endswith("\n"):
-        return validate_python_code(parser, code + "\n", strict, start)
-
     try:
         parser.parse(code, start=start)
         return True
