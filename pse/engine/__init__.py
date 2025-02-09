@@ -3,10 +3,10 @@ import logging
 from pse_core import StateGraph
 from pse_core.state_machine import StateMachine
 
-from pse.base.encapsulated import EncapsulatedStateMachine
-from pse.grammar.grammar import GrammarStateMachine
-from pse.grammar.python import PythonGrammar
-from pse.json import JSONSchemaSource, schema_state_machine
+from pse.types.base.encapsulated import EncapsulatedStateMachine
+from pse.types.grammar.grammar import GrammarStateMachine
+from pse.types.grammar.python import PythonGrammar
+from pse.types.json import JSONSchemaSource, schema_state_machine
 
 logger = logging.getLogger(__name__)
 

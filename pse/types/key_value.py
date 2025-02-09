@@ -8,8 +8,8 @@ from pse_core import StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
-from pse.base.chain import ChainStateMachine
-from pse.base.phrase import PhraseStateMachine
+from pse.types.base.chain import ChainStateMachine
+from pse.types.base.phrase import PhraseStateMachine
 from pse.types.string import StringStateMachine
 from pse.types.whitespace import WhitespaceStateMachine
 
@@ -18,7 +18,8 @@ logger = logging.getLogger()
 
 class KeyValueStateMachine(ChainStateMachine):
     def __init__(self, sequence: list[StateMachine] | None = None) -> None:
-        from pse.json.json_value import JsonStateMachine
+        from pse.types.json.json_value import JsonStateMachine
+
         super().__init__(
             sequence
             or [

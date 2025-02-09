@@ -4,8 +4,8 @@ from pse_core import StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
-from pse.base.character import CharacterStateMachine
-from pse.base.phrase import PhraseStateMachine
+from pse.types.base.character import CharacterStateMachine
+from pse.types.base.phrase import PhraseStateMachine
 
 INVALID_CHARS: set[str] = {chr(c) for c in range(0, 0x20)} | {'"', "\\"}
 

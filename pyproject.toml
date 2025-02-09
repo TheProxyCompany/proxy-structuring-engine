@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "1.5.4"
+version = "1.5.5"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }

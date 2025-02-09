@@ -4,8 +4,8 @@ from pse_core import StateGraph, StateId
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 
-from pse.base.chain import ChainStateMachine
-from pse.base.phrase import PhraseStateMachine
+from pse.types.base.chain import ChainStateMachine
+from pse.types.base.phrase import PhraseStateMachine
 
 
 class EnumStateMachine(StateMachine):

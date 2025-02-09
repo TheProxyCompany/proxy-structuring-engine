@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pse.base.character import (
+from pse.types.base.character import (
     CharacterStateMachine,
     CharacterStepper,
 )

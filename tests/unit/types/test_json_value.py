@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from pse.json.json_value import JsonStateMachine
+from pse.types.json.json_value import JsonStateMachine
 
 
 @pytest.fixture

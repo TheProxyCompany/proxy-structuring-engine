@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
 from pse.engine import StructuringMachine
-from pse.grammar.python import PythonGrammar
-from pse.json import JSONSchemaSource
+from pse.types.grammar.python import PythonGrammar
+from pse.types.json import JSONSchemaSource
 from pse.util.get_top_logits import get_top_logits
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from pse.base.character import CharacterStateMachine
+from pse.types.base.character import CharacterStateMachine
 
 logger = logging.getLogger()
 

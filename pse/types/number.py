@@ -5,9 +5,9 @@ import logging
 from pse_core import Edge, StateId
 from pse_core.state_machine import StateMachine
 
-from pse.base.chain import ChainStateMachine
-from pse.base.character import CharacterStateMachine
-from pse.base.phrase import PhraseStateMachine
+from pse.types.base.chain import ChainStateMachine
+from pse.types.base.character import CharacterStateMachine
+from pse.types.base.phrase import PhraseStateMachine
 from pse.types.integer import IntegerStateMachine
 
 logger = logging.getLogger(__name__)
