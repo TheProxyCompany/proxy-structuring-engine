@@ -12,10 +12,8 @@ from pse.base.wait_for import WaitFor
 
 class EncapsulatedStateMachine(StateMachine):
     """
-    Accepts JSON data within a larger text, delimited by specific markers.
-
-    This class encapsulates an state_machine that recognizes JSON content framed by
-    specified opening and closing delimiters. Stores text before the delimiters in the WaitForStateMachine's buffer.
+    This class encapsulates an state_machine that recognizes content framed by
+    specified opening and closing delimiters.
     """
 
     def __init__(
@@ -27,10 +25,10 @@ class EncapsulatedStateMachine(StateMachine):
         """
 
         Args:
-            state_machine: The state_machine responsible for validating the JSON content.
-            open_delimiter: The string that denotes the start of the JSON content.
-            close_delimiter: The string that denotes the end of the JSON content.
+            state_machine: The state_machine wrapped by this state machine.
+            delimiters: The tuple of opening and closing delimiters.
         """
+        self.inner_state_machine = state_machine
         super().__init__(
             {
                 0: [
@@ -46,8 +44,6 @@ class EncapsulatedStateMachine(StateMachine):
                 2: [(PhraseStateMachine(delimiters[1]), "$")],
             }
         )
-        self.inner_state_machine = state_machine
-        self.delimiters = delimiters
 
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
@@ -55,10 +51,11 @@ class EncapsulatedStateMachine(StateMachine):
 class EncapsulatedStepper(Stepper):
 
     def __init__(
-        self, state_machine: EncapsulatedStateMachine, state: StateId | None = None
+        self,
+        state_machine: StateMachine,
+        state: StateId | None = None,
     ) -> None:
         super().__init__(state_machine, state)
-        self.state_machine: EncapsulatedStateMachine = state_machine
         self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:

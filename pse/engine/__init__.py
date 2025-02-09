@@ -13,16 +13,13 @@ logger = logging.getLogger(__name__)
 
 class StructuringMachine(StateMachine):
     """
-    A state machine that can validate both JSON and Python syntax structures.
-
-    This machine acts as a top-level controller that can handle multiple syntax validation
-    paths simultaneously. It maintains a "scratchpad" state from which it can transition
-    to either JSON or Python validation paths.
+    A state machine that can validate syntax structures.
+    This machine acts as a top-level controller.
 
     Args:
         json_schemable: Source for JSON schema validation
-        delimiters: Optional tuple of (start, end) delimiters for encapsulation
-        min_buffer_length: Minimum buffer length before validation starts (-1 for immediate)
+        json_delimiters: Optional tuple of (start, end) delimiters for encapsulation
+        min_buffer_length: Minimum buffer length before structure output starts
         include_python: Whether to include Python grammar validation path
     """
 

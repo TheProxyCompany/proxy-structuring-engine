@@ -37,6 +37,9 @@ def validate_python_code(
         code: The Python code to validate.
         strict: Whether to use strict validation.
     """
+    if strict and not code.endswith("\n"):
+        code += "\n"
+
     try:
         parser.parse(code, start=start)
         return True
@@ -51,7 +54,7 @@ def validate_python_code(
             ):
                 return True
             elif not code.endswith("\n"):
-                return validate_python_code(parser, code + "\n", True)
+                return validate_python_code(parser, code, True)
 
         return False
 

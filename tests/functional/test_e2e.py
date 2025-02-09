@@ -137,7 +137,8 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
-    #   the OpenAI API with Structured Outputs but would not be possible to express with a FSM."
+    #   the OpenAI API with Structured Outputs
+    #   but would not be possible to express with a FSM."
     #
     # let's test that.
     #
@@ -164,6 +165,7 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
                     "nullable": True,
+                    "minItems": 1,
                     "maxItems": 1,
                 },
             },

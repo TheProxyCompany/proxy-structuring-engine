@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "1.5.2"
+version = "1.5.4"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -31,7 +31,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "coverage",
-    "docstring-parser",
     "flake8",
     "instructor",
     "lm-format-enforcer",
@@ -59,10 +58,9 @@ extend-select = [
     "UP",   # pyupgrade
     "SLF",  # string-literal-format
     "F8",
+    "E",
+    "F",
 ]
-
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = [

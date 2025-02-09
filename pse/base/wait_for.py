@@ -32,8 +32,11 @@ class WaitFor(StateMachine):
 
         Args:
             state_machine (StateMachine): The nested StateId Machine to watch for.
-            min_buffer_length (int): The minimum length of the buffer before the nested StateId Machine can accept input.
-            strict (bool): If True, the nested StateId Machine's progress is reset when invalid input is detected.
+            min_buffer_length (int):
+                The minimum length of the buffer
+            strict (bool):
+                If True, the nested StateId Machine's progress is reset
+                when invalid input is detected.
         """
         super().__init__()
 
@@ -68,12 +71,16 @@ class WaitForStepper(Stepper):
 
     def accepts_any_token(self) -> bool:
         """
-        Indicates that this state_machine matches all characters until a trigger is found.
+        Indicates that this state_machine matches all characters
+        until a trigger is found.
 
         Returns:
             bool: Always True.
         """
-        if self.sub_stepper and (self.sub_stepper.is_within_value() or self.state_machine.min_buffer_length == -1):
+        if self.sub_stepper and (
+            self.sub_stepper.is_within_value()
+            or self.state_machine.min_buffer_length == -1
+        ):
             return self.sub_stepper.accepts_any_token()
 
         return len(self.buffer) >= self.state_machine.min_buffer_length
@@ -111,8 +118,8 @@ class WaitForStepper(Stepper):
                 # we have enough characters to start the transition
                 return True
             elif not should_start and not self.is_within_value():
-                # in this case, we are not within a value, so we can start the transition
-                # to allow the buffer/scratchpad to grow
+                # in this case, we are not within a value,
+                # so we can start the transition to allow the buffer/scratchpad to grow
                 return True
             else:
                 # we don't have enough characters to start the transition
@@ -136,7 +143,10 @@ class WaitForStepper(Stepper):
         if self.state_machine.strict and self.is_within_value() and invalid_prefix:
             return []
 
-        if invalid_prefix and (not self.is_within_value() or not self.state_machine.strict):
+        if invalid_prefix and (
+            not self.is_within_value()
+            or not self.state_machine.strict
+        ):
             clone = self.clone()
             clone.buffer += invalid_prefix
             if valid_suffix:

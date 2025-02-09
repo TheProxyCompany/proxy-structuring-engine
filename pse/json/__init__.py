@@ -50,7 +50,7 @@ def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
 
     Args:
         schema: The schema to convert.
-        Can be a Pydantic model, a callable, a dictionary, or a list of any of the above.
+        Can be a Pydantic model, a callable, a dictionary, or a list.
 
     Returns:
         The converted schema.
@@ -177,9 +177,9 @@ def process_json_schema(
     Resolve references and combine subschemas within a schema.
 
     Args:
-        schema (dict[str, Any]): The schema to resolve.
-        definitions (dict[str, dict[str, Any]]): Definitions available for resolving "$ref" references.
-        visited (dict[str, list[dict[str, Any]]]): Tracks visited schemas to prevent infinite recursion.
+        schema: The schema to resolve.
+        definitions: Definitions available for resolving "$ref" references.
+        visited: Tracks visited schemas to prevent infinite recursion.
 
     Returns:
         list[dict[str, Any]]: A list of resolved subschemas.

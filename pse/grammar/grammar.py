@@ -25,7 +25,6 @@ class GrammarStateMachine(CharacterStateMachine):
     def __str__(self) -> str:
         return self.grammar.name
 
-
 class GrammarStepper(CharacterStepper):
     def __init__(self, state_machine: GrammarStateMachine):
         """
@@ -52,9 +51,6 @@ class GrammarStepper(CharacterStepper):
             return False
 
         valid_input = self.get_raw_value()
-        if not valid_input.endswith("\n"):
-            valid_input += "\n"
-
         return self.state_machine.grammar.validate(valid_input, strict=True)
 
     def consume(self, token: str) -> list[Stepper]:
@@ -65,7 +61,7 @@ class GrammarStepper(CharacterStepper):
             token: The input string to consume
 
         Returns:
-            A list of new steppers representing valid next states after consuming the token.
+            A list of new steppers after consuming the token.
             Returns empty list if no valid transitions are possible.
         """
         valid_input, remaining_input = self.get_valid_prefix(token)
@@ -81,7 +77,7 @@ class GrammarStepper(CharacterStepper):
 
     def get_valid_prefix(self, new_input: str) -> tuple[str | None, str]:
         """
-        Get the longest valid prefix of the new input that maintains a valid grammar state.
+        Get the first prefix of the new input that maintains a valid grammar state.
 
         Args:
             new_input: The input string to validate

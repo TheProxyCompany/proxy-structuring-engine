@@ -15,9 +15,8 @@ class ChainStateMachine(StateMachine):
 
     def __init__(self, state_machines: list[StateMachine]) -> None:
         """
-
         Args:
-            state_machines (list[StateMachine]): A list of state machines to be chained in sequence.
+            state_machines: State machines to be chained in sequence
         """
         super().__init__(
             state_graph={
