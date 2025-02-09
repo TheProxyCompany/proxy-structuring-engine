@@ -15,9 +15,10 @@ python_parser = Lark.open_from_package(
     "lark",
     "python.lark",
     ["grammars"],
-    ambiguity="resolve",
+    ambiguity="forest",
     postlex=PythonIndenter(),
     start=["file_input"],
+    ordered_sets=False,
 )
 
 
@@ -28,6 +29,14 @@ def validate_python_code(
     strict: bool = False,
     start: str = "file_input",
 ) -> bool:
+    """
+    Validate Python code using the Lark parser.
+
+    Args:
+        parser: The Lark parser to use.
+        code: The Python code to validate.
+        strict: Whether to use strict validation.
+    """
     try:
         parser.parse(code, start=start)
         return True
@@ -42,7 +51,7 @@ def validate_python_code(
             ):
                 return True
             elif not code.endswith("\n"):
-                return validate_python_code(parser, code + "\n", strict, start)
+                return validate_python_code(parser, code + "\n", True)
 
         return False
 

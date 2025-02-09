@@ -92,21 +92,14 @@ class GrammarStepper(CharacterStepper):
         """
         candidate_base = self.get_raw_value()
 
-        # Handle newline case first, but validate it
-        if "\n" in new_input:
-            newline_idx = new_input.index("\n") + 1
-            candidate = candidate_base + new_input[:newline_idx]
-            if self.state_machine.grammar.validate(candidate, False):
-                return new_input[:newline_idx], new_input[newline_idx:]
-
-        # If newline validation failed or no newline present, try character by character
         max_valid_index = None
         for i in range(1, len(new_input) + 1):
             candidate = candidate_base + new_input[:i]
             if self.state_machine.grammar.validate(candidate, False):
                 max_valid_index = i
+                break
 
         if max_valid_index is not None:
             return new_input[:max_valid_index], new_input[max_valid_index:]
-
-        return None, ""
+        else:
+            return None, ""

@@ -49,7 +49,6 @@ def generate(
             assert isinstance(token_list, list)
             encoded_prompt.extend(token_list)
             output_tokens.extend(token_list)
-
         if engine.has_reached_accept_state:
             break
 
