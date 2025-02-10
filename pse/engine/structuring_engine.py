@@ -87,7 +87,11 @@ class StructuringEngine(Engine):
 
         tic = time.perf_counter()
         # Process each batch item individually through engine's c++ sampler
-        samples = [super().sample(batch[None], sampler) for batch in logprobs]
+        samples = [
+            super().sample(batch[None], sampler)
+            for batch in logprobs
+            if batch is not None and batch.ndim == 1
+        ]
         # Unwrap single batch case
         result = samples[0] if len(samples) == 1 else samples
         toc = time.perf_counter()
@@ -163,12 +167,8 @@ class StructuringEngine(Engine):
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
-        Format and return a string showing the top token logits and their scores.
-        Only prints when logger level is DEBUG or lower.
+        Format and return a string showing the top tokens and their scores.
         """
-        if logger.getEffectiveLevel() > logging.DEBUG:
-            return ""
-
         top_logits = get_top_logits(logits, top_n)
         rows = []
 
