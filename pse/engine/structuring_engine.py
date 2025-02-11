@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
+from pse_core.state_machine import StateMachine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
@@ -42,14 +43,20 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def configure(self, schema: JSONSchemaSource, **kwargs: Any) -> None:
+    def configure(self, schema: JSONSchemaSource | StateMachine, **kwargs: Any) -> None:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
         Args:
             schema: Schema to use when structuring output
         """
-        self.state_machine: StructuringMachine = StructuringMachine(schema, **kwargs)
+        self.json_delimiters = None
+        if isinstance(schema, StateMachine):
+            self.state_machine = schema
+        else:
+            self.state_machine = StructuringMachine(schema, **kwargs)
+            if self.state_machine.json_delimiters:
+                self.json_delimiters = self.state_machine.json_delimiters
         self.steppers = self.state_machine.get_steppers()
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
@@ -129,8 +136,8 @@ class StructuringEngine(Engine):
 
         # remove delimiters from raw_output
         match self.current_state:
-            case "json" if self.state_machine and self.state_machine.json_delimiters:
-                delimiters = self.state_machine.json_delimiters
+            case "json" if self.json_delimiters:
+                delimiters = self.json_delimiters
             case "python":
                 delimiters = PythonGrammar.delimiters
             case _:

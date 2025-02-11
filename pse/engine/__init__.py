@@ -33,8 +33,8 @@ class StructuringMachine(StateMachine):
         end_states = []
         start_state = "scratchpad"
         state_graph: StateGraph = {"scratchpad": []}
+        self.json_delimiters = json_delimiters
         if json_schemable:
-            self.json_delimiters = json_delimiters
             end_states += ["json"]
             json_edge = schema_state_machine(
                 json_schemable,
