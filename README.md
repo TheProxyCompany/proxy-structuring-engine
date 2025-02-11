@@ -62,7 +62,7 @@ By combining state machines, logit masking, and custom sampling, PSE effectively
 
 *   **Model Agnostic:** PSE works with any LLM that exposes its logits (output probabilities) and allows for custom sampling behavior. This includes popular frameworks like Hugging Face Transformers, MLX, and others.
 
-*   **Open Source:** The Proxy Structuring Engine python package is released under the Apache 2.0 license, encouraging community contributions and collaboration. The core C++ engine is proprietary and distributed as a compiled binary.
+*   **Open Source:** The Proxy Structuring Engine python package is released under the Apache 2.0 license, encouraging community contributions and collaboration. The core C++ engine is distributed as a compiled binary.
 
 *   **Python Bindings:** A user-friendly Python API (built with `nanobind`) provides seamless access to the C++ core.
 
