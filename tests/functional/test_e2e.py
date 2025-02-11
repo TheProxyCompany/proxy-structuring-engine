@@ -170,7 +170,7 @@ def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> 
                     "maxItems": 1,
                 },
             },
-            "required": ["type"],
+            "required": ["type", "children"],
             "additionalProperties": False,
         },
     }
