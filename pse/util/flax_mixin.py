@@ -8,7 +8,7 @@ from transformers.generation.flax_utils import FlaxSampleOutput, SampleState
 
 from pse.engine.structuring_engine import StructuringEngine
 
-
+breakpoint()
 class PSE_FlaxMixin(FlaxGenerationMixin):
     engine: StructuringEngine
 
