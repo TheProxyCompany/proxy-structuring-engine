@@ -80,7 +80,6 @@ class PSETorchMixin(GenerationMixin):
             hasattr(criteria, "eos_token_id") for criteria in stopping_criteria
         )
         do_sample = generation_config.do_sample
-        sampler = PSETorchMixin.make_sampler(do_sample)
         if self.engine.process_logits not in logits_processor:
             # insert the engine at the beginning of the list
             logits_processor.insert(0, self.engine.process_logits)
@@ -185,6 +184,7 @@ class PSETorchMixin(GenerationMixin):
 
             # token selection
             log_probs = nn.functional.softmax(next_token_scores, dim=-1)
+            sampler = PSETorchMixin.make_sampler(do_sample)
             next_tokens = self.engine.sample(log_probs, sampler).long()
             # finished sentences should have their next token be a padding token
             if has_eos_stopping_criteria:
