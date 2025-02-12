@@ -4,6 +4,7 @@ import pytest
 from transformers import LlamaTokenizer
 
 try:
+    import mlx.core as mx
     _has_mlx = True
 except ImportError:
     _has_mlx = False
@@ -244,8 +245,6 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
 def test_logits_processing(engine: StructuringEngine) -> None:
     """Test that the logits processing is working correctly across different dtypes."""
-    import mlx.core as mx
-
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
