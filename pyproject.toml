@@ -32,16 +32,23 @@ dependencies = [
 dev = [
     "coverage",
     "flake8",
-    "mlx",
-    "mlx-proxy",
-    "pse-core",
     "pytest",
     "ruff",
     "sentencepiece",
-    "torch",
     "ipykernel",
+]
+mlx = [
+    "mlx",
+    "mlx-proxy",
+]
+torch = [
+    "torch",
+]
+tensorflow = [
     "tensorflow",
-    "jax"
+]
+jax = [
+    "jax",
 ]
 
 [project.urls]
