@@ -8,11 +8,12 @@ from transformers.generation.flax_utils import FlaxSampleOutput, SampleState
 
 from pse.engine.structuring_engine import StructuringEngine
 
-breakpoint()
-class PSE_FlaxMixin(FlaxGenerationMixin):
+
+class PSEFlaxMixin(FlaxGenerationMixin):
     engine: StructuringEngine
 
-    def make_sampler(self, prng_key: jnp.ndarray) -> Callable:
+    @staticmethod
+    def make_sampler(prng_key: jnp.ndarray) -> Callable:
         return lambda x: jax.random.categorical(prng_key, x, axis=-1)
 
     def _sample(
@@ -89,7 +90,7 @@ class PSE_FlaxMixin(FlaxGenerationMixin):
             if logits_warper:
                 logits = logits_warper(logits, logits, state.cur_len)
 
-            sampler = self.make_sampler(prng_key)
+            sampler = PSEFlaxMixin.make_sampler(prng_key)
             next_token = self.engine.sample(logits, sampler)
 
             next_token = next_token * ~state.is_sent_finished + pad_token_id * state.is_sent_finished

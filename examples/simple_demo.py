@@ -4,10 +4,10 @@ import torch
 from transformers import AutoTokenizer, LlamaForCausalLM
 
 from pse.engine.structuring_engine import StructuringEngine
-from pse.util.torch_mixin import PSE_TorchMixin
+from pse.util.torch_mixin import PSETorchMixin
 
 
-class PSE_Torch(PSE_TorchMixin, LlamaForCausalLM):
+class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
 
 model_path = "meta-llama/Llama-3.2-1B-Instruct"

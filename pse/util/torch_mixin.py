@@ -16,7 +16,7 @@ from transformers.generation.utils import GenerateNonBeamOutput
 from pse.engine.structuring_engine import StructuringEngine
 
 
-class PSE_TorchMixin(GenerationMixin):
+class PSETorchMixin(GenerationMixin):
     engine: StructuringEngine
 
     @staticmethod
@@ -80,7 +80,7 @@ class PSE_TorchMixin(GenerationMixin):
             hasattr(criteria, "eos_token_id") for criteria in stopping_criteria
         )
         do_sample = generation_config.do_sample
-        sampler = PSE_TorchMixin.make_sampler(do_sample)
+        sampler = PSETorchMixin.make_sampler(do_sample)
         if self.engine.process_logits not in logits_processor:
             # insert the engine at the beginning of the list
             logits_processor.insert(0, self.engine.process_logits)

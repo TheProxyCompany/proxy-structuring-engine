@@ -13,7 +13,7 @@ from transformers.generation.tf_utils import (
 from pse.engine.structuring_engine import StructuringEngine
 
 
-class PSE_TFMixin(TFGenerationMixin):
+class PSETFMixin(TFGenerationMixin):
     engine: StructuringEngine
 
     @staticmethod
@@ -270,7 +270,7 @@ class PSE_TFMixin(TFGenerationMixin):
                     dtype=tf.int32,  # type: ignore [arg-type]
                 )
 
-            sampler = PSE_TFMixin.make_sampler(1, sample_seed)
+            sampler = PSETFMixin.make_sampler(1, sample_seed)
             next_tokens = pse_sample_fn(next_tokens_scores, sampler)
 
             if eos_token_id is not None:

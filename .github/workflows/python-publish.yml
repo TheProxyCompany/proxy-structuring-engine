@@ -11,8 +11,8 @@ name: Upload Python Package
 on:
   release:
     types: [published, updated]
-  push:
-    branches: [ "main" ]
+  # push:
+  #   branches: [ "main" ]
 
 permissions:
   contents: read
