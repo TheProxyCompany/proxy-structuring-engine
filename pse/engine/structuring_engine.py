@@ -26,10 +26,7 @@ class StructuringEngine(Engine):
     The types of objects that the engine can use as a schema.
     """
 
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
-    ) -> None:
+    def __init__(self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
@@ -73,7 +70,7 @@ class StructuringEngine(Engine):
             original_device = raw_logits.device.type
             raw_logits = raw_logits.cpu()
         # process logits
-        adjusted_logits = super().process_logits(raw_logits)
+        adjusted_logits = self.mask_invalid_tokens(raw_logits)
         # move logits back to original device if they didn't start on cpu
         if original_device:
             adjusted_logits = adjusted_logits.to(original_device)
@@ -107,7 +104,7 @@ class StructuringEngine(Engine):
             logprobs = logprobs.cpu()
         # Process each batch individually through engine's c++ sampler
         samples = [
-            super().sample(batch[None], sampler)
+            self.select_next_tokens(batch[None], sampler)
             for batch in logprobs
             if batch is not None and batch.ndim == 1
         ]
