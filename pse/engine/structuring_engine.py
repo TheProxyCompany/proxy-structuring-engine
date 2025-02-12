@@ -67,9 +67,17 @@ class StructuringEngine(Engine):
             return raw_logits
         tic = time.perf_counter()
         self.multi_token_mapping: dict[int, list[int]] = {}
-        logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
+        # move logits to cpu if they aren't already on cpu
+        original_device = None
+        if hasattr(raw_logits, "device") and raw_logits.device.type != "cpu":
+            original_device = raw_logits.device.type
+            raw_logits = raw_logits.cpu()
+        # process logits
         adjusted_logits = super().process_logits(raw_logits)
-        logger.debug(self.print_top_logits(adjusted_logits, 3, "🟢 After processing"))
+        # move logits back to original device if they didn't start on cpu
+        if original_device:
+            adjusted_logits = adjusted_logits.to(original_device)
+
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
@@ -92,17 +100,27 @@ class StructuringEngine(Engine):
             return sampler(logprobs)
 
         tic = time.perf_counter()
-        # Process each batch item individually through engine's c++ sampler
+        # move logits to cpu if they aren't already on cpu
+        original_device = None
+        if hasattr(logprobs, "device") and logprobs.device.type != "cpu":
+            original_device = logprobs.device.type
+            logprobs = logprobs.cpu()
+        # Process each batch individually through engine's c++ sampler
         samples = [
             super().sample(batch[None], sampler)
             for batch in logprobs
             if batch is not None and batch.ndim == 1
         ]
-        # Unwrap single batch case
-        result = samples[0] if len(samples) == 1 else samples
+        # Unwrap single batch
+        sampled_token_id = samples[0] if len(samples) == 1 else samples
+        result = type(logprobs)(sampled_token_id)
+        # move logits back to original device if they didn't start on cpu
+        if original_device is not None:
+            result = result.to(original_device)
+
         toc = time.perf_counter()
         logger.debug(f"Sampling completed in {toc - tic:.4f}s: \033[33m{result}\033[0m")
-        return type(logprobs)(result)
+        return result
 
     def parse_structured_output(
         self,
@@ -171,7 +189,7 @@ class StructuringEngine(Engine):
 
         return raw_output
 
-    def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
+    def _print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Format and return a string showing the top tokens and their scores.
         """

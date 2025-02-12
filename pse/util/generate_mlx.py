@@ -38,25 +38,15 @@ def generate(
         max_tokens=-1,
     ):
         assert isinstance(tokens, mx.array)
-        if tokens.shape[0] == 1:
-            token_value = tokens.item()
-            assert isinstance(token_value, int)
-            encoded_prompt.append(token_value)
-            output_tokens.append(token_value)
-        else:
-            # multiple tokens
-            token_list = tokens.tolist()
-            assert isinstance(token_list, list)
-            encoded_prompt.extend(token_list)
-            output_tokens.extend(token_list)
+        token_list = tokens.tolist() if tokens.shape[0] > 1 else [tokens.item()]
+        encoded_prompt.extend(token_list) # type: ignore[arg-type]
+        output_tokens.extend(token_list) # type: ignore[arg-type]
+
         if engine.has_reached_accept_state:
             break
 
     output = engine.tokenizer.decode(output_tokens)
-    if prefill:
-        output = prefill + output
-
-    return output
+    return prefill + output if prefill else output
 
 def sampler(engine: StructuringEngine, **kwargs: Any) -> Callable[..., Any]:
     """
