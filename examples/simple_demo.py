@@ -1,11 +1,7 @@
 import json
 
 import torch
-from transformers import (
-    AutoTokenizer,
-    LlamaForCausalLM,
-    LogitsProcessorList,
-)
+from transformers import AutoTokenizer, LlamaForCausalLM
 
 from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSE_TorchMixin
@@ -48,12 +44,11 @@ input_ids = tokenizer.apply_chat_template(
 assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
-logits_processor = LogitsProcessorList([model.engine.process_logits])
-greedy_output = model.generate(
+output = model.generate(
     input_ids,
-    logits_processor=logits_processor,
     do_sample=True,
     temperature=1.0,
+    min_p=0.1,
 )
 print("Output:\n" + 100 * "-")
-print(tokenizer.decode(greedy_output[0]))
+print(tokenizer.decode(output[0]))

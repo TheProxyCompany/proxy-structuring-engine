@@ -19,7 +19,8 @@ from pse.engine.structuring_engine import StructuringEngine
 class PSE_TorchMixin(GenerationMixin):
     engine: StructuringEngine
 
-    def make_sampler(self, do_sample: bool) -> Callable:
+    @staticmethod
+    def make_sampler(do_sample: bool) -> Callable:
         if do_sample:
             return lambda x: torch.multinomial(x, num_samples=1).squeeze(1)
         else:
@@ -79,6 +80,10 @@ class PSE_TorchMixin(GenerationMixin):
             hasattr(criteria, "eos_token_id") for criteria in stopping_criteria
         )
         do_sample = generation_config.do_sample
+        sampler = PSE_TorchMixin.make_sampler(do_sample)
+        if self.engine.process_logits not in logits_processor:
+            # insert the engine at the beginning of the list
+            logits_processor.insert(0, self.engine.process_logits)
 
         # init attention / hidden states / scores tuples
         scores = () if (return_dict_in_generate and output_scores) else None
@@ -151,7 +156,6 @@ class PSE_TorchMixin(GenerationMixin):
 
             # pre-process distribution
             next_token_scores = logits_processor(input_ids, next_token_logits)
-
             # Store scores, attentions and hidden_states when required
             if return_dict_in_generate:
                 if output_scores:
@@ -180,7 +184,6 @@ class PSE_TorchMixin(GenerationMixin):
                     )
 
             # token selection
-            sampler = self.make_sampler(do_sample)
             log_probs = nn.functional.softmax(next_token_scores, dim=-1)
             next_tokens = self.engine.sample(log_probs, sampler).long()
             # finished sentences should have their next token be a padding token
