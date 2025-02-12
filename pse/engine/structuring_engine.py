@@ -52,7 +52,7 @@ class StructuringEngine(Engine):
         """
         self.json_delimiters = None
         if isinstance(schema, StateMachine):
-            self.state_machine = schema
+            self.state_machine: StateMachine = schema
         else:
             self.state_machine = StructuringMachine(schema, **kwargs)
             if self.state_machine.json_delimiters:
@@ -65,14 +65,11 @@ class StructuringEngine(Engine):
         """
         if not self.state_machine:
             return raw_logits
-
-        self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
-        if logger.getEffectiveLevel() <= logging.DEBUG:
-            logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
+        self.multi_token_mapping: dict[int, list[int]] = {}
+        logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
         adjusted_logits = super().process_logits(raw_logits)
-        if logger.getEffectiveLevel() <= logging.DEBUG:
-            logger.debug(self.print_top_logits(adjusted_logits, 3, "🟢 After processing"))
+        logger.debug(self.print_top_logits(adjusted_logits, 3, "🟢 After processing"))
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
@@ -178,6 +175,9 @@ class StructuringEngine(Engine):
         """
         Format and return a string showing the top tokens and their scores.
         """
+        if logger.getEffectiveLevel() > logging.DEBUG:
+            return ""
+
         top_logits = get_top_logits(logits, top_n)
         rows = []
 

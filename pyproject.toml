@@ -39,6 +39,7 @@ dev = [
     "ruff",
     "sentencepiece",
     "torch",
+    "ipykernel"
 ]
 
 [project.urls]
