@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "2.0.2"
+version = "2.0.3"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -75,8 +75,6 @@ optimize = true
 ignore-vcs = true
 python-tag = "py311"
 repair-wheel = true
-strip-dist-info = true
-strip = true
 
 [tool.hatch.envs.default]
 python = "3.11"
@@ -90,5 +88,4 @@ log_cli_date_format = "%H:%M:%S"
 
 [tool.hatch.build]
 artifacts = ["*.so", "*.pyd"]
-only-packages = true
 reproducible = true

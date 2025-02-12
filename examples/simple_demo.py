@@ -18,12 +18,11 @@ model = PSE_Torch.from_pretrained(
     device_map="auto",
 )
 
-model.engine = StructuringEngine(tokenizer)
 model.config.pad_token_id = model.config.eos_token_id[0]
 if model.generation_config:
     model.generation_config.pad_token_id = model.config.eos_token_id[0]
 
-
+model.engine = StructuringEngine(tokenizer)
 SIMPLE_JSON_SCHEMA = {
     "type": "object",
     "properties": {"value": {"type": "number"}},
