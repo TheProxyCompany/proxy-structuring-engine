@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "2.0.6"
+version = "2.0.7"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -92,7 +92,3 @@ log_cli = false
 log_cli_level = "INFO"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
-
-[tool.hatch.build]
-artifacts = ["*.so", "*.pyd"]
-reproducible = true
