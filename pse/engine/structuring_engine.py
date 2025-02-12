@@ -68,9 +68,11 @@ class StructuringEngine(Engine):
 
         self.multi_token_mapping: dict[int, list[int]] = {}
         tic = time.perf_counter()
-        logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            logger.debug(self.print_top_logits(raw_logits, 3, "🔵 Before processing"))
         adjusted_logits = super().process_logits(raw_logits)
-        logger.debug(self.print_top_logits(adjusted_logits, 3, "🟢 After processing"))
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            logger.debug(self.print_top_logits(adjusted_logits, 3, "🟢 After processing"))
         toc = time.perf_counter()
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
