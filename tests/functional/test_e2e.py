@@ -133,7 +133,7 @@ def test_complex_json_structure(
     assert engine.has_reached_accept_state
 
 
-def test_match_openai(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
+def test_complex_recursive_schema(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
