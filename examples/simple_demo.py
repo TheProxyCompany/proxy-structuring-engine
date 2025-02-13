@@ -53,10 +53,14 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-print("Output:\n" + 100 * "-")
-print(tokenizer.decode(output[0]))
+# you can print the prompt + output:
+#   print(tokenizer.decode(output[0]))
+# you can also access just the structured output:
+#   engine.parse_structured_output()
+structured_output = model.engine.parse_structured_output(output_type=dict)
+print(100 * "-")
+print(json.dumps(structured_output, indent=2))
 
-# @title Test advanced-json generation
 ADVANCED_JSON_SCHEMA = {
     "type": "object",
     "properties": {
@@ -97,9 +101,9 @@ greedy_output = model.generate(
     input_ids,
     do_sample=True,
 )
-print("Output:\n" + 100 * "-")
-print(tokenizer.decode(greedy_output[0]))
-
+structured_output = model.engine.parse_structured_output(output_type=dict)
+print(100 * "-")
+print(json.dumps(structured_output, indent=2))
 
 # @title Test pydantic generation
 class CursorPositionModel(BaseModel):
@@ -137,5 +141,6 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-print("Output:\n" + 100 * "-")
-print(tokenizer.decode(output[0]))
+structured_output = model.engine.parse_structured_output(output_type=CursorPositionModel)
+print(100 * "-")
+print(json.dumps(structured_output.model_dump(), indent=2))
