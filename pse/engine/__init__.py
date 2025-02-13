@@ -34,14 +34,15 @@ class StructuringMachine(StateMachine):
         start_state = "scratchpad"
         state_graph: StateGraph = {"scratchpad": []}
         self.json_delimiters = json_delimiters
+        self.json_schema = None
         if json_schemable:
             end_states += ["json"]
-            json_edge = schema_state_machine(
+            self.json_schema, json_state_machine = schema_state_machine(
                 json_schemable,
                 json_delimiters,
                 min_buffer_length,
             )
-            state_graph["scratchpad"].append((json_edge, "json"))
+            state_graph["scratchpad"].append((json_state_machine, "json"))
 
         if include_python:
             end_states += ["python"]

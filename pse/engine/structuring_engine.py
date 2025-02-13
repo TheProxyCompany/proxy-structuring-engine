@@ -40,21 +40,29 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def configure(self, schema: JSONSchemaSource | StateMachine, **kwargs: Any) -> None:
+    def configure(self, schema: JSONSchemaSource | StateMachine, **kwargs: Any) -> dict[str, Any]:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
         Args:
             schema: Schema to use when structuring output
+
+        Returns:
+            The JSON schema used by the structuring engine.
         """
         self.json_delimiters = None
+        self.json_schema = {}
         if isinstance(schema, StateMachine):
             self.state_machine: StateMachine = schema
         else:
             self.state_machine = StructuringMachine(schema, **kwargs)
             if self.state_machine.json_delimiters:
                 self.json_delimiters = self.state_machine.json_delimiters
+            if self.state_machine.json_schema:
+                self.json_schema = self.state_machine.json_schema
+
         self.steppers = self.state_machine.get_steppers()
+        return self.json_schema
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         """
@@ -106,6 +114,7 @@ class StructuringEngine(Engine):
             logprobs = logprobs.cpu()
 
         # Process each batch individually
+        self.print_top_logits(logprobs, 5, "Before Sampling ⚪️")
         samples = [
             self.select_next_tokens(batch[None], sampler)
             for batch in logprobs

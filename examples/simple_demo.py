@@ -2,12 +2,14 @@ import json
 import logging
 
 import torch
+from pydantic import BaseModel
 from transformers import AutoTokenizer, LlamaForCausalLM
 
 from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
-logging.basicConfig(level=logging.DEBUG)
+# toggle this to logging.DEBUG to see the PSE debug logs!
+logging.basicConfig(level=logging.WARNING)
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
 
@@ -21,6 +23,7 @@ model = PSE_Torch.from_pretrained(
 
 model.config.pad_token_id = model.config.eos_token_id[0]
 if model.generation_config:
+    model.generation_config.top_p = None
     model.generation_config.top_k = 8
     model.generation_config.do_sample = True
     model.generation_config.temperature = 0.9
@@ -63,12 +66,14 @@ ADVANCED_JSON_SCHEMA = {
             "properties": {
                 "chain_of_thought": {
                     "type": "array",
+                    "description": "A sequence of high-level thoughts, reasoning and internal dialogue.\nThe chain of thought should be a sequence of thoughts that are related to the question.\n",
                     "items": {
                         "type": "string",
                         "minLength": 20,
                         "maxLength": 200,
                     },
-                    "description": "A sequence of high-level thoughts, reasoning and internal dialogue.",
+                    "minItems": 1, # floor the number of thoughts
+                    "maxItems": 3, # limit the number of thoughts
                 },
             },
             "required": ["chain_of_thought"],
@@ -76,13 +81,11 @@ ADVANCED_JSON_SCHEMA = {
     },
     "required": ["name", "arguments"],
 }
+model.engine.configure(ADVANCED_JSON_SCHEMA)
 raw_prompt = (
     f"This is a test of your abilities."
-    f"Please structure your response to follow the following schema: {ADVANCED_JSON_SCHEMA}."
-    f"You must wrap your response with ```json\n and \n```."
-    f"Use the schema to think about what it means to think."
+    f"Please format your response to follow the following schema:\n{json.dumps(ADVANCED_JSON_SCHEMA, indent=2)}\n"
 )
-model.engine.configure(ADVANCED_JSON_SCHEMA, json_delimiters=("```json\n", "\n```"))
 messages = [{"role": "user", "content": raw_prompt}]
 input_ids = tokenizer.apply_chat_template(
     messages, return_tensors="pt", add_generation_prompt=True
@@ -96,3 +99,43 @@ greedy_output = model.generate(
 )
 print("Output:\n" + 100 * "-")
 print(tokenizer.decode(greedy_output[0]))
+
+
+# @title Test pydantic generation
+class CursorPositionModel(BaseModel):
+    """
+    An object representing the position and click state of a cursor.
+
+    Attributes:
+        x_pos: The horizontal position of the cursor in pixels
+        y_pos: The vertical position of the cursor in pixels
+        left_click: Whether the left mouse button is currently pressed. Default is False.
+    """
+
+    x_pos: int
+    y_pos: int
+    left_click: bool = False
+
+
+json_schema: dict = model.engine.configure(
+    CursorPositionModel, json_delimiters=("<cursor>", "</cursor>")
+)
+prompt = (
+    "Please use the following schema to generate a cursor position:\n"
+    f"{json.dumps(json_schema, indent=2)}.\n"
+    "Pretend to move the cursor to x = 100 and y = 100, with the left mouse button clicked.\n"
+    "Wrap your response in <cursor>CursorPositionModel</cursor>."
+)
+messages = [{"role": "user", "content": prompt}]
+input_ids = tokenizer.apply_chat_template(
+    messages, return_tensors="pt", add_generation_prompt=True
+)
+assert isinstance(input_ids, torch.Tensor)
+input_ids = input_ids.to(model.device)
+assert isinstance(input_ids, torch.Tensor)
+output = model.generate(
+    input_ids,
+    do_sample=True,
+)
+print("Output:\n" + 100 * "-")
+print(tokenizer.decode(output[0]))

@@ -28,7 +28,6 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
     # Get description from schema or docstring
     description = (
         schema.get("description")
-        or docstring.long_description
         or docstring.short_description
         or ""
     )
@@ -67,5 +66,5 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
     return {
         "name": schema.get("title", model.__name__),
         "description": description,
-        "parameters": parameters,
+        **parameters,
     }

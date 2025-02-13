@@ -30,19 +30,28 @@ def schema_state_machine(
     json_schemable: JSONSchemaSource,
     json_delimiters: tuple[str, str] | None = None,
     min_buffer_length: int = -1,
-) -> StateMachine:
+) -> tuple[dict[str, Any], StateMachine]:
     json_schema = generate_json_schema(json_schemable)
     json_state_machine = json_schema_to_state_machine(json_schema)
     if json_delimiters:
-        return EncapsulatedStateMachine(
-            json_state_machine,
-            json_delimiters,
-            min_buffer_length,
+        return (
+            json_schema,
+            EncapsulatedStateMachine(
+                json_state_machine,
+                json_delimiters,
+                min_buffer_length,
+            )
         )
     elif min_buffer_length >= 0:
-        return WaitFor(json_state_machine, min_buffer_length)
+        return (
+            json_schema,
+            WaitFor(
+                json_state_machine,
+                min_buffer_length,
+            ),
+        )
     else:
-        return json_state_machine
+        return (json_schema, json_state_machine)
 
 
 def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
