@@ -83,12 +83,10 @@ def test_wait_for_acceptor_with_partial_match():
         ('"c', 4),
     ]
     trie_map = trie_map.insert_all(items)
-    for stepper, advanced_token, healed in state_machine.advance_all(
-        steppers, '"*', trie_map
-    ):
-        assert healed
-        value = stepper.get_current_value()
-        assert value == '"'
-        assert advanced_token == '"'
+    stepper_deltas = state_machine.advance_all(steppers, '"*', trie_map)
+    for stepper_delta in stepper_deltas:
+        assert stepper_delta.was_healed
+        assert stepper_delta.token == '"'
+        assert stepper_delta.stepper.get_current_value() == '"'
     assert len(steppers) == 1
     assert not steppers[0].has_reached_accept_state()

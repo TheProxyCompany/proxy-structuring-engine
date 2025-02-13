@@ -149,9 +149,9 @@ def test_partial_match():
         ('"c', 4),
     ]
     trie = trie.insert_all(items)
-    advanced = text_acceptor.advance_all(steppers, '"*', vocab=trie)
-    assert len(advanced) == 1
-    for stepper, token, healed in advanced:
-        assert healed
-        assert token == '"'
-        assert stepper.get_current_value() == '"'
+    stepper_deltas = text_acceptor.advance_all(steppers, '"*', vocab=trie)
+    assert len(stepper_deltas) == 1
+    for stepper_delta in stepper_deltas:
+        assert stepper_delta.was_healed
+        assert stepper_delta.token == '"'
+        assert stepper_delta.stepper.get_current_value() == '"'

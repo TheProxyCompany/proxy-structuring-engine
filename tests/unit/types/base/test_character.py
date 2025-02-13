@@ -155,9 +155,9 @@ def test_stepper_clone(basic_state_machine):
 def test_stepper_is_within_value(basic_state_machine):
     """Test is_within_value method."""
     stepper = CharacterStepper(basic_state_machine)
-    assert stepper.is_within_value()
+    assert not stepper.is_within_value()
 
-    list(stepper.consume("test"))
+    stepper = stepper.consume("test")[0]
     assert stepper.is_within_value()
 
 

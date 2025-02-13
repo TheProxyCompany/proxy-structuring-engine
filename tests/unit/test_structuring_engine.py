@@ -241,6 +241,19 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     assert engine.has_reached_accept_state
     engine.reset(hard_reset=True)
 
+def test_token_healing(engine: StructuringEngine) -> None:
+    """Test that the token healing is working correctly."""
+    SIMPLE_JSON_SCHEMA = {
+        "type": "object",
+        "properties": {"value": {"type": "number"}},
+        "required": ["value"],
+    }
+    engine.configure(SIMPLE_JSON_SCHEMA)
+    engine.consume_text('{"')
+    assert len(engine.steppers) == 1
+    assert not engine.has_reached_accept_state
+    assert engine.steppers[0].get_current_value() == '{"'
+
 
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
 def test_logits_processing(engine: StructuringEngine) -> None:

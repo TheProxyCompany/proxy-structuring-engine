@@ -41,7 +41,6 @@ def generate(
         token_list = tokens.tolist() if tokens.shape[0] > 1 else [tokens.item()]
         encoded_prompt.extend(token_list) # type: ignore[arg-type]
         output_tokens.extend(token_list) # type: ignore[arg-type]
-
         if engine.has_reached_accept_state:
             break
 

@@ -390,11 +390,11 @@ def test_trie_token_healing():
     )
     steppers = sm.get_steppers()
     new_steppers = []
-    for stepper, advanced_token, healed in sm.advance_all(steppers, "(.", trie):
-        assert healed
-        assert advanced_token == "("
-        assert stepper.get_current_value() == "("
-        new_steppers.append(stepper)
+    for stepper_delta in sm.advance_all(steppers, "(.", trie):
+        assert stepper_delta.was_healed
+        assert stepper_delta.token == "("
+        assert stepper_delta.stepper.get_current_value() == "("
+        new_steppers.append(stepper_delta.stepper)
     steppers = new_steppers
 
     assert len(steppers) == 2
@@ -435,8 +435,8 @@ def test_simple_number_acceptor():
     assert isinstance(integer_acceptor_stepper, Stepper)
     assert isinstance(integer_acceptor_stepper.sub_stepper, IntegerStepper)
 
-    for stepper, advanced_token, healed in sm.advance_all(steppers, "-1.2", trie):
-        assert healed
-        assert advanced_token == "-1"
-        assert stepper.has_reached_accept_state()
-        assert stepper.get_current_value() == -1
+    for stepper_delta in sm.advance_all(steppers, "-1.2", trie):
+        assert stepper_delta.was_healed
+        assert stepper_delta.token == "-1"
+        assert stepper_delta.stepper.has_reached_accept_state()
+        assert stepper_delta.stepper.get_current_value() == -1

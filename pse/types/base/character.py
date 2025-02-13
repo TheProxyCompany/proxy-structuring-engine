@@ -74,10 +74,13 @@ class CharacterStepper(Stepper):
             self.consumed_character_count = len(value)
 
     def accepts_any_token(self) -> bool:
-        return True
+        return not self.state_machine.charset
 
-    def is_within_value(self) -> bool:
-        return True
+    def get_valid_continuations(self, depth: int = 0) -> list[str]:
+        """
+        Returns a list of valid continuations for the current stepper.
+        """
+        return list(self.state_machine.charset)
 
     def can_accept_more_input(self) -> bool:
         """

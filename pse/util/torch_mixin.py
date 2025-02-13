@@ -22,9 +22,11 @@ class PSETorchMixin(GenerationMixin):
     @staticmethod
     def make_sampler(do_sample: bool) -> Callable:
         if do_sample:
-            return lambda x: torch.multinomial(x, num_samples=1).squeeze(1)
+            return lambda x: torch.multinomial(
+                nn.functional.softmax(x, dim=-1), num_samples=1
+            ).squeeze(1)
         else:
-            return lambda x: torch.argmax(x, dim=-1)
+            return lambda x: torch.argmax(nn.functional.softmax(x, dim=-1), dim=-1)
 
     def _sample(
         self,
@@ -139,22 +141,36 @@ class PSETorchMixin(GenerationMixin):
             else:
                 outputs = model_forward(**model_inputs, return_dict=True)
 
-            # synced_gpus: don't waste resources running the code we don't need; kwargs must be updated before skipping
-            model_kwargs = self._update_model_kwargs_for_generation(
-                outputs,
-                model_kwargs,
-                is_encoder_decoder=self.config.is_encoder_decoder,  # type: ignore [attr-defined]
-            )
-            if synced_gpus and this_peer_finished:
-                continue
-
             # Clone is needed to avoid keeping a hanging ref to outputs.logits which may be very large for first iteration
-            # (the clone itself is always small)
             next_token_logits = outputs.logits[:, -1, :].clone().float()
             next_token_logits = next_token_logits.to(input_ids.device)
 
             # pre-process distribution
             next_token_scores = logits_processor(input_ids, next_token_logits)
+            sampler = PSETorchMixin.make_sampler(do_sample)
+            next_tokens = self.engine.sample(next_token_scores, sampler).long()
+            # finished sentences should have their next token be a padding token
+            if has_eos_stopping_criteria:
+                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (
+                    1 - unfinished_sequences
+                )
+            # update generated ids, model inputs, and length for next step
+            if len(next_tokens) > 1:
+                input_ids = torch.cat([input_ids, next_tokens[None]], dim=-1)  # type: ignore[arg-type]
+            else:
+                input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)  # type: ignore[arg-type]
+
+            # synced_gpus: don't waste resources running the code we don't need; kwargs must be updated before skipping
+            model_kwargs = self._update_model_kwargs_for_generation(
+                outputs,
+                model_kwargs,
+                is_encoder_decoder=self.config.is_encoder_decoder,  # type: ignore [attr-defined]
+                num_new_tokens=len(next_tokens),
+            )
+
+            if synced_gpus and this_peer_finished:
+                continue
+
             # Store scores, attentions and hidden_states when required
             if return_dict_in_generate:
                 if output_scores:
@@ -181,24 +197,8 @@ class PSETorchMixin(GenerationMixin):
                         if self.config.is_encoder_decoder  # type: ignore [attr-defined]
                         else (outputs.hidden_states,)
                     )
-
-            # token selection
-            log_probs = nn.functional.softmax(next_token_scores, dim=-1)
-            sampler = PSETorchMixin.make_sampler(do_sample)
-            next_tokens = self.engine.sample(log_probs, sampler).long()
-            # finished sentences should have their next token be a padding token
-            if has_eos_stopping_criteria:
-                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (
-                    1 - unfinished_sequences
-                )
-
-            # update generated ids, model inputs, and length for next step
-            input_ids = torch.cat(
-                [input_ids, next_tokens[:, None]], # type: ignore[arg-type]
-                dim=-1
-            )
             if streamer is not None:
-                streamer.put(next_tokens.cpu())
+                streamer.put(next_tokens[None].cpu())
 
             unfinished_sequences = unfinished_sequences & ~stopping_criteria(
                 input_ids, scores

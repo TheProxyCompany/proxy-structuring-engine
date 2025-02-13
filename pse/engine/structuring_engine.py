@@ -70,7 +70,9 @@ class StructuringEngine(Engine):
             original_device = raw_logits.device.type
             raw_logits = raw_logits.cpu()
         # process logits
+        self.print_top_logits(raw_logits, 5, "Before 🟡")
         adjusted_logits = self.mask_invalid_tokens(raw_logits)
+        self.print_top_logits(adjusted_logits, 5, "After 🟢")
         # move logits back to original device if they didn't start on cpu
         if original_device:
             adjusted_logits = adjusted_logits.to(original_device)
@@ -102,7 +104,9 @@ class StructuringEngine(Engine):
         if hasattr(logprobs, "device") and logprobs.device.type != "cpu":
             original_device = logprobs.device.type
             logprobs = logprobs.cpu()
-        # Process each batch individually through engine's c++ sampler
+
+        # Process each batch individually
+        self.print_top_logits(logprobs, 5, "Before Sampling ⚪️")
         samples = [
             self.select_next_tokens(batch[None], sampler)
             for batch in logprobs
@@ -186,11 +190,11 @@ class StructuringEngine(Engine):
 
         return raw_output
 
-    def _print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
+    def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Format and return a string showing the top tokens and their scores.
         """
-        if logger.getEffectiveLevel() > logging.DEBUG:
+        if logger.getEffectiveLevel() < logging.DEBUG:
             return ""
 
         top_logits = get_top_logits(logits, top_n)
@@ -215,4 +219,6 @@ class StructuringEngine(Engine):
         header = f"{'Token ID':<8} | {'Score':>10} | Token"
         separator = "-" * 9 + "+" + "-" * 12 + "+" + "-" * 20
 
-        return f"{flag}\n" + "\n".join([header, separator, *rows])
+        value = f"{flag}\n" + "\n".join([header, separator, *rows])
+        logger.debug(value)
+        return value
