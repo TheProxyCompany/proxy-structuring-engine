@@ -43,12 +43,15 @@ mlx = [
 ]
 torch = [
     "torch",
+    "accelerate",
 ]
 tensorflow = [
     "tensorflow",
+    "accelerate",
 ]
 jax = [
     "jax",
+    "accelerate",
 ]
 
 [project.urls]
