@@ -14,19 +14,22 @@ from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 from pse.engine import StructuringMachine
 from pse.types.grammar.python import PythonGrammar
 from pse.types.json import JSONSchemaSource
-from pse.util.get_top_logits import get_top_logits
+from pse.util.get_top_logits import get_top_k
 
 logger = logging.getLogger(__name__)
 
 Array_Type = TypeVar("Array_Type", bound=Any)
 OutputType = TypeVar("OutputType")
 
+
 class StructuringEngine(Engine):
     """
     The types of objects that the engine can use as a schema.
     """
 
-    def __init__(self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase) -> None:
+    def __init__(
+        self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase
+    ) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
@@ -40,7 +43,9 @@ class StructuringEngine(Engine):
             reverse_vocab[token_id] = token
         super().__init__(reverse_vocab)
 
-    def configure(self, schema: JSONSchemaSource | StateMachine, **kwargs: Any) -> dict[str, Any]:
+    def configure(
+        self, schema: JSONSchemaSource | StateMachine, **kwargs: Any
+    ) -> dict[str, Any]:
         """
         Configure the structuring engine with a schema and optional delimiters.
 
@@ -89,7 +94,9 @@ class StructuringEngine(Engine):
         logger.debug(f"Logit processing took {toc - tic:0.4f} seconds")
         return adjusted_logits
 
-    def sample(self, logprobs: Array_Type, sampler: Callable[..., Array_Type]) -> Array_Type:
+    def sample(
+        self, logprobs: Array_Type, sampler: Callable[..., Array_Type]
+    ) -> Array_Type:
         """
         Sample tokens from logprobs using the provided sampler function.
 
@@ -205,7 +212,7 @@ class StructuringEngine(Engine):
         if logger.getEffectiveLevel() < logging.DEBUG:
             return ""
 
-        top_logits = get_top_logits(logits, top_n)
+        top_logits = get_top_k(logits, top_n)
         rows = []
 
         for token_id, score in top_logits.items():

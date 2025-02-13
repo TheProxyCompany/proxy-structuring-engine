@@ -22,11 +22,27 @@ class PSETorchMixin(GenerationMixin):
     @staticmethod
     def make_sampler(do_sample: bool) -> Callable:
         if do_sample:
-            return lambda x: torch.multinomial(
-                nn.functional.softmax(x, dim=-1), num_samples=1
-            ).squeeze(1)
+            def sampler(x):
+                probs = nn.functional.softmax(x, dim=-1)
+                if torch.isinf(probs).any() or torch.isnan(probs).any():
+                    raise ValueError(
+                        "Sampling probabilities contain inf/nan values. This likely means all "
+                        "logits were masked, indicating overly restrictive sampling parameters."
+                        "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
+                    )
+                return torch.multinomial(probs, num_samples=1).squeeze(1)
         else:
-            return lambda x: torch.argmax(nn.functional.softmax(x, dim=-1), dim=-1)
+            def sampler(x):
+                probs = nn.functional.softmax(x, dim=-1)
+                if torch.isinf(probs).any() or torch.isnan(probs).any():
+                    raise ValueError(
+                        "Sampling probabilities contain inf/nan values. This likely means all "
+                        "logits were masked, indicating overly restrictive sampling parameters."
+                        "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
+                    )
+                return torch.argmax(probs, dim=-1)
+
+        return sampler
 
     def _sample(
         self,
