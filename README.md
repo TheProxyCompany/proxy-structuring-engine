@@ -22,11 +22,7 @@ Imagine laying down train tracks for an LLM. The LLM is the powerful engine, but
 
 *   **State Machine as a Blueprint:** The HSM defines the allowed sequences of tokens. Each state represents a point in the generation process (e.g., "inside a JSON object," "parsing an integer," "within a Python function definition"). Transitions between states represent valid steps.
 
-*   **Steppers: Tracking Progress:** A "Stepper" object keeps track of the LLM's current position within the state machine. It remembers the generation history and knows which transitions (and therefore, which tokens) are valid next.
-
 *   **Logit Masking: Enforcing the Rules:** Before each token is sampled, PSE examines the current Stepper's state. It identifies all valid next tokens according to the state machine. It then masks the logits (the LLM's raw output probabilities – numerical scores assigned to each possible next token) of all invalid tokens, setting their probabilities to effectively zero.
-
-*   **Custom Sampling:** The engine provides a method that takes log probabilities and a user defined sampling function (e.g., temperature sampling, top-k sampling). This ensures that the LLM only chooses from the grammatically correct options while allowing for different sampling strategies.
 
 *   **Parallel Exploration:** Many grammars are ambiguous and allow for multiple valid paths. The PSE handles this by maintaining multiple Steppers simultaneously, each exploring a different possibility. It then selects the "best" path based on the LLM's own probabilities and current state.
 
@@ -47,10 +43,6 @@ PSE includes features such as:
 By combining state machines, logit masking, and custom sampling, PSE effectively renders LLMs stateful. A stateful LLM is one whose output at any point depends not just on the prompt, but also on the history of its previous outputs, as tracked by a state machine. This unlocks capabilities previously difficult or impossible to achieve:
 
 *   **Complex, Multi-Step Tool Use:** The LLM can now follow a sequence of human-defined steps, where each step depends on the previous ones.
-
-*   **Planning and Reasoning:** The LLM can explore any path through the state machine.
-
-*   **Context Retention:** The state machine can maintain context and enforce constraints over long interactions.
 
 ## Technical Details
 
