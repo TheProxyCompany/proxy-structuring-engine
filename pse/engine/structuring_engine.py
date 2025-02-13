@@ -106,7 +106,6 @@ class StructuringEngine(Engine):
             logprobs = logprobs.cpu()
 
         # Process each batch individually
-        self.print_top_logits(logprobs, 5, "Before Sampling ⚪️")
         samples = [
             self.select_next_tokens(batch[None], sampler)
             for batch in logprobs

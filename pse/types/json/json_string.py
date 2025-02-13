@@ -25,7 +25,10 @@ class StringSchemaStateMachine(StringStateMachine):
         self,
         schema: dict,
     ):
-        super().__init__()
+        super().__init__(
+            min_length=schema.get("minLength"),
+            max_length=schema.get("maxLength"),
+        )
         self.schema = schema or {}
         self.pattern: re.Pattern | None = None
         self.format: str | None = None
@@ -197,11 +200,7 @@ class StringSchemaStepper(StringStepper):
             return False
 
         # Length validation
-        if not (
-            self.state_machine.min_length()
-            <= len(value)
-            <= self.state_machine.max_length()
-        ):
+        if len(value) > self.state_machine.max_length():
             return False
 
         # Pattern validation

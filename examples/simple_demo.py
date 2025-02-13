@@ -21,36 +21,37 @@ model = PSE_Torch.from_pretrained(
 
 model.config.pad_token_id = model.config.eos_token_id[0]
 if model.generation_config:
+    model.generation_config.top_k = 8
+    model.generation_config.do_sample = True
+    model.generation_config.temperature = 0.9
     model.generation_config.pad_token_id = model.config.eos_token_id[0]
     model.generation_config.max_new_tokens = 1000
 
 model.engine = StructuringEngine(tokenizer)
-# SIMPLE_JSON_SCHEMA = {
-#     "type": "object",
-#     "properties": {"value": {"type": "number"}},
-#     "required": ["value"],
-# }
-# model.engine.configure(SIMPLE_JSON_SCHEMA)
-# prompt = "Please generate a json object with the value 9.11, with the following schema:\n"
-# prompt += json.dumps(SIMPLE_JSON_SCHEMA, indent=2)
+SIMPLE_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {"value": {"type": "number"}},
+    "required": ["value"],
+}
+model.engine.configure(SIMPLE_JSON_SCHEMA)
+prompt = "Please generate a json object with the value 9.11, with the following schema:\n"
+prompt += json.dumps(SIMPLE_JSON_SCHEMA, indent=2)
 
-# messages = [{"role": "user", "content": prompt}]
-# input_ids = tokenizer.apply_chat_template(
-#     messages,
-#     return_tensors="pt",
-#     add_generation_prompt=True
-# )
-# assert isinstance(input_ids, torch.Tensor)
-# input_ids = input_ids.to(model.device)
-# assert isinstance(input_ids, torch.Tensor)
-# output = model.generate(
-#     input_ids,
-#     do_sample=True,
-#     temperature=1.0,
-#     min_p=0.1,
-# )
-# print("Output:\n" + 100 * "-")
-# print(tokenizer.decode(output[0]))
+messages = [{"role": "user", "content": prompt}]
+input_ids = tokenizer.apply_chat_template(
+    messages,
+    return_tensors="pt",
+    add_generation_prompt=True
+)
+assert isinstance(input_ids, torch.Tensor)
+input_ids = input_ids.to(model.device)
+assert isinstance(input_ids, torch.Tensor)
+output = model.generate(
+    input_ids,
+    do_sample=True,
+)
+print("Output:\n" + 100 * "-")
+print(tokenizer.decode(output[0]))
 
 # @title Test advanced-json generation
 ADVANCED_JSON_SCHEMA = {
@@ -64,11 +65,10 @@ ADVANCED_JSON_SCHEMA = {
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "description": "A thought or instance of awareness.",
+                        "minLength": 20,
+                        "maxLength": 200,
                     },
                     "description": "A sequence of high-level thoughts, reasoning and internal dialogue.",
-                    "minItems": 3,
-                    "maxItems": 5,
                 },
             },
             "required": ["chain_of_thought"],
@@ -76,12 +76,14 @@ ADVANCED_JSON_SCHEMA = {
     },
     "required": ["name", "arguments"],
 }
-model.engine.configure(ADVANCED_JSON_SCHEMA)
-prompt = "This is a test of your schema following abilities.\n"
-prompt += "Structure your response into a json object that matches this schema: {schema}"
-prompt = prompt.format(schema=json.dumps(ADVANCED_JSON_SCHEMA, indent=2))
-
-messages = [{"role": "user", "content": prompt}]
+raw_prompt = (
+    f"This is a test of your abilities."
+    f"Please structure your response to follow the following schema: {ADVANCED_JSON_SCHEMA}."
+    f"You must wrap your response with ```json\n and \n```."
+    f"Use the schema to think about what it means to think."
+)
+model.engine.configure(ADVANCED_JSON_SCHEMA, json_delimiters=("```json\n", "\n```"))
+messages = [{"role": "user", "content": raw_prompt}]
 input_ids = tokenizer.apply_chat_template(
     messages, return_tensors="pt", add_generation_prompt=True
 )
@@ -91,8 +93,6 @@ assert isinstance(input_ids, torch.Tensor)
 greedy_output = model.generate(
     input_ids,
     do_sample=True,
-    temperature=1.0,
-    min_p=0.08,  # you can use your favorite sampling options!
 )
 print("Output:\n" + 100 * "-")
 print(tokenizer.decode(greedy_output[0]))

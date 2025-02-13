@@ -22,7 +22,7 @@ class StringStateMachine(StateMachine):
     ESCAPED_SEQUENCE = 2
     HEX_CODE = 3
 
-    def __init__(self):
+    def __init__(self, min_length: int | None = None, max_length: int | None = None):
         """
         The state machine is configured to parse JSON strings, handling escape sequences
         and Unicode characters appropriately.
@@ -34,7 +34,11 @@ class StringStateMachine(StateMachine):
                 ],
                 self.STRING_CONTENTS: [
                     (
-                        CharacterStateMachine(blacklist_charset=INVALID_CHARS),
+                        CharacterStateMachine(
+                            blacklist_charset=INVALID_CHARS,
+                            char_min=min_length,
+                            char_limit=max_length,
+                        ),
                         self.STRING_CONTENTS,
                     ),  # Regular characters
                     (PhraseStateMachine('"'), "$"),  # End quote

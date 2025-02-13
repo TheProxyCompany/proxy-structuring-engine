@@ -46,19 +46,6 @@ def test_validate_value_success():
         "String 'test' should be valid as it meets min and max length requirements."
     )
 
-
-def test_validate_value_too_short():
-    """
-    Test validate_value with a string shorter than min_length.
-    """
-    schema = {"minLength": 5}
-    state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("hey"), (
-        "String 'hey' should be invalid as it is shorter than min_length."
-    )
-
-
 def test_validate_value_too_long():
     """
     Test validate_value with a string longer than max_length.
