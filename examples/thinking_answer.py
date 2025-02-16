@@ -15,8 +15,7 @@ class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
 
 
 # you can change the model path to any other model on huggingface
-# we upgraded to the 3b Llama instruct model for this example
-model_path = "meta-llama/Llama-3.2-3B-Instruct"
+model_path = "meta-llama/Llama-3.2-1B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 model = PSE_Torch.from_pretrained(
     model_path,
@@ -41,14 +40,6 @@ model.engine = StructuringEngine(tokenizer, multi_token_sampling=True)
 # define custom state machines
 from pse.types.base.character import CharacterStateMachine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-
-any_input = CharacterStateMachine(
-    charset="", # empty charset means any character is valid
-    blacklist_charset="[", # the character that starts the delimiter is blacklisted,
-    char_min=None, # no minimum number of characters
-    char_limit=None, # no maximum number of characters
-)
-
 thinking_delimiters = ("[thinking]", "[/thinking]")
 answer_delimiters = ("[answer]", "[/answer]")
 
@@ -56,16 +47,43 @@ answer_delimiters = ("[answer]", "[/answer]")
 # to generate unstructured content before the structured output
 # starts. This "scratchpad" is disabled by default (min_buffer_length=-1)
 thinking_state_machine = EncapsulatedStateMachine(
-    state_machine=any_input,
+    state_machine=CharacterStateMachine(
+        charset="",  # empty charset means any character is valid
+        blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
+        char_min=100,  # no minimum number of characters
+        char_limit=500,  # 500 characters is the maximum
+    ),
     delimiters=thinking_delimiters,
 )
 # the answer state machine is used to wrap the structured output
 answer_state_machine = EncapsulatedStateMachine(
-    state_machine=any_input,
+    state_machine=CharacterStateMachine(
+        charset="",  # empty charset means any character is valid
+        blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
+        char_min=None,  # no minimum number of characters
+        char_limit=None,  # no maximum number of characters
+    ),
     delimiters=answer_delimiters,
 )
-
-# create a state machine that combines the thinking and answer state machines
+# Configure the engine with a state machine that enforces the following flow:
+#
+# The model starts in the 'thinking' state where it can express its reasoning.
+# From there, it enters a 'verify' state where it can either:
+# 1. Think more by returning to the thinking state
+# 2. Provide its final answer by transitioning to the answer state
+#
+#      ┌──────────────────────┐
+#      │                      │
+#      ▼                      │
+# ┌──────────┐          ┌──────────┐          ┌──────────┐
+# │          │          │          │          │          │
+# │ thinking ├─────────►│  verify  ├─────────►│  answer  │
+# │          │          │          │          │          │
+# └──────────┘          └──────────┘          └──────────┘
+#
+# This ensures the model follows a structured thought process before
+# providing its final answer.
+#
 from pse_core.state_machine import StateMachine
 model.engine.configure(
     StateMachine(
@@ -91,7 +109,6 @@ model.engine.configure(
         },
     )
 )
-
 
 system_prompt = (
     f"Reason step by step using delimiters to seperate your thought process.\n"

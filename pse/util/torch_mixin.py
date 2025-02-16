@@ -135,8 +135,10 @@ class PSETorchMixin(GenerationMixin):
             # update generated ids, model inputs, and length for next step
             if len(next_tokens) > 1:
                 input_ids = torch.cat([input_ids, next_tokens[None]], dim=-1)  # type: ignore[arg-type]
-            else:
+            elif next_tokens:
                 input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)  # type: ignore[arg-type]
+            else:
+                break
 
             # synced_gpus: don't waste resources running the code we don't need; kwargs must be updated before skipping
             model_kwargs = self._update_model_kwargs_for_generation(

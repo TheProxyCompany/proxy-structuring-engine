@@ -93,8 +93,9 @@ ADVANCED_JSON_SCHEMA = {
 }
 model.engine.configure(ADVANCED_JSON_SCHEMA)
 raw_prompt = (
-    f"This is a test of your abilities."
-    f"Please format your response to follow the following schema:\n{json.dumps(ADVANCED_JSON_SCHEMA, indent=2)}\n"
+    f"Please use this metacognition tool to generate a chain of thought.\n"
+    f"Follow this schema:\n{json.dumps(ADVANCED_JSON_SCHEMA, indent=2)}\n"
+    "Think about what it would mean to be a demonstration, only existing as a demonstration.\n"
 )
 messages = [{"role": "user", "content": raw_prompt}]
 input_ids = tokenizer.apply_chat_template(
