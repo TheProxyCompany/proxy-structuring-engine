@@ -28,7 +28,9 @@ class StructuringEngine(Engine):
     """
 
     def __init__(
-        self, tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase
+        self,
+        tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
+        multi_token_sampling: bool = False,
     ) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
@@ -41,7 +43,12 @@ class StructuringEngine(Engine):
             else:
                 token = self.tokenizer.decode(token_id)
             reverse_vocab[token_id] = token
-        super().__init__(reverse_vocab)
+
+        super().__init__(
+            reverse_vocab,
+            multi_token_sampling=multi_token_sampling,
+            control_tokens=list(self.tokenizer.all_special_ids),
+        )
 
     def configure(
         self, schema: JSONSchemaSource | StateMachine, **kwargs: Any
@@ -121,7 +128,6 @@ class StructuringEngine(Engine):
             logprobs = logprobs.cpu()
 
         # Process each batch individually
-        self.print_top_logits(logprobs, 5, "Before Sampling ⚪️")
         samples = [
             self.select_next_tokens(batch[None], sampler)
             for batch in logprobs

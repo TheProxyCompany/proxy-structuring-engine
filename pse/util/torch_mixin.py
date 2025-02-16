@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable
+from typing import Any
 
 import torch
 from torch import nn
@@ -12,6 +13,7 @@ from transformers import (
 from transformers.cache_utils import StaticCache
 from transformers.generation.streamers import BaseStreamer
 from transformers.generation.utils import GenerateNonBeamOutput
+from transformers.utils import ModelOutput
 
 from pse.engine.structuring_engine import StructuringEngine
 
@@ -21,25 +23,17 @@ class PSETorchMixin(GenerationMixin):
 
     @staticmethod
     def make_sampler(do_sample: bool) -> Callable:
-        if do_sample:
-            def sampler(x):
-                probs = nn.functional.softmax(x, dim=-1)
-                if torch.isinf(probs).any() or torch.isnan(probs).any():
-                    raise ValueError(
-                        "Sampling probabilities contain inf/nan values. This likely means all "
-                        "logits were masked, indicating overly restrictive sampling parameters."
-                        "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
-                    )
+        def sampler(x):
+            probs = nn.functional.softmax(x, dim=-1)
+            if torch.isinf(probs).any() or torch.isnan(probs).any():
+                raise ValueError(
+                    "Sampling probabilities contain inf/nan values. This likely means all "
+                    "logits were masked, indicating overly restrictive sampling parameters."
+                    "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
+                )
+            if do_sample:
                 return torch.multinomial(probs, num_samples=1).squeeze(1)
-        else:
-            def sampler(x):
-                probs = nn.functional.softmax(x, dim=-1)
-                if torch.isinf(probs).any() or torch.isnan(probs).any():
-                    raise ValueError(
-                        "Sampling probabilities contain inf/nan values. This likely means all "
-                        "logits were masked, indicating overly restrictive sampling parameters."
-                        "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
-                    )
+            else:
                 return torch.argmax(probs, dim=-1)
 
         return sampler
@@ -54,38 +48,6 @@ class PSETorchMixin(GenerationMixin):
         streamer: BaseStreamer | None,
         **model_kwargs,
     ) -> GenerateNonBeamOutput | torch.LongTensor:
-        r"""
-        Generates sequences of token ids for models with a language modeling head using **multinomial sampling** and
-        can be used for text-decoder, text-to-text, speech-to-text, and vision-to-text models.
-
-        Parameters:
-            input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
-                The sequence used as a prompt for the generation.
-            logits_processor (`LogitsProcessorList`):
-                An instance of [`LogitsProcessorList`]. List of instances of class derived from [`LogitsProcessor`]
-                used to modify the prediction scores of the language modeling head applied at each generation step.
-            stopping_criteria (`StoppingCriteriaList`):
-                An instance of [`StoppingCriteriaList`]. List of instances of class derived from [`StoppingCriteria`]
-                used to tell if the generation loop should stop.
-            generation_config ([`~generation.GenerationConfig`]):
-                The generation configuration to be used as parametrization of the decoding method.
-            synced_gpus (`bool`):
-                Whether to continue running the while loop until max_length (needed to avoid deadlocking with
-                `FullyShardedDataParallel` and DeepSpeed ZeRO Stage 3).
-            streamer (`BaseStreamer`, *optional*):
-                Streamer object that will be used to stream the generated sequences. Generated tokens are passed
-                through `streamer.put(token_ids)` and the streamer is responsible for any further processing.
-            model_kwargs:
-                Additional model specific kwargs will be forwarded to the `forward` function of the model. If model is
-                an encoder-decoder model the kwargs should include `encoder_outputs`.
-
-        Return:
-            [`~generation.GenerateDecoderOnlyOutput`], [`~generation.GenerateEncoderDecoderOutput`] or `torch.LongTensor`:
-            A `torch.LongTensor` containing the generated tokens (default behaviour) or a
-            [`~generation.GenerateDecoderOnlyOutput`] if `model.config.is_encoder_decoder=False` and
-            `return_dict_in_generate=True` or a [`~generation.GenerateEncoderDecoderOutput`] if
-            `model.config.is_encoder_decoder=True`.
-        """
         # init values
         pad_token_id = generation_config.pad_token_id
         output_attentions = generation_config.output_attentions
@@ -183,7 +145,6 @@ class PSETorchMixin(GenerationMixin):
                 is_encoder_decoder=self.config.is_encoder_decoder,  # type: ignore [attr-defined]
                 num_new_tokens=len(next_tokens),
             )
-
             if synced_gpus and this_peer_finished:
                 continue
 
@@ -229,3 +190,65 @@ class PSETorchMixin(GenerationMixin):
             streamer.end()
 
         return input_ids
+
+
+    def _update_model_kwargs_for_generation(
+        self,
+        outputs: ModelOutput,
+        model_kwargs: dict[str, Any],
+        is_encoder_decoder: bool = False,
+        num_new_tokens: int = 1,
+    ) -> dict[str, Any]:
+        # update past_key_values keeping its naming used in model code
+        cache_name, cache = self._extract_past_from_model_output(outputs)
+        model_kwargs[cache_name] = cache
+        if getattr(outputs, "state", None) is not None:
+            model_kwargs["state"] = outputs.state # type: ignore [attr-defined]
+
+        # update token_type_ids with last value
+        if "token_type_ids" in model_kwargs:
+            token_type_ids = model_kwargs["token_type_ids"]
+            model_kwargs["token_type_ids"] = torch.cat(
+                [token_type_ids, token_type_ids[:, -1].unsqueeze(-1)], dim=-1
+            )
+
+        if not is_encoder_decoder:
+            # update attention mask
+            if "attention_mask" in model_kwargs:
+                attention_mask = model_kwargs["attention_mask"]
+                model_kwargs["attention_mask"] = torch.cat(
+                    [
+                        attention_mask,
+                        attention_mask.new_ones(
+                            (attention_mask.shape[0], num_new_tokens)
+                        ),
+                    ],
+                    dim=-1,
+                )
+        else:
+            # update decoder attention mask
+            if "decoder_attention_mask" in model_kwargs:
+                decoder_attention_mask = model_kwargs["decoder_attention_mask"]
+                model_kwargs["decoder_attention_mask"] = torch.cat(
+                    [
+                        decoder_attention_mask,
+                        decoder_attention_mask.new_ones(
+                            (decoder_attention_mask.shape[0], num_new_tokens)
+                        ),
+                    ],
+                    dim=-1,
+                )
+
+        past_positions = model_kwargs.pop("cache_position")
+        new_positions = torch.arange(
+            past_positions[-1] + 1,
+            past_positions[-1] + 1 + num_new_tokens,
+            dtype=past_positions.dtype,
+        ).to(past_positions.device)
+
+        if not model_kwargs.get("use_cache", True):
+            model_kwargs["cache_position"] = torch.cat((past_positions, new_positions))
+        else:
+            model_kwargs["cache_position"] = new_positions
+
+        return model_kwargs

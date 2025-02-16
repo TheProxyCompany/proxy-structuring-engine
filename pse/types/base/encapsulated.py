@@ -21,6 +21,7 @@ class EncapsulatedStateMachine(StateMachine):
         state_machine: StateMachine,
         delimiters: tuple[str, str],
         min_buffer_length: int = -1,
+        is_optional: bool = False,
     ) -> None:
         """
 
@@ -29,6 +30,7 @@ class EncapsulatedStateMachine(StateMachine):
             delimiters: The tuple of opening and closing delimiters.
         """
         self.inner_state_machine = state_machine
+        self.delimiters = delimiters
         super().__init__(
             {
                 0: [
@@ -42,7 +44,8 @@ class EncapsulatedStateMachine(StateMachine):
                 ],
                 1: [(state_machine, 2)],
                 2: [(PhraseStateMachine(delimiters[1]), "$")],
-            }
+            },
+            is_optional=is_optional,
         )
 
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:

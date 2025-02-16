@@ -24,7 +24,10 @@ class CharacterStateMachine(StateMachine):
         Args:
             charset (list[str]): A list of characters to be accepted.
         """
-        super().__init__(is_optional=is_optional, is_case_sensitive=case_sensitive)
+        super().__init__(
+            is_optional=is_optional,
+            is_case_sensitive=case_sensitive,
+        )
         self.char_min = char_min or 0
         self.char_limit = char_limit or 0
         self.charset: set[str] = set()

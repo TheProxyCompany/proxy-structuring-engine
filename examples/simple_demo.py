@@ -9,9 +9,12 @@ from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
+
+
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
+
 
 model_path = "meta-llama/Llama-3.2-1B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
@@ -26,11 +29,14 @@ if model.generation_config:
     model.generation_config.top_p = None
     model.generation_config.top_k = 8
     model.generation_config.do_sample = True
-    model.generation_config.temperature = 0.9
-    model.generation_config.pad_token_id = model.config.eos_token_id[0]
+    model.generation_config.temperature = 1.0
+    model.generation_config.min_p = 0.02
     model.generation_config.max_new_tokens = 1000
+    model.generation_config.generation_kwargs = {"logits_to_keep": 8}
+    model.generation_config.pad_token_id = model.config.eos_token_id[0]
 
-model.engine = StructuringEngine(tokenizer)
+# create structuring engine normally
+model.engine = StructuringEngine(tokenizer, multi_token_sampling=True)
 SIMPLE_JSON_SCHEMA = {
     "type": "object",
     "properties": {"value": {"type": "number"}},

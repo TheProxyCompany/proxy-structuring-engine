@@ -182,11 +182,9 @@ def test_object_schema_acceptor_edge_case(
     steppers = state_machine.advance_all_basic(steppers, raw_input)
     assert len(steppers) == 3
     steppers = state_machine.advance_all_basic(steppers, str(value))
-
     steppers = state_machine.advance_all_basic(
         steppers, str(followup_value or "") + "}"
     )
-
     assert len(steppers) == 1, "Should have one stepper."
     assert steppers[0].has_reached_accept_state()
 

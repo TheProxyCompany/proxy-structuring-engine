@@ -16,6 +16,7 @@ class XMLEncapsulatedStateMachine(StateMachine):
         state_machine: StateMachine,
         tag_name: str,
         min_buffer_length: int = -1,
+        is_optional: bool = False,
     ) -> None:
         """
 
@@ -24,6 +25,7 @@ class XMLEncapsulatedStateMachine(StateMachine):
             tag_name: The name of the tag to wrap the state machine in.
         """
         self.inner_state_machine = state_machine
+        self.xml_delimiters = (f"<{tag_name}>", f"</{tag_name}>")
         super().__init__(
             {
                 0: [
@@ -37,7 +39,8 @@ class XMLEncapsulatedStateMachine(StateMachine):
                 ],
                 1: [(state_machine, 2)],
                 2: [(XMLTagStateMachine(tag_name, closing_tag=True), "$")],
-            }
+            },
+            is_optional=is_optional,
         )
 
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
