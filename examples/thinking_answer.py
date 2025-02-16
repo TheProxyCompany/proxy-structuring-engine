@@ -118,7 +118,7 @@ system_prompt = (
     f"{answer_delimiters[0]}your answer here{answer_delimiters[1]}\n"
     "you can think multiple times before providing your answer.\n\n"
 )
-prompt = "What is the capital of Virginia, and what major US city is Arlington closest to?"
+prompt = "What close are the cities of Arlington, Virginia and Washington, D.C.?"
 
 input_ids = tokenizer.apply_chat_template(
     [

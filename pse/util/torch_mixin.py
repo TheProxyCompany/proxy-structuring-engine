@@ -22,8 +22,8 @@ class PSETorchMixin(GenerationMixin):
     engine: StructuringEngine
 
     @staticmethod
-    def make_sampler(do_sample: bool) -> Callable:
-        def sampler(x):
+    def make_sampler(do_sample: bool) -> Callable[[torch.Tensor], torch.Tensor]:
+        def sampler(x: torch.Tensor) -> torch.Tensor:
             probs = nn.functional.softmax(x, dim=-1)
             if torch.isinf(probs).any() or torch.isnan(probs).any():
                 raise ValueError(
@@ -135,7 +135,7 @@ class PSETorchMixin(GenerationMixin):
             # update generated ids, model inputs, and length for next step
             if len(next_tokens) > 1:
                 input_ids = torch.cat([input_ids, next_tokens[None]], dim=-1)  # type: ignore[arg-type]
-            elif next_tokens:
+            elif next_tokens.numel() > 0:
                 input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)  # type: ignore[arg-type]
             else:
                 break
@@ -183,7 +183,7 @@ class PSETorchMixin(GenerationMixin):
                 input_ids, scores
             )
             this_peer_finished = bool(unfinished_sequences.max() == 0)
-            cur_len += len(next_tokens) # count new tokens
+            cur_len += len(next_tokens)  # count new tokens
             del outputs
             if self.engine.has_reached_accept_state:
                 break
@@ -192,7 +192,6 @@ class PSETorchMixin(GenerationMixin):
             streamer.end()
 
         return input_ids
-
 
     def _update_model_kwargs_for_generation(
         self,
@@ -205,7 +204,7 @@ class PSETorchMixin(GenerationMixin):
         cache_name, cache = self._extract_past_from_model_output(outputs)
         model_kwargs[cache_name] = cache
         if getattr(outputs, "state", None) is not None:
-            model_kwargs["state"] = outputs.state # type: ignore [attr-defined]
+            model_kwargs["state"] = outputs.state  # type: ignore [attr-defined]
 
         # update token_type_ids with last value
         if "token_type_ids" in model_kwargs:
