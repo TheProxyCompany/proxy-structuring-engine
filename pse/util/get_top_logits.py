@@ -5,10 +5,10 @@ array types (MLX, NumPy, JAX, PyTorch). It handles the necessary type checking a
 provides optimized implementations for each backend.
 """
 
-from typing import Any
 import logging
+from typing import Any
+
 import numpy as np
-from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
