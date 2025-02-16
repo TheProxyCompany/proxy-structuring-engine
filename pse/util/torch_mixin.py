@@ -26,11 +26,7 @@ class PSETorchMixin(GenerationMixin):
         def sampler(x: torch.Tensor) -> torch.Tensor:
             probs = nn.functional.softmax(x, dim=-1)
             if torch.isinf(probs).any() or torch.isnan(probs).any():
-                raise ValueError(
-                    "Sampling probabilities contain inf/nan values. This likely means all "
-                    "logits were masked, indicating overly restrictive sampling parameters."
-                    "The PSE should be carefully tuned if using with trunication samplers like minP, topP, etc."
-                )
+                raise ValueError("All logits were masked.")
             if do_sample:
                 return torch.multinomial(probs, num_samples=1).squeeze(1)
             else:
@@ -135,7 +131,7 @@ class PSETorchMixin(GenerationMixin):
             # update generated ids, model inputs, and length for next step
             if len(next_tokens) > 1:
                 input_ids = torch.cat([input_ids, next_tokens[None]], dim=-1)  # type: ignore[arg-type]
-            elif next_tokens.numel() > 0:
+            elif next_tokens.shape[1] > 0:
                 input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)  # type: ignore[arg-type]
             else:
                 break

@@ -166,8 +166,8 @@ class StructuringEngine(Engine):
         # Get output from steppers if none provided
         if not raw_output and self.steppers:
             for stepper in self.steppers:
+                raw_output = stepper.get_current_value()
                 if stepper.has_reached_accept_state():
-                    raw_output = stepper.get_current_value()
                     break
 
         if not raw_output:

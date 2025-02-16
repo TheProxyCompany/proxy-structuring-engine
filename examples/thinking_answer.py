@@ -29,9 +29,7 @@ if model.generation_config:
     model.generation_config.top_k = 8
     model.generation_config.do_sample = True
     model.generation_config.temperature = 1.0
-    model.generation_config.min_p = 0.02
     model.generation_config.max_new_tokens = 1000
-    model.generation_config.generation_kwargs = {"logits_to_keep": 8}
     model.generation_config.pad_token_id = model.config.eos_token_id[0]
 
 # create structuring engine normally
@@ -118,7 +116,7 @@ system_prompt = (
     f"{answer_delimiters[0]}your answer here{answer_delimiters[1]}\n"
     "you can think multiple times before providing your answer.\n\n"
 )
-prompt = "What close are the cities of Arlington, Virginia and Washington, D.C.?"
+prompt = "What Pokemon gen1 starter is your favorite?"
 
 input_ids = tokenizer.apply_chat_template(
     [

@@ -9,7 +9,7 @@ from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
@@ -30,9 +30,7 @@ if model.generation_config:
     model.generation_config.top_k = 8
     model.generation_config.do_sample = True
     model.generation_config.temperature = 1.0
-    model.generation_config.min_p = 0.02
     model.generation_config.max_new_tokens = 1000
-    model.generation_config.generation_kwargs = {"logits_to_keep": 8}
     model.generation_config.pad_token_id = model.config.eos_token_id[0]
 
 # create structuring engine normally
@@ -69,33 +67,25 @@ print(json.dumps(structured_output, indent=2))
 
 ADVANCED_JSON_SCHEMA = {
     "type": "object",
+    "description": "High-level thoughts, reasoning and internal dialogue.\n Used for step by step reasoning.",
     "properties": {
-        "name": {"const": "metacognition"},
-        "arguments": {
-            "type": "object",
-            "properties": {
-                "chain_of_thought": {
-                    "type": "array",
-                    "description": "A sequence of high-level thoughts, reasoning and internal dialogue.\nThe chain of thought should be a sequence of thoughts that are related to the question.\n",
-                    "items": {
-                        "type": "string",
-                        "minLength": 20,
-                        "maxLength": 200,
-                    },
-                    "minItems": 1, # floor the number of thoughts
-                    "maxItems": 3, # limit the number of thoughts
-                },
+        "chain_of_thought": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 20,  # minimum length of a thought (optional)
             },
-            "required": ["chain_of_thought"],
+            "minItems": 1,  # floor the number of thoughts (optional)
+            "maxItems": 3,  # limit the number of thoughts (optional)
         },
     },
-    "required": ["name", "arguments"],
+    "required": ["chain_of_thought"],
 }
 model.engine.configure(ADVANCED_JSON_SCHEMA)
 raw_prompt = (
-    f"Please use this metacognition tool to generate a chain of thought.\n"
-    f"Follow this schema:\n{json.dumps(ADVANCED_JSON_SCHEMA, indent=2)}\n"
-    "Think about what it would mean to be a demonstration, only existing as a demonstration.\n"
+    f"This is a test of your thought process.\n"
+    f"I want to see your private internal monologue.\n"
+    f"Please follow the following schema when generating your response:\n{json.dumps(ADVANCED_JSON_SCHEMA, indent=2)}\n"
 )
 messages = [{"role": "user", "content": raw_prompt}]
 input_ids = tokenizer.apply_chat_template(
@@ -104,15 +94,13 @@ input_ids = tokenizer.apply_chat_template(
 assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
-greedy_output = model.generate(
-    input_ids,
-    do_sample=True,
-)
+greedy_output = model.generate(input_ids)
 structured_output = model.engine.parse_structured_output(output_type=dict)
+if not structured_output:
+    breakpoint()
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
-# @title Test pydantic generation
 class CursorPositionModel(BaseModel):
     """
     An object representing the position and click state of a cursor.
