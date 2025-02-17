@@ -67,22 +67,26 @@ answer_state_machine = EncapsulatedStateMachine(
 # Configure the engine with a state machine that enforces the following flow:
 #
 # The model starts in the 'thinking' state where it can express its reasoning.
-# From there, it enters a 'verify' state where it can either:
-# 1. Think more by returning to the thinking state
-# 2. Provide its final answer by transitioning to the answer state
+# From there, it can transition to providing its final answer.
 #
-#      ┌──────────────────────┐
-#      │                      │
-#      ▼                      │
-# ┌──────────┐          ┌──────────┐          ┌──────────┐
-# │          │          │          │          │          │
-# │ thinking ├─────────►│  verify  ├─────────►│  answer  │
-# │          │          │          │          │          │
-# └──────────┘          └──────────┘          └──────────┘
+#      ┌──────────────┐
+#      │              │
+#      ▼              │
+# ┌──────────┐        │
+# │          │        │
+# │ thinking ├────────┘
+# │          │
+# └──────┬───┘
+#        │
+#        ▼
+# ┌──────────┐
+# │          │
+# │  answer  │
+# │          │
+# └──────────┘
 #
 # This ensures the model follows a structured thought process before
 # providing its final answer.
-#
 from pse_core.state_machine import StateMachine
 from pse.types.base.loop import LoopStateMachine
 model.engine.configure(
