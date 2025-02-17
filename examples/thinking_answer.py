@@ -1,6 +1,7 @@
 # flake8: noqa
 import logging
 
+from pse_core import Edge
 import torch
 from transformers import AutoTokenizer, LlamaForCausalLM
 
@@ -8,7 +9,7 @@ from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
@@ -48,8 +49,8 @@ thinking_state_machine = EncapsulatedStateMachine(
     state_machine=CharacterStateMachine(
         charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
-        char_min=100,  # no minimum number of characters
-        char_limit=500,  # 500 characters is the maximum
+        char_min=None,
+        char_limit=200,
     ),
     delimiters=thinking_delimiters,
 )
@@ -59,7 +60,7 @@ answer_state_machine = EncapsulatedStateMachine(
         charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
         char_min=None,  # no minimum number of characters
-        char_limit=None,  # no maximum number of characters
+        char_limit=200,  # no maximum number of characters
     ),
     delimiters=answer_delimiters,
 )
@@ -83,28 +84,29 @@ answer_state_machine = EncapsulatedStateMachine(
 # providing its final answer.
 #
 from pse_core.state_machine import StateMachine
+from pse.types.base.loop import LoopStateMachine
 model.engine.configure(
     StateMachine(
-        start_state="thinking",
-        end_states=["answer"],
-        state_graph={
+        {
             "thinking": [
                 (
-                    thinking_state_machine,
-                    "verify",
+                    LoopStateMachine(
+                        thinking_state_machine,
+                        min_loop_count=1,
+                        max_loop_count=2,
+                    ),
+                    "answer",
                 )
             ],
-            "verify": [
-                (
-                    thinking_state_machine,
-                    "thinking",
-                ),
+            "answer": [
                 (
                     answer_state_machine,
-                    "answer",
+                    "done",
                 ),
             ],
         },
+        start_state="thinking",
+        end_states=["done"],
     )
 )
 
@@ -112,11 +114,11 @@ system_prompt = (
     f"Reason step by step using delimiters to seperate your thought process.\n"
     "For example, when asked a question, you should think and then answer.\n"
     "Example:\n"
-    f"{thinking_delimiters[0]}your step by step thinking here{thinking_delimiters[1]}"
-    f"{answer_delimiters[0]}your answer here{answer_delimiters[1]}\n"
+    f"{thinking_delimiters[0]}{{Thinking goes here}}{thinking_delimiters[1]}"
+    f"{answer_delimiters[0]}{{Answer goes here}}{answer_delimiters[1]}\n"
     "you can think multiple times before providing your answer.\n\n"
 )
-prompt = "What Pokemon gen1 starter is your favorite?"
+prompt = "Please pick a favorite color. Think about it first."
 
 input_ids = tokenizer.apply_chat_template(
     [
@@ -129,13 +131,12 @@ input_ids = tokenizer.apply_chat_template(
 assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
-output = model.generate(
-    input_ids,
-    do_sample=True,
-)
+output = model.generate(input_ids)
 
 structured_output = model.engine.parse_structured_output()
 print(f"raw output:\n\x1b[33m{structured_output}\x1b[0m\n")
+if not structured_output:
+    breakpoint()
 print(
     f"\x1b[3m{structured_output.split(thinking_delimiters[0])[1].split(thinking_delimiters[1])[0]}\x1b[0m"
 )

@@ -131,7 +131,7 @@ class PSETorchMixin(GenerationMixin):
             # update generated ids, model inputs, and length for next step
             if len(next_tokens) > 1:
                 input_ids = torch.cat([input_ids, next_tokens[None]], dim=-1)  # type: ignore[arg-type]
-            elif next_tokens.shape[1] > 0:
+            elif next_tokens.shape[0] > 0:
                 input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)  # type: ignore[arg-type]
             else:
                 break
