@@ -50,7 +50,7 @@ thinking_state_machine = EncapsulatedStateMachine(
         charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
         char_min=None,
-        char_limit=200,
+        char_limit=None,
     ),
     delimiters=thinking_delimiters,
 )
@@ -60,7 +60,7 @@ answer_state_machine = EncapsulatedStateMachine(
         charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
         char_min=None,  # no minimum number of characters
-        char_limit=200,  # no maximum number of characters
+        char_limit=None,  # no maximum number of characters
     ),
     delimiters=answer_delimiters,
 )
@@ -135,10 +135,5 @@ output = model.generate(input_ids)
 
 structured_output = model.engine.parse_structured_output()
 print(f"raw output:\n\x1b[33m{structured_output}\x1b[0m\n")
-if not structured_output:
-    breakpoint()
-print(
-    f"\x1b[3m{structured_output.split(thinking_delimiters[0])[1].split(thinking_delimiters[1])[0]}\x1b[0m"
-)
 print(100 * "-")
 print(structured_output.split(answer_delimiters[0])[1].split(answer_delimiters[1])[0])

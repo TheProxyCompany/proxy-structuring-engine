@@ -50,7 +50,10 @@ class LoopStepper(Stepper):
 
     def has_reached_accept_state(self) -> bool:
         if self.loop_count >= self.state_machine.min_loop_count:
+            if self.sub_stepper is not None and self.sub_stepper.is_within_value():
+                return self.sub_stepper.has_reached_accept_state()
             return True
+    
         return False
 
     def can_accept_more_input(self) -> bool:
