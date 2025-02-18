@@ -35,7 +35,7 @@ uv pip install pse
 The structuring engine:
 - **Maintains** the real-time state during the LLM's generation,
 - **Guarantees** output structure (e.g., valid syntax, nested schemas, etc.),
-- **Handles** ambiguity, recursion, and optional rules,
+- **Handles** ambiguity and recursion,
 - **Operates** at the token level, striking a balance between flexibility and control,
 - **Enforces** structure without effecting the model's creativity.
 
