@@ -44,15 +44,15 @@ Move beyond the limitations of prompt engineering, regex, overfit fine-tuning, o
 
 | **Feature**                  | **Prompt Engineering** | **Re-try if Invalid** | **Regex** | **Simple Templating** | **Index Based Masking** | **PSE**       |
 |------------------------------|------------------------|-----------------------|-----------|-----------------------|-------------------------|---------------|
-| **Guaranteed Structure**     | ❌                     | ❌                    | ❌        | ⚠️ Limited            | ✅                       | ✅            |
-| **Handles Recursion**        | ❌                     | ❌                    | ❌        | ❌                    | ✅                       | ✅            |
-| **Handles Partial Tokens**   | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅ (via token healing)           |
-| **Handles Ambiguity**        | ✅                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
-| **Flexibility (Content)**    | ✅                     | ✅                    | ❌        | ❌                    | ❌                       | ✅            |
-| **Performance**              | ✅                     | ⚠️ Depends on retries | ❌ Slow   | ✅                    | ✅                       | ✅            |
-| **Integration with LLMs**    | ✅                     | ⚠️ Post-proc required | ⚠️ Post-proc required | ⚠️ Post-proc required | ✅ (via logit processor) | ✅            |
-| **Extensibility**            | ✅                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
-| **Stateful**                 | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
+| **Guaranteed Structure**     | ❌                     | ❌                    | ❌         | ⚠️ Limited             | ✅                        | ✅           |
+| **Handles Recursion**        | ❌                     | ❌                    | ❌         | ❌                    | ✅                       | ✅            |
+| **Native token healing**     | ❌                     | ❌                    | ❌         | ❌                    | ❌                       | ✅            |
+| **Handles Ambiguity**        | ✅                     | ❌                    | ❌         | ❌                    | ❌                       | ✅            |
+| **Flexibility (Content)**    | ✅                     | ✅                    | ❌         | ❌                    | ❌                       | ✅            |
+| **Performance**              | ✅                     | ⚠️ Depends on retries  | ❌ Slow    | ✅                    | ✅                       | ✅            |
+| **Integration with LLMs**    | ✅                     | ⚠️ Post-processing required  | ⚠️ Post-processing required | ⚠️ Post-processing required | ✅  | ✅  |
+| **Extensibility**            | ✅                     | ❌                    | ❌        | ❌                    | ❌                       | ✅             |
+| **Stateful**                 | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅             |
 
 ___
 
@@ -91,6 +91,11 @@ prompt = 'Please respond with a JSON object with the key "answer" and the value 
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
 # 5. Generate!
 output = model.generate(input_ids, do_sample=True, top_p=None) # disable truncation samplers like top_p
+# Example output without the PSE:
+# Sure! Here's your answer: { "text": "Hello, world!" } Hope that helps!
+#
+# Example output with the PSE:
+# {"answer": "Hello, world!"}
 print(tokenizer.decode(output[0]))
 ```
 
