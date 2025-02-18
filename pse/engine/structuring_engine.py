@@ -44,8 +44,6 @@ class StructuringEngine(Engine):
                 token = self.tokenizer.decode(token_id)
             reverse_vocab[token_id] = token
 
-
-
         super().__init__(
             reverse_vocab,
             multi_token_sampling=multi_token_sampling,

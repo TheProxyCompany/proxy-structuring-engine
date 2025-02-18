@@ -41,10 +41,11 @@ def test_validate_value_success():
     """
     schema = {"minLength": 3, "maxLength": 10}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert walker.validate_value("test"), (
+    stepper = state_machine.get_new_stepper()
+    assert stepper.validate_value("test"), (
         "String 'test' should be valid as it meets min and max length requirements."
     )
+
 
 def test_validate_value_too_long():
     """
@@ -52,8 +53,8 @@ def test_validate_value_too_long():
     """
     schema = {"maxLength": 5}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("exceeds"), (
+    stepper = state_machine.get_new_stepper()
+    assert not stepper.validate_value("exceeds"), (
         "String 'exceeds' should be invalid as it exceeds max_length."
     )
 
@@ -64,8 +65,8 @@ def test_validate_value_pattern_match():
     """
     schema = {"pattern": r"^\d{3}-\d{2}-\d{4}$"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert walker.validate_value("123-45-6789"), (
+    stepper = state_machine.get_new_stepper()
+    assert stepper.validate_value("123-45-6789"), (
         "String '123-45-6789' should match the pattern."
     )
 
@@ -76,8 +77,8 @@ def test_validate_value_pattern_no_match():
     """
     schema = {"pattern": r"^\d{3}-\d{2}-\d{4}$"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("123456789"), (
+    stepper = state_machine.get_new_stepper()
+    assert not stepper.validate_value("123456789"), (
         "String '123456789' should not match the pattern."
     )
 
@@ -88,8 +89,8 @@ def test_validate_value_format_email_valid():
     """
     schema = {"format": "email"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert walker.validate_value("test@example.com"), (
+    stepper = state_machine.get_new_stepper()
+    assert stepper.validate_value("test@example.com"), (
         "Email 'test@example.com' should be valid."
     )
 
@@ -100,8 +101,8 @@ def test_validate_value_format_email_invalid():
     """
     schema = {"format": "email"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("test@com"), "Email 'test@com' should be invalid."
+    stepper = state_machine.get_new_stepper()
+    assert not stepper.validate_value("test@com"), "Email 'test@com' should be invalid."
 
 
 def test_validate_value_format_date_time_valid():
@@ -110,8 +111,8 @@ def test_validate_value_format_date_time_valid():
     """
     schema = {"format": "date-time"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert walker.validate_value("2023-10-20T12:34:56"), (
+    stepper = state_machine.get_new_stepper()
+    assert stepper.validate_value("2023-10-20T12:34:56"), (
         "Date-time '2023-10-20T12:34:56' should be valid."
     )
 
@@ -122,8 +123,8 @@ def test_validate_value_format_date_time_invalid():
     """
     schema = {"format": "date-time"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("20-10-2023 12:34:56"), (
+    stepper = state_machine.get_new_stepper()
+    assert not stepper.validate_value("20-10-2023 12:34:56"), (
         "Date-time '20-10-2023 12:34:56' should be invalid."
     )
 
@@ -134,8 +135,8 @@ def test_validate_value_format_uri_valid():
     """
     schema = {"format": "uri"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert walker.validate_value("https://www.example.com"), (
+    stepper = state_machine.get_new_stepper()
+    assert stepper.validate_value("https://www.example.com"), (
         "URI 'https://www.example.com' should be valid."
     )
 
@@ -146,8 +147,8 @@ def test_validate_value_format_uri_invalid():
     """
     schema = {"format": "uri"}
     state_machine = StringSchemaStateMachine(schema=schema)
-    walker = state_machine.get_new_stepper()
-    assert not walker.validate_value("www.example.com"), (
+    stepper = state_machine.get_new_stepper()
+    assert not stepper.validate_value("www.example.com"), (
         "URI 'www.example.com' should be invalid."
     )
 

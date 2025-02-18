@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="" height="300"/>
+  <img src="logo.png" alt="Proxy Structuring Engine Logo" height="300"/>
 </p>
 
 <p align="center">
@@ -14,87 +14,74 @@
 
 # Proxy Structuring Engine (PSE)
 
-Move beyond the limitations of prompt engineering, regex, and post-processing. The *Proxy Structuring Engine* (PSE) is a system for repurposing a stochastic LLM as a stateful, controllable engine capable of powering complex workflows and applications.
+LLMs are incredibly powerful, but their output is often unpredictable. Think of a firehose of tokens, with no guarantees about the structure or content.
+The *Proxy Structuring Engine* (PSE) repurposes a stochastic LLM as a **stateful** engine capable of powering complex interactions.
 
-## How it Works
+> The PSE keeps the model free to generate creative language while ensuring it stays within the paths you've deemed valid.
 
-Imagine laying down train tracks for an LLM. The LLM is the powerful engine, but the tracks (the state machine) dictate where it can go. The train tracks are represented as a Hierarchical State Machine (HSM), which is a complex blueprint or flowchart that defines the LLM's behavior.
+____
 
-*   **State Machine as a Blueprint:** The HSM defines the allowed sequences of tokens. Each state represents a point in the generation process (e.g., "inside a JSON object," "parsing an integer," "within a Python function definition"). Transitions between states represent valid steps.
+## Installation
+```bash
+pip install pse
+```
+*or, for those with taste:*
+```bash
+uv pip install pse
+```
 
-*   **Logit Masking: Enforcing the Rules:** Before each token is sampled, PSE examines the current Stepper's state. It identifies all valid next tokens according to the state machine. It then masks the logits (the LLM's raw output probabilities – numerical scores assigned to each possible next token) of all invalid tokens, setting their probabilities to effectively zero.
+## "Why should I consider using this library?"
 
-*   **Parallel Exploration:** Many grammars are ambiguous and allow for multiple valid paths. The PSE handles this by maintaining multiple Steppers simultaneously, each exploring a different possibility. It then selects the "best" path based on the LLM's own probabilities and current state.
+The structuring engine:
+- **Maintains** the real-time state during the LLM's generation,
+- **Guarantees** output structure (e.g., valid syntax, nested schemas, etc.),
+- **Handles** ambiguity, recursion, and optional rules,
+- **Operates** at the token level, striking a balance between flexibility and control,
+- **Enforces** structure without effecting the model's creativity.
 
-## Key Features
+Move beyond the limitations of prompt engineering, regex, overfit fine-tuning, or index-based masking.
 
-PSE includes features such as:
+### Feature Comparison
+| Feature                      | Prompt Engineering | Re-try if Invalid | Regex      | Simple Templating | Index Based Masking | PSE            |
+|------------------------------|--------------------|-------------------|------------|-------------------|----------------------|----------------|
+| Guaranteed Structure         | ❌                 | ❌                | ❌         | ⚠️ (limited)     | ✅                    | ✅             |
+| Handles Recursion            | ❌                 | ❌                | ❌         | ❌                | ✅                    | ✅ (by nature handles nested structures)           |
+| Handles Partial Tokens       | ❌                 | ❌                | ❌         | ❌                | ❌                    | ✅ (via token healing & a recursive descent algorithm)            |
+| Handles Ambiguity            | ✅                 | ❌                | ❌         | ❌                | ❌                    | ✅ (via branching & non-deterministic state exploration) |
+| Flexibility (Content)        | ✅                 | ✅                | ❌         | ❌                | ❌                    | ✅ (within structural constraints) |
+| Performance                  | ✅                 | ⚠️ (depends on retries) | ❌ (can be slow) | ✅                | ✅                    | ✅ (optimized C++ core) |
+| Integration with LLMs        | ✅                 | ⚠️ (requires post-proc) | ⚠️ (requires post-proc) | ⚠️ (requires post-proc) | ❌                    | ✅ (via mixins & inference hooks) |
+| Extensibility                | ✅                 | ❌                | ❌         | ❌                | ❌                    | ✅ (custom StateMachine subclasses) |
+| Stateful                     | ❌                 | ❌                | ❌         | ❌                | ❌                    | ✅             |
 
-*   **Token Healing:** Automatically corrects minor errors in generated tokens, giving partial credit to the valid prefix.
+___
 
-*   **Multi-Token Continuations:** Handles situations where a single element could be expanded into multiple tokens.
+## Framework-agnostic
+PSE works with most modern LLM stacks. We provide mixins for the Transformers library (PyTorch, Flax, TensorFlow) for easy integration, and the structuring engine exposes both `logits_processor` and `sampler` methods, so you can graft PSE into almost any inference pipeline.
 
-*   **Natural Language & Structure Integration:** Enables a "scratchpad" for free-form LLM output before transitioning to structured generation, triggered by user-defined delimiters. The engine waits for the LLM to produce specific delimiters, allowing the LLM to naturally introduce, explain, or reason about its structured output.
+Need to integrate with a custom setup?
+No need to contort the framework - just wire our logit processing and sampler into your generation loop.
 
-*   **Custom Grammars:** Supports not just JSON Schema and Pydantic models, but also any ENBF grammar or even custom grammar definable via a Python API. This includes entire programming languages (like Python), custom data formats, or even the rules of a game.
+PSE natively supports PyTorch, TensorFlow, JAX, and MLX.
+The `pse-core` package, containing the optimized C++ engine, is shipped as a pre-built binary.
 
-## Stateful LLMs: The Advantage
+## Examples & Quickstart
 
-By combining state machines, logit masking, and custom sampling, PSE effectively renders LLMs stateful. A stateful LLM is one whose output at any point depends not just on the prompt, but also on the history of its previous outputs, as tracked by a state machine. This unlocks capabilities previously difficult or impossible to achieve:
+Check out the [examples/](examples/) for quickstart examples and advanced usage:
 
-*   **Complex, Multi-Step Tool Use:** The LLM can now follow a sequence of human-defined steps, where each step depends on the previous ones.
+*   **`quickstart.py`:**
+  * A quickstart guide to using PSE with a simple example.
+*   **`simple_demo.py`:**
+  * Basic generation with simple and advanced schemas.
+*   **`thinking_answer.py`:**
+  * Demonstrates creating a custom state machine to enforce a "chain-of-thought" reasoning process.
+  * This example showcases how to combine different `StateMachine` types to build complex generation workflows.
 
-## Technical Details
+## License
 
-*   **C++ Core:** The PSE's core logic is implemented in C++ to achieve maximum performance, enabling real-time logit masking and state machine traversal without introducing significant latency.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+The `pse-core` C++ library is distributed as a pre-built package. Its source code is not currently available.
 
-*   **Custom Sampling:** The PSE allows developers to fine-tune the LLM's creativity by implementing custom sampling strategies, while ensuring that the output remains structurally valid.
+## Contact
 
-*   **Extensible Design:** The system is designed to be modular and extensible, allowing developers to add support for new grammars, state machine types, and LLM frontends.
-
-*   **Model Agnostic:** PSE works with any LLM that exposes its logits (output probabilities) and allows for custom sampling behavior. This includes popular frameworks like Hugging Face Transformers, MLX, and others.
-
-*   **Open Source:** The Proxy Structuring Engine python package is released under the Apache 2.0 license, encouraging community contributions and collaboration. The core C++ engine is distributed as a compiled binary.
-
-*   **Python Bindings:** A user-friendly Python API (built with `nanobind`) provides seamless access to the C++ core.
-
-*   **Zero-Copy Data Sharing:** `nanobind` enables efficient data transfer between Python and C++ without unnecessary copying.
-
-## Applications
-
-PSE is ideally suited for any application where consistent output from an LLM is required, including:
-
-*   **Intelligent Agents:** Building agents that can interact with APIs, databases, and external tools.
-
-*   **Data Extraction and Transformation:** Extracting structured information from unstructured text with guaranteed accuracy.
-
-*   **Interactive Fiction and Games:** Creating dynamic narratives and game worlds with complex rules and state management.
-
-*   **Chatbots and Conversational AI:** Developing chatbots that can understand and respond to user input in a structured manner.
-
-## Performance
-
-### Latency
-
-*   First-Token Latency: Minimal, no preprocessing or index building required
-*   Per-Token additional latency: ~0.02s (20ms)
-*   Memory: Zero copy tensor ops, minimal memory footprint
-
-### Scaling
-
-*   Linear complexity growth with grammar size
-*   Parallel path evaluation without multiplicative overhead
-
-### Use Cases
-
-*   API-driven agents with guaranteed output schemas
-*   Complex tool use, supporting high tool number
-*   Unstructured text → structured data conversion
-*   Syntax-constrained code generation
-*   Game state machines with narrative continuity
-
-## Conclusion
-
-The Proxy Structuring Engine empowers developers to build reliable, stateful LLM applications by transforming probabilistic language models into deterministic, controllable engines.
-
-By shifting the focus from post-hoc correction to integrated, real-time steering, the PSE enables a new class of robust, reliable, and stateful LLM applications. It's a powerful tool for anyone who needs more than just unpredictable text from their language models.
+For questions or support, please open an issue on the GitHub repository.
