@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Stateful control of Large Language Models</strong>
+  <strong>Steer Your LLM: Stateful Control of Large Language Models</strong>
 </p>
 
 <p align="center">
@@ -15,13 +15,14 @@
 # Proxy Structuring Engine (PSE)
 
 LLMs generate words like a firehose with no nozzle—powerful, but chaotic. PSE isn’t just a filter, it’s the valve—controlling flow, enforcing structure, and keeping creativity intact.
-The *Proxy Structuring Engine* (PSE) repurposes a stochastic LLM as a **stateful** engine capable of powering complex interactions.
+The *Proxy Structuring Engine* (PSE) turns a stochastic LLM into a **stateful** engine capable of powering complex interactions.
 
 > The PSE keeps the model free to generate creative language while ensuring it stays within the paths you've deemed valid.
 
 ____
 
 ## Installation
+
 ```bash
 pip install pse
 ```
@@ -42,15 +43,16 @@ The structuring engine:
 Move beyond the limitations of prompt engineering, regex, overfit fine-tuning, or index-based masking.
 
 ### Feature Comparison
+
 | **Feature**                  | **Prompt Engineering** | **Re-try if Invalid** | **Regex** | **Simple Templating** | **Index Based Masking** | **PSE**       |
 |------------------------------|------------------------|-----------------------|-----------|-----------------------|-------------------------|---------------|
 | **Guaranteed Structure**     | ❌                     | ❌                    | ❌        | ⚠️ Limited            | ✅                       | ✅            |
 | **Handles Recursion**        | ❌                     | ❌                    | ❌        | ❌                    | ✅                       | ✅            |
-| **Handles Partial Tokens**   | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
+| **Handles Partial Tokens**   | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅ (via token healing)           |
 | **Handles Ambiguity**        | ✅                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
 | **Flexibility (Content)**    | ✅                     | ✅                    | ❌        | ❌                    | ❌                       | ✅            |
 | **Performance**              | ✅                     | ⚠️ Depends on retries | ❌ Slow   | ✅                    | ✅                       | ✅            |
-| **Integration with LLMs**    | ✅                     | ⚠️ Post-proc required | ⚠️ Post-proc required | ⚠️ Post-proc required | ❌                       | ✅            |
+| **Integration with LLMs**    | ✅                     | ⚠️ Post-proc required | ⚠️ Post-proc required | ⚠️ Post-proc required | ✅ (via logit processor) | ✅            |
 | **Extensibility**            | ✅                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
 | **Stateful**                 | ❌                     | ❌                    | ❌        | ❌                    | ❌                       | ✅            |
 
@@ -94,7 +96,7 @@ output = model.generate(input_ids, do_sample=True, top_p=None) # disable truncat
 print(tokenizer.decode(output[0]))
 ```
 
-## Examples
+### More Examples
 
 Check out the [examples/](examples/) for more examples and advanced usage:
 
@@ -107,12 +109,14 @@ Check out the [examples/](examples/) for more examples and advanced usage:
   * This example showcases how to combine different `StateMachine` types to build complex generation workflows.
 
 ## Framework-agnostic
+
 PSE works with most modern LLM stacks. We provide mixins for the Transformers library (PyTorch, Flax, TensorFlow) for easy integration, and the structuring engine exposes both `logits_processor` and `sampler` methods, so you can graft PSE into almost any inference pipeline. Need to integrate with a custom setup? Just drop in our logit processor and sampler—no workarounds needed.
 
 ## License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
-The `pse-core` C++ library is distributed as a pre-built package. Its source code is not currently available.
+The `pse-core` C++ library is distributed as a pre-built package.
+Source code availability for pse-core will be determined at a later date.
 
 ## Contact
 
