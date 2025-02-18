@@ -56,47 +56,45 @@ Move beyond the limitations of prompt engineering, regex, overfit fine-tuning, o
 
 ___
 
-## Framework-agnostic
-PSE works with most modern LLM stacks. We provide mixins for the Transformers library (PyTorch, Flax, TensorFlow) for easy integration, and the structuring engine exposes both `logits_processor` and `sampler` methods, so you can graft PSE into almost any inference pipeline. Need to integrate with a custom setup? Just drop in our logit processor and sampler—no workarounds needed.
-
-## Examples & Quickstart
-
-**Quickstart:**
+## Quickstart
 
 Here's a quickstart example using the PSE with a simple schema:
 ```python
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer, LlamaForCausalLM
+
 from pse.engine.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
-# 2. Apply the PSE mixin to your model
-class PSE_Torch(PSETorchMixin, AutoModelForCausalLM):
-    pass
 
-model_path = "meta-llama/Llama-3.2-1B-Instruct" # any model
+# 1. Apply the PSE mixin to your model
+class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
+    pass
+# 2. Load your model and tokenizer.
+model_path = "meta-llama/Llama-3.2-1B-Instruct"  # any model
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = PSE_Torch.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto")
-# 3. Create the StructuringEngine
+# Ensure padding token is set for generation
+model.config.pad_token_id = model.config.eos_token_id[0]
+if model.generation_config:
+    model.generation_config.pad_token_id = model.config.eos_token_id[0]
+# 3. Create the StructuringEngine and configure it with your schema
 model.engine = StructuringEngine(tokenizer)
-# configure it with your schema
 schema = {
     "type": "object",
-    "properties": { "answer": { "type": "string" } },
+    "properties": {"answer": {"type": "string"}},
     "required": ["answer"],
 }
 model.engine.configure(schema)
-
 # 4.  Create your prompt.
-prompt = f"""
-Please respond with a JSON object with the key "answer" and the value "Hello, world!".
-"""
-# 5. Generate!
+prompt = 'Please respond with a JSON object with the key "answer" and the value "Hello, world!"'
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
-# disable truncation samplers like top_p
-output = model.generate(input_ids, do_sample=True, max_new_tokens=100, top_p=0)
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+# 5. Generate!
+output = model.generate(input_ids, do_sample=True, top_p=None) # disable truncation samplers like top_p
+print(tokenizer.decode(output[0]))
 ```
+
+## Examples
 
 Check out the [examples/](examples/) for more examples and advanced usage:
 
@@ -107,6 +105,9 @@ Check out the [examples/](examples/) for more examples and advanced usage:
 *   **`thinking_answer.py`:**
   * Demonstrates creating a custom state machine to enforce a "chain-of-thought" reasoning process.
   * This example showcases how to combine different `StateMachine` types to build complex generation workflows.
+
+## Framework-agnostic
+PSE works with most modern LLM stacks. We provide mixins for the Transformers library (PyTorch, Flax, TensorFlow) for easy integration, and the structuring engine exposes both `logits_processor` and `sampler` methods, so you can graft PSE into almost any inference pipeline. Need to integrate with a custom setup? Just drop in our logit processor and sampler—no workarounds needed.
 
 ## License
 

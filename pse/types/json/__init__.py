@@ -103,8 +103,8 @@ def json_schema_to_state_machine(
         context = {"defs": {"#": schema}, "path": ""}
 
     # handle nullable
-    if schema.get("nullable"):
-        del schema["nullable"]
+    if schema.get("nullable") and not schema.get("did_handle_nullable"):
+        schema["did_handle_nullable"] = True
         return AnySchemaStateMachine([{"type": "null"}, schema], context)
 
     # handle $defs
