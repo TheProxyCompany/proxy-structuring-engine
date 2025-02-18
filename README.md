@@ -19,8 +19,6 @@ The *Proxy Structuring Engine* (PSE) turns a stochastic LLM into a **stateful** 
 
 > The PSE keeps the model free to generate creative language while ensuring it stays within the paths you've deemed valid.
 
-____
-
 ## Installation
 
 ```bash
