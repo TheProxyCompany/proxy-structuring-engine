@@ -14,7 +14,7 @@
 
 # Proxy Structuring Engine (PSE)
 
-LLMs generate words like a firehose with no nozzle—powerful, but chaotic. The PSE isn't a filter, it's a valve—controlling the flow, enforcing structure, and keeping creativity intact. It turns a stochastic LLM into a **stateful** engine capable of powering complex interactions.
+LLMs generate words like a firehose with no nozzle—powerful, but chaotic. The PSE isn't a filter, but a valve; turning a stochastic LLM into a **stateful** engine capable of powering complex interactions.
 
 > The PSE allows the model to "color within the lines".
 
