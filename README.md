@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Proxy Structuring Engine Logo" height="300"/>
+  <img src="logo.png" alt="the proxy P" style="object-fit: contain;" height="300"/>
 </p>
 
 <p align="center">
