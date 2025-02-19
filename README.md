@@ -16,7 +16,7 @@
 
 LLMs generate words like a firehose with no nozzle—powerful, yet chaotic.
 
-The PSE isn't a filter, but a valve; transforming a stochastic LLM into a **stateful** engine capable of driving complex interactions.
+The PSE isn't a filter, but a valve; turning a stochastic LLM into a **stateful** engine capable of driving complex interactions.
 
 > The PSE allows the model to "color within the lines".
 
