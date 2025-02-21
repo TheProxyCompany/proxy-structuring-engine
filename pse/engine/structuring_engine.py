@@ -31,6 +31,7 @@ class StructuringEngine(Engine):
         self,
         tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
         multi_token_sampling: bool = False,
+        max_resample_attempts: int = 5,
     ) -> None:
         """
         Initialize the StructuringEngine with a tokenizer and vocabulary.
@@ -48,6 +49,7 @@ class StructuringEngine(Engine):
             reverse_vocab,
             multi_token_sampling=multi_token_sampling,
             control_tokens=list(self.tokenizer.all_special_ids),
+            max_resamples=max_resample_attempts
         )
 
     def configure(
