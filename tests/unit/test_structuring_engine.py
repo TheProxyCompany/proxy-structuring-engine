@@ -15,7 +15,7 @@ from pse.engine.structuring_engine import StructuringEngine
 @pytest.fixture(scope="module")
 def engine() -> StructuringEngine:
     """Module-scoped fixture for the StructuredOutputDriver."""
-    TEST_MODEL = "fxmarty/tiny-llama-fast-tokenizer"
+    TEST_MODEL = "hf-internal-testing/llama-tokenizer"
     tokenizer = LlamaTokenizer.from_pretrained(TEST_MODEL, legacy=False)
     engine = StructuringEngine(tokenizer)
     return engine
