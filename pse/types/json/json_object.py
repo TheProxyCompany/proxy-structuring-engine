@@ -38,9 +38,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
                 ):
                     self.required_property_names.remove(property_name)
 
-        is_optional = (
-            property_schema.get("nullable", False) or not self.required_property_names
-        )
+        is_optional = property_schema.get("nullable", False)
         super().__init__(is_optional)
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
