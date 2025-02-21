@@ -22,7 +22,7 @@ def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
-    engine = StructuringEngine(tokenizer, max_resample_attempts=1)
+    engine = StructuringEngine(tokenizer)
     return model, engine
 
 

@@ -231,8 +231,9 @@ class StructuringEngine(Engine):
 
             if token_id in self.multi_token_mapping:
                 multi_tokens = self.multi_token_mapping[token_id]
-                multi_repr = repr(self.tokenizer.decode(multi_tokens))
-                token = f"{token} -📶-> {multi_repr}"
+                if len(multi_tokens) > 1:
+                    multi_repr = repr(self.tokenizer.decode(multi_tokens))
+                    token = f"{token} -📶-> {multi_repr}"
 
             rows.append(f"{token_id:<8} | {score:>10.4f} | {token}")
 
