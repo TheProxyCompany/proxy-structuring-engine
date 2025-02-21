@@ -196,8 +196,23 @@ class PSETorchMixin(GenerationMixin):
         is_encoder_decoder: bool = False,
         num_new_tokens: int = 1,
     ) -> dict[str, Any]:
+        def _extract_past_from_model_output(outputs: ModelOutput):
+            past_key_values = None
+            cache_name = "past_key_values"
+            if "past_key_values" in outputs:
+                past_key_values = outputs.past_key_values  # type: ignore [attr-defined]
+            elif "mems" in outputs:
+                past_key_values = outputs.mems  # type: ignore [attr-defined]
+            elif "past_buckets_states" in outputs:
+                past_key_values = outputs.past_buckets_states  # type: ignore [attr-defined]
+            elif "cache_params" in outputs:
+                past_key_values = outputs.cache_params  # type: ignore [attr-defined]
+                cache_name = "cache_params"
+
+            return cache_name, past_key_values
+
         # update past_key_values keeping its naming used in model code
-        cache_name, cache = self._extract_past_from_model_output(outputs)
+        cache_name, cache = _extract_past_from_model_output(outputs)
         model_kwargs[cache_name] = cache
         if getattr(outputs, "state", None) is not None:
             model_kwargs["state"] = outputs.state  # type: ignore [attr-defined]
