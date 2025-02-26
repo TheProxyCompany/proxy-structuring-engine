@@ -17,7 +17,9 @@ class PSETFMixin(TFGenerationMixin):
     engine: StructuringEngine
 
     @staticmethod
-    def make_sampler(num_samples: int, sample_seed: tuple[int, int]) -> Callable[[tf.Tensor], tf.Tensor]:
+    def make_sampler(
+        num_samples: int, sample_seed: tuple[int, int]
+    ) -> Callable[[tf.Tensor], tf.Tensor]:
         return lambda x: tf.squeeze(
             tf.random.stateless_categorical(
                 logits=x,
@@ -142,7 +144,9 @@ class PSETFMixin(TFGenerationMixin):
             # insert the engine at the beginning of the list
             logits_processor.insert(0, self.engine.process_logits)
 
-        def pse_sample_fn(logits: tf.Tensor, sampler: Callable[[tf.Tensor], tf.Tensor]) -> tf.Tensor:
+        def pse_sample_fn(
+            logits: tf.Tensor, sampler: Callable[[tf.Tensor], tf.Tensor]
+        ) -> tf.Tensor:
             return self.engine.sample(logits, sampler)
 
         max_length = (
@@ -182,8 +186,9 @@ class PSETFMixin(TFGenerationMixin):
         )
         use_cache = model_kwargs.pop("use_cache", self.generation_config.use_cache)
         use_xla = not tf.executing_eagerly()
-        # TODO (Joao): fix cache format or find programatic way to detect cache index
-        # GPT2 and other models has a slightly different cache structure, with a different batch axis
+        # Different TensorFlow models use different cache structures with varying batch axis positions.
+        # GPT2 and CTRL models use batch axis at position 1, while other models use different positions.
+        # This detection is based on model name pattern matching.
         model_name = str(self.decoder) if "EncoderDecoder" in str(self) else str(self)  # type: ignore [attr-defined]
         cache_batch_axis = (
             1

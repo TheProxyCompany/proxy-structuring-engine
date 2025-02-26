@@ -1,3 +1,5 @@
+import logging
+import sys
 from typing import Any
 
 import pytest
@@ -10,6 +12,8 @@ except ImportError:
     _has_mlx = False
 
 from pse.engine.structuring_engine import StructuringEngine
+
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
 
 @pytest.fixture(scope="module")
