@@ -35,7 +35,7 @@ messages = [
 ]
 model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
 model, tokenizer = load(model_path_hf)
-engine = StructuringEngine(tokenizer._tokenizer)
+engine = StructuringEngine(tokenizer._tokenizer) # noqa: SLF001
 engine.configure(ADVANCED_JSON_SCHEMA)
 
 encoded_prompt = engine.tokenizer.apply_chat_template(
