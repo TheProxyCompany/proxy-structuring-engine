@@ -4,7 +4,7 @@ import torch
 from pydantic import BaseModel
 from transformers import AutoTokenizer, LlamaForCausalLM
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 
@@ -14,13 +14,17 @@ class Product(BaseModel):
     price: float
     description: str | None = None
 
+
 # 2. Load your model and tokenizer.  Apply the PSE mixin.
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
 
-model_path = "meta-llama/Llama-3.2-1B-Instruct" # Or any model
+
+model_path = "meta-llama/Llama-3.2-1B-Instruct"  # Or any model
 tokenizer = AutoTokenizer.from_pretrained(model_path)
-model = PSE_Torch.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="auto") # Load to GPU, if available
+model = PSE_Torch.from_pretrained(
+    model_path, torch_dtype=torch.bfloat16, device_map="auto"
+)  # Load to GPU, if available
 
 # Ensure padding token is set for generation
 model.config.pad_token_id = model.config.eos_token_id[0]
@@ -29,7 +33,7 @@ if model.generation_config:
 
 # 3. Create a StructuringEngine and configure it with your schema
 model.engine = StructuringEngine(tokenizer)
-model.engine.configure(Product)
+model.engine.configure_json(Product)
 
 # 4.  Create your prompt. Include the schema for the LLM's context.
 prompt = f"""

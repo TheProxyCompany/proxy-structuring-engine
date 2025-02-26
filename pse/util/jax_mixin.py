@@ -6,7 +6,7 @@ from jax import lax
 from transformers import FlaxGenerationMixin, FlaxLogitsProcessorList
 from transformers.generation.flax_utils import FlaxSampleOutput, SampleState
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 
 
 class PSEFlaxMixin(FlaxGenerationMixin):

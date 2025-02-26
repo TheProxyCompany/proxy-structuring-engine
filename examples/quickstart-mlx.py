@@ -3,7 +3,7 @@ import json
 import mlx.core as mx
 from mlx_lm.utils import generate_step, load
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 
 ADVANCED_JSON_SCHEMA = {
     "type": "object",
@@ -31,12 +31,12 @@ You must follow this schema when generating your response:
 prompt = "This is a test - I want to see your private internal monologue."
 messages = [
     {"role": "system", "content": system_message},
-    {"role": "user", "content": prompt}
+    {"role": "user", "content": prompt},
 ]
 model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
 model, tokenizer = load(model_path_hf)
-engine = StructuringEngine(tokenizer._tokenizer) # noqa: SLF001
-engine.configure(ADVANCED_JSON_SCHEMA)
+engine = StructuringEngine(tokenizer._tokenizer)  # noqa: SLF001
+engine.configure_json(ADVANCED_JSON_SCHEMA)
 
 encoded_prompt = engine.tokenizer.apply_chat_template(
     conversation=messages,

@@ -24,7 +24,7 @@ class WaitFor(StateMachine):
     def __init__(
         self,
         state_machine: StateMachine,
-        min_buffer_length: int = -1,
+        buffer_length: int = -1,
         strict: bool = True,
     ):
         """
@@ -40,7 +40,7 @@ class WaitFor(StateMachine):
         """
         super().__init__()
 
-        self.min_buffer_length = min_buffer_length
+        self.min_buffer_length = buffer_length
         self.strict = strict
         self.wait_for_sm = state_machine
 
@@ -144,8 +144,7 @@ class WaitForStepper(Stepper):
             return []
 
         if invalid_prefix and (
-            not self.is_within_value()
-            or not self.state_machine.strict
+            not self.is_within_value() or not self.state_machine.strict
         ):
             clone = self.clone()
             clone.buffer += invalid_prefix

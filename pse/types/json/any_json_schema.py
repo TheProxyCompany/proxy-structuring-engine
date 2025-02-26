@@ -18,13 +18,13 @@ class AnySchemaStateMachine(StateMachine):
             schemas (List[Dict[str, Any]]): A list of JSON schemas to validate against.
             context (Dict[str, Any]): Contextual information for schema definitions and paths.
         """
-        from pse.types.json import json_schema_to_state_machine
+        from pse.types.json import _json_schema_to_state_machine
 
         # Construct the state machine graph with an initial state `0` that transitions
         # to the end state `$` for each schema state_machine.
         self.state_machines: list[StateMachine] = []
         for schema in schemas:
-            sm = json_schema_to_state_machine(schema, context)
+            sm = _json_schema_to_state_machine(schema, context)
             self.state_machines.append(sm)
 
         super().__init__(

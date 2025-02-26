@@ -6,7 +6,7 @@ from pse_core import StateId
 
 from pse.types.base.chain import ChainStateMachine
 from pse.types.base.phrase import PhraseStateMachine
-from pse.types.json import json_schema_to_state_machine
+from pse.types.json import _json_schema_to_state_machine
 from pse.types.key_value import KeyValueStateMachine, KeyValueStepper
 from pse.types.string import StringStateMachine
 from pse.types.whitespace import WhitespaceStateMachine
@@ -48,7 +48,7 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
                 WhitespaceStateMachine(),
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(),
-                json_schema_to_state_machine(self.prop_schema, self.prop_context),
+                _json_schema_to_state_machine(self.prop_schema, self.prop_context),
             ],
         )
 

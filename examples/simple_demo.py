@@ -5,7 +5,7 @@ import torch
 from pydantic import BaseModel
 from transformers import AutoTokenizer, LlamaForCausalLM
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
@@ -40,15 +40,15 @@ SIMPLE_JSON_SCHEMA = {
     "properties": {"value": {"type": "number"}},
     "required": ["value"],
 }
-model.engine.configure(SIMPLE_JSON_SCHEMA)
-prompt = "Please generate a json object with the value 9.11, with the following schema:\n"
+model.engine.configure_json(SIMPLE_JSON_SCHEMA)
+prompt = (
+    "Please generate a json object with the value 9.11, with the following schema:\n"
+)
 prompt += json.dumps(SIMPLE_JSON_SCHEMA, indent=2)
 
 messages = [{"role": "user", "content": prompt}]
 input_ids = tokenizer.apply_chat_template(
-    messages,
-    return_tensors="pt",
-    add_generation_prompt=True
+    messages, return_tensors="pt", add_generation_prompt=True
 )
 assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
@@ -81,7 +81,7 @@ ADVANCED_JSON_SCHEMA = {
     },
     "required": ["chain_of_thought"],
 }
-model.engine.configure(ADVANCED_JSON_SCHEMA)
+model.engine.configure_json(ADVANCED_JSON_SCHEMA)
 raw_prompt = (
     f"This is a test of your thought process.\n"
     f"I want to see your private internal monologue.\n"
@@ -101,6 +101,7 @@ if not structured_output:
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
+
 class CursorPositionModel(BaseModel):
     """
     An object representing the position and click state of a cursor.
@@ -116,7 +117,7 @@ class CursorPositionModel(BaseModel):
     left_click: bool = False
 
 
-json_schema: dict = model.engine.configure(
+json_schema: dict = model.engine.configure_json(
     CursorPositionModel, json_delimiters=("<cursor>", "</cursor>")
 )
 prompt = (
@@ -136,6 +137,8 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-structured_output = model.engine.parse_structured_output(output_type=CursorPositionModel)
+structured_output = model.engine.parse_structured_output(
+    output_type=CursorPositionModel
+)
 print(100 * "-")
 print(json.dumps(structured_output.model_dump(), indent=2))

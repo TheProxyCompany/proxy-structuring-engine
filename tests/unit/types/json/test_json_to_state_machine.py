@@ -5,7 +5,7 @@ import pytest
 
 from pse.types.base.chain import ChainStateMachine
 from pse.types.enum import EnumStateMachine
-from pse.types.json import json_schema_to_state_machine
+from pse.types.json import _json_schema_to_state_machine
 from pse.types.json.any_json_schema import AnySchemaStateMachine
 from pse.types.json.json_array import ArraySchemaStateMachine
 from pse.types.json.json_number import NumberSchemaStateMachine
@@ -52,7 +52,7 @@ def test_get_acceptor_schema_types(
     acceptor_len: int | None,
 ) -> None:
     """Test get_json_acceptor with various schema types and expected acceptors."""
-    state_machine = json_schema_to_state_machine(schema)
+    state_machine = _json_schema_to_state_machine(schema)
     assert isinstance(state_machine, expected_acceptor_cls), (
         f"Expected {expected_acceptor_cls.__name__} for schema {schema}"
     )
@@ -78,7 +78,7 @@ def context_with_definition() -> dict[str, Any]:
 def test_get_acceptor_with_ref_schema(context_with_definition: dict[str, Any]) -> None:
     """Test get_json_acceptor with a $ref schema referencing a definition."""
     schema = {"$ref": "#/definitions/address"}
-    state_machine = json_schema_to_state_machine(schema, context_with_definition)
+    state_machine = _json_schema_to_state_machine(schema, context_with_definition)
     assert isinstance(
         state_machine,
         ObjectSchemaStateMachine,

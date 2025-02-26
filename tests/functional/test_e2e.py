@@ -2,7 +2,10 @@ import logging
 
 import pytest
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
+from pse.types.base.encapsulated import EncapsulatedStateMachine
+from pse.types.grammar.grammar import GrammarStateMachine
+from pse.types.grammar.python import PythonGrammar
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +47,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure(schema)
+    engine.configure_json(schema)
     generate(
         raw_prompt,
         model,
@@ -77,7 +80,7 @@ def test_simple_json_structure_with_delimiters(
         f"Wrap your output in {delimiters[0]} and {delimiters[1]}."
         f"Follow this schema: {schema}"
     )
-    engine.configure(schema, json_delimiters=delimiters)
+    engine.configure_json(schema, delimiters=delimiters)
     generate(
         raw_prompt,
         model,
@@ -120,7 +123,7 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.configure(schema, json_delimiters=("```json\n", "\n```"))
+    engine.configure_json(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
     final_output = engine.parse_structured_output()
     assert final_output
@@ -133,7 +136,9 @@ def test_complex_json_structure(
     assert engine.has_reached_accept_state
 
 
-def test_complex_recursive_schema(model_and_engine: tuple[nn.Module, StructuringEngine]) -> None:
+def test_complex_recursive_schema(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
     # openAI's structured output blog post said:
     #
     #   "The following is a sample recursive schema that is supported on
@@ -178,7 +183,7 @@ def test_complex_recursive_schema(model_and_engine: tuple[nn.Module, Structuring
         "The object should be a div component that only has one child component."
         "The child component should be a button with a label of 'Click me'."
     )
-    engine.configure(schema, min_buffer_length=-1)
+    engine.configure_json(schema)
     generate(raw_prompt, model, engine)
     final_output = engine.parse_structured_output()
     assert final_output["type"] == "div"
@@ -253,8 +258,10 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.configure(
-        schema, json_delimiters=("```json\n", "\n```"), min_buffer_length=0
+    engine.configure_json(
+        schema,
+        delimiters=("```json\n", "\n```"),
+        buffer_length=0,
     )
     generate(raw_prompt, model, engine)
     final_output = engine.parse_structured_output()
@@ -292,7 +299,7 @@ def test_schema_web_search(
         "required": ["name", "arguments"],
     }
     engine.reset(hard_reset=True)
-    engine.configure(schema, json_delimiters=("<tool>", "</tool>"))
+    engine.configure_json(schema, delimiters=("<tool>", "</tool>"))
     prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
     engine.consume_text(prefill)
     raw_prompt = (
@@ -314,7 +321,13 @@ def test_python_interpreter(
     """Test that the engine can generate a python interpreter."""
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
-    engine.configure({}, include_python=True, min_buffer_length=0)
+    python_state_machine = EncapsulatedStateMachine(
+        state_machine=GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters,
+        buffer_length=0,
+    )
+
+    engine.configure(python_state_machine)
     raw_prompt = "Please generate the python code `print('Hello, world!')`."
     raw_prompt += "Wrap the code in ```python\n and \n```."
     generate(raw_prompt, model, engine)
@@ -329,7 +342,13 @@ def test_python_edge_case(
     """Test that the engine can generate a python strawberry."""
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
-    engine.configure({}, include_python=True, min_buffer_length=-1)
+    python_state_machine = EncapsulatedStateMachine(
+        state_machine=GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters,
+        buffer_length=0,
+    )
+
+    engine.configure(python_state_machine)
     requested_code = '"strawberry".count("r")'
     raw_prompt = f"Please return the following: ```python\n{requested_code}\n```"
     prefill = '```python\n"strawberry".count("r")\n``'

@@ -19,8 +19,8 @@ class EncapsulatedStateMachine(StateMachine):
     def __init__(
         self,
         state_machine: StateMachine,
-        delimiters: tuple[str, str],
-        min_buffer_length: int = -1,
+        delimiters: tuple[str, str] | None,
+        buffer_length: int = -1,
         is_optional: bool = False,
     ) -> None:
         """
@@ -30,20 +30,20 @@ class EncapsulatedStateMachine(StateMachine):
             delimiters: The tuple of opening and closing delimiters.
         """
         self.inner_state_machine = state_machine
-        self.delimiters = delimiters
+        self.delimiters = delimiters or ("```", "```")
         super().__init__(
             {
                 0: [
                     (
                         WaitFor(
-                            PhraseStateMachine(delimiters[0]),
-                            min_buffer_length=min_buffer_length,
+                            PhraseStateMachine(self.delimiters[0]),
+                            buffer_length=buffer_length,
                         ),
                         1,
                     ),
                 ],
                 1: [(state_machine, 2)],
-                2: [(PhraseStateMachine(delimiters[1]), "$")],
+                2: [(PhraseStateMachine(self.delimiters[1]), "$")],
             },
             is_optional=is_optional,
         )

@@ -10,7 +10,7 @@ from transformers.generation.tf_utils import (
     shape_list,
 )
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 
 
 class PSETFMixin(TFGenerationMixin):

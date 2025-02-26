@@ -161,7 +161,7 @@ def test_accepts_any_token_when_within_value(
     sm = EncapsulatedStateMachine(
         StringStateMachine(),
         delimiters=default_delimiters,
-        min_buffer_length=0,
+        buffer_length=0,
     )
     steppers = sm.get_steppers()
     assert all(stepper.accepts_any_token() for stepper in steppers)
@@ -191,7 +191,7 @@ def test_edge_case():
     sm = EncapsulatedStateMachine(
         ObjectStateMachine(),
         delimiters=("<tool>", "</tool>"),
-        min_buffer_length=0,
+        buffer_length=0,
     )
     steppers = sm.get_steppers()
     assert any(stepper.accepts_any_token() for stepper in steppers)
@@ -211,7 +211,7 @@ def test_min_scratchpad_length():
     sm = EncapsulatedStateMachine(
         StringStateMachine(),
         delimiters=("<tool>", "</tool>"),
-        min_buffer_length=10,
+        buffer_length=10,
     )
     steppers = sm.get_steppers()
     assert not any(stepper.should_start_step("<tool>") for stepper in steppers)

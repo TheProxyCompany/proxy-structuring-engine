@@ -32,7 +32,7 @@ class XMLEncapsulatedStateMachine(StateMachine):
                     (
                         WaitFor(
                             XMLTagStateMachine(tag_name),
-                            min_buffer_length=min_buffer_length,
+                            buffer_length=min_buffer_length,
                         ),
                         1,
                     ),
