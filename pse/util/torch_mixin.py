@@ -15,7 +15,7 @@ from transformers.generation.streamers import BaseStreamer
 from transformers.generation.utils import GenerateNonBeamOutput
 from transformers.utils import ModelOutput
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 
 
 class PSETorchMixin(GenerationMixin):

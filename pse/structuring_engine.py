@@ -11,9 +11,8 @@ from pse_core.state_machine import StateMachine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.engine import StructuringMachine
 from pse.types.grammar.python import PythonGrammar
-from pse.types.json import JSONSchemaSource
+from pse.types.json import JSONSchemaSource, json_schema_state_machine
 from pse.util.get_top_logits import get_top_k
 
 logger = logging.getLogger(__name__)
@@ -49,11 +48,27 @@ class StructuringEngine(Engine):
             reverse_vocab,
             multi_token_sampling=multi_token_sampling,
             control_tokens=list(self.tokenizer.all_special_ids),
-            max_resamples=max_resample_attempts
+            max_resamples=max_resample_attempts,
         )
 
     def configure(
-        self, schema: JSONSchemaSource | StateMachine, **kwargs: Any
+        self,
+        schema: JSONSchemaSource | StateMachine,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Configure the structuring engine with a schema.
+        """
+        if isinstance(schema, StateMachine):
+            self.configure_state_machine(schema)
+        else:
+            self.configure_json(schema, **kwargs)
+
+    def configure_json(
+        self,
+        schema: JSONSchemaSource,
+        delimiters: tuple[str, str] | None = None,
+        buffer_length: int = -1,
     ) -> dict[str, Any]:
         """
         Configure the structuring engine with a schema and optional delimiters.
@@ -64,19 +79,22 @@ class StructuringEngine(Engine):
         Returns:
             The JSON schema used by the structuring engine.
         """
-        self.json_delimiters = None
-        self.json_schema = {}
-        if isinstance(schema, StateMachine):
-            self.state_machine: StateMachine = schema
-        else:
-            self.state_machine = StructuringMachine(schema, **kwargs)
-            if self.state_machine.json_delimiters:
-                self.json_delimiters = self.state_machine.json_delimiters
-            if self.state_machine.json_schema:
-                self.json_schema = self.state_machine.json_schema
+        self.delimiters = delimiters
+        self.json_schema, self.state_machine = json_schema_state_machine(
+            schema,
+            delimiters,
+            buffer_length,
+        )
 
         self.steppers = self.state_machine.get_steppers()
         return self.json_schema
+
+    def configure_state_machine(self, state_machine: StateMachine) -> None:
+        """
+        Configure the structuring engine with a state machine.
+        """
+        self.state_machine = state_machine
+        self.steppers = self.state_machine.get_steppers()
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
         """
@@ -177,8 +195,8 @@ class StructuringEngine(Engine):
 
         # remove delimiters from raw_output
         match self.current_state:
-            case "json" if self.json_delimiters:
-                delimiters = self.json_delimiters
+            case "json" if self.delimiters:
+                delimiters = self.delimiters
             case "python":
                 delimiters = PythonGrammar.delimiters
             case _:

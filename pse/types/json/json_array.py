@@ -8,7 +8,7 @@ from pse_core.stepper import Stepper
 from pse.types.array import ArrayStateMachine, ArrayStepper
 from pse.types.base.chain import ChainStateMachine
 from pse.types.base.phrase import PhraseStateMachine
-from pse.types.json import json_schema_to_state_machine
+from pse.types.json import _json_schema_to_state_machine
 from pse.types.whitespace import WhitespaceStateMachine
 
 
@@ -27,7 +27,7 @@ class ArraySchemaStateMachine(ArrayStateMachine):
                 ],
                 2: [
                     (
-                        json_schema_to_state_machine(
+                        _json_schema_to_state_machine(
                             self.schema["items"], self.context
                         ),
                         3,

@@ -5,11 +5,12 @@ from pse_core import Edge
 import torch
 from transformers import AutoTokenizer, LlamaForCausalLM
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
 logging.basicConfig(level=logging.DEBUG)
+
 
 class PSE_Torch(PSETorchMixin, LlamaForCausalLM):
     pass
@@ -39,6 +40,7 @@ model.engine = StructuringEngine(tokenizer, multi_token_sampling=True)
 # define custom state machines
 from pse.types.base.character import CharacterStateMachine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
+
 thinking_delimiters = ("[thinking]", "[/thinking]")
 answer_delimiters = ("[answer]", "[/answer]")
 
@@ -89,7 +91,8 @@ answer_state_machine = EncapsulatedStateMachine(
 # providing its final answer.
 from pse_core.state_machine import StateMachine
 from pse.types.base.loop import LoopStateMachine
-model.engine.configure(
+
+model.engine.configure_json(
     StateMachine(
         {
             "thinking": [

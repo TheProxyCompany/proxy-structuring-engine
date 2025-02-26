@@ -10,7 +10,7 @@ class Grammar:
     name: str
     lark_grammar: Lark
     validator_function: Callable[[Lark, str, bool, str], bool]
-    delimiters: tuple[str, str]
+    delimiters: tuple[str, str] | None = None
 
     def validate(
         self,

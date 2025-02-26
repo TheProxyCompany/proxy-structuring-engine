@@ -5,13 +5,18 @@ from typing import Any
 import pytest
 from transformers import LlamaTokenizer
 
+from pse.types.base.encapsulated import EncapsulatedStateMachine
+from pse.types.grammar.grammar import GrammarStateMachine
+from pse.types.grammar.python import PythonGrammar
+
 try:
     import mlx.core as mx
+
     _has_mlx = True
 except ImportError:
     _has_mlx = False
 
-from pse.engine.structuring_engine import StructuringEngine
+from pse.structuring_engine import StructuringEngine
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
@@ -63,7 +68,7 @@ def test_create_acceptor_with_complex_schema(
         },
         "required": ["user", "active"],
     }
-    engine.configure(complex_schema)
+    engine.configure_json(complex_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
     engine.reset(hard_reset=True)
@@ -77,7 +82,7 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure(pattern_schema, json_delimiters=None, min_buffer_length=0)
+    engine.configure_json(pattern_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
 
@@ -95,7 +100,7 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure(schema=pattern_schema)
+    engine.configure_json(schema=pattern_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
 
@@ -147,13 +152,15 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
         },
         "required": ["name", "arguments"],
     }
-    engine.configure(
+    engine.configure_json(
         {"anyOf": [schema1, schema2]},
-        json_delimiters=("```json\n", "\n```"),
-        min_buffer_length=0,
+        delimiters=("```json\n", "\n```"),
+        buffer_length=0,
     )
 
-    engine.consume_text('Here is the response: ```json\n{\n"name":"', token_healing=False)
+    engine.consume_text(
+        'Here is the response: ```json\n{\n"name":"', token_healing=False
+    )
     assert len(engine.steppers) == 2
     engine.reset(hard_reset=True)
 
@@ -195,7 +202,7 @@ def test_edge_case_1(
             }
         ]
     }
-    engine.configure(schema, json_delimiters=("```json\n", "\n```"))
+    engine.configure_json(schema, delimiters=("```json\n", "\n```"))
     raw_input = '```json\n{"name": "send_message",'
     engine.consume_text(raw_input)
 
@@ -230,12 +237,15 @@ def test_edge_case_1(
 
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
-    engine.configure({"type": "string", "const": "Hello World!"}, min_buffer_length=0)
+    engine.configure_json(
+        {"type": "string", "const": "Hello World!"},
+        buffer_length=0
+    )
     buffer = "Sure, here is the response: "
     engine.consume_text(buffer)
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
-    engine.consume_text('"*')
+    engine.consume_text('"*', token_healing=True)
     # example of token healing
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
@@ -245,6 +255,7 @@ def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     assert engine.has_reached_accept_state
     engine.reset(hard_reset=True)
 
+
 def test_token_healing(engine: StructuringEngine) -> None:
     """Test that the token healing is working correctly."""
     SIMPLE_JSON_SCHEMA = {
@@ -252,11 +263,11 @@ def test_token_healing(engine: StructuringEngine) -> None:
         "properties": {"value": {"type": "number"}},
         "required": ["value"],
     }
-    engine.configure(SIMPLE_JSON_SCHEMA)
+    engine.configure_json(SIMPLE_JSON_SCHEMA)
     engine.consume_text('{"')
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
-    assert engine.steppers[0].get_current_value() == '{"'
+    assert engine.steppers[0].get_raw_value() == '{"'
 
 
 @pytest.mark.skipif(not _has_mlx, reason="mlx not installed")
@@ -265,7 +276,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
-        engine.configure(schema={"type": "string"})
+        engine.configure_json(schema={"type": "string"})
         # we expect only tokens that start with a " character
         scores = generate_mock_logits(
             engine,
@@ -297,7 +308,13 @@ def test_logits_processing(engine: StructuringEngine) -> None:
 
 def test_python_interpreter(engine: StructuringEngine) -> None:
     """Test that the python interpreter is working correctly."""
-    engine.configure({}, include_python=True)
+    python_state_machine = EncapsulatedStateMachine(
+        state_machine=GrammarStateMachine(PythonGrammar),
+        delimiters=PythonGrammar.delimiters,
+        buffer_length=0,
+    )
+
+    engine.configure(python_state_machine)
     engine.consume_text("```python\nprint('Hello, world!')\n```")
     assert engine.steppers
     assert engine.has_reached_accept_state

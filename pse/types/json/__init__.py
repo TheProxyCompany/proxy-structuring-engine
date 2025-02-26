@@ -26,35 +26,36 @@ The different object types that can be used as a schema in the structuring engin
 """
 
 
-def schema_state_machine(
-    json_schemable: JSONSchemaSource,
-    json_delimiters: tuple[str, str] | None = None,
-    min_buffer_length: int = -1,
+def json_schema_state_machine(
+    schema: JSONSchemaSource,
+    delimiters: tuple[str, str] | None = None,
+    buffer_length: int = -1,
 ) -> tuple[dict[str, Any], StateMachine]:
-    json_schema = generate_json_schema(json_schemable)
-    json_state_machine = json_schema_to_state_machine(json_schema)
-    if json_delimiters:
+    json_schema = _generate_json_schema(schema)
+    json_state_machine = _json_schema_to_state_machine(json_schema)
+    if delimiters:
         return (
             json_schema,
             EncapsulatedStateMachine(
                 json_state_machine,
-                json_delimiters,
-                min_buffer_length,
-            )
+                delimiters,
+                buffer_length,
+            ),
         )
-    elif min_buffer_length >= 0:
+
+    if buffer_length >= 0:
         return (
             json_schema,
             WaitFor(
                 json_state_machine,
-                min_buffer_length,
+                buffer_length,
             ),
         )
-    else:
-        return (json_schema, json_state_machine)
+
+    return (json_schema, json_state_machine)
 
 
-def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
+def _generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
     """
     Convert the given schema into an object that can be used by the engine.
 
@@ -93,7 +94,7 @@ def generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
             raise ValueError(f"Invalid schema: {source}") from e
 
 
-def json_schema_to_state_machine(
+def _json_schema_to_state_machine(
     schema: dict[str, Any], context: dict[str, Any] | None = None
 ) -> StateMachine:
     from pse.types.json.json_array import ArraySchemaStateMachine
