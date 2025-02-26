@@ -16,7 +16,7 @@ class Grammar:
         self,
         input: str,
         strict: bool = False,
-        start: str = "file_input",
+        start: str | None = None,
     ) -> bool:
         """
         Validate the input against the grammar.
@@ -29,4 +29,5 @@ class Grammar:
         Returns:
             bool: True if the input is valid, False otherwise.
         """
+        start = start or self.lark_grammar.options.start[0]
         return self.validator_function(self.lark_grammar, input, strict, start)
