@@ -1,9 +1,13 @@
 import json
+import logging
+import sys
 
 import mlx.core as mx
 from mlx_lm.utils import generate_step, load
 
 from pse.structuring_engine import StructuringEngine
+
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
 ADVANCED_JSON_SCHEMA = {
     "type": "object",
