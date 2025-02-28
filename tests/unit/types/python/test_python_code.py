@@ -9,6 +9,8 @@ from pse.types.grammar.python import PythonGrammar
     "code, should_accept",
     [
         ("x = 1", True),
+        ("x =! 1", False),
+        ("x != 1", True),
         ("def foo():\n    pass", True),
         ("class Test:\n    pass", True),
         ("print('Hello, World!')", True),
@@ -76,7 +78,6 @@ def test_incremental_parsing():
     # Test valid incremental input
     code_parts = [
         "def test",
-        "def",
         " ",
         "(",
         ")",

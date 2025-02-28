@@ -1,0 +1,274 @@
+// A Bash grammar for Lark
+
+%ignore /[ \t]+/      // Ignore horizontal whitespace
+%ignore /\\(\r?\n)+/  // Handle backslash-newline continuations
+
+NEWLINE: /\r?\n+/
+
+// Comments
+COMMENT: /#[^\n]*/
+%ignore COMMENT
+
+//////////////////////
+// Basic Terminals
+//////////////////////
+LETTER: /[a-zA-Z]/
+DIGIT: /[0-9]/
+
+// Tokens for control structures
+THEN: "then"
+FI: "fi"
+DO: "do"
+DONE: "done"
+IN: "in"
+ESAC: "esac"
+LPAR: "("
+RPAR: ")"
+LBRACE: "{"
+RBRACE: "}"
+SEMICOLON: ";"
+LBRACKET: "["
+RBRACKET: "]"
+AMPERSAND: "&"
+VBAR: "|"
+BANG: "!"
+MORETHAN: ">"
+LESSTHAN: "<"
+EQUAL: "="
+PLUS: "+"
+MINUS: "-"
+DOT: "."
+SLASH: "/"
+COLON: ":"
+COMMA: ","
+AT: "@"
+TILDE: "~"
+UNDERSCORE: "_"
+
+// Case specific tokens
+DOUBLE_SEMICOLON: ";;"
+RPAREN: ")"
+
+// Keywords
+IF: "if"
+ELSE: "else"
+ELIF: "elif"
+FOR: "for"
+WHILE: "while"
+UNTIL: "until"
+CASE: "case"
+FUNCTION: "function"
+SELECT: "select"
+TIME: "time"
+
+// number => one or more digits
+number: DIGIT+
+
+// Expand word definition to include common bash characters
+// word => letters, numbers, underscores, hyphens, dots, slashes, etc.
+word: (LETTER | DIGIT | UNDERSCORE | MINUS | DOT | SLASH | COLON | PLUS | COMMA | AT | EQUAL | TILDE)+
+
+// Allow quoted strings as words
+STRING: /'[^']*'?/ | /"[^"]*"?/  // Allow potentially unclosed quotes
+
+// Variable expansion
+VARIABLE: "$" (LETTER | DIGIT | UNDERSCORE | "{" /[^}]*/ "}")
+
+// Command substitution
+CMD_SUBST: "$(" /[^)]*/ ")"
+
+// Arithmetic expansion
+ARITH_EXPR: "$((" /[^)]*/ "))" | "((" /[^)]*/ "))"
+
+// Test expression - directly handle [ ... ] syntax
+TEST_EXPR: LBRACKET /[^]]*/ RBRACKET | "[[" /[^]]*/ "]]"
+
+//////////////////////////////
+// Top-level parse start
+//////////////////////////////
+start: list
+     | case_command  // Allow case_command at top level to simplify testing
+     | simple_command
+     | COMMENT       // Allow standalone comments
+
+//////////////////////////////
+// word_list
+//////////////////////////////
+word_list: (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)+
+
+//////////////////////////////
+// assignment_word
+//////////////////////////////
+assignment_word: word EQUAL (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)
+
+//////////////////////////////
+// redirection
+//////////////////////////////
+?redirection: redirect_op word
+            | number redirect_op word
+
+!redirect_op: ">" | "<" | ">>" | "<<" | "<&" | ">&" | "<<-" | "&>" | "<>" | ">|"
+
+//////////////////////////////
+// redirection_list
+//////////////////////////////
+redirection_list: redirection+
+
+//////////////////////////////
+// simple_command
+//////////////////////////////
+simple_command: simple_command_element+
+
+//////////////////////////////
+// simple_command_element
+//////////////////////////////
+?simple_command_element: word
+                       | STRING
+                       | VARIABLE
+                       | CMD_SUBST
+                       | ARITH_EXPR
+                       | TEST_EXPR
+                       | assignment_word
+                       | redirection
+
+//////////////////////////////
+// command
+//////////////////////////////
+?command: simple_command
+        | shell_command
+        | shell_command redirection_list
+
+//////////////////////////////
+// shell_command
+//////////////////////////////
+?shell_command: for_command
+              | case_command
+              | while_command
+              | until_command
+              | select_command
+              | if_command
+              | subshell
+              | group_command
+              | function_def
+
+//////////////////////////////
+// while and until commands
+//////////////////////////////
+while_command: WHILE compound_list DO compound_list DONE
+
+until_command: UNTIL compound_list DO compound_list DONE
+
+//////////////////////////////
+// for_command
+//////////////////////////////
+// Require the loop variable after FOR
+for_command: FOR word (IN word_list)? (SEMICOLON | NEWLINE)? DO compound_list DONE
+
+//////////////////////////////
+// select_command
+//////////////////////////////
+// Require the selection variable after SELECT
+?select_command: SELECT word (IN word_list)? (SEMICOLON | NEWLINE)? DO list DONE
+
+//////////////////////////////
+// Case Command Structure
+//////////////////////////////
+
+// Top-level case command
+case_command: CASE word_or_var IN newline_list case_item+ ESAC
+            | CASE word_or_var IN newline_list case_item+  // Incomplete (no ESAC)
+
+// Simple type that can be used as case target
+?word_or_var: word | STRING | VARIABLE
+
+// A case item (pattern + action)
+case_item: case_pattern_clause newline_list command_list terminator newline_list
+         | case_pattern_clause newline_list command_list  // Without terminator (for last item)
+         | case_pattern_clause newline_list  // Just pattern definition
+
+// Pattern clause
+case_pattern_clause: (word | STRING | VARIABLE | pattern_list) RPAREN
+
+// Pattern list (a|b|c)
+pattern_list: (word | STRING | VARIABLE) (VBAR (word | STRING | VARIABLE))*
+
+// Command list inside a case item
+command_list: list | command
+
+// Case terminator (;;, ;&, ;;& in bash)
+terminator: DOUBLE_SEMICOLON | ";&" | ";;&"
+
+//////////////////////////////
+// if_command
+//////////////////////////////
+// Make sure we have the required condition between if-then
+if_command: IF compound_list THEN compound_list (ELSE compound_list)? FI
+          | IF compound_list THEN compound_list elif_clause FI
+
+//////////////////////////////
+// elif_clause
+//////////////////////////////
+elif_clause: ELIF compound_list THEN compound_list
+            | ELIF compound_list THEN compound_list ELSE compound_list
+            | ELIF compound_list THEN compound_list elif_clause
+
+//////////////////////////////
+// function_def
+//////////////////////////////
+function_def: (word LPAR RPAR | FUNCTION word LPAR RPAR | FUNCTION word) compound_list
+
+//////////////////////////////
+// subshell
+//////////////////////////////
+subshell: LPAR compound_list RPAR
+
+//////////////////////////////
+// group_command
+//////////////////////////////
+group_command: LBRACE list RBRACE
+
+//////////////////////////////
+// list
+//////////////////////////////
+list: newline_list list0
+
+//////////////////////////////
+// compound_list
+//////////////////////////////
+compound_list: list
+              | newline_list list1
+
+//////////////////////////////
+// list0
+//////////////////////////////
+list0: list1 ((NEWLINE | AMPERSAND | SEMICOLON) newline_list list1?)*
+
+//////////////////////////////
+// list1
+//////////////////////////////
+list1: pipeline_command (list_operator newline_list pipeline_command)*
+
+!list_operator: "&&" | "||" | AMPERSAND | SEMICOLON | NEWLINE
+
+//////////////////////////////
+// pipeline_command
+//////////////////////////////
+pipeline_command: [BANG] pipe_sequence
+
+//////////////////////////////
+// pipe_sequence
+//////////////////////////////
+pipe_sequence: command (VBAR newline_list command)*
+
+//////////////////////////////
+// list_terminator
+//////////////////////////////
+list_terminator: NEWLINE
+                | SEMICOLON
+
+//////////////////////////////
+// newline_list
+//////////////////////////////
+newline_list: NEWLINE*
+
+// End of grammar

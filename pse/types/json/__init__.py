@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, TypeAlias
 
 from pse_core.state_machine import StateMachine
@@ -20,7 +20,7 @@ from pse.types.object import ObjectStateMachine
 SchemaDefinition: TypeAlias = (
     type[BaseModel] | dict[str, Any] | Callable[..., Any] | str
 )
-JSONSchemaSource: TypeAlias = SchemaDefinition | list[SchemaDefinition]
+JSONSchemaSource: TypeAlias = SchemaDefinition | Sequence[SchemaDefinition]
 """
 The different object types that can be used as a schema in the structuring engine.
 """
@@ -75,7 +75,7 @@ def _generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
         return callable_to_schema(source)
     elif isinstance(source, dict):
         return source["schema"] if "schema" in source else source
-    elif isinstance(source, list):
+    elif isinstance(source, Sequence) and not isinstance(source, str):
         schemas = []
         for s in source:
             if isinstance(s, type) and issubclass(s, BaseModel):
@@ -88,7 +88,6 @@ def _generate_json_schema(source: JSONSchemaSource) -> dict[str, Any]:
     else:
         try:
             import json
-
             return json.loads(source)
         except Exception as e:
             raise ValueError(f"Invalid schema: {source}") from e

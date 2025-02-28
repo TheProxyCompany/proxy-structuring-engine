@@ -15,10 +15,10 @@ python_parser = Lark.open_from_package(
     "lark",
     "python.lark",
     ["grammars"],
-    ambiguity="forest",
+    parser="lalr",
+    lexer="basic",
     postlex=PythonIndenter(),
     start=["file_input"],
-    ordered_sets=False,
 )
 
 
@@ -48,9 +48,8 @@ def validate_python_code(
             # Handle incomplete strings and other incomplete constructs
             if isinstance(e, UnexpectedEOF | UnexpectedCharacters):
                 return True
-            elif (
-                isinstance(e, UnexpectedToken)
-                and getattr(e.token, "type", None) == "_DEDENT"
+            elif isinstance(e, UnexpectedToken) and (
+                e.token.type == "_DEDENT" or e.token.type == "$END"
             ):
                 return True
             elif not code.endswith("\n"):
