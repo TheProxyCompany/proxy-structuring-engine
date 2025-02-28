@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from lark import Lark
 from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
@@ -13,10 +14,14 @@ logger = logging.getLogger(__name__)
 class PythonGrammar(LarkGrammar):
 
     def __init__(self):
-        python_lark_grammar = Lark.open_from_package(
-            "lark",
-            "python.lark",
-            ["grammars"],
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        grammar_path = os.path.join(current_dir, "python.lark")
+
+        # Read the Lark file
+        with open(grammar_path) as f:
+            python_grammar_content = f.read()
+        python_lark_grammar = Lark(
+            python_grammar_content,
             parser="lalr",
             lexer="basic",
             postlex=PythonIndenter(),
@@ -28,7 +33,6 @@ class PythonGrammar(LarkGrammar):
             lark_grammar=python_lark_grammar,
             delimiters=("```python\n", "\n```"),
         )
-
 
     def validate(
         self,

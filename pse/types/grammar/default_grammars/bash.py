@@ -54,14 +54,24 @@ class BashGrammar(LarkGrammar):
             return False
 
         try:
+            # Try to parse the input normally
             self.lark_grammar.parse(input, start=start or "start")
             return True
         except Exception as e:
-            if not strict:
-                # Handle incomplete strings and other incomplete constructs
-                if isinstance(e, UnexpectedEOF | UnexpectedCharacters):
-                    return True
-                elif isinstance(e, UnexpectedToken) and e.token.type == "$END":
-                    return True
+            # If we're in strict mode, any parse error means invalid
+            if strict:
+                return False
 
+            # EOF errors are typically valid incomplete syntax
+            if isinstance(e, UnexpectedEOF):
+                # Token errors require more analysis
+                return True
+            elif isinstance(e, UnexpectedToken):
+                # End of input is generally fine in non-strict mode
+                if e.token.type == "$END":
+                    return True
+            elif isinstance(e, UnexpectedCharacters):
+                return True
+
+            # Default is to reject
             return False
