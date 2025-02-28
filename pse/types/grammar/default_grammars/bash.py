@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class BashGrammar(LarkGrammar):
-
     def __init__(self):
         # Get the path to the bash.lark file
         current_dir = os.path.dirname(os.path.abspath(__file__))

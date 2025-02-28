@@ -1,36 +1,75 @@
 ////////////////////////////
 // Bash Grammar for Lark
+//
+// A comprehensive grammar for parsing Bash scripts
+// Author: Proxy Structuring Engine Team
+// Version: 1.0
 ////////////////////////////
 
+//------------------------------------------------------
+// Ignore rules
+//------------------------------------------------------
 %ignore /[ \t]+/        // Ignore horizontal whitespace
 %ignore /\\(\r?\n)+/    // Handle backslash-newline continuations
+%ignore COMMENT         // Ignore comments
 
+//------------------------------------------------------
+// Basic Tokens
+//------------------------------------------------------
 NEWLINE: /\r?\n+/
 COMMENT: /#[^\n]*/
-%ignore COMMENT
 
-////////////////////////////
-// Basic Terminals
-////////////////////////////
+// Character Classes
+LETTER: "a".."z" | "A".."Z"
+DIGIT: "0".."9"
 
-LETTER: /[a-zA-Z]/
-DIGIT: /[0-9]/
+// Numbers
+INT: DIGIT+
+number: INT
 
+//------------------------------------------------------
+// Keywords and Reserved Words
+//------------------------------------------------------
+// Control Flow Keywords
+IF: "if"
 THEN: "then"
+ELSE: "else"
+ELIF: "elif"
 FI: "fi"
+FOR: "for"
+WHILE: "while"
+UNTIL: "until"
 DO: "do"
 DONE: "done"
 IN: "in"
+CASE: "case"
 ESAC: "esac"
+SELECT: "select"
+FUNCTION: "function"
+TIME: "time"
+
+//------------------------------------------------------
+// Operators and Delimiters
+//------------------------------------------------------
+// Parentheses, Braces, Brackets
 LPAR: "("
 RPAR: ")"
 LBRACE: "{"
 RBRACE: "}"
-SEMICOLON: ";"
 LBRACKET: "["
 RBRACKET: "]"
+
+// Separators and Terminators
+SEMICOLON: ";"
+DOUBLE_SEMICOLON: ";;"
+COLON: ":"
+COMMA: ","
+
+// Operators
 AMPERSAND: "&"
 VBAR: "|"
+LOGICAL_AND: "&&"       // Added logical AND operator
+LOGICAL_OR: "||"        // Added logical OR operator
 BANG: "!"
 MORETHAN: ">"
 LESSTHAN: "<"
@@ -39,90 +78,73 @@ PLUS: "+"
 MINUS: "-"
 DOT: "."
 SLASH: "/"
-COLON: ":"
-COMMA: ","
 AT: "@"
 TILDE: "~"
 UNDERSCORE: "_"
-DOUBLE_SEMICOLON: ";;"
 
-IF: "if"
-ELSE: "else"
-ELIF: "elif"
-FOR: "for"
-WHILE: "while"
-UNTIL: "until"
-CASE: "case"
-FUNCTION: "function"
-SELECT: "select"
-TIME: "time"
-
-////////////////////////////
+//------------------------------------------------------
 // Word-like Tokens
-////////////////////////////
-
-number: DIGIT+
-
+//------------------------------------------------------
 word: WORD
 WORD: /[a-zA-Z_][a-zA-Z0-9_\-\.\/:\+@=~]*/
     | /\-[a-zA-Z0-9_\-\.\/:\+@=~]+/
+    | /\/[a-zA-Z0-9_\-\.\/:\+@=~]+/
 
-STRING: /'[^']*'?/
-      | /"[^"]*"?/
+STRING: /'[^']*'?/      // Single-quoted string
+      | /"[^"]*"?/      // Double-quoted string
 
+// Shell variable references
 VARIABLE: "$" (LETTER | DIGIT | UNDERSCORE | "{" /[^}]*/ "}")?
         | "$" /[a-zA-Z0-9_]+/
         | "$" /[a-zA-Z0-9_]+/(":" /[a-zA-Z0-9_\/\.]+/)?
 
-CMD_SUBST: "$(" /[^)]*/ ")"?
-ARITH_EXPR: "$((" /[^)]*/ "))"?
-          | "((" /[^)]*/ "))"?
-TEST_EXPR: LBRACKET /[^]]*/ RBRACKET?
-         | "[[" /[^]]*/ "]]"?
-FD: /[0-9]+/
+// Command substitution and expressions
+CMD_SUBST: "$(" /[^)]*/ ")"?       // Command substitution $(cmd)
+ARITH_EXPR: "$((" /[^)]*/ "))"?    // Arithmetic expression $((...))
+          | "((" /[^)]*/ "))"?     // Alternate arithmetic expression ((...))
+TEST_EXPR: LBRACKET /[^]]*/ RBRACKET?  // Test expression [ ... ]
+         | "[[" /[^]]*/ "]]"?      // Extended test expression [[ ... ]]
+FD: /[0-9]+/                       // File descriptor
 
-////////////////////////////
-// Start / Script
-////////////////////////////
-
+//------------------------------------------------------
+// Script Structure
+//------------------------------------------------------
 start: script
-script: (COMMENT | command | separator)+
+script: (COMMENT | pipeline_command | separator)+
        |  // empty (optional)
 
-////////////////////////////
-// Commands
-////////////////////////////
-
+//------------------------------------------------------
+// Command Structure
+//------------------------------------------------------
 ?command: simple_command
         | shell_command
         | shell_command redirection_list
 
-////////////////////////////
+//------------------------------------------------------
 // Redirection
-////////////////////////////
+//------------------------------------------------------
+?redirection: redirect_op word
+            | FD? redirect_op word
+            | FD? redirect_op FD
+            | FD? MORETHAN MORETHAN word        // Append redirection >>
 
-?redirection: redirect_op word?
-            | FD? redirect_op word?
-            | FD? (MORETHAN | LESSTHAN) AMPERSAND FD?
-            | FD? MORETHAN MORETHAN word
-
-!redirect_op: ">"
-             | "<"
-             | ">>"
-             | "<<"
-             | "<&"
-             | ">&"
-             | "<<-"
-             | "&>"
-             | "<>"
-             | ">|"
+// Redirection operators
+!redirect_op: ">"       // Output redirection
+             | "<"      // Input redirection
+             | ">>"     // Append output
+             | "<<"     // Here document
+             | "<&"     // Duplicate input FD
+             | ">&"     // Duplicate output FD
+             | "<<-"    // Here document with tab stripping
+             | "&>"     // Redirect both stdout and stderr
+             | "<>"     // Read/write file
+             | ">|"     // Force output redirection (clobber)
 
 redirection_list: redirection+
 
-////////////////////////////
+//------------------------------------------------------
 // Simple Commands
-////////////////////////////
-
+//------------------------------------------------------
 simple_command: simple_command_element+
 ?simple_command_element: word
                        | STRING
@@ -132,13 +154,14 @@ simple_command: simple_command_element+
                        | TEST_EXPR
                        | assignment_word
                        | redirection
+                       | DOT
 
+// Variable Assignment
 assignment_word: word EQUAL (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)
 
-////////////////////////////
-// Shell Commands
-////////////////////////////
-
+//------------------------------------------------------
+// Shell Commands (Complex Commands)
+//------------------------------------------------------
 ?shell_command: if_command
               | for_command
               | while_command
@@ -149,42 +172,50 @@ assignment_word: word EQUAL (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)
               | group_command
               | function_def
 
+// Conditional Constructs
 if_command: IF compound_list THEN compound_list elif_clause* (ELSE compound_list)? FI
 elif_clause: ELIF compound_list THEN compound_list
 
+// Loop Constructs
 for_command: FOR word (IN word_list)? separator? DO compound_list DONE
 while_command: WHILE compound_list DO compound_list DONE
 until_command: UNTIL compound_list DO compound_list DONE
 select_command: SELECT word (IN word_list)? separator? DO compound_list DONE
 
+// Case Statement
 case_command: CASE word_or_var IN case_item* ESAC
 ?word_or_var: word | STRING | VARIABLE
 case_item: pattern_list RPAR ((separator)* compound_list)? terminator? (separator)*
 pattern_list: (word | STRING | VARIABLE) (VBAR (word | STRING | VARIABLE))*
 terminator: DOUBLE_SEMICOLON | ";&" | ";;&"
 
-subshell: LPAR compound_list RPAR
-group_command: LBRACE compound_list RBRACE
+// Command Grouping
+subshell: LPAR compound_list RPAR           // Commands executed in a subshell
+group_command: LBRACE compound_list RBRACE  // Commands executed in current shell
 
-// Function definitions now require a group command as the function body.
+// Function Definition
 function_def: FUNCTION? word (LPAR RPAR)? group_command
 
-////////////////////////////
-// Word List
-////////////////////////////
+//------------------------------------------------------
+// Word Lists
+//------------------------------------------------------
+word_list: (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR | FD)+
 
-word_list: (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)+
-
-////////////////////////////
-// Compound List
-////////////////////////////
-
+//------------------------------------------------------
+// Command Lists and Pipelines
+//------------------------------------------------------
+// Compound list - sequence of commands separated by newlines or semicolons
 compound_list: (COMMENT | pipeline_command) (separator (COMMENT | pipeline_command))* separator?
-pipeline_command: BANG? pipe_sequence
+
+// Pipeline commands with logical operators (&&, ||)
+pipeline_command: BANG? logical_sequence
+logical_sequence: pipe_sequence (logical_operator pipe_sequence)*
+logical_operator: LOGICAL_AND | LOGICAL_OR  // References to the tokens defined above
+
+// Pipeline - commands connected with pipes
 pipe_sequence: command (VBAR command)*
 
-////////////////////////////
-// Separator
-////////////////////////////
-
+//------------------------------------------------------
+// Separators
+//------------------------------------------------------
 separator: SEMICOLON | NEWLINE
