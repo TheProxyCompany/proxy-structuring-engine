@@ -27,6 +27,10 @@ class GrammarStateMachine(CharacterStateMachine):
 
 
 class GrammarStepper(CharacterStepper):
+    """
+    A stepper for the grammar state machine.
+    """
+
     def __init__(self, state_machine: GrammarStateMachine):
         """
         Initialize the grammar stepper with a state machine.
