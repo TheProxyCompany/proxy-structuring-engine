@@ -1,14 +1,13 @@
 # import pytest
 
 # from pse.types.base.encapsulated import EncapsulatedStateMachine
-# from pse.types.grammar.bash import BashGrammar
-# from pse.types.grammar.grammar import GrammarStateMachine
+# from pse.types.grammar import BashStateMachine
 
 
 # def test_basic_bash_block():
 #     """Test basic Bash code block parsing."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 
@@ -37,7 +36,7 @@
 # def test_complete_bash_blocks(code_block):
 #     """Test various complete Bash code blocks."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, code_block)
@@ -47,7 +46,7 @@
 # def test_custom_delimiters():
 #     """Test BashStateMachine with custom delimiters."""
 #     sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=("<bash>", "</bash>")
+#         BashStateMachine, delimiters=("<bash>", "</bash>")
 #     )
 #     steppers = sm.get_steppers()
 
@@ -59,7 +58,7 @@
 # def test_stepper_clone():
 #     """Test cloning of BashStepper."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, "```bash\necho 'Hello'\n")
@@ -84,7 +83,7 @@
 # def test_invalid_bash_blocks(invalid_block):
 #     """Test handling of invalid Bash code blocks."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, invalid_block)
@@ -94,7 +93,7 @@
 # def test_incremental_parsing():
 #     """Test incremental parsing of Bash code block."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 
@@ -116,7 +115,7 @@
 # def test_can_accept_more_input():
 #     """Test that the stepper can accept more input."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, "```bash\n")
@@ -144,7 +143,7 @@
 # def test_bash_specific_features(code_block):
 #     """Test Bash-specific features."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, code_block)
@@ -164,7 +163,7 @@
 # def test_incomplete_bash_blocks(incomplete_block):
 #     """Test handling of incomplete Bash code blocks."""
 #     bash_sm = EncapsulatedStateMachine(
-#         GrammarStateMachine(BashGrammar), delimiters=BashGrammar.delimiters
+#         BashStateMachine, delimiters=BashStateMachine.delimiters
 #     )
 #     steppers = bash_sm.get_steppers()
 #     steppers = bash_sm.advance_all_basic(steppers, incomplete_block)

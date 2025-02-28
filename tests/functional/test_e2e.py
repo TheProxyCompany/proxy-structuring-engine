@@ -4,8 +4,7 @@ import pytest
 
 from pse.structuring_engine import StructuringEngine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import PythonStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +171,7 @@ def test_complex_recursive_schema(
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
                     "maxItems": 1,
+                    "nullable": True,
                 },
             },
             "required": ["type", "children"],
@@ -322,8 +322,8 @@ def test_python_interpreter(
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 
@@ -343,8 +343,8 @@ def test_python_edge_case(
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 

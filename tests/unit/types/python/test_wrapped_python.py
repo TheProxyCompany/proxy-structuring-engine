@@ -1,14 +1,13 @@
 import pytest
 
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import PythonStateMachine
 
 
 def test_basic_python_block():
     """Test basic Python code block parsing."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
 
@@ -36,7 +35,7 @@ def test_basic_python_block():
 def test_complete_python_blocks(code_block):
     """Test various complete Python code blocks."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, code_block)
@@ -46,7 +45,7 @@ def test_complete_python_blocks(code_block):
 def test_custom_delimiters():
     """Test PythonStateMachine with custom delimiters."""
     sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=("<python>", "</python>")
+        PythonStateMachine, delimiters=("<python>", "</python>")
     )
     steppers = sm.get_steppers()
 
@@ -58,7 +57,7 @@ def test_custom_delimiters():
 def test_stepper_clone():
     """Test cloning of PythonStepper."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, "```python\nx = 1\n")
@@ -82,7 +81,7 @@ def test_stepper_clone():
 def test_invalid_python_blocks(invalid_block):
     """Test handling of invalid Python code blocks."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, invalid_block)
@@ -92,7 +91,7 @@ def test_invalid_python_blocks(invalid_block):
 def test_incremental_parsing():
     """Test incremental parsing of Python code block."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
 
@@ -114,7 +113,7 @@ def test_incremental_parsing():
 def test_can_accept_more_input():
     """Test that the stepper can accept more input."""
     python_sm = EncapsulatedStateMachine(
-        GrammarStateMachine(PythonGrammar), delimiters=PythonGrammar.delimiters
+        PythonStateMachine, delimiters=PythonStateMachine.delimiters
     )
     steppers = python_sm.get_steppers()
     steppers = python_sm.advance_all_basic(steppers, "```python\n")
