@@ -4,8 +4,7 @@ import pytest
 
 from pse.structuring_engine import StructuringEngine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import BashStateMachine, PythonStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ def model_and_engine() -> tuple[nn.Module, StructuringEngine]:
     """Module-scoped fixture for the StructuredOutputDriver."""
     model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
     model, tokenizer = load(model_path_hf)
-    engine = StructuringEngine(tokenizer)
+    engine = StructuringEngine(tokenizer, multi_token_sampling=True)
     return model, engine
 
 
@@ -315,6 +314,26 @@ def test_schema_web_search(
     assert final_output["arguments"]["max_results"] is not None
 
 
+def test_bash_interpreter(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that the engine can generate a bash interpreter."""
+    model, engine = model_and_engine
+    engine.reset(hard_reset=True)
+    bash_state_machine = EncapsulatedStateMachine(
+        state_machine=BashStateMachine,
+        delimiters=BashStateMachine.delimiters,
+        buffer_length=-1,
+    )
+
+    engine.configure(bash_state_machine)
+    raw_prompt = "Please generate the code `echo 'Hello, world!'`.\n"
+    raw_prompt += "Wrap the code in ```bash\n and \n```."
+    generate(raw_prompt, model, engine)
+    assert engine.has_reached_accept_state
+    output = engine.parse_structured_output()
+    assert output.strip().lower() == "echo 'hello, world!'".lower()
+
 def test_python_interpreter(
     model_and_engine: tuple[nn.Module, StructuringEngine],
 ) -> None:
@@ -322,8 +341,8 @@ def test_python_interpreter(
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 
@@ -343,8 +362,8 @@ def test_python_edge_case(
     model, engine = model_and_engine
     engine.reset(hard_reset=True)
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 

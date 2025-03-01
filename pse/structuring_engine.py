@@ -11,7 +11,6 @@ from pse_core.state_machine import StateMachine
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.types.grammar.python import PythonGrammar
 from pse.types.json import JSONSchemaSource, json_schema_state_machine
 from pse.util.get_top_logits import get_top_k
 
@@ -197,8 +196,8 @@ class StructuringEngine(Engine):
         match self.current_state:
             case "json" if self.delimiters:
                 delimiters = self.delimiters
-            case "python":
-                delimiters = PythonGrammar.delimiters
+            # case "python":
+            #     delimiters = PythonGrammar.delimiters
             case _:
                 delimiters = None
 

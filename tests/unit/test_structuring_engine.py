@@ -6,8 +6,7 @@ import pytest
 from transformers import LlamaTokenizer
 
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import PythonStateMachine
 
 try:
     import mlx.core as mx
@@ -237,10 +236,7 @@ def test_edge_case_1(
 
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
-    engine.configure_json(
-        {"type": "string", "const": "Hello World!"},
-        buffer_length=0
-    )
+    engine.configure_json({"type": "string", "const": "Hello World!"}, buffer_length=0)
     buffer = "Sure, here is the response: "
     engine.consume_text(buffer)
     assert len(engine.steppers) == 1
@@ -309,8 +305,8 @@ def test_logits_processing(engine: StructuringEngine) -> None:
 def test_python_interpreter(engine: StructuringEngine) -> None:
     """Test that the python interpreter is working correctly."""
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 

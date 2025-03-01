@@ -1,8 +1,7 @@
 import pytest
 from pse_core.state_machine import StateMachine
 
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import PythonStateMachine
 
 
 @pytest.mark.parametrize(
@@ -50,7 +49,7 @@ def test_python_source_validation(code, should_accept):
     """Test validation of Python source code."""
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(PythonGrammar), "$")],
+            0: [(PythonStateMachine, "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -70,7 +69,7 @@ def test_incremental_parsing():
     """Test incremental parsing of Python code."""
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(PythonGrammar), "$")],
+            0: [(PythonStateMachine, "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -106,7 +105,7 @@ def test_empty_input():
     """Test handling of empty input."""
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(PythonGrammar), "$")],
+            0: [(PythonStateMachine, "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
@@ -131,7 +130,7 @@ def test_incomplete_but_valid_code(incomplete_code):
     """Test handling of incomplete but syntactically valid code."""
     source_code_sm = StateMachine(
         {
-            0: [(GrammarStateMachine(PythonGrammar), "$")],
+            0: [(PythonStateMachine, "$")],
         }
     )
     steppers = source_code_sm.get_steppers()
