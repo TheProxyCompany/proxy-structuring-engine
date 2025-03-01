@@ -42,12 +42,12 @@ from pse.types.grammar import BashStateMachine
         ("echo 'Hello' # inline comment", True),
         # Multiline commands
         ("echo 'line 1'\necho 'line 2'", True),
-        ("if true; then\n  echo 'true'\nfi", False),
+        ("if true; then\n  echo 'true'\nfi", True),
         # Invalid syntax
         ("if then fi", False),
         ("for in do done", False),
         ("case esac", False),
-        ("echo 'unterminated string", True),
+        ("echo 'unterminated string", False),
         ("function () {}", False),
         ("ls | | grep pattern", False),
     ],

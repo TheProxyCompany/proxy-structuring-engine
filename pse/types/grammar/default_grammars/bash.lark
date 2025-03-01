@@ -2,7 +2,6 @@
 // Bash Grammar for Lark
 //
 // A comprehensive grammar for parsing Bash scripts
-// Author: Proxy Structuring Engine Team
 // Version: 1.0
 ////////////////////////////
 
@@ -90,8 +89,8 @@ WORD: /[a-zA-Z_][a-zA-Z0-9_\-\.\/:\+@=~]*/
     | /\-[a-zA-Z0-9_\-\.\/:\+@=~]+/
     | /\/[a-zA-Z0-9_\-\.\/:\+@=~]+/
 
-STRING: /'[^']*'?/      // Single-quoted string
-      | /"[^"]*"?/      // Double-quoted string
+STRING: /'[^']*'/      // Fixed single-quoted string
+      | /"[^"]*"/      // Fixed double-quoted string
 
 // Shell variable references
 VARIABLE: "$" (LETTER | DIGIT | UNDERSCORE | "{" /[^}]*/ "}")?
@@ -99,8 +98,8 @@ VARIABLE: "$" (LETTER | DIGIT | UNDERSCORE | "{" /[^}]*/ "}")?
         | "$" /[a-zA-Z0-9_]+/(":" /[a-zA-Z0-9_\/\.]+/)?
 
 // Command substitution and expressions
-CMD_SUBST: "$(" /[^)]*/ ")"?       // Command substitution $(cmd)
-ARITH_EXPR: "$((" /[^)]*/ "))"?    // Arithmetic expression $((...))
+CMD_SUBST.2: /\$\([^()]*\)/
+ARITH_EXPR: "$((" /[^)]*/ "))"?    // Can't handle nested
           | "((" /[^)]*/ "))"?     // Alternate arithmetic expression ((...))
 TEST_EXPR: LBRACKET /[^]]*/ RBRACKET?  // Test expression [ ... ]
          | "[[" /[^]]*/ "]]"?      // Extended test expression [[ ... ]]
@@ -116,9 +115,7 @@ script: (COMMENT | pipeline_command | separator)+
 //------------------------------------------------------
 // Command Structure
 //------------------------------------------------------
-?command: simple_command
-        | shell_command
-        | shell_command redirection_list
+?command: (simple_command | shell_command) redirection_list?
 
 //------------------------------------------------------
 // Redirection
@@ -183,10 +180,16 @@ until_command: UNTIL compound_list DO compound_list DONE
 select_command: SELECT word (IN word_list)? separator? DO compound_list DONE
 
 // Case Statement
-case_command: CASE word_or_var IN case_item* ESAC
-?word_or_var: word | STRING | VARIABLE
-case_item: pattern_list RPAR ((separator)* compound_list)? terminator? (separator)*
+case_command: CASE (word | VARIABLE | STRING) IN case_item_list ESAC
+
+case_item_list: (terminated_case_item)* (unterminated_case_item)?
+
+terminated_case_item: pattern_list RPAR (compound_list)? terminator
+
+unterminated_case_item: pattern_list RPAR (compound_list)?
+
 pattern_list: (word | STRING | VARIABLE) (VBAR (word | STRING | VARIABLE))*
+
 terminator: DOUBLE_SEMICOLON | ";&" | ";;&"
 
 // Command Grouping
@@ -205,7 +208,7 @@ word_list: (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR | FD)+
 // Command Lists and Pipelines
 //------------------------------------------------------
 // Compound list - sequence of commands separated by newlines or semicolons
-compound_list: (COMMENT | pipeline_command) (separator (COMMENT | pipeline_command))* separator?
+compound_list: (separator | COMMENT)* pipeline_command ((separator | COMMENT)+ pipeline_command)* (separator | COMMENT)*
 
 // Pipeline commands with logical operators (&&, ||)
 pipeline_command: BANG? logical_sequence

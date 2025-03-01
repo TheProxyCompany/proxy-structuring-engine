@@ -4,7 +4,7 @@ import pytest
 
 from pse.structuring_engine import StructuringEngine
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar import PythonStateMachine
+from pse.types.grammar import BashStateMachine, PythonStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -314,6 +314,26 @@ def test_schema_web_search(
     assert final_output["arguments"]["query"] == "popular favorite Pokémon"
     assert final_output["arguments"]["max_results"] is not None
 
+
+def test_bash_interpreter(
+    model_and_engine: tuple[nn.Module, StructuringEngine],
+) -> None:
+    """Test that the engine can generate a bash interpreter."""
+    model, engine = model_and_engine
+    engine.reset(hard_reset=True)
+    bash_state_machine = EncapsulatedStateMachine(
+        state_machine=BashStateMachine,
+        delimiters=BashStateMachine.delimiters,
+        buffer_length=0,
+    )
+
+    engine.configure(bash_state_machine)
+    raw_prompt = "Please generate the bash code `echo 'Hello, world!'`."
+    raw_prompt += "Wrap the code in ```bash\n and \n```."
+    generate(raw_prompt, model, engine)
+    assert engine.has_reached_accept_state
+    output = engine.parse_structured_output()
+    assert output.strip().lower() == "echo 'hello, world!'".lower()
 
 def test_python_interpreter(
     model_and_engine: tuple[nn.Module, StructuringEngine],

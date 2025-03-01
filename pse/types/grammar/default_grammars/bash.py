@@ -69,6 +69,9 @@ class BashGrammar(LarkGrammar):
                 # End of input is generally fine in non-strict mode
                 if e.token.type == "$END":
                     return True
+                if e.token.type == "ESAC" or "ESAC" in e.expected:
+                    return True
+
             elif isinstance(e, UnexpectedCharacters):
                 return True
 
