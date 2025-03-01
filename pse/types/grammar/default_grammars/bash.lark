@@ -11,12 +11,14 @@
 %ignore /[ \t]+/        // Ignore horizontal whitespace
 %ignore /\\(\r?\n)+/    // Handle backslash-newline continuations
 %ignore COMMENT         // Ignore comments
+%ignore SHEBANG         // Ignore shebang
 
 //------------------------------------------------------
 // Basic Tokens
 //------------------------------------------------------
 NEWLINE: /\r?\n+/
 COMMENT: /#[^\n]*/
+SHEBANG: "#!" /[^\n]*/
 
 // Character Classes
 LETTER: "a".."z" | "A".."Z"
@@ -89,20 +91,19 @@ WORD: /[a-zA-Z_][a-zA-Z0-9_\-\.\/:\+@=~]*/
     | /\-[a-zA-Z0-9_\-\.\/:\+@=~]+/
     | /\/[a-zA-Z0-9_\-\.\/:\+@=~]+/
 
-STRING: /'[^']*'/      // Fixed single-quoted string
-      | /"[^"]*"/      // Fixed double-quoted string
+STRING: /'[^']*'/ | /"([^"\\]|\\.)*"/
 
 // Shell variable references
-VARIABLE: "$" (LETTER | DIGIT | UNDERSCORE | "{" /[^}]*/ "}")?
-        | "$" /[a-zA-Z0-9_]+/
-        | "$" /[a-zA-Z0-9_]+/(":" /[a-zA-Z0-9_\/\.]+/)?
+VARIABLE: /\$[a-zA-Z_][a-zA-Z0-9_]*/
+        | /\${[^}]+}/
+        | /\$[a-zA-Z_][a-zA-Z0-9_]*(:[a-zA-Z0-9_\/\.\-:@~]+)+/
 
 // Command substitution and expressions
 CMD_SUBST.2: /\$\([^()]*\)/
 ARITH_EXPR: "$((" /[^)]*/ "))"?    // Can't handle nested
           | "((" /[^)]*/ "))"?     // Alternate arithmetic expression ((...))
-TEST_EXPR: LBRACKET /[^]]*/ RBRACKET?  // Test expression [ ... ]
-         | "[[" /[^]]*/ "]]"?      // Extended test expression [[ ... ]]
+TEST_EXPR: LBRACKET /[^]]+/ RBRACKET
+         | "[[" /[^]]+/ "]]"
 FD: /[0-9]+/                       // File descriptor
 
 //------------------------------------------------------
@@ -126,16 +127,7 @@ script: (COMMENT | pipeline_command | separator)+
             | FD? MORETHAN MORETHAN word        // Append redirection >>
 
 // Redirection operators
-!redirect_op: ">"       // Output redirection
-             | "<"      // Input redirection
-             | ">>"     // Append output
-             | "<<"     // Here document
-             | "<&"     // Duplicate input FD
-             | ">&"     // Duplicate output FD
-             | "<<-"    // Here document with tab stripping
-             | "&>"     // Redirect both stdout and stderr
-             | "<>"     // Read/write file
-             | ">|"     // Force output redirection (clobber)
+!redirect_op: ">>" | "<<" | "<<-" | "<&" | ">&" | "&>" | "<>" | ">|" | ">" | "<"
 
 redirection_list: redirection+
 
