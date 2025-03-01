@@ -324,11 +324,11 @@ def test_bash_interpreter(
     bash_state_machine = EncapsulatedStateMachine(
         state_machine=BashStateMachine,
         delimiters=BashStateMachine.delimiters,
-        buffer_length=0,
+        buffer_length=-1,
     )
 
     engine.configure(bash_state_machine)
-    raw_prompt = "Please generate the bash code `echo 'Hello, world!'`."
+    raw_prompt = "Please generate the code `echo 'Hello, world!'`.\n"
     raw_prompt += "Wrap the code in ```bash\n and \n```."
     generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
