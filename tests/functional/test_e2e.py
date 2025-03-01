@@ -171,7 +171,6 @@ def test_complex_recursive_schema(
                     "description": "Nested UI components",
                     "items": {"$ref": "#"},
                     "maxItems": 1,
-                    "nullable": True,
                 },
             },
             "required": ["type", "children"],
