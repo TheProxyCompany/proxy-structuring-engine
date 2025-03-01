@@ -4,7 +4,7 @@ import logging
 import os
 
 from lark import Lark
-from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
+from lark.exceptions import UnexpectedCharacters, UnexpectedToken
 from lark.indenter import PythonIndenter
 
 from pse.types.grammar import LarkGrammar
@@ -57,13 +57,9 @@ class PythonGrammar(LarkGrammar):
         except Exception as e:
             if not strict:
                 # Handle incomplete strings and other incomplete constructs
-                if isinstance(e, UnexpectedEOF | UnexpectedCharacters):
+                if isinstance(e, UnexpectedCharacters):
                     return True
-                elif isinstance(e, UnexpectedToken) and (
-                    e.token.type == "_DEDENT" or e.token.type == "$END"
-                ):
-                    return True
-                elif not input.endswith("\n"):
-                    return self.validate(input, True)
+                elif isinstance(e, UnexpectedToken):
+                    return e.token.type == "_DEDENT" or e.token.type == "$END"
 
             return False

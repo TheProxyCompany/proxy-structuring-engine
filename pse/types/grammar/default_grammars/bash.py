@@ -4,7 +4,7 @@ import logging
 import os
 
 from lark import Lark
-from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
+from lark.exceptions import UnexpectedCharacters, UnexpectedToken
 
 from pse.types.grammar import LarkGrammar
 
@@ -57,23 +57,12 @@ class BashGrammar(LarkGrammar):
             self.lark_grammar.parse(input, start=start or "start")
             return True
         except Exception as e:
-            # If we're in strict mode, any parse error means invalid
             if strict:
                 return False
 
-            # EOF errors are typically valid incomplete syntax
-            if isinstance(e, UnexpectedEOF):
-                # Token errors require more analysis
-                return True
             elif isinstance(e, UnexpectedToken):
-                # End of input is generally fine in non-strict mode
-                if e.token.type == "$END":
-                    return True
-                if e.token.type == "ESAC" or "ESAC" in e.expected:
-                    return True
-
+                return e.token.type == "$END" or "ESAC" in e.expected
             elif isinstance(e, UnexpectedCharacters):
                 return True
 
-            # Default is to reject
             return False
