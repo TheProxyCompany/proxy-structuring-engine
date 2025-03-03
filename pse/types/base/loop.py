@@ -76,5 +76,5 @@ class LoopStepper(Stepper):
         self.loop_count += 1
         return super().add_to_history(stepper)
 
-    def get_final_output(self):
+    def get_final_state(self) -> list[Stepper]:
         return self.history

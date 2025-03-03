@@ -93,4 +93,15 @@ class EncapsulatedStepper(Stepper):
         """
         token_safe_output: str = super().get_token_safe_output(decode_function)
         start_delim, end_delim = self.state_machine.delimiters
-        return token_safe_output.removeprefix(start_delim).removesuffix(end_delim)
+
+        if start_delim:
+            start_index = token_safe_output.find(start_delim)
+            if start_index != -1:
+                token_safe_output = token_safe_output[start_index + len(start_delim):]
+
+        if end_delim:
+            end_index = token_safe_output.rfind(end_delim)
+            if end_index != -1:
+                token_safe_output = token_safe_output[:end_index]
+
+        return token_safe_output

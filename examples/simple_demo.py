@@ -59,9 +59,7 @@ output = model.generate(
 )
 # you can print the prompt + output:
 #   print(tokenizer.decode(output[0]))
-# you can also access just the structured output:
-#   engine.parse_structured_output()
-structured_output = model.engine.structured_output(output_type=dict)
+structured_output = model.engine.get_structured_output()
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
@@ -96,8 +94,6 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 greedy_output = model.generate(input_ids)
 structured_output = model.engine.get_structured_output()
-if not structured_output:
-    breakpoint()
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
@@ -137,6 +133,6 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-structured_output = model.engine.get_structured_output(output_type=CursorPositionModel)
+structured_output = model.engine.get_structured_output(CursorPositionModel)
 print(100 * "-")
 print(json.dumps(structured_output.model_dump(), indent=2))

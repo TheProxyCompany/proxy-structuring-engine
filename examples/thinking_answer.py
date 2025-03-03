@@ -125,5 +125,8 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 output = model.generate(input_ids)
 
-for label, output in model.engine.get_structured_output():
-    print(label, output)
+for label, output in model.engine.get_stateful_structured_output():
+    print("-" * 100)
+    print(f"[{label}]")
+    print(output)
+    print(f"[/{label}]")

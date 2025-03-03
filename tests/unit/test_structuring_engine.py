@@ -243,6 +243,5 @@ def test_python_interpreter(engine: StructuringEngine) -> None:
     engine.consume_text("```python\nprint('Hello, world!')\n```")
     assert engine.steppers
     assert engine.has_reached_accept_state
-    for _, output in engine.get_structured_output():
-        assert engine.state_machine
-        assert output == "print('Hello, world!')"
+    output = engine.get_structured_output()
+    assert output == "print('Hello, world!')"

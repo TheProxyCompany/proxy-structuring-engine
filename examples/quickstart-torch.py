@@ -56,10 +56,10 @@ assert isinstance(input_ids, torch.Tensor)
 output = model.generate(
     input_ids,
     do_sample=True,
-    max_new_tokens=100,
+    max_new_tokens=200,
     top_k=10,
     top_p=None,
 )
 # 6. Parse the structured output
-structured_output = model.engine.structured_output(output_type=Product)
+structured_output = model.engine.get_structured_output(Product)
 print(json.dumps(structured_output.model_dump(), indent=2))

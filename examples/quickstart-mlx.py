@@ -55,8 +55,8 @@ for tokens, _ in generate_step(
     max_tokens=-1,
 ):
     encoded_prompt.append(tokens)  # type: ignore [attr-defined]
-    if engine:
+    if engine.has_reached_accept_state:
         break
 
-output = engine.structured_output()
-print(output)
+output = engine.get_structured_output()
+print(json.dumps(output, indent=2))

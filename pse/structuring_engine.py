@@ -132,15 +132,36 @@ class StructuringEngine(Engine):
         self,
         output_type: type[OutputType] | None = None,
         raise_on_error: bool = False,
-    ) -> Iterator[tuple[str, OutputType | Any]]:
+    ) -> OutputType | Any:
         """
         Parse and cast the output to the given type.
         """
         for stepper in self.steppers:
             if stepper.has_reached_accept_state():
-                yield from self._label_and_output(stepper, output_type, raise_on_error)
+                token_safe_output = stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+                return self.cast_output(
+                    token_safe_output,
+                    output_type,
+                    raise_on_error,
+                )
 
-    def _label_and_output(
+    def get_stateful_structured_output(
+        self,
+        output_type: type[OutputType] | None = None,
+        raise_on_error: bool = False,
+    ) -> Iterator[tuple[str, OutputType | Any]]:
+        """
+        Get each part of the output labeled with the identifier of the step that produced it.
+        """
+        for stepper in self.steppers:
+            if stepper.has_reached_accept_state():
+                yield from self._iter_state_and_output(
+                    stepper,
+                    output_type,
+                    raise_on_error,
+                )
+
+    def _iter_state_and_output(
         self,
         stepper: Stepper,
         output_type: type[OutputType] | None,
@@ -149,26 +170,43 @@ class StructuringEngine(Engine):
         """
         Helper method to parse and yield structured output from a stepper.
         """
-        for final_stepper in stepper.get_final_state():
-            identifier = final_stepper.get_identifier() or str(final_stepper.current_state)
-            output = final_stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+        final_states: list[Stepper] = []
+        for step in stepper.history:
+            final_states.extend(step.get_final_state())
 
-            try:
-                deserialized = json.loads(output)
-                if output_type and issubclass(output_type, BaseModel):
-                    output = output_type.model_validate(deserialized)
-                else:
-                    output = deserialized
-            except json.JSONDecodeError as e:
+        for final_stepper in final_states:
+            identifier = final_stepper.get_identifier() or str(final_stepper.current_state)
+            token_safe_output = final_stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+            output = self.cast_output(token_safe_output, output_type, raise_on_error)
+            yield identifier.lower(), output
+
+    def cast_output(
+        self,
+        input: str,
+        output_type: type[OutputType] | None,
+        raise_on_error: bool,
+    ) -> OutputType | Any:
+        """
+        Cast the output to the given type.
+        """
+        output = input
+        try:
+            deserialized = json.loads(input)
+            if output_type and issubclass(output_type, BaseModel):
+                output = output_type.model_validate(deserialized)
+            else:
+                output = deserialized
+        except json.JSONDecodeError as e:
+            if output_type:
                 logger.error(f"JSON decoding failed: {e.msg} at position {e.pos}")
                 if raise_on_error:
                     raise
-            except Exception as e:
-                logger.error(f"Failed to convert output to {output_type}: {e}")
-                if raise_on_error:
-                    raise
+        except Exception as e:
+            logger.error(f"Failed to convert output to {output_type}: {e}")
+            if raise_on_error:
+                raise
 
-            yield identifier.lower(), output
+        return output
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
