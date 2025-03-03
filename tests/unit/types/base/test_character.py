@@ -17,7 +17,7 @@ def basic_state_machine():
 @pytest.fixture
 def allowed_charset_state_machine():
     """Fixture for AnyCharacterStateMachine with allowed charset."""
-    return CharacterStateMachine(charset=["a", "b", "c"])
+    return CharacterStateMachine(whitelist_charset=["a", "b", "c"])
 
 
 @pytest.fixture
@@ -102,7 +102,7 @@ def test_disallowed_charset(
 def test_case_sensitivity(input_str, expected_value):
     """Test case-sensitive character acceptance."""
     case_sensitive_state_machine = CharacterStateMachine(
-        charset=["A", "B", "C"], case_sensitive=True
+        whitelist_charset=["A", "B", "C"], case_sensitive=True
     )
     stepper = CharacterStepper(case_sensitive_state_machine)
     steppers = list(stepper.consume(input_str))

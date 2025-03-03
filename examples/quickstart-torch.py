@@ -33,7 +33,7 @@ if model.generation_config:
 
 # 3. Create a StructuringEngine and configure it with your schema
 model.engine = StructuringEngine(tokenizer)
-model.engine.configure_json(Product)
+model.engine.configure(Product)
 
 # 4.  Create your prompt. Include the schema for the LLM's context.
 prompt = f"""
@@ -61,5 +61,5 @@ output = model.generate(
     top_p=None,
 )
 # 6. Parse the structured output
-structured_output = model.engine.parse_structured_output(output_type=Product)
+structured_output = model.engine.structured_output(output_type=Product)
 print(json.dumps(structured_output.model_dump(), indent=2))

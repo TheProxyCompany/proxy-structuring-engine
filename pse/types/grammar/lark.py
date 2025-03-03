@@ -6,32 +6,35 @@ from pse_core import StateId
 from pse_core.stepper import Stepper
 
 from pse.types.base.character import CharacterStateMachine, CharacterStepper
-from pse.types.grammar import Grammar
+from pse.types.grammar import LarkGrammar
 
 logger = logging.getLogger(__name__)
 
-
-class GrammarStateMachine(CharacterStateMachine):
-    def __init__(self, grammar: Grammar):
+class LarkGrammarStateMachine(CharacterStateMachine):
+    def __init__(self, grammar: LarkGrammar):
         super().__init__(char_min=1)
         self.grammar = grammar
 
-    def get_new_stepper(self, state: StateId | None) -> GrammarStepper:
+    @property
+    def delimiters(self) -> tuple[str, str] | None:
+        return self.grammar.delimiters
+
+    def get_new_stepper(self, state: StateId | None) -> LarkGrammarStepper:
         """
         Get a new stepper for the grammar.
         """
-        return GrammarStepper(self)
+        return LarkGrammarStepper(self)
 
     def __str__(self) -> str:
         return self.grammar.name
 
 
-class GrammarStepper(CharacterStepper):
+class LarkGrammarStepper(CharacterStepper):
     """
     A stepper for the grammar state machine.
     """
 
-    def __init__(self, state_machine: GrammarStateMachine):
+    def __init__(self, state_machine: LarkGrammarStateMachine):
         """
         Initialize the grammar stepper with a state machine.
 
@@ -39,7 +42,10 @@ class GrammarStepper(CharacterStepper):
             state_machine: The grammar state machine that defines the valid transitions
         """
         super().__init__(state_machine)
-        self.state_machine: GrammarStateMachine = state_machine
+        self.state_machine: LarkGrammarStateMachine = state_machine
+
+    def get_identifier(self) -> str | None:
+        return self.state_machine.grammar.name
 
     def should_start_step(self, token: str) -> bool:
         """
@@ -92,7 +98,6 @@ class GrammarStepper(CharacterStepper):
             valid prefix exists
         """
         candidate_base = self.get_raw_value()
-
         max_valid_index = None
         for i in range(1, len(new_input) + 1):
             candidate = candidate_base + new_input[:i]

@@ -49,7 +49,7 @@ answer_delimiters = ("[answer]", "[/answer]")
 # starts. This "scratchpad" is disabled by default (min_buffer_length=-1)
 thinking_state_machine = EncapsulatedStateMachine(
     state_machine=CharacterStateMachine(
-        charset="",  # empty charset means any character is valid
+        whitelist_charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
         char_min=None,
         char_limit=None,
@@ -59,7 +59,7 @@ thinking_state_machine = EncapsulatedStateMachine(
 # the answer state machine is used to wrap the structured output
 answer_state_machine = EncapsulatedStateMachine(
     state_machine=CharacterStateMachine(
-        charset="",  # empty charset means any character is valid
+        whitelist_charset="",  # empty charset means any character is valid
         blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
         char_min=None,  # no minimum number of characters
         char_limit=None,  # no maximum number of characters
@@ -92,7 +92,7 @@ answer_state_machine = EncapsulatedStateMachine(
 from pse_core.state_machine import StateMachine
 from pse.types.base.loop import LoopStateMachine
 
-model.engine.configure_json(
+model.engine.configure(
     StateMachine(
         {
             "thinking": [
@@ -140,7 +140,7 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 output = model.generate(input_ids)
 
-structured_output = model.engine.parse_structured_output()
+structured_output = model.engine.structured_output()
 print(f"raw output:\n\x1b[33m{structured_output}\x1b[0m\n")
 print(100 * "-")
 print(structured_output.split(answer_delimiters[0])[1].split(answer_delimiters[1])[0])

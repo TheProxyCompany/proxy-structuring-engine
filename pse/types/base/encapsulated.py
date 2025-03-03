@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Self
 
 from pse_core import StateId
@@ -51,14 +52,15 @@ class EncapsulatedStateMachine(StateMachine):
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
 
-
 class EncapsulatedStepper(Stepper):
+
     def __init__(
         self,
-        state_machine: StateMachine,
+        state_machine: EncapsulatedStateMachine,
         state: StateId | None = None,
     ) -> None:
         super().__init__(state_machine, state)
+        self.state_machine: EncapsulatedStateMachine = state_machine
         self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:
@@ -84,3 +86,26 @@ class EncapsulatedStepper(Stepper):
             return self.inner_stepper.get_current_value()
 
         return super().get_current_value()
+
+    def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> Any:
+        """
+        Get the token safe output from the inner stepper.
+        This function strips the delimiters from the output, gracefully handling partial or malformed delimiters.
+        """
+        token_safe_output: str = super().get_token_safe_output(decode_function)
+
+        start_delim, end_delim = self.state_machine.delimiters
+
+        # Remove starting delimiter fragments from head, preserving content whitespace
+        for i in range(len(start_delim), 0, -1):
+            if token_safe_output.startswith(start_delim[:i]):
+                token_safe_output = token_safe_output[i:].lstrip()
+                break
+
+        # Remove ending delimiter fragments from tail, preserving content whitespace
+        for i in range(len(end_delim), 0, -1):
+            if token_safe_output.endswith(end_delim[-i:]):
+                token_safe_output = token_safe_output[:-i].rstrip()
+                break
+
+        return token_safe_output
