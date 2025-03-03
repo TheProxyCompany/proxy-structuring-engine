@@ -57,12 +57,11 @@ class BashGrammar(LarkGrammar):
             self.lark_grammar.parse(input, start=start or "start")
             return True
         except Exception as e:
-            if strict:
-                return False
-
-            elif isinstance(e, UnexpectedToken):
+            if not strict and isinstance(e, UnexpectedToken):
                 return e.token.type == "$END" or "ESAC" in e.expected
-            elif isinstance(e, UnexpectedCharacters):
-                return True
+
+            if not strict and isinstance(e, UnexpectedCharacters):
+                # special case for unclosed quotes
+                return e.char == "'" or e.char == '"'
 
             return False

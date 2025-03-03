@@ -55,11 +55,10 @@ class PythonGrammar(LarkGrammar):
             self.lark_grammar.parse(input, start=start)
             return True
         except Exception as e:
-            if not strict:
-                # Handle incomplete strings and other incomplete constructs
-                if isinstance(e, UnexpectedCharacters):
-                    return True
-                elif isinstance(e, UnexpectedToken):
-                    return e.token.type == "_DEDENT" or e.token.type == "$END"
+            if not strict and isinstance(e, UnexpectedToken):
+                return e.token.type == "_DEDENT" or e.token.type == "$END"
+            if not strict and isinstance(e, UnexpectedCharacters):
+                # special case for unclosed quotes
+                return e.char == "'" or e.char == '"'
 
             return False
