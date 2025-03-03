@@ -97,15 +97,25 @@ class EncapsulatedStepper(Stepper):
         start_delim, end_delim = self.state_machine.delimiters
 
         # Remove starting delimiter fragments from head, preserving content whitespace
+        start_index = 0
         for i in range(len(start_delim), 0, -1):
             if token_safe_output.startswith(start_delim[:i]):
-                token_safe_output = token_safe_output[i:].lstrip()
+                start_index = i
                 break
 
+        # Find the end of the starting delimiter, handling partial matches
+        if start_index > 0:
+            token_safe_output = token_safe_output[start_index:]
+
         # Remove ending delimiter fragments from tail, preserving content whitespace
+        end_index = len(token_safe_output)
         for i in range(len(end_delim), 0, -1):
             if token_safe_output.endswith(end_delim[-i:]):
-                token_safe_output = token_safe_output[:-i].rstrip()
+                end_index = len(token_safe_output) - i
                 break
+
+        # Find the start of the ending delimiter, handling partial matches
+        if end_index < len(token_safe_output):
+            token_safe_output = token_safe_output[:end_index]
 
         return token_safe_output

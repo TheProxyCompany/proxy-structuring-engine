@@ -6,6 +6,7 @@ import torch
 from transformers import AutoTokenizer, LlamaForCausalLM
 
 from pse.structuring_engine import StructuringEngine
+from pse.types.base.encapsulated import EncapsulatedStateMachine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
@@ -39,7 +40,7 @@ model.engine = StructuringEngine(tokenizer, multi_token_sampling=True)
 
 # define custom state machines
 from pse.types.base.character import CharacterStateMachine
-from pse.types.base.encapsulated import EncapsulatedStateMachine
+from pse.types.misc.fenced_freeform import FencedFreeformStateMachine
 
 thinking_delimiters = ("[thinking]", "[/thinking]")
 answer_delimiters = ("[answer]", "[/answer]")
@@ -47,25 +48,9 @@ answer_delimiters = ("[answer]", "[/answer]")
 # encapsulated state machines are used to allow a language model
 # to generate unstructured content before the structured output
 # starts. This "scratchpad" is disabled by default (min_buffer_length=-1)
-thinking_state_machine = EncapsulatedStateMachine(
-    state_machine=CharacterStateMachine(
-        whitelist_charset="",  # empty charset means any character is valid
-        blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
-        char_min=None,
-        char_limit=None,
-    ),
-    delimiters=thinking_delimiters,
-)
+thinking_state_machine = FencedFreeformStateMachine("thinking", thinking_delimiters)
 # the answer state machine is used to wrap the structured output
-answer_state_machine = EncapsulatedStateMachine(
-    state_machine=CharacterStateMachine(
-        whitelist_charset="",  # empty charset means any character is valid
-        blacklist_charset="[",  # the character that starts the delimiter is blacklisted,
-        char_min=None,  # no minimum number of characters
-        char_limit=None,  # no maximum number of characters
-    ),
-    delimiters=answer_delimiters,
-)
+answer_state_machine = FencedFreeformStateMachine("answer", answer_delimiters)
 # Configure the engine with a state machine that enforces the following flow:
 #
 # The model starts in the 'thinking' state where it can express its reasoning.
@@ -121,8 +106,8 @@ system_prompt = (
     f"Reason step by step using delimiters to seperate your thought process.\n"
     "For example, when asked a question, you should think and then answer.\n"
     "Example:\n"
-    f"{thinking_delimiters[0]}{{Thinking goes here}}{thinking_delimiters[1]}"
-    f"{answer_delimiters[0]}{{Answer goes here}}{answer_delimiters[1]}\n"
+    f"{thinking_delimiters[0]}Thinking goes here{thinking_delimiters[1]}"
+    f"{answer_delimiters[0]}Answer goes here{answer_delimiters[1]}\n"
     "you can think multiple times before providing your answer.\n\n"
 )
 prompt = "Please pick a favorite color. Think about it first."
@@ -140,7 +125,6 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 output = model.generate(input_ids)
 
-structured_output = model.engine.structured_output()
-print(f"raw output:\n\x1b[33m{structured_output}\x1b[0m\n")
-print(100 * "-")
-print(structured_output.split(answer_delimiters[0])[1].split(answer_delimiters[1])[0])
+breakpoint()
+for label, output in model.engine.get_structured_output():
+    print(label, output)

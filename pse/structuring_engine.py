@@ -8,6 +8,7 @@ from typing import Any, TypeVar
 
 from pse_core.engine import Engine
 from pse_core.state_machine import StateMachine
+from pse_core.stepper import Stepper
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
@@ -134,41 +135,47 @@ class StructuringEngine(Engine):
     ) -> Iterator[tuple[str, OutputType | Any]]:
         """
         Parse and cast the output to the given type.
-
-        Args:
-            output_type: The type to cast the output to. If None, returns parsed but uncast value.
-            raise_on_error: Whether to raise an exception if conversion fails
-
-        Returns:
-
         """
         for stepper in self.steppers:
             if stepper.has_reached_accept_state():
-                identifier: str = stepper.get_identifier() or str(stepper.current_state)
-                output = stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
-                try:
-                    deserialized = json.loads(output)
-                    if output_type and issubclass(output_type, BaseModel):
-                        pydantic_output = output_type.model_validate(deserialized)
-                        output = pydantic_output
-                    else:
-                        output = deserialized
-                except json.JSONDecodeError as e:
-                    logger.error(f"JSON decoding failed: {e.msg} at position {e.pos}")
-                    if raise_on_error:
-                        raise
-                except Exception as e:
-                    logger.error(f"Failed to convert output to {output_type}: {e}")
-                    if raise_on_error:
-                        raise
+                yield from self._label_and_output(stepper, output_type, raise_on_error)
 
-                yield identifier.lower(), output
+    def _label_and_output(
+        self,
+        stepper: Stepper,
+        output_type: type[OutputType] | None,
+        raise_on_error: bool,
+    ) -> Iterator[tuple[str, OutputType | Any]]:
+        """
+        Helper method to parse and yield structured output from a stepper.
+        """
+        for final_stepper in stepper.get_final_state():
+            identifier = final_stepper.get_identifier() or str(final_stepper.current_state)
+            output = final_stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+
+            try:
+                deserialized = json.loads(output)
+                if output_type and issubclass(output_type, BaseModel):
+                    output = output_type.model_validate(deserialized)
+                else:
+                    output = deserialized
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decoding failed: {e.msg} at position {e.pos}")
+                if raise_on_error:
+                    raise
+            except Exception as e:
+                logger.error(f"Failed to convert output to {output_type}: {e}")
+                if raise_on_error:
+                    raise
+
+            yield identifier.lower(), output
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Format and return a string showing the top tokens and their scores.
         """
         if logger.getEffectiveLevel() < logging.DEBUG:
+            # short circuit if not debugging
             return ""
 
         top_logits = get_top_k(logits, top_n)

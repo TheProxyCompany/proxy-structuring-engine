@@ -24,7 +24,7 @@ class FencedFreeformStateMachine(EncapsulatedStateMachine):
         freeform_state_machine = CharacterStateMachine(
             whitelist_charset="",
             graylist_charset=set(delimiter[1]),
-            blacklist_charset="```",
+            blacklist_charset=delimiter[0][0],
             char_min=char_min,
             char_limit=char_max,
         )
