@@ -22,9 +22,10 @@ class LoopStateMachine(StateMachine):
             state_graph={
                 0: [(state_machine, 1)],
                 1: [(state_machine, 0)],
-            }
+            },
+            is_optional=min_loop_count == 0
         )
-        self.min_loop_count = min_loop_count
+        self.min_loop_count = min_loop_count or 1
         self.max_loop_count = max_loop_count
 
     def get_new_stepper(self, state: int | str | None = None) -> Stepper:
@@ -53,7 +54,7 @@ class LoopStepper(Stepper):
             if self.sub_stepper is not None and self.sub_stepper.is_within_value():
                 return self.sub_stepper.has_reached_accept_state()
             return True
-    
+
         return False
 
     def can_accept_more_input(self) -> bool:

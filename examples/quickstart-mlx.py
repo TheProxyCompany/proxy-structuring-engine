@@ -40,7 +40,7 @@ messages = [
 model_path_hf = "meta-llama/Llama-3.2-3B-Instruct"
 model, tokenizer = load(model_path_hf)
 engine = StructuringEngine(tokenizer._tokenizer)  # noqa: SLF001
-engine.configure_json(ADVANCED_JSON_SCHEMA)
+engine.configure(ADVANCED_JSON_SCHEMA)
 
 encoded_prompt = engine.tokenizer.apply_chat_template(
     conversation=messages,
@@ -55,8 +55,8 @@ for tokens, _ in generate_step(
     max_tokens=-1,
 ):
     encoded_prompt.append(tokens)  # type: ignore [attr-defined]
-    if engine.has_reached_accept_state:
+    if engine:
         break
 
-output = engine.parse_structured_output()
+output = engine.structured_output()
 print(output)

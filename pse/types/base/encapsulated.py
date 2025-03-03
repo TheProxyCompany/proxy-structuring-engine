@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Self
 
 from pse_core import StateId
@@ -51,14 +52,15 @@ class EncapsulatedStateMachine(StateMachine):
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
 
-
 class EncapsulatedStepper(Stepper):
+
     def __init__(
         self,
-        state_machine: StateMachine,
+        state_machine: EncapsulatedStateMachine,
         state: StateId | None = None,
     ) -> None:
         super().__init__(state_machine, state)
+        self.state_machine: EncapsulatedStateMachine = state_machine
         self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:
@@ -84,3 +86,16 @@ class EncapsulatedStepper(Stepper):
             return self.inner_stepper.get_current_value()
 
         return super().get_current_value()
+
+    def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> Any:
+        """
+        Get the token safe output from the inner stepper.
+        This function strips the delimiters from the output.
+        """
+        token_safe_output: str = super().get_token_safe_output(decode_function).strip()
+        if token_safe_output.startswith(self.state_machine.delimiters[0]):
+            token_safe_output = token_safe_output[len(self.state_machine.delimiters[0]):]
+        if token_safe_output.endswith(self.state_machine.delimiters[1]):
+            token_safe_output = token_safe_output[:-len(self.state_machine.delimiters[1])]
+
+        return token_safe_output

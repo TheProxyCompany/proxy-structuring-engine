@@ -46,7 +46,7 @@ def test_simple_json_structure(
     raw_prompt = (
         f"Generate a JSON object with the number 9.11. Follow this schema: {schema}"
     )
-    engine.configure_json(schema)
+    engine.configure(schema)
     generate(
         raw_prompt,
         model,
@@ -54,8 +54,10 @@ def test_simple_json_structure(
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    final_output = engine.parse_structured_output()
-    assert final_output == {"value": 9.11}
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output == {"value": 9.11}
 
 
 def test_simple_json_structure_with_delimiters(
@@ -79,7 +81,7 @@ def test_simple_json_structure_with_delimiters(
         f"Wrap your output in {delimiters[0]} and {delimiters[1]}."
         f"Follow this schema: {schema}"
     )
-    engine.configure_json(schema, delimiters=delimiters)
+    engine.configure(schema, delimiters=delimiters)
     generate(
         raw_prompt,
         model,
@@ -87,8 +89,10 @@ def test_simple_json_structure_with_delimiters(
     )
     # Validate the generated output
     assert engine.has_reached_accept_state
-    final_output = engine.parse_structured_output()
-    assert final_output == {"value": 9.11}
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output == {"value": 9.11}
 
 
 def test_complex_json_structure(
@@ -122,17 +126,16 @@ def test_complex_json_structure(
         f"Please structure your response to follow the following schema: {schema}."
         f"You must wrap your response with ```json\n and \n```."
     )
-    engine.configure_json(schema, delimiters=("```json\n", "\n```"))
+    engine.configure(schema, delimiters=("```json\n", "\n```"))
     generate(raw_prompt, model, engine)
-    final_output = engine.parse_structured_output()
-    assert final_output
-    assert isinstance(final_output, dict)
-    assert final_output["name"] == "metacognition"
-    assert "arguments" in final_output
-    assert "chain_of_thought" in final_output["arguments"]
-    assert isinstance(final_output["arguments"]["chain_of_thought"], list)
-
-    assert engine.has_reached_accept_state
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert isinstance(output, dict)
+        assert output["name"] == "metacognition"
+        assert "arguments" in output
+        assert "chain_of_thought" in output["arguments"]
+        assert isinstance(output["arguments"]["chain_of_thought"], list)
 
 
 def test_complex_recursive_schema(
@@ -182,13 +185,16 @@ def test_complex_recursive_schema(
         "The object should be a div component that only has one child component."
         "The child component should be a button with a label of 'Click me'."
     )
-    engine.configure_json(schema)
+    engine.configure(schema)
     generate(raw_prompt, model, engine)
-    final_output = engine.parse_structured_output()
-    assert final_output["type"] == "div"
-    assert len(final_output["children"]) == 1
-    assert final_output["children"][0]["type"] == "button"
-    assert final_output["children"][0]["label"] == "Click me"
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert isinstance(output, dict)
+        assert output["type"] == "div"
+        assert len(output["children"]) == 1
+        assert output["children"][0]["type"] == "button"
+        assert output["children"][0]["label"] == "Click me"
 
 
 def test_multiple_schemas(
@@ -257,14 +263,16 @@ def test_multiple_schemas(
         f"You must wrap your response with ```json\n and \n```."
         "Please use the metacognition schema."
     )
-    engine.configure_json(
+    engine.configure(
         schema,
         delimiters=("```json\n", "\n```"),
         buffer_length=0,
     )
     generate(raw_prompt, model, engine)
-    final_output = engine.parse_structured_output()
-    assert final_output["name"] == "metacognition"
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output["name"] == "metacognition"
 
 
 def test_schema_web_search(
@@ -298,7 +306,7 @@ def test_schema_web_search(
         "required": ["name", "arguments"],
     }
     engine.reset(hard_reset=True)
-    engine.configure_json(schema, delimiters=("<tool>", "</tool>"))
+    engine.configure(schema, delimiters=("<tool>", "</tool>"))
     prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
     engine.consume_text(prefill)
     raw_prompt = (
@@ -308,10 +316,12 @@ def test_schema_web_search(
         " Please use the web_search schema to find popular favoirte pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
-    final_output = engine.parse_structured_output()
-    assert final_output["name"] == "web_search"
-    assert final_output["arguments"]["query"] == "popular favorite Pokémon"
-    assert final_output["arguments"]["max_results"] is not None
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output["name"] == "web_search"
+        assert output["arguments"]["query"] == "popular favorite Pokémon"
+        assert output["arguments"]["max_results"] is not None
 
 
 def test_bash_interpreter(
@@ -331,8 +341,11 @@ def test_bash_interpreter(
     raw_prompt += "Wrap the code in ```bash\n and \n```."
     generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
-    output = engine.parse_structured_output()
-    assert output.strip().lower() == "echo 'hello, world!'".lower()
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output.strip().lower() == "echo 'hello, world!'".lower()
+
 
 def test_python_interpreter(
     model_and_engine: tuple[nn.Module, StructuringEngine],
@@ -351,8 +364,10 @@ def test_python_interpreter(
     raw_prompt += "Wrap the code in ```python\n and \n```."
     generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
-    output = engine.parse_structured_output()
-    assert output.strip().lower() == "print('hello, world!')".lower()
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output.strip().lower() == "print('hello, world!')".lower()
 
 
 def test_python_edge_case(
@@ -374,8 +389,10 @@ def test_python_edge_case(
     engine.consume_text(prefill)
     generate(raw_prompt, model, engine, prefill)
     assert engine.has_reached_accept_state
-    output = engine.parse_structured_output()
-    assert output == '"strawberry".count("r")'
+    for state, output in engine.get_structured_output():
+        assert engine.state_machine
+        assert state in engine.state_machine.end_states
+        assert output == '"strawberry".count("r")'
 
 
 if __name__ == "__main__":

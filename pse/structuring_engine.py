@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
@@ -35,16 +35,10 @@ class StructuringEngine(Engine):
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
         self.tokenizer = tokenizer
-        reverse_vocab: dict[int, str] = {}
-        for token, token_id in self.tokenizer.get_vocab().items():
-            if "▁" == token:
-                token = " "
-            else:
-                token = self.tokenizer.decode(token_id)
-            reverse_vocab[token_id] = token
-
         super().__init__(
-            reverse_vocab,
+            self.tokenizer.get_vocab(),
+            lambda x: self.tokenizer.encode(x, add_special_tokens=False),
+            lambda x: self.tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
             control_tokens=list(self.tokenizer.all_special_ids),
             max_resamples=max_resample_attempts,
@@ -52,47 +46,17 @@ class StructuringEngine(Engine):
 
     def configure(
         self,
-        schema: JSONSchemaSource | StateMachine,
+        structure: JSONSchemaSource | StateMachine,
         **kwargs: Any,
     ) -> None:
         """
         Configure the structuring engine with a schema.
         """
-        if isinstance(schema, StateMachine):
-            self.configure_state_machine(schema)
+        if isinstance(structure, StateMachine):
+            self.state_machine = structure
         else:
-            self.configure_json(schema, **kwargs)
+            _, self.state_machine = json_schema_state_machine(structure, **kwargs)
 
-    def configure_json(
-        self,
-        schema: JSONSchemaSource,
-        delimiters: tuple[str, str] | None = None,
-        buffer_length: int = -1,
-    ) -> dict[str, Any]:
-        """
-        Configure the structuring engine with a schema and optional delimiters.
-
-        Args:
-            schema: Schema to use when structuring output
-
-        Returns:
-            The JSON schema used by the structuring engine.
-        """
-        self.delimiters = delimiters
-        self.json_schema, self.state_machine = json_schema_state_machine(
-            schema,
-            delimiters,
-            buffer_length,
-        )
-
-        self.steppers = self.state_machine.get_steppers()
-        return self.json_schema
-
-    def configure_state_machine(self, state_machine: StateMachine) -> None:
-        """
-        Configure the structuring engine with a state machine.
-        """
-        self.state_machine = state_machine
         self.steppers = self.state_machine.get_steppers()
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
@@ -163,72 +127,42 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling completed in {toc - tic:.4f}s: \033[33m{result}\033[0m")
         return result
 
-    def parse_structured_output(
+    def get_structured_output(
         self,
-        raw_output: str | None = None,
         output_type: type[OutputType] | None = None,
-    ) -> OutputType | Any:
+        raise_on_error: bool = False,
+    ) -> Iterator[tuple[str, OutputType | Any]]:
         """
         Parse and cast the output to the given type.
 
         Args:
-            raw_output: The raw string output to parse. If None, attempts to get from steppers.
             output_type: The type to cast the output to. If None, returns parsed but uncast value.
+            raise_on_error: Whether to raise an exception if conversion fails
 
         Returns:
-            Parsed and optionally cast output value.
 
-        Raises:
-            ValueError: If parsing fails in an unexpected way
-            TypeError: If output type conversion fails
         """
-        # Get output from steppers if none provided
-        if not raw_output and self.steppers:
-            for stepper in self.steppers:
-                raw_output = stepper.get_current_value()
-                if stepper.has_reached_accept_state():
-                    break
+        for stepper in self.steppers:
+            if stepper.has_reached_accept_state():
+                identifier: str = stepper.get_identifier() or str(stepper.current_state)
+                output = stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+                try:
+                    deserialized = json.loads(output)
+                    if output_type and issubclass(output_type, BaseModel):
+                        pydantic_output = output_type.model_validate(deserialized)
+                        output = pydantic_output
+                    else:
+                        output = deserialized
+                except json.JSONDecodeError as e:
+                    logger.error(f"JSON decoding failed: {e.msg} at position {e.pos}")
+                    if raise_on_error:
+                        raise
+                except Exception as e:
+                    logger.error(f"Failed to convert output to {output_type}: {e}")
+                    if raise_on_error:
+                        raise
 
-        if not raw_output:
-            return None
-
-        # remove delimiters from raw_output
-        match self.current_state:
-            case "json" if self.delimiters:
-                delimiters = self.delimiters
-            # case "python":
-            #     delimiters = PythonGrammar.delimiters
-            case _:
-                delimiters = None
-
-        if delimiters and isinstance(raw_output, str):
-            start, end = delimiters
-            if start in raw_output:
-                raw_output = raw_output.split(start, 1)[1]
-            if end in raw_output:
-                raw_output = raw_output.split(end, 1)[0]
-
-        # Handle JSON parsing
-        if self.current_state == "json" and isinstance(raw_output, str):
-            try:
-                raw_output = json.loads(raw_output)
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse JSON: {e}")
-                pass
-
-        # Handle type conversion if needed
-        if (
-            output_type
-            and issubclass(output_type, BaseModel)
-            and isinstance(raw_output, dict)
-        ):
-            try:
-                return output_type.model_validate(raw_output)
-            except Exception as e:
-                logger.error(f"Failed to convert to {output_type}: {e}")
-                pass
-
-        return raw_output
+                yield identifier.lower(), output
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """

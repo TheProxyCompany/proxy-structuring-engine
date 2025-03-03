@@ -44,6 +44,9 @@ class LarkGrammarStepper(CharacterStepper):
         super().__init__(state_machine)
         self.state_machine: LarkGrammarStateMachine = state_machine
 
+    def get_identifier(self) -> str | None:
+        return self.state_machine.grammar.name
+
     def should_start_step(self, token: str) -> bool:
         """
         Should the stepper start a new step?
