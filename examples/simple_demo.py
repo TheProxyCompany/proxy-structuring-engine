@@ -95,7 +95,7 @@ assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 greedy_output = model.generate(input_ids)
-structured_output = model.engine.structured_output(output_type=dict)
+structured_output = model.engine.get_structured_output()
 if not structured_output:
     breakpoint()
 print(100 * "-")
@@ -137,6 +137,6 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-structured_output = model.engine.structured_output(output_type=CursorPositionModel)
+structured_output = model.engine.get_structured_output(output_type=CursorPositionModel)
 print(100 * "-")
 print(json.dumps(structured_output.model_dump(), indent=2))

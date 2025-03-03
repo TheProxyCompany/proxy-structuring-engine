@@ -125,6 +125,5 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 output = model.generate(input_ids)
 
-breakpoint()
 for label, output in model.engine.get_structured_output():
     print(label, output)
