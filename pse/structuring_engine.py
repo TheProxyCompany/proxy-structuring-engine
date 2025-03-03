@@ -36,9 +36,9 @@ class StructuringEngine(Engine):
         """
         self.tokenizer = tokenizer
         super().__init__(
-            self.tokenizer.get_vocab(),
-            lambda x: self.tokenizer.encode(x, add_special_tokens=False),
-            lambda x: self.tokenizer.decode(x),
+            tokenizer.get_vocab(),
+            lambda x: tokenizer.encode(x, add_special_tokens=False),
+            lambda x: tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
             control_tokens=list(self.tokenizer.all_special_ids),
             max_resamples=max_resample_attempts,
