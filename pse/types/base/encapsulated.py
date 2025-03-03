@@ -90,12 +90,22 @@ class EncapsulatedStepper(Stepper):
     def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> Any:
         """
         Get the token safe output from the inner stepper.
-        This function strips the delimiters from the output.
+        This function strips the delimiters from the output, gracefully handling partial or malformed delimiters.
         """
-        token_safe_output: str = super().get_token_safe_output(decode_function).strip()
-        if token_safe_output.startswith(self.state_machine.delimiters[0]):
-            token_safe_output = token_safe_output[len(self.state_machine.delimiters[0]):]
-        if token_safe_output.endswith(self.state_machine.delimiters[1]):
-            token_safe_output = token_safe_output[:-len(self.state_machine.delimiters[1])]
+        token_safe_output: str = super().get_token_safe_output(decode_function)
+
+        start_delim, end_delim = self.state_machine.delimiters
+
+        # Remove starting delimiter fragments from head, preserving content whitespace
+        for i in range(len(start_delim), 0, -1):
+            if token_safe_output.startswith(start_delim[:i]):
+                token_safe_output = token_safe_output[i:].lstrip()
+                break
+
+        # Remove ending delimiter fragments from tail, preserving content whitespace
+        for i in range(len(end_delim), 0, -1):
+            if token_safe_output.endswith(end_delim[-i:]):
+                token_safe_output = token_safe_output[:-i].rstrip()
+                break
 
         return token_safe_output

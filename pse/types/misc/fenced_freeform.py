@@ -29,6 +29,7 @@ class FencedFreeformStateMachine(EncapsulatedStateMachine):
             char_limit=char_max,
         )
         super().__init__(freeform_state_machine, delimiter, buffer_length, is_optional)
+        self.identifier = identifier
 
     def get_new_stepper(self, state: StateId | None = None) -> FencedFreeformStepper:
         return FencedFreeformStepper(self, state)
