@@ -208,11 +208,17 @@ class StructuringEngine(Engine):
 
         return output
 
+    def get_live_structured_output(self) -> tuple[str, str] | None:
+        """
+        Get the live structured output.
+        """
+        return self.get_live_token_safe_output(lambda x: self.tokenizer.decode(x))
+
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Format and return a string showing the top tokens and their scores.
         """
-        if logger.getEffectiveLevel() < logging.DEBUG:
+        if logger.getEffectiveLevel() > logging.DEBUG:
             # short circuit if not debugging
             return ""
 

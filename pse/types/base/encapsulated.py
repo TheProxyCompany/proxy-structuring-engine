@@ -87,21 +87,34 @@ class EncapsulatedStepper(Stepper):
 
         return super().get_current_value()
 
-    def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> Any:
+    def get_final_state(self) -> list[Stepper]:
+        return [self]
+
+    def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> str:
         """
-        Get the token safe output from the inner stepper, stripping the delimiters.
+        Retrieve the token-safe output with delimiters removed.
+
+        This method processes the raw output by removing the encapsulating delimiters,
+        handling both complete and partial delimiter occurrences.
+
+        Args:
+            decode_function: Function to decode token IDs into a string
+
+        Returns:
+            Processed string with delimiters stripped
         """
-        token_safe_output: str = super().get_token_safe_output(decode_function)
+        token_ids = self.get_token_ids_history()
+        token_safe_output: str = decode_function(token_ids).strip()
         start_delim, end_delim = self.state_machine.delimiters
 
-        if start_delim:
-            start_index = token_safe_output.find(start_delim)
-            if start_index != -1:
-                token_safe_output = token_safe_output[start_index + len(start_delim):]
+        if token_safe_output.startswith(start_delim):
+            token_safe_output = token_safe_output[len(start_delim):]
+        else:
+            token_safe_output = token_safe_output.lstrip(start_delim)
 
-        if end_delim:
-            end_index = token_safe_output.rfind(end_delim)
-            if end_index != -1:
-                token_safe_output = token_safe_output[:end_index]
+        if token_safe_output.endswith(end_delim):
+            token_safe_output = token_safe_output[:-len(end_delim)]
+        else:
+            token_safe_output = token_safe_output.rstrip(end_delim)
 
         return token_safe_output

@@ -77,4 +77,7 @@ class LoopStepper(Stepper):
         return super().add_to_history(stepper)
 
     def get_final_state(self) -> list[Stepper]:
+        if self.sub_stepper and self.sub_stepper.is_within_value():
+            return self.sub_stepper.get_final_state()
+
         return self.history

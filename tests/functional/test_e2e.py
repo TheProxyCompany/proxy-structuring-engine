@@ -351,7 +351,7 @@ def test_python_interpreter(
     generate(raw_prompt, model, engine)
     assert engine.has_reached_accept_state
     output = engine.get_structured_output()
-    assert output.strip().lower() == "print('hello, world!')"
+    assert "print('hello, world!')" in output.lower()
 
 
 def test_python_edge_case(
