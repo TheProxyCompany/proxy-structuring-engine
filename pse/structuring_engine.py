@@ -41,7 +41,7 @@ class StructuringEngine(Engine):
             lambda x: tokenizer.encode(x, add_special_tokens=False),
             lambda x: tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
-            control_tokens=list(self.tokenizer.all_special_ids),
+            control_tokens=list(self.tokenizer.get_added_vocab().values()),  # type: ignore [reportCallIssue]
             max_resamples=max_resample_attempts,
         )
 
@@ -138,7 +138,9 @@ class StructuringEngine(Engine):
         """
         for stepper in self.steppers:
             if stepper.has_reached_accept_state():
-                token_safe_output = stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+                token_safe_output = stepper.get_token_safe_output(
+                    lambda x: self.tokenizer.decode(x)
+                )
                 return self.cast_output(
                     token_safe_output,
                     output_type,
@@ -175,8 +177,12 @@ class StructuringEngine(Engine):
             final_states.extend(step.get_final_state())
 
         for final_stepper in final_states:
-            identifier = final_stepper.get_identifier() or str(final_stepper.current_state)
-            token_safe_output = final_stepper.get_token_safe_output(lambda x: self.tokenizer.decode(x))
+            identifier = final_stepper.get_identifier() or str(
+                final_stepper.current_state
+            )
+            token_safe_output = final_stepper.get_token_safe_output(
+                lambda x: self.tokenizer.decode(x)
+            )
             output = self.cast_output(token_safe_output, output_type, raise_on_error)
             yield identifier.lower(), output
 
