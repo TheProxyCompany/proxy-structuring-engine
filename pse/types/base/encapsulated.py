@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Self
 
 from pse_core import StateId
@@ -51,14 +52,15 @@ class EncapsulatedStateMachine(StateMachine):
     def get_new_stepper(self, state: StateId | None = None) -> EncapsulatedStepper:
         return EncapsulatedStepper(self, state)
 
-
 class EncapsulatedStepper(Stepper):
+
     def __init__(
         self,
-        state_machine: StateMachine,
+        state_machine: EncapsulatedStateMachine,
         state: StateId | None = None,
     ) -> None:
         super().__init__(state_machine, state)
+        self.state_machine: EncapsulatedStateMachine = state_machine
         self.inner_stepper: Stepper | None = None
 
     def clone(self) -> Self:
@@ -84,3 +86,35 @@ class EncapsulatedStepper(Stepper):
             return self.inner_stepper.get_current_value()
 
         return super().get_current_value()
+
+    def get_final_state(self) -> list[Stepper]:
+        return [self]
+
+    def get_token_safe_output(self, decode_function: Callable[[list[int]], str]) -> str:
+        """
+        Retrieve the token-safe output with delimiters removed.
+
+        This method processes the raw output by removing the encapsulating delimiters,
+        handling both complete and partial delimiter occurrences.
+
+        Args:
+            decode_function: Function to decode token IDs into a string
+
+        Returns:
+            Processed string with delimiters stripped
+        """
+        token_ids = self.get_token_ids_history()
+        token_safe_output: str = decode_function(token_ids).strip()
+        start_delim, end_delim = self.state_machine.delimiters
+
+        if token_safe_output.startswith(start_delim):
+            token_safe_output = token_safe_output[len(start_delim):]
+        else:
+            token_safe_output = token_safe_output.lstrip(start_delim)
+
+        if token_safe_output.endswith(end_delim):
+            token_safe_output = token_safe_output[:-len(end_delim)]
+        else:
+            token_safe_output = token_safe_output.rstrip(end_delim)
+
+        return token_safe_output

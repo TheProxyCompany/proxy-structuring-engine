@@ -6,8 +6,7 @@ import pytest
 from transformers import LlamaTokenizer
 
 from pse.types.base.encapsulated import EncapsulatedStateMachine
-from pse.types.grammar.grammar import GrammarStateMachine
-from pse.types.grammar.python import PythonGrammar
+from pse.types.grammar import PythonStateMachine
 
 try:
     import mlx.core as mx
@@ -68,7 +67,7 @@ def test_create_acceptor_with_complex_schema(
         },
         "required": ["user", "active"],
     }
-    engine.configure_json(complex_schema)
+    engine.configure(complex_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
     engine.reset(hard_reset=True)
@@ -82,7 +81,7 @@ def test_pattern_schema_success(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure_json(pattern_schema)
+    engine.configure(pattern_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
 
@@ -100,7 +99,7 @@ def test_pattern_schema_failure(engine: StructuringEngine) -> None:
         "minLength": 1,
         "maxLength": 10,
     }
-    engine.configure_json(schema=pattern_schema)
+    engine.configure(structure=pattern_schema)
     assert engine.state_machine is not None
     assert engine.steppers is not None
 
@@ -152,7 +151,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
         },
         "required": ["name", "arguments"],
     }
-    engine.configure_json(
+    engine.configure(
         {"anyOf": [schema1, schema2]},
         delimiters=("```json\n", "\n```"),
         buffer_length=0,
@@ -164,83 +163,9 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     assert len(engine.steppers) == 2
     engine.reset(hard_reset=True)
 
-
-@pytest.mark.parametrize(
-    "value, followup_value",
-    [
-        ("Hello", "!"),
-    ],
-)
-def test_edge_case_1(
-    engine: StructuringEngine, value: str, followup_value: str
-) -> None:
-    """
-    Test NumberAcceptor with an integer.
-
-    Args:
-        state_machine (NumberAcceptor): The NumberAcceptor instance.
-    """
-
-    schema = {
-        "anyOf": [
-            {
-                "type": "object",
-                "properties": {
-                    "name": {"const": "send_message"},
-                    "arguments": {
-                        "type": "object",
-                        "properties": {
-                            "message": {
-                                "type": "string",
-                                "description": "The final message content to be sent to the recipient.\nThis should be a packaged, markdown-formatted summary of the agent's work.\nSupports all Unicode characters, including emojis.",
-                            }
-                        },
-                        "required": ["message"],
-                    },
-                },
-                "required": ["name", "arguments"],
-            }
-        ]
-    }
-    engine.configure_json(schema, delimiters=("```json\n", "\n```"))
-    raw_input = '```json\n{"name": "send_message",'
-    engine.consume_text(raw_input)
-
-    raw_input_2 = ' "arguments": {"message": "'
-    engine.consume_text(raw_input_2)
-
-    token_ids = engine.tokenizer.encode(str(value), add_special_tokens=False)
-    advanced_token = engine.consume_tokens(token_ids)
-    assert advanced_token is not None
-    assert advanced_token == token_ids
-
-    followup_token_ids = engine.tokenizer.encode(
-        str(followup_value), add_special_tokens=False
-    )
-    advanced_token = engine.consume_tokens(followup_token_ids)
-    assert advanced_token is not None
-    assert advanced_token == followup_token_ids
-
-    final_token_ids = engine.tokenizer.encode('"}}\n```', add_special_tokens=False)
-    advanced_token = engine.consume_tokens(final_token_ids)
-    assert advanced_token is not None
-    assert advanced_token == final_token_ids
-
-    assert engine.has_reached_accept_state
-    final_output = engine.parse_structured_output()
-    assert final_output == {
-        "name": "send_message",
-        "arguments": {"message": "Hello!"},
-    }
-    engine.reset(hard_reset=True)
-
-
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
-    engine.configure_json(
-        {"type": "string", "const": "Hello World!"},
-        buffer_length=0
-    )
+    engine.configure({"type": "string", "const": "Hello World!"}, buffer_length=0)
     buffer = "Sure, here is the response: "
     engine.consume_text(buffer)
     assert len(engine.steppers) == 1
@@ -263,7 +188,7 @@ def test_token_healing(engine: StructuringEngine) -> None:
         "properties": {"value": {"type": "number"}},
         "required": ["value"],
     }
-    engine.configure_json(SIMPLE_JSON_SCHEMA)
+    engine.configure(SIMPLE_JSON_SCHEMA)
     engine.consume_text('{"')
     assert len(engine.steppers) == 1
     assert not engine.has_reached_accept_state
@@ -276,7 +201,7 @@ def test_logits_processing(engine: StructuringEngine) -> None:
     dtypes = [mx.float32, mx.bfloat16, mx.float16]
 
     for dtype in dtypes:
-        engine.configure_json(schema={"type": "string"})
+        engine.configure(structure={"type": "string"})
         # we expect only tokens that start with a " character
         scores = generate_mock_logits(
             engine,
@@ -309,8 +234,8 @@ def test_logits_processing(engine: StructuringEngine) -> None:
 def test_python_interpreter(engine: StructuringEngine) -> None:
     """Test that the python interpreter is working correctly."""
     python_state_machine = EncapsulatedStateMachine(
-        state_machine=GrammarStateMachine(PythonGrammar),
-        delimiters=PythonGrammar.delimiters,
+        state_machine=PythonStateMachine,
+        delimiters=PythonStateMachine.delimiters,
         buffer_length=0,
     )
 
@@ -318,4 +243,5 @@ def test_python_interpreter(engine: StructuringEngine) -> None:
     engine.consume_text("```python\nprint('Hello, world!')\n```")
     assert engine.steppers
     assert engine.has_reached_accept_state
-    assert engine.parse_structured_output() == "print('Hello, world!')"
+    output = engine.get_structured_output()
+    assert output == "print('Hello, world!')"

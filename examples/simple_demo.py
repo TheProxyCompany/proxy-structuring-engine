@@ -40,7 +40,7 @@ SIMPLE_JSON_SCHEMA = {
     "properties": {"value": {"type": "number"}},
     "required": ["value"],
 }
-model.engine.configure_json(SIMPLE_JSON_SCHEMA)
+model.engine.configure(SIMPLE_JSON_SCHEMA)
 prompt = (
     "Please generate a json object with the value 9.11, with the following schema:\n"
 )
@@ -59,9 +59,7 @@ output = model.generate(
 )
 # you can print the prompt + output:
 #   print(tokenizer.decode(output[0]))
-# you can also access just the structured output:
-#   engine.parse_structured_output()
-structured_output = model.engine.parse_structured_output(output_type=dict)
+structured_output = model.engine.get_structured_output()
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
@@ -81,7 +79,7 @@ ADVANCED_JSON_SCHEMA = {
     },
     "required": ["chain_of_thought"],
 }
-model.engine.configure_json(ADVANCED_JSON_SCHEMA)
+model.engine.configure(ADVANCED_JSON_SCHEMA)
 raw_prompt = (
     f"This is a test of your thought process.\n"
     f"I want to see your private internal monologue.\n"
@@ -95,9 +93,7 @@ assert isinstance(input_ids, torch.Tensor)
 input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 greedy_output = model.generate(input_ids)
-structured_output = model.engine.parse_structured_output(output_type=dict)
-if not structured_output:
-    breakpoint()
+structured_output = model.engine.get_structured_output()
 print(100 * "-")
 print(json.dumps(structured_output, indent=2))
 
@@ -117,7 +113,7 @@ class CursorPositionModel(BaseModel):
     left_click: bool = False
 
 
-json_schema: dict = model.engine.configure_json(
+json_schema: dict = model.engine.configure(
     CursorPositionModel, json_delimiters=("<cursor>", "</cursor>")
 )
 prompt = (
@@ -137,8 +133,6 @@ output = model.generate(
     input_ids,
     do_sample=True,
 )
-structured_output = model.engine.parse_structured_output(
-    output_type=CursorPositionModel
-)
+structured_output = model.engine.get_structured_output(CursorPositionModel)
 print(100 * "-")
 print(json.dumps(structured_output.model_dump(), indent=2))

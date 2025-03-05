@@ -53,12 +53,5 @@ def sampler(engine: StructuringEngine, **kwargs: Any) -> Callable[..., Any]:
     If structured is True, use the structured sampler.
     Otherwise, use the simple sampler.
     """
-    temp = float(kwargs.get("temp", 0.7))
-    min_p = float(kwargs.get("min_p", 0.0))
-    min_tokens_to_keep = int(kwargs.get("min_tokens_to_keep", 1))
-    sampler = make_sampler(
-        temp=temp,
-        min_p=min_p,
-        min_tokens_to_keep=min_tokens_to_keep
-    )
+    sampler = make_sampler(kwargs.get("temp", 0.7))
     return lambda x: engine.sample(x, sampler)

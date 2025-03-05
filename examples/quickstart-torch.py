@@ -33,7 +33,7 @@ if model.generation_config:
 
 # 3. Create a StructuringEngine and configure it with your schema
 model.engine = StructuringEngine(tokenizer)
-model.engine.configure_json(Product)
+model.engine.configure(Product)
 
 # 4.  Create your prompt. Include the schema for the LLM's context.
 prompt = f"""
@@ -56,10 +56,10 @@ assert isinstance(input_ids, torch.Tensor)
 output = model.generate(
     input_ids,
     do_sample=True,
-    max_new_tokens=100,
+    max_new_tokens=200,
     top_k=10,
     top_p=None,
 )
 # 6. Parse the structured output
-structured_output = model.engine.parse_structured_output(output_type=Product)
+structured_output = model.engine.get_structured_output(Product)
 print(json.dumps(structured_output.model_dump(), indent=2))

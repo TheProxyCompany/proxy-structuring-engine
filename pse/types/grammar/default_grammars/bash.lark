@@ -1,0 +1,238 @@
+////////////////////////////
+// Bash Grammar for Lark
+//
+// A comprehensive grammar for parsing Bash scripts
+// Follows POSIX shell specification with Bash extensions
+// Version: 1.0.1
+////////////////////////////
+
+//------------------------------------------------------
+// Ignore rules - Patterns to be discarded during parsing
+//------------------------------------------------------
+%ignore /[ \t]+/        // Ignore horizontal whitespace (spaces and tabs)
+%ignore /\\(\r?\n)+/    // Handle backslash-newline line continuations
+%ignore COMMENT         // Ignore comments (defined below)
+%ignore SHEBANG         // Ignore shebang line (defined below)
+
+//------------------------------------------------------
+// Basic Tokens - Fundamental lexical elements
+//------------------------------------------------------
+// Line terminators
+NEWLINE: /\r?\n+/       // Support both Unix and Windows line endings
+
+// Comments and interpreter directive
+COMMENT: /#[^\n]*/      // Comments start with # and continue to end of line
+SHEBANG: "#!" /[^\n]*/  // Special first line for script interpreter path
+
+// Character Classes - Basic building blocks
+LETTER: "a".."z" | "A".."Z"  // All ASCII letters
+DIGIT: "0".."9"              // Decimal digits
+
+// Numeric literals
+INT: DIGIT+              // Integer values (sequence of digits)
+number: INT              // Rule for numeric values
+
+//------------------------------------------------------
+// Keywords and Reserved Words - Bash language keywords
+//------------------------------------------------------
+// Control Flow Keywords - Words with special meaning in Bash syntax
+IF: "if"           // Begin conditional block
+THEN: "then"       // Body of conditional
+ELSE: "else"       // Alternative condition branch
+ELIF: "elif"       // Else-if branch
+FI: "fi"           // End conditional block
+FOR: "for"         // Begin for loop
+WHILE: "while"     // Begin while loop
+UNTIL: "until"     // Begin until loop (opposite of while)
+DO: "do"           // Begin loop body
+DONE: "done"       // End loop block
+IN: "in"           // List specifier for loops
+CASE: "case"       // Begin case statement
+ESAC: "esac"       // End case statement
+SELECT: "select"   // Begin select statement (interactive menu)
+FUNCTION: "function" // Function declaration keyword
+TIME: "time"       // Command timing prefix
+
+//------------------------------------------------------
+// Operators and Delimiters - Syntactic elements
+//------------------------------------------------------
+// Parentheses, Braces, Brackets - Grouping and scope delimiters
+LPAR: "("          // Left parenthesis - subshell, function def, arithmetic
+RPAR: ")"          // Right parenthesis
+LBRACE: "{"        // Left brace - command group
+RBRACE: "}"        // Right brace
+LBRACKET: "["      // Left bracket - test command
+RBRACKET: "]"      // Right bracket
+
+// Separators and Terminators - Command and clause delimiters
+SEMICOLON: ";"     // Command separator
+DOUBLE_SEMICOLON: ";;" // Case statement terminator
+COLON: ":"         // No-op command, label for goto
+COMMA: ","         // Separator in some contexts
+
+// Operators - Shell operators for various operations
+AMPERSAND: "&"     // Background execution
+VBAR: "|"          // Pipe operator
+LOGICAL_AND: "&&"  // Logical AND (short-circuit)
+LOGICAL_OR: "||"   // Logical OR (short-circuit)
+BANG: "!"          // Logical NOT
+MORETHAN: ">"      // Output redirection
+LESSTHAN: "<"      // Input redirection
+EQUAL: "="         // Assignment operator
+PLUS: "+"          // Addition (in arithmetic context)
+MINUS: "-"         // Subtraction or option prefix
+DOT: "."           // Current directory or source command
+SLASH: "/"         // Path separator
+AT: "@"            // Special parameter in functions
+TILDE: "~"         // Home directory
+UNDERSCORE: "_"    // Valid in identifiers
+
+//------------------------------------------------------
+// Word-like Tokens - Command names, arguments, etc.
+//------------------------------------------------------
+word: WORD         // Generic word rule
+
+// Word patterns - Command names, arguments, paths, etc.
+WORD: /[a-zA-Z_][a-zA-Z0-9_\-\.\/:\+@=~]*/  // Standard identifier pattern
+    | /\-[a-zA-Z0-9_\-\.\/:\+@=~]+/         // Option/flag pattern (starts with dash)
+    | /\/[a-zA-Z0-9_\-\.\/:\+@=~]+/         // Absolute path pattern (starts with slash)
+
+// String literals - Single and double quoted strings
+STRING: /'[^']*'/                  // Single-quoted string (no expansion)
+      | /"([^"\\]|\\.)*"/          // Double-quoted string (allows escapes and expansion)
+
+// Shell variable references - Various forms of variable access
+VARIABLE: /\$[a-zA-Z_][a-zA-Z0-9_]*/         // Simple variable reference ($var)
+        | /\${[^}]+}/                        // Parameter expansion (${var}, ${var:-default}, etc.)
+        | /\$[a-zA-Z_][a-zA-Z0-9_]*(:[a-zA-Z0-9_\/\.\-:@~]+)+/  // Parameter substitution with pattern
+
+// Command substitution and expressions - Embedded commands and arithmetic
+CMD_SUBST.2: /\$\([^()]*\)/                  // Command substitution - captures output of command
+ARITH_EXPR: "$((" /[^)]*/ "))"?              // Arithmetic expansion - evaluates expression
+          | "((" /[^)]*/ "))"?               // Alternate arithmetic syntax
+TEST_EXPR: LBRACKET /[^]]+/ RBRACKET         // Test command - evaluates condition
+         | "[[" /[^]]+/ "]]"                 // Extended test command (Bash specific)
+FD: /[0-9]+/                                 // File descriptor number
+
+//------------------------------------------------------
+// Script Structure - Top-level organization
+//------------------------------------------------------
+start: script                                 // Entry point for the parser
+script: (COMMENT | pipeline_command | separator)+  // A script is a sequence of commands and comments
+       |  // empty script is valid
+
+//------------------------------------------------------
+// Command Structure - Basic command syntax
+//------------------------------------------------------
+?command: (simple_command | shell_command) redirection_list?  // Commands may have redirections
+
+//------------------------------------------------------
+// Redirection - I/O redirection syntax
+//------------------------------------------------------
+?redirection: redirect_op word                // Redirect to/from a file
+            | FD? redirect_op word            // Redirect specific file descriptor
+            | FD? redirect_op FD              // Redirect to another file descriptor
+            | FD? MORETHAN MORETHAN word      // Append redirection (>>)
+
+// Redirection operators - Various forms of I/O redirection
+!redirect_op: ">>"   // Append output
+            | "<<"   // Here-document
+            | "<<-"  // Here-document with tab stripping
+            | "<&"   // Duplicate input file descriptor
+            | ">&"   // Duplicate output file descriptor
+            | "&>"   // Redirect both stdout and stderr
+            | "<>"   // Open file for both reading and writing
+            | ">|"   // Force output redirection (clobber)
+            | ">"    // Output redirection
+            | "<"    // Input redirection
+
+redirection_list: redirection+  // Multiple redirections can be specified
+
+//------------------------------------------------------
+// Simple Commands - Basic command execution
+//------------------------------------------------------
+simple_command: simple_command_element+  // A command with arguments and redirections
+?simple_command_element: word           // Command name or argument
+                       | STRING         // Quoted string argument
+                       | VARIABLE       // Variable reference
+                       | CMD_SUBST      // Command substitution
+                       | ARITH_EXPR     // Arithmetic expression
+                       | TEST_EXPR      // Test expression
+                       | assignment_word // Variable assignment
+                       | redirection    // I/O redirection
+                       | DOT            // Source command (.)
+
+// Variable Assignment - Setting variable values
+assignment_word: word EQUAL (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR)
+
+//------------------------------------------------------
+// Shell Commands - Complex command structures
+//------------------------------------------------------
+?shell_command: if_command      // Conditional execution
+              | for_command     // Iteration over list
+              | while_command   // Condition-controlled loop
+              | until_command   // Inverse condition-controlled loop
+              | select_command  // Interactive selection menu
+              | case_command    // Multi-way branch
+              | subshell        // Commands in a subshell
+              | group_command   // Command grouping
+              | function_def    // Function definition
+
+// Conditional Constructs - if/then/else structures
+if_command: IF compound_list THEN compound_list elif_clause* (ELSE compound_list)? FI
+elif_clause: ELIF compound_list THEN compound_list
+
+// Loop Constructs - Various iteration structures
+for_command: FOR word (IN word_list)? separator? DO compound_list DONE
+while_command: WHILE compound_list DO compound_list DONE
+until_command: UNTIL compound_list DO compound_list DONE
+select_command: SELECT word (IN word_list)? separator? DO compound_list DONE
+
+// Case Statement - Pattern matching branch structure
+case_command: CASE (word | VARIABLE | STRING) IN case_item_list ESAC
+
+case_item_list: (terminated_case_item)* (unterminated_case_item)?
+
+terminated_case_item: pattern_list RPAR (compound_list)? terminator
+
+unterminated_case_item: pattern_list RPAR (compound_list)?
+
+pattern_list: (word | STRING | VARIABLE) (VBAR (word | STRING | VARIABLE))*
+
+terminator: DOUBLE_SEMICOLON    // Standard case terminator
+          | ";&"                // Fall-through terminator (Bash extension)
+          | ";;&"               // Continue-testing terminator (Bash extension)
+
+// Command Grouping - Execution context control
+subshell: LPAR compound_list RPAR           // Commands executed in a subshell (new process)
+group_command: LBRACE compound_list RBRACE  // Commands executed in current shell (same process)
+
+// Function Definition - Reusable command sequences
+function_def: FUNCTION? word (LPAR RPAR)? group_command  // Both POSIX and Bash function syntax
+
+//------------------------------------------------------
+// Word Lists - Sequences of words
+//------------------------------------------------------
+word_list: (word | STRING | VARIABLE | CMD_SUBST | ARITH_EXPR | FD)+  // Arguments, loop items, etc.
+
+//------------------------------------------------------
+// Command Lists and Pipelines - Command composition
+//------------------------------------------------------
+// Compound list - sequence of commands separated by newlines or semicolons
+compound_list: (separator | COMMENT)* pipeline_command ((separator | COMMENT)+ pipeline_command)* (separator | COMMENT)*
+
+// Pipeline commands with logical operators (&&, ||)
+pipeline_command: BANG? logical_sequence  // Optional negation of result
+
+// Logical sequences - Commands connected with logical operators
+logical_sequence: pipe_sequence (logical_operator pipe_sequence)*
+logical_operator: LOGICAL_AND  // Execute right side only if left side succeeds (exit status 0)
+                | LOGICAL_OR   // Execute right side only if left side fails (non-zero exit status)
+
+// Pipeline - Commands connected with pipes (output of one feeds into input of next)
+pipe_sequence: command (VBAR command)*
+
+//------------------------------------------------------
+// Separators - Command terminators and separators
+//------------------------------------------------------
+separator: SEMICOLON | NEWLINE  // Commands can be separated by semicolons or newlines

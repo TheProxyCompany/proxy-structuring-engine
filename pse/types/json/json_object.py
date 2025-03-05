@@ -27,6 +27,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
         self.additional_properties: dict[str, Any] | bool = schema.get(
             "additionalProperties", {}
         )
+        self.ordered_properties: bool = schema.get("orderedProperties", True)
         if any(prop not in self.properties for prop in self.required_property_names):
             raise ValueError("Required property not defined in schema")
 
@@ -38,8 +39,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
                 ):
                     self.required_property_names.remove(property_name)
 
-        is_optional = property_schema.get("nullable", False)
-        super().__init__(is_optional)
+        super().__init__(schema.get("nullable", False))
 
     def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
         """Retrieve transition steppers from the current state.
@@ -79,6 +79,8 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
                     self.context,
                 )
                 property_state_machines.append(property)
+                if self.ordered_properties:
+                    break
 
         if (
             all(prop_name in value for prop_name in self.required_property_names)

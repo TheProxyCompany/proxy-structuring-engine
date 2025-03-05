@@ -3,15 +3,15 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any, TypeVar
 
 from pse_core.engine import Engine
 from pse_core.state_machine import StateMachine
+from pse_core.stepper import Stepper
 from pydantic import BaseModel
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
 
-from pse.types.grammar.python import PythonGrammar
 from pse.types.json import JSONSchemaSource, json_schema_state_machine
 from pse.util.get_top_logits import get_top_k
 
@@ -29,6 +29,7 @@ class StructuringEngine(Engine):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
+        whitelist_control_tokens: list[str] | None = None,
         multi_token_sampling: bool = False,
         max_resample_attempts: int = 5,
     ) -> None:
@@ -36,64 +37,40 @@ class StructuringEngine(Engine):
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
         self.tokenizer = tokenizer
-        reverse_vocab: dict[int, str] = {}
-        for token, token_id in self.tokenizer.get_vocab().items():
-            if "▁" == token:
-                token = " "
-            else:
-                token = self.tokenizer.decode(token_id)
-            reverse_vocab[token_id] = token
+        control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
+        # do not mask control tokens that might be used as part of the schema
+        for whitelisted_token in whitelist_control_tokens or []:
+            if (
+                whitelisted_token
+                not in self.tokenizer.all_special_tokens
+                and whitelisted_token in control_tokens
+            ):
+                # only prevent masking if the token is not a special token
+                # because special tokens like eos need to be masked by default
+                del control_tokens[whitelisted_token]
 
         super().__init__(
-            reverse_vocab,
+            tokenizer.get_vocab(),
+            lambda x: tokenizer.encode(x, add_special_tokens=False),
+            lambda x: tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
-            control_tokens=list(self.tokenizer.all_special_ids),
+            control_tokens=list(control_tokens.values()),
             max_resamples=max_resample_attempts,
         )
 
     def configure(
         self,
-        schema: JSONSchemaSource | StateMachine,
+        structure: JSONSchemaSource | StateMachine,
         **kwargs: Any,
     ) -> None:
         """
         Configure the structuring engine with a schema.
         """
-        if isinstance(schema, StateMachine):
-            self.configure_state_machine(schema)
+        if isinstance(structure, StateMachine):
+            self.state_machine = structure
         else:
-            self.configure_json(schema, **kwargs)
+            _, self.state_machine = json_schema_state_machine(structure, **kwargs)
 
-    def configure_json(
-        self,
-        schema: JSONSchemaSource,
-        delimiters: tuple[str, str] | None = None,
-        buffer_length: int = -1,
-    ) -> dict[str, Any]:
-        """
-        Configure the structuring engine with a schema and optional delimiters.
-
-        Args:
-            schema: Schema to use when structuring output
-
-        Returns:
-            The JSON schema used by the structuring engine.
-        """
-        self.delimiters = delimiters
-        self.json_schema, self.state_machine = json_schema_state_machine(
-            schema,
-            delimiters,
-            buffer_length,
-        )
-
-        self.steppers = self.state_machine.get_steppers()
-        return self.json_schema
-
-    def configure_state_machine(self, state_machine: StateMachine) -> None:
-        """
-        Configure the structuring engine with a state machine.
-        """
-        self.state_machine = state_machine
         self.steppers = self.state_machine.get_steppers()
 
     def process_logits(self, _: Any, raw_logits: Array_Type) -> Array_Type:
@@ -164,78 +141,104 @@ class StructuringEngine(Engine):
         logger.debug(f"Sampling completed in {toc - tic:.4f}s: \033[33m{result}\033[0m")
         return result
 
-    def parse_structured_output(
+    def get_structured_output(
         self,
-        raw_output: str | None = None,
         output_type: type[OutputType] | None = None,
+        raise_on_error: bool = False,
     ) -> OutputType | Any:
         """
         Parse and cast the output to the given type.
-
-        Args:
-            raw_output: The raw string output to parse. If None, attempts to get from steppers.
-            output_type: The type to cast the output to. If None, returns parsed but uncast value.
-
-        Returns:
-            Parsed and optionally cast output value.
-
-        Raises:
-            ValueError: If parsing fails in an unexpected way
-            TypeError: If output type conversion fails
         """
-        # Get output from steppers if none provided
-        if not raw_output and self.steppers:
-            for stepper in self.steppers:
-                raw_output = stepper.get_current_value()
-                if stepper.has_reached_accept_state():
-                    break
+        for stepper in self.steppers:
+            if stepper.has_reached_accept_state():
+                token_safe_output = stepper.get_token_safe_output(
+                    lambda x: self.tokenizer.decode(x)
+                )
+                return self.cast_output(
+                    token_safe_output,
+                    output_type,
+                    raise_on_error,
+                )
 
-        if not raw_output:
-            return None
+    def get_stateful_structured_output(
+        self,
+        output_type: type[OutputType] | None = None,
+        raise_on_error: bool = False,
+    ) -> Iterator[tuple[str, OutputType | Any]]:
+        """
+        Get each part of the output labeled with the identifier of the step that produced it.
+        """
+        for stepper in self.steppers:
+            if stepper.has_reached_accept_state():
+                yield from self._iter_state_and_output(
+                    stepper,
+                    output_type,
+                    raise_on_error,
+                )
 
-        # remove delimiters from raw_output
-        match self.current_state:
-            case "json" if self.delimiters:
-                delimiters = self.delimiters
-            case "python":
-                delimiters = PythonGrammar.delimiters
-            case _:
-                delimiters = None
+    def _iter_state_and_output(
+        self,
+        stepper: Stepper,
+        output_type: type[OutputType] | None,
+        raise_on_error: bool,
+    ) -> Iterator[tuple[str, OutputType | Any]]:
+        """
+        Helper method to parse and yield structured output from a stepper.
+        """
+        final_states: list[Stepper] = []
+        for step in stepper.history:
+            final_states.extend(step.get_final_state())
 
-        if delimiters and isinstance(raw_output, str):
-            start, end = delimiters
-            if start in raw_output:
-                raw_output = raw_output.split(start, 1)[1]
-            if end in raw_output:
-                raw_output = raw_output.split(end, 1)[0]
+        for final_stepper in final_states:
+            identifier = final_stepper.get_identifier() or str(
+                final_stepper.current_state
+            )
+            token_safe_output = final_stepper.get_token_safe_output(
+                lambda x: self.tokenizer.decode(x)
+            )
+            output = self.cast_output(token_safe_output, output_type, raise_on_error)
+            yield identifier.lower(), output
 
-        # Handle JSON parsing
-        if self.current_state == "json" and isinstance(raw_output, str):
-            try:
-                raw_output = json.loads(raw_output)
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse JSON: {e}")
-                pass
+    def cast_output(
+        self,
+        input: str,
+        output_type: type[OutputType] | None,
+        raise_on_error: bool,
+    ) -> OutputType | Any:
+        """
+        Cast the output to the given type.
+        """
+        output = input
+        try:
+            deserialized = json.loads(input)
+            if output_type and issubclass(output_type, BaseModel):
+                output = output_type.model_validate(deserialized)
+            else:
+                output = deserialized
+        except json.JSONDecodeError as e:
+            if output_type:
+                logger.error(f"JSON decoding failed: {e.msg} at position {e.pos}")
+                if raise_on_error:
+                    raise
+        except Exception as e:
+            logger.error(f"Failed to convert output to {output_type}: {e}")
+            if raise_on_error:
+                raise
 
-        # Handle type conversion if needed
-        if (
-            output_type
-            and issubclass(output_type, BaseModel)
-            and isinstance(raw_output, dict)
-        ):
-            try:
-                return output_type.model_validate(raw_output)
-            except Exception as e:
-                logger.error(f"Failed to convert to {output_type}: {e}")
-                pass
+        return output
 
-        return raw_output
+    def get_live_structured_output(self) -> tuple[str, str] | None:
+        """
+        Get the live structured output.
+        """
+        return self.get_live_token_safe_output(lambda x: self.tokenizer.decode(x))
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """
         Format and return a string showing the top tokens and their scores.
         """
-        if logger.getEffectiveLevel() < logging.DEBUG:
+        if logger.getEffectiveLevel() > logging.DEBUG:
+            # short circuit if not debugging
             return ""
 
         top_logits = get_top_k(logits, top_n)

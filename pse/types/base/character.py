@@ -13,7 +13,8 @@ class CharacterStateMachine(StateMachine):
 
     def __init__(
         self,
-        charset: str | list[str] | Iterable[str] = "",
+        whitelist_charset: str | list[str] | Iterable[str] = "",
+        graylist_charset: str | list[str] | Iterable[str] = "",
         blacklist_charset: str | list[str] | Iterable[str] = "",
         char_min: int | None = None,
         char_limit: int | None = None,
@@ -31,13 +32,20 @@ class CharacterStateMachine(StateMachine):
         self.char_min = char_min or 0
         self.char_limit = char_limit or 0
         self.charset: set[str] = set()
+        self.graylist_charset: set[str] = set()
         self.blacklist_charset: set[str] = set()
 
-        if charset:
+        if whitelist_charset:
             self.charset = (
-                set(charset)
+                set(whitelist_charset)
                 if case_sensitive
-                else set(char.lower() for char in charset)
+                else set(char.lower() for char in whitelist_charset)
+            )
+        if graylist_charset:
+            self.graylist_charset = (
+                set(graylist_charset)
+                if case_sensitive
+                else set(char.lower() for char in graylist_charset)
             )
         if blacklist_charset:
             self.blacklist_charset = (
@@ -171,6 +179,13 @@ class CharacterStepper(Stepper):
                 >= self.state_machine.char_limit
             ):
                 break
+            if (
+                self.state_machine.graylist_charset
+                and valid_prefix
+                and char in self.state_machine.graylist_charset
+            ):
+                break
+
             valid_prefix += char
 
         if not valid_prefix:
