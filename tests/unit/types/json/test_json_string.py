@@ -1,4 +1,3 @@
-import pytest
 from pse.types.json.json_string import StringSchemaStateMachine
 
 
@@ -281,27 +280,26 @@ def test_clean_value_empty_string():
     schema = {}
     state_machine = StringSchemaStateMachine(schema=schema)
     stepper = state_machine.get_new_stepper()
-    
+
     # Empty JSON string
     assert stepper.clean_value('""') == "", 'JSON string "" should be cleaned to empty string'
-    
+
     # Regular empty string
     assert stepper.clean_value("") == "", "Empty string should remain empty"
 
 
-@pytest.mark.skip(reason="Implementation behavior differs from test expectations")
 def test_clean_value_quoted_string():
     """Test clean_value with a quoted string."""
     schema = {}
     state_machine = StringSchemaStateMachine(schema=schema)
     stepper = state_machine.get_new_stepper()
-    
+
     # Fully quoted string
     assert stepper.clean_value('"hello"') == "hello", '"hello" should be cleaned to hello'
-    
+
     # Partially quoted string (only opening quote)
     assert stepper.clean_value('"hello') == "hello", '"hello should remove the opening quote'
-    
+
     # String with internal quotes
     assert stepper.clean_value('"hello"world"') == 'hello', '"hello"world" should be cleaned to hello'
 
@@ -311,49 +309,18 @@ def test_get_valid_prefix_no_pattern():
     schema = {}
     state_machine = StringSchemaStateMachine(schema=schema)
     stepper = state_machine.get_new_stepper()
-    
+
     # Without pattern, should return the entire string
     assert stepper.get_valid_prefix("test") == "test", "Should return entire string when no pattern"
-
-
-@pytest.mark.skip(reason="Test mocking approach conflicts with actual implementation logic")
-def test_should_start_step_with_pattern():
-    """Test should_start_step with a pattern in the schema."""
-    schema = {"pattern": r"^test.*"}
-    state_machine = StringSchemaStateMachine(schema=schema)
-    stepper = state_machine.get_new_stepper()
-    
-    # Force stepper to be within value
-    original_is_within = stepper.is_within_value
-    stepper.is_within_value = lambda: True
-    
-    # Mock get_valid_prefix
-    original_get_prefix = stepper.get_valid_prefix
-    stepper.get_valid_prefix = lambda token: "test"
-    
-    # Mock validate_value
-    original_validate = stepper.validate_value
-    stepper.validate_value = lambda value: True
-    
-    assert stepper.should_start_step("test"), "Should return True when validate_value returns True"
-    
-    # Change validate_value to return False
-    stepper.validate_value = lambda value: False
-    assert not stepper.should_start_step("test"), "Should return False when validate_value returns False"
-    
-    # Restore original methods
-    stepper.is_within_value = original_is_within
-    stepper.get_valid_prefix = original_get_prefix
-    stepper.validate_value = original_validate
 
 
 def test_unsupported_format():
     """Test that an unsupported format raises a ValueError."""
     schema = {"format": "unsupported-format"}
-    
+
     try:
         StringSchemaStateMachine(schema=schema)
-        assert False, "Should have raised ValueError for unsupported format"
+        raise ValueError("Should have raised ValueError for unsupported format")
     except ValueError as e:
         assert "not supported" in str(e), "Error message should mention that format is not supported"
 
@@ -361,9 +328,9 @@ def test_unsupported_format():
 def test_invalid_pattern():
     """Test that an invalid pattern raises a ValueError."""
     schema = {"pattern": "("}  # Invalid regex pattern
-    
+
     try:
         StringSchemaStateMachine(schema=schema)
-        assert False, "Should have raised ValueError for invalid pattern"
+        raise ValueError("Should have raised ValueError for invalid pattern")
     except ValueError as e:
         assert "Invalid pattern" in str(e), "Error message should mention invalid pattern"

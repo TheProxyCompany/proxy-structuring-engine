@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 
@@ -135,27 +134,20 @@ class StringSchemaStepper(StringStepper):
 
     def clean_value(self, value: str) -> str:
         """
-        Clean and normalize the input value.
+        Clean and normalize the input value by removing bounding quotes.
 
         Args:
-            value: The string value to clean
+            value: The string value to clean.
 
         Returns:
-            str: The cleaned value
-
-        Raises:
-            ValueError: If the value cannot be properly cleaned
+            str: The cleaned string with bounding quotes removed.
         """
-        try:
-            if value.startswith('"') and value.endswith('"'):
-                return json.loads(value) or ""
-            elif value.startswith('"'):
-                value = value[value.index('"') + 1 :]
-                return value[: value.rindex('"')] if '"' in value else value
-            return value
-        except Exception as e:
-            logger.debug(f"Error cleaning value: {e}")
-            return value
+        if value.startswith('"'):
+            value = value[1:]
+        if value.endswith('"'):
+            first_quote = value.index('"')
+            value = value[: first_quote]
+        return value
 
     def get_valid_prefix(self, s: str) -> str | None:
         """

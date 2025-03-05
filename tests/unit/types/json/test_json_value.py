@@ -66,3 +66,9 @@ def test_parse_valid_json(json_string, expected, parse_json):
 def test_parse_invalid_json(json_string, parse_json):
     with pytest.raises(AssertionError):
         parse_json(json_string)
+
+
+def test_non_zero_state():
+    sm = JsonStateMachine()
+    edges = sm.get_edges(1)
+    assert not edges
