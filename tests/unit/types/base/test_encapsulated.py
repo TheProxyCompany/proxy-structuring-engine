@@ -47,6 +47,7 @@ def test_accepting_valid_sequence(default_delimiters: tuple[str, str]) -> None:
     steppers = encapsulated_acceptor.advance_all_basic(steppers, input_sequence)
 
     assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    assert steppers[0].get_final_state() == [steppers[0]]
 
 
 def test_rejecting_sequence_missing_open_delimiter(

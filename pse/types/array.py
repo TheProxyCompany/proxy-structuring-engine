@@ -78,6 +78,4 @@ class ArrayStepper(Stepper):
         Returns:
             dict[str, Any]: The accumulated key-value pairs representing the JSON object.
         """
-        if not self.get_raw_value():
-            return []
         return self.value

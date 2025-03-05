@@ -36,6 +36,7 @@ def test_basic_wait_for_acceptor() -> None:
     steppers = state_machine.advance_all_basic(steppers, "Hello World")
     assert len(steppers) == 1
     assert steppers[0].has_reached_accept_state()
+    assert not steppers[0].get_invalid_continuations()
 
 
 def test_interrupted_wait_for_acceptor() -> None:
@@ -104,6 +105,8 @@ def test_get_valid_continuations_buffer_too_short():
     # Buffer is empty, should return empty list
     continuations = stepper.get_valid_continuations()
     assert continuations == []
+    invalid_continuations = stepper.get_invalid_continuations()
+    assert invalid_continuations == ["Hello"]
 
 def test_should_start_step_with_remaining_input():
     """Test should_start_step when remaining_input is not None."""

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Self
+from typing import Self
 
 from pse_core import StateId
 from pse_core.state_machine import StateMachine
@@ -80,12 +80,6 @@ class EncapsulatedStepper(Stepper):
             self.inner_stepper = stepper
 
         return super().add_to_history(stepper)
-
-    def get_current_value(self) -> tuple[str, Any]:
-        if self.inner_stepper:
-            return self.inner_stepper.get_current_value()
-
-        return super().get_current_value()
 
     def get_final_state(self) -> list[Stepper]:
         return [self]

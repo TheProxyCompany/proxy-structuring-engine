@@ -19,6 +19,7 @@ def test_fenced_freeform_custom_delimiter():
     steppers = sm.advance_all_basic(steppers, input_sequence)
 
     assert any(stepper.has_reached_accept_state() for stepper in steppers)
+    assert steppers[0].get_identifier() == "json"
 
 
 def test_fenced_freeform_missing_open_delimiter():
@@ -39,6 +40,9 @@ def test_fenced_freeform_missing_close_delimiter():
     steppers = sm.advance_all_basic(steppers, input_sequence)
 
     assert not any(stepper.has_reached_accept_state() for stepper in steppers)
+    for stepper in steppers:
+        if stepper.sub_stepper and not stepper.sub_stepper.is_within_value():
+            assert not stepper.get_invalid_continuations()
 
 
 def test_fenced_freeform_partial_delimiter():

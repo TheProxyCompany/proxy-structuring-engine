@@ -127,10 +127,8 @@ class PhraseStepper(Stepper):
         return valid_length
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, PhraseStepper):
-            return other.__eq__(self)
-
         return (
-            super().__eq__(other)
+            isinstance(other, PhraseStepper)
+            and super().__eq__(other)
             and self.state_machine.phrase == other.state_machine.phrase
         )
