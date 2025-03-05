@@ -127,6 +127,7 @@ def test_complex_structure_partial_advancement():
             },
         },
         "required": ["type", "label"],
+        "orderedProperties": False,
         "additionalProperties": False,
     }
     state_machine = ObjectSchemaStateMachine(schema, {})

@@ -146,6 +146,9 @@ class WaitForStepper(Stepper):
         if invalid_prefix and (
             not self.is_within_value() or not self.state_machine.strict
         ):
+            if not self.is_within_value() and self.state_machine.min_buffer_length == -1:
+                return []
+
             clone = self.clone()
             clone.buffer += invalid_prefix
             if valid_suffix:

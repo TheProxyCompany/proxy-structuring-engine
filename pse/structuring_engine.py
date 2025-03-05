@@ -29,6 +29,7 @@ class StructuringEngine(Engine):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizerFast | PreTrainedTokenizerBase,
+        whitelist_control_tokens: list[str] | None = None,
         multi_token_sampling: bool = False,
         max_resample_attempts: int = 5,
     ) -> None:
@@ -36,12 +37,24 @@ class StructuringEngine(Engine):
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
         self.tokenizer = tokenizer
+        control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
+        # do not mask control tokens that might be used as part of the schema
+        for whitelisted_token in whitelist_control_tokens or []:
+            if (
+                whitelisted_token
+                not in self.tokenizer.all_special_tokens
+                and whitelisted_token in control_tokens
+            ):
+                # only prevent masking if the token is not a special token
+                # because special tokens like eos need to be masked by default
+                del control_tokens[whitelisted_token]
+
         super().__init__(
             tokenizer.get_vocab(),
             lambda x: tokenizer.encode(x, add_special_tokens=False),
             lambda x: tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
-            control_tokens=list(self.tokenizer.get_added_vocab().values()),  # type: ignore [reportCallIssue]
+            control_tokens=list(control_tokens.values()),
             max_resamples=max_resample_attempts,
         )
 
