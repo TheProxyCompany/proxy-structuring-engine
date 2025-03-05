@@ -222,3 +222,107 @@ def test_min_scratchpad_length():
 
     steppers = sm.advance_all_basic(steppers, '<tool>"')
     assert all(stepper.is_within_value() for stepper in steppers)
+
+
+def test_get_token_safe_output():
+    """Test the get_token_safe_output method."""
+    sm = EncapsulatedStateMachine(
+        PhraseStateMachine("content"),
+        delimiters=("```", "```"),
+    )
+    
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "```content```")
+    
+    assert len(steppers) == 1
+    stepper = steppers[0]
+    assert stepper.has_reached_accept_state()
+    
+    # Mock a decode_function
+    def decode_function(token_ids):
+        return "```content```"
+    
+    # Test complete delimiters
+    result = stepper.get_token_safe_output(decode_function)
+    assert result == "content"
+    
+    # Test with partial delimiters
+    def decode_function_partial(token_ids):
+        return "``content``"  # Missing one backtick on each end
+    
+    result = stepper.get_token_safe_output(decode_function_partial)
+    assert result == "content"
+
+
+def test_encapsulated_stepper_clone():
+    """Test cloning the EncapsulatedStepper with inner_stepper."""
+    inner_sm = PhraseStateMachine("content")
+    sm = EncapsulatedStateMachine(
+        inner_sm,
+        delimiters=("```", "```"),
+    )
+    
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "```")
+    steppers = sm.advance_all_basic(steppers, "con")
+    
+    assert len(steppers) == 1
+    stepper = steppers[0]
+    
+    # Set an inner stepper
+    inner_stepper = inner_sm.get_steppers()[0]
+    stepper.inner_stepper = inner_stepper
+    
+    # Clone the stepper
+    clone = stepper.clone()
+    
+    # Check that the inner stepper was cloned
+    assert clone.inner_stepper is not None
+    assert clone.inner_stepper is not stepper.inner_stepper
+
+
+def test_default_delimiters():
+    """Test that default delimiters are used when None is provided."""
+    sm = EncapsulatedStateMachine(
+        PhraseStateMachine("content"),
+        delimiters=None,
+    )
+    
+    # Default delimiters should be ("```", "```")
+    assert sm.delimiters == ("```", "```")
+    
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "```content```")
+    
+    assert len(steppers) == 1
+    assert steppers[0].has_reached_accept_state()
+
+
+def test_is_within_value_with_sub_stepper():
+    """Test is_within_value when in state 0 with sub_stepper."""
+    sm = EncapsulatedStateMachine(
+        PhraseStateMachine("content"),
+        delimiters=("```", "```"),
+        buffer_length=10,
+    )
+    
+    # Add some text to the buffer
+    steppers = sm.get_steppers()
+    buffer_text = "some buffer text"
+    steppers = sm.advance_all_basic(steppers, buffer_text)
+    
+    assert len(steppers) == 1
+    stepper = steppers[0]
+    
+    # When in state 0 with a sub_stepper that is_within_value, the stepper should be within value
+    assert stepper.current_state == 0
+    assert stepper.sub_stepper is not None
+    
+    # Force the sub_stepper to be_within_value (normally done by WaitFor)
+    original_is_within_value = stepper.sub_stepper.is_within_value
+    stepper.sub_stepper.is_within_value = lambda: True
+    
+    assert stepper.is_within_value()
+    
+    # Restore original method
+    stepper.sub_stepper.is_within_value = original_is_within_value

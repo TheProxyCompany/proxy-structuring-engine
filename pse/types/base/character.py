@@ -168,7 +168,7 @@ class CharacterStepper(Stepper):
 
         # Split input at first invalid character
         valid_prefix = ""
-        for char in token:
+        for char in (token):
             if char in self.state_machine.blacklist_charset or (
                 self.state_machine.charset and char not in self.state_machine.charset
             ):
@@ -187,9 +187,6 @@ class CharacterStepper(Stepper):
                 break
 
             valid_prefix += char
-
-        if not valid_prefix:
-            return []
 
         new_value = self.get_raw_value() + valid_prefix
         remaining_input = token[len(valid_prefix) :] or None

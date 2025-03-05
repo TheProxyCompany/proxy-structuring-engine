@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pse"
-version = "3.2.0"
+version = "3.2.1"
 authors = [
     { name = "Jack Wind", email = "jckwind11@gmail.com" },
     { name = "The Proxy Company", email = "contact@theproxy.company" }
@@ -36,6 +36,7 @@ dev = [
     "ruff",
     "sentencepiece",
     "ipykernel",
+    "pytest-cov",
 ]
 mlx = [
     "mlx",
@@ -95,3 +96,4 @@ log_cli = false
 log_cli_level = "WARNING"
 log_cli_format = "in %(filename)s:%(lineno)d [%(levelname)s] %(message)s"
 log_cli_date_format = "%H:%M:%S"
+addopts = "--cov=pse --cov-report term-missing"
