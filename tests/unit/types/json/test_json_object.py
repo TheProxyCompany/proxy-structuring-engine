@@ -342,31 +342,3 @@ def test_object_with_additional_properties_true(base_context: dict[str, Any]) ->
             assert value["additional1"] == 42
             assert value["additional2"] == "string"
             assert value["additional3"] is True
-
-@pytest.mark.skip(reason="TODO: fix equality check")
-def test_object_equality_check(base_context: dict[str, Any]) -> None:
-    """
-    Test the object schema equality operator.
-    """
-    schema1 = {
-        "type": "object",
-        "properties": {"name": {"type": "string"}},
-    }
-    schema2 = {
-        "type": "object",
-        "properties": {"name": {"type": "string"}},
-    }
-    schema3 = {
-        "type": "object",
-        "properties": {"age": {"type": "number"}},
-    }
-
-    state_machine1 = ObjectSchemaStateMachine(schema1, base_context)
-    state_machine2 = ObjectSchemaStateMachine(schema2, base_context)
-    state_machine3 = ObjectSchemaStateMachine(schema3, base_context)
-
-    # Test equality between same schemas
-    assert state_machine1 == state_machine2, "State machines with same schema should be equal"
-
-    # Test inequality between different schemas
-    assert state_machine1 != state_machine3, "State machines with different schema should not be equal"

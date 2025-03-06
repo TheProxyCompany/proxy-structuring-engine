@@ -66,8 +66,6 @@ class StructuringEngine(Engine):
         """
         Process the logits and return the processed logits.
         """
-        if not self.state_machine:
-            return raw_logits
         tic = time.perf_counter()
         self.multi_token_mapping: dict[int, list[int]] = {}
         # move logits to cpu if they aren't already on cpu
@@ -75,6 +73,7 @@ class StructuringEngine(Engine):
         if hasattr(raw_logits, "device") and raw_logits.device.type != "cpu":
             original_device = raw_logits.device.type
             raw_logits = raw_logits.cpu()
+
         # process logits
         self.print_top_logits(raw_logits, 5, "Before 🟡")
         adjusted_logits = self.mask_invalid_tokens(raw_logits)
@@ -103,9 +102,6 @@ class StructuringEngine(Engine):
         Note:
             Parent class expects single-batch input of shape (1, sequence_length)
         """
-        if not self.state_machine:
-            return sampler(logprobs)
-
         tic = time.perf_counter()
         # move logits to cpu if they aren't already on cpu
         original_device = None
