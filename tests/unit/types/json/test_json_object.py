@@ -35,6 +35,44 @@ def test_initialization_valid_schema(base_context: dict[str, Any]) -> None:
     )
 
 
+def test_nullable_required_property(base_context: dict[str, Any]) -> None:
+    """
+    Test that a required property with nullable=True is not actually required.
+    This tests the special handling in __init__ where properties with nullable=True are removed from required list.
+    """
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "nullable": True},
+            "age": {"type": "number"},
+        },
+        "required": ["name"],
+    }
+    state_machine = ObjectSchemaStateMachine(schema, base_context)
+    assert "name" not in state_machine.required_property_names, (
+        "Nullable required property should be removed from required_property_names"
+    )
+
+
+def test_property_with_default_not_required(base_context: dict[str, Any]) -> None:
+    """
+    Test that a required property with a default value is not actually required.
+    This tests the special handling in __init__ where properties with defaults are removed from required list.
+    """
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "default": "default name"},
+            "age": {"type": "number"},
+        },
+        "required": ["name"],
+    }
+    state_machine = ObjectSchemaStateMachine(schema, base_context)
+    assert "name" not in state_machine.required_property_names, (
+        "Required property with default should be removed from required_property_names"
+    )
+
+
 def test_initialization_missing_required_property_in_properties(
     base_context: dict[str, Any],
 ) -> None:
@@ -234,3 +272,73 @@ def test_object_schema_acceptor_edge_case_2(value: str, followup_value: str) -> 
     steppers = state_machine.advance_all_basic(steppers, '"}}')
     assert len(steppers) == 1
     assert steppers[0].has_reached_accept_state()
+
+
+def test_object_with_additional_properties_dict(base_context: dict[str, Any]) -> None:
+    """
+    Test object schema with additionalProperties as a schema dictionary.
+    Tests the branch in get_property_state_machines where additionalProperties is a dict.
+    """
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+        },
+        "additionalProperties": {"type": "number"},
+        "required": ["name"],
+    }
+    state_machine = ObjectSchemaStateMachine(schema, base_context)
+
+    # Parse valid JSON with additional properties
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, '{"name": "test"')
+    json_input = ', "additional1": 42, "additional2": 123}'
+
+    for char in json_input:
+        steppers = state_machine.advance_all_basic(steppers, char)
+
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Object with additional properties that match schema should be accepted"
+    )
+
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert value["name"] == "test"
+            assert value["additional1"] == 42
+            assert value["additional2"] == 123
+
+
+def test_object_with_additional_properties_true(base_context: dict[str, Any]) -> None:
+    """
+    Test object schema with additionalProperties as boolean true.
+    Tests the branch in get_property_state_machines where additionalProperties is True.
+    """
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+        },
+        "additionalProperties": True,  # Allow any additional properties
+        "required": ["name"],
+    }
+    state_machine = ObjectSchemaStateMachine(schema, base_context)
+
+    # Parse valid JSON with additional properties of various types
+    steppers = state_machine.get_steppers()
+    json_input = '{"name": "test", "additional1": 42, "additional2": "string", "additional3": true}'
+
+    for char in json_input:
+        steppers = state_machine.advance_all_basic(steppers, char)
+
+    assert any(stepper.has_reached_accept_state() for stepper in steppers), (
+        "Object with additional properties should be accepted when additionalProperties is true"
+    )
+
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            value = stepper.get_current_value()
+            assert value["name"] == "test"
+            assert value["additional1"] == 42
+            assert value["additional2"] == "string"
+            assert value["additional3"] is True

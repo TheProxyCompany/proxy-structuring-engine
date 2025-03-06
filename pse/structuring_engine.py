@@ -37,24 +37,13 @@ class StructuringEngine(Engine):
         Initialize the StructuringEngine with a tokenizer and vocabulary.
         """
         self.tokenizer = tokenizer
-        control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
-        # do not mask control tokens that might be used as part of the schema
-        for whitelisted_token in whitelist_control_tokens or []:
-            if (
-                whitelisted_token
-                not in self.tokenizer.all_special_tokens
-                and whitelisted_token in control_tokens
-            ):
-                # only prevent masking if the token is not a special token
-                # because special tokens like eos need to be masked by default
-                del control_tokens[whitelisted_token]
-
+        self.control_tokens = self.build_control_tokens(whitelist_control_tokens)
         super().__init__(
             tokenizer.get_vocab(),
             lambda x: tokenizer.encode(x, add_special_tokens=False),
             lambda x: tokenizer.decode(x),
             multi_token_sampling=multi_token_sampling,
-            control_tokens=list(control_tokens.values()),
+            control_tokens=self.control_tokens,
             max_resamples=max_resample_attempts,
         )
 
@@ -77,8 +66,6 @@ class StructuringEngine(Engine):
         """
         Process the logits and return the processed logits.
         """
-        if not self.state_machine:
-            return raw_logits
         tic = time.perf_counter()
         self.multi_token_mapping: dict[int, list[int]] = {}
         # move logits to cpu if they aren't already on cpu
@@ -86,6 +73,7 @@ class StructuringEngine(Engine):
         if hasattr(raw_logits, "device") and raw_logits.device.type != "cpu":
             original_device = raw_logits.device.type
             raw_logits = raw_logits.cpu()
+
         # process logits
         self.print_top_logits(raw_logits, 5, "Before 🟡")
         adjusted_logits = self.mask_invalid_tokens(raw_logits)
@@ -114,9 +102,6 @@ class StructuringEngine(Engine):
         Note:
             Parent class expects single-batch input of shape (1, sequence_length)
         """
-        if not self.state_machine:
-            return sampler(logprobs)
-
         tic = time.perf_counter()
         # move logits to cpu if they aren't already on cpu
         original_device = None
@@ -226,6 +211,21 @@ class StructuringEngine(Engine):
                 raise
 
         return output
+
+    def build_control_tokens(self, whitelist_control_tokens: list[str] | None = None) -> list[int]:
+        control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
+        # do not mask control tokens that might be used as part of the schema
+        for whitelisted_token in whitelist_control_tokens or []:
+            if (
+                whitelisted_token
+                not in self.tokenizer.all_special_tokens
+                and whitelisted_token in control_tokens
+            ):
+                # only prevent masking if the token is not a special token
+                # because special tokens like eos need to be masked by default
+                del control_tokens[whitelisted_token]
+
+        return list(control_tokens.values())
 
     def get_live_structured_output(self) -> tuple[str, str] | None:
         """

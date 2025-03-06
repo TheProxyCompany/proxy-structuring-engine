@@ -45,7 +45,7 @@ class LarkGrammarStepper(CharacterStepper):
         self.state_machine: LarkGrammarStateMachine = state_machine
 
     def get_identifier(self) -> str | None:
-        return self.state_machine.grammar.name
+        return self.state_machine.grammar.name.lower()
 
     def should_start_step(self, token: str) -> bool:
         """
@@ -58,9 +58,6 @@ class LarkGrammarStepper(CharacterStepper):
         """
         Has the stepper reached the accept state?
         """
-        if not super().has_reached_accept_state():
-            return False
-
         valid_input = self.get_raw_value()
         return self.state_machine.grammar.validate(valid_input, strict=True)
 
@@ -76,9 +73,7 @@ class LarkGrammarStepper(CharacterStepper):
             Returns empty list if no valid transitions are possible.
         """
         valid_input, remaining_input = self.get_valid_prefix(token)
-        if not valid_input:
-            return []
-
+        assert valid_input is not None
         return [
             self.step(
                 self.get_raw_value() + valid_input,

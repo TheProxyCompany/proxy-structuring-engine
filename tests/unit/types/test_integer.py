@@ -189,8 +189,15 @@ def test_integer_acceptor_char_by_char_in_state_machine():
             )
 
 
-def test_integer_acceptor_zero():
-    """Test IntegerAcceptor with zero."""
+@pytest.mark.parametrize(
+    "input_string, expected_value",
+    [
+        ("0", 0),
+        ("12345678901234567890", 1.2345678901234567e19),
+    ],
+)
+def test_integer_acceptor_zero_and_large_number(input_string, expected_value):
+    """Test IntegerAcceptor with zero and large numbers."""
     integer_acceptor = IntegerStateMachine()
     sm = StateMachine(
         state_graph={0: [(integer_acceptor, 1)]},
@@ -198,43 +205,19 @@ def test_integer_acceptor_zero():
         end_states=[1],
     )
 
-    input_string = "0"
-
     steppers = sm.get_steppers()
     advanced_steppers = sm.advance_all_basic(steppers, input_string)
 
-    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
-        "Zero should be accepted."
-    )
+    assert any(
+        stepper.has_reached_accept_state() for stepper in advanced_steppers
+    ), f"Input '{input_string}' should be accepted."
+
     for stepper in advanced_steppers:
         if stepper.has_reached_accept_state():
             value = stepper.get_current_value()
-            assert value == 0, f"Expected 0, got {value}"
-
-
-def test_integer_acceptor_large_number():
-    """Test IntegerAcceptor with a large number."""
-    integer_acceptor = IntegerStateMachine()
-    sm = StateMachine(
-        state_graph={0: [(integer_acceptor, 1)]},
-        start_state=0,
-        end_states=[1],
-    )
-
-    input_string = "12345678901234567890"
-
-    steppers = sm.get_steppers()
-    advanced_steppers = sm.advance_all_basic(steppers, input_string)
-
-    assert any(stepper.has_reached_accept_state() for stepper in advanced_steppers), (
-        "Large numbers should be accepted."
-    )
-    for stepper in advanced_steppers:
-        if stepper.has_reached_accept_state():
-            value = stepper.get_current_value()
-            assert int(value) == 1.2345678901234567e19, (
-                f"Expected 12345678901234567890, got {value}"
-            )
+            assert (
+                int(value) == expected_value
+            ), f"Expected {expected_value}, got {value}"
 
 
 @pytest.mark.parametrize(
@@ -266,3 +249,28 @@ def test_integer_acceptor_leading_zeros(input_string, expected_value):
         if stepper.has_reached_accept_state():
             value = stepper.get_current_value()
             assert value == expected_value, f"Expected {expected_value}, got {value}"
+
+
+@pytest.mark.parametrize(
+    "drop_leading_zeros, input_string, expected_value",
+    [
+        (False, "0042", "0042"),
+        (True, "0042", 42),
+        (True, "0", 0),
+        (False, "0", "0"),
+        (True, "000123", 123),
+        (False, "000123", "000123"),
+    ],
+)
+def test_integer_acceptor_drop_leading_zeros(
+    drop_leading_zeros: bool, input_string: str, expected_value: int | str
+):
+    """Test IntegerAcceptor with drop_leading_zeros set to False."""
+    integer_sm = IntegerStateMachine(drop_leading_zeros=drop_leading_zeros)
+    stepper = integer_sm.get_new_stepper(0)
+    stepper._raw_value = input_string  # noqa: SLF001
+
+    value = stepper.get_current_value()
+    assert value == expected_value, (
+        f"Expected raw string '{expected_value}', got '{value}'"
+    )

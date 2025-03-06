@@ -114,7 +114,7 @@ class CursorPositionModel(BaseModel):
 
 
 json_schema: dict = model.engine.configure(
-    CursorPositionModel, json_delimiters=("<cursor>", "</cursor>")
+    CursorPositionModel, delimiters=("<cursor>", "</cursor>")
 )
 prompt = (
     "Please use the following schema to generate a cursor position:\n"

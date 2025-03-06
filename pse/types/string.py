@@ -82,7 +82,7 @@ class StringStepper(Stepper):
         self.state_machine: StringStateMachine = state_machine
 
     def is_within_value(self) -> bool:
-        return (
-            self.current_state != 0
-            and self.target_state not in self.state_machine.end_states
-        )
+        """
+        Determines if the stepper is currently within the string value (after opening quote, before closing quote).
+        """
+        return self.current_state != 0 and self.target_state not in self.state_machine.end_states

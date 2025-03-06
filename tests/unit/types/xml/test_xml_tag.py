@@ -85,3 +85,33 @@ def test_whitespace_handling() -> None:
     steppers = tag_machine.get_steppers()
     steppers = tag_machine.advance_all_basic(steppers, "< div>")
     assert not any(s.has_reached_accept_state() for s in steppers)
+
+
+def test_get_valid_continuations() -> None:
+    """Test the get_valid_continuations method."""
+    tag_machine = XMLTagStateMachine("div")
+    stepper = tag_machine.get_new_stepper()
+    # It's a chain, so it should check the ultimate result.
+    assert stepper.get_valid_continuations() == ["<div>"]
+
+    tag_machine = XMLTagStateMachine("span", closing_tag=True)
+    stepper = tag_machine.get_new_stepper()
+    assert stepper.get_valid_continuations() == ["</span>"]
+
+    # Check that it works even if we advance the stepper.
+    tag_machine = XMLTagStateMachine("div")
+    steppers = tag_machine.get_steppers()
+    steppers = tag_machine.advance_all_basic(steppers, "<")
+    assert len(steppers) == 1
+    assert steppers[0].get_valid_continuations() == ["<div>"]
+    # And again.
+    steppers = tag_machine.advance_all_basic(steppers, "d")
+    assert len(steppers) == 1
+    assert steppers[0].get_valid_continuations() == ["<div>"]
+
+    # Finally check it returns nothing if we've gone too far.
+    steppers = tag_machine.advance_all_basic(steppers, "i")
+    steppers = tag_machine.advance_all_basic(steppers, "v")
+    steppers = tag_machine.advance_all_basic(steppers, ">")
+    assert len(steppers) == 1
+    assert steppers[0].get_valid_continuations() == ["<div>"]

@@ -197,3 +197,41 @@ def test_array_schema_multiple_str(base_context):
     assert steppers[0].has_reached_accept_state()
     assert isinstance(steppers[0].get_current_value(), list)
     assert len(steppers[0].get_current_value()) == 3
+
+
+def test_unique_items(base_context):
+    """
+    Test that unique_items returns the correct value based on the schema.
+    """
+    schema = {"type": "array", "items": {"type": "number"}, "uniqueItems": True}
+    state_machine = ArraySchemaStateMachine(schema, base_context)
+    assert state_machine.unique_items() is True, "unique_items should return True."
+
+    schema = {"type": "array", "items": {"type": "number"}}
+    state_machine = ArraySchemaStateMachine(schema, base_context)
+    assert state_machine.unique_items() is False, "unique_items should return False by default."
+
+
+def test_array_schema_uniqueItems_constraint(base_context):
+    """
+    Test that the uniqueItems constraint prevents duplicate values in the array.
+    This tests the specific add_to_history override in ArraySchemaStepper.
+    """
+    schema = {
+        "type": "array",
+        "items": {"type": "number"},
+        "uniqueItems": True
+    }
+    state_machine = ArraySchemaStateMachine(schema, base_context)
+    
+    # Test parsing array with duplicate values
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, "[1, 2, 1]")
+    
+    # Should have valid steppers but the value should only contain unique items
+    assert len(steppers) > 0
+    for stepper in steppers:
+        if stepper.has_reached_accept_state():
+            array_value = stepper.get_current_value()
+            assert len(array_value) == 2, "Array should only contain unique values"
+            assert array_value == [1, 2], "Array should maintain order and uniqueness"

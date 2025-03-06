@@ -15,3 +15,4 @@ uv.lock
 .venv
 .pytest_cache
 CLAUDE.md
+.coverage.*

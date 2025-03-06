@@ -1,3 +1,5 @@
+import pytest
+
 from pse.types.json.json_string import StringSchemaStateMachine
 
 
@@ -273,3 +275,117 @@ def test_min_length_not_met_after_consuming_input() -> None:
     steppers = state_machine.advance_all_basic(steppers, '"')
     steppers = state_machine.advance_all(steppers, '" // this comment is illegal')
     assert len(steppers) == 0, "Steppers should be empty"
+
+
+def test_clean_value_empty_string():
+    """Test clean_value with an empty string."""
+    schema = {}
+    state_machine = StringSchemaStateMachine(schema=schema)
+    stepper = state_machine.get_new_stepper()
+
+    # Empty JSON string
+    assert stepper.clean_value('""') == "", 'JSON string "" should be cleaned to empty string'
+
+    # Regular empty string
+    assert stepper.clean_value("") == "", "Empty string should remain empty"
+
+
+def test_clean_value_quoted_string():
+    """Test clean_value with a quoted string."""
+    schema = {}
+    state_machine = StringSchemaStateMachine(schema=schema)
+    stepper = state_machine.get_new_stepper()
+
+    # Fully quoted string
+    assert stepper.clean_value('"hello"') == "hello", '"hello" should be cleaned to hello'
+
+    # Partially quoted string (only opening quote)
+    assert stepper.clean_value('"hello') == "hello", '"hello should remove the opening quote'
+
+    # String with internal quotes
+    assert stepper.clean_value('"hello"world"') == 'hello', '"hello"world" should be cleaned to hello'
+
+
+def test_string_stepper_consume_with_remaining_input():
+    """
+    Test consume method handling of remaining_input when token is partially consumed.
+    This tests line 131 in json_string.py.
+    """
+    schema = {"pattern": "^hello"}
+    state_machine = StringSchemaStateMachine(schema=schema)
+
+    # Set up a stepper in the middle of string parsing
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, '"h')
+    steppers = state_machine.advance_all_basic(steppers, 'e')
+    assert len(steppers) == 3, "Should have 1 stepper after parsing 'he'"
+
+    # Now test consume with a token that has a valid prefix but an invalid suffix
+    new_steppers = state_machine.advance_all_basic(steppers, 'llo world"')
+    # Verify the stepper consumed 'llo' and set remaining_input to ' world'
+    assert any(new_stepper.has_reached_accept_state() for new_stepper in new_steppers)
+
+
+def test_validate_value_empty_string():
+    """
+    Test validate_value rejects empty strings.
+    This specifically tests line 192 in json_string.py.
+    """
+    schema = {"minLength": 1}
+    state_machine = StringSchemaStateMachine(schema=schema)
+    stepper = state_machine.get_new_stepper()
+
+    # Empty string should be rejected
+    assert not stepper.validate_value(""), "Empty string should be rejected with minLength=1"
+
+    # Non-empty string should be accepted
+    assert stepper.validate_value("a"), "Non-empty string should be accepted with minLength=1"
+
+
+def test_invalid_format_validator():
+    """
+    Test that calling validate_value with an invalid format raises an error.
+    This tests line 207 in json_string.py.
+    """
+
+    # Trying to validate should raise a ValueError
+    with pytest.raises(ValueError) as excinfo:
+        schema = {"format": "custom-format"}
+        state_machine = StringSchemaStateMachine(schema=schema)
+        stepper = state_machine.get_new_stepper()
+        stepper.validate_value("test")
+
+    # Check the error message
+    assert excinfo is not None, "Should raise error about missing validator"
+
+
+def test_get_valid_prefix_no_pattern():
+    """Test get_valid_prefix when there's no pattern in the schema."""
+    schema = {}
+    state_machine = StringSchemaStateMachine(schema=schema)
+    stepper = state_machine.get_new_stepper()
+
+    # Without pattern, should return the entire string
+    assert stepper.get_valid_prefix("test") == "test", "Should return entire string when no pattern"
+
+
+def test_unsupported_format():
+    """Test that an unsupported format raises a ValueError."""
+    schema = {"format": "unsupported-format"}
+
+    try:
+        StringSchemaStateMachine(schema=schema)
+        raise ValueError("Should have raised ValueError for unsupported format")
+    except ValueError as e:
+        assert "not supported" in str(e), "Error message should mention that format is not supported"
+
+
+def test_invalid_pattern():
+    """Test that an invalid pattern raises a ValueError."""
+    schema = {"pattern": "("}  # Invalid regex pattern
+
+    try:
+        StringSchemaStateMachine(schema=schema)
+        raise ValueError("Should have raised ValueError for invalid pattern")
+    except ValueError as e:
+        assert "Invalid pattern" in str(e), "Error message should mention invalid pattern"

@@ -93,3 +93,45 @@ def test_nested_loop():
     steppers = sm.advance_all_basic(steppers, "b")
     assert all(stepper.has_reached_accept_state() for stepper in steppers)
     assert all(stepper.get_current_value() == "aab" for stepper in steppers)
+
+
+def test_loop_max_count():
+    """
+    Test the loop max_count logic directly.
+
+    This test focuses on the should_start_step method to test the part
+    that checks if loop_count >= max_loop_count. We'll create a stepper
+    and manually set its loop_count.
+    """
+    inner_sm = PhraseStateMachine("a")
+    loop_sm = LoopStateMachine(inner_sm, min_loop_count=1, max_loop_count=3)
+
+    # Create stepper directly
+    steppers = loop_sm.get_steppers()
+    stepper = steppers[0]
+    assert isinstance(stepper, LoopStepper)
+
+    # Initial state, loop_count = 0
+    assert stepper.should_start_step("a")
+
+    # Set loop_count to max_loop_count
+    stepper.loop_count = 3
+
+    # Now should_start_step should be False due to max_loop_count check
+    assert not stepper.should_start_step("a")
+
+def test_get_final_state():
+    """Test get_final_state in LoopStepper."""
+    # Set up a mock Stepper
+    inner_sm = PhraseStateMachine("a")
+    loop_sm = LoopStateMachine(inner_sm, min_loop_count=1)
+    stepper = loop_sm.get_new_stepper()
+
+    # Set internal loop stepper state for testing
+    sub_stepper = inner_sm.get_new_stepper()
+    stepper.sub_stepper = sub_stepper
+    stepper.history = [sub_stepper]
+
+    # Test with no whitespace separators
+    final_states = stepper.get_final_state()
+    assert final_states == stepper.history

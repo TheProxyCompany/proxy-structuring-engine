@@ -160,3 +160,7 @@ def test_bash_specific_incomplete_constructs(code):
     # Incomplete constructs should not be in an accept state
     assert not any(stepper.has_reached_accept_state() for stepper in steppers)
     assert all(stepper.can_accept_more_input() for stepper in steppers)
+
+def test_bash_code_validate_no_code():
+    """Test that validate returns False for empty code."""
+    assert not BashStateMachine.grammar.validate("")

@@ -54,11 +54,13 @@ def callable_to_schema(function: Callable) -> dict[str, Any]:
         if param.default is inspect.Parameter.empty and param_schema.get("nullable", False) is False:
             schema["parameters"]["required"].append(param.name)
 
-        if not schema["parameters"]["required"]:
-            del schema["parameters"]["required"]
-            schema["parameters"]["nullable"] = True
-
         param_index += 1
+
+    # Handle the case when all parameters are nullable with defaults
+    if not schema["parameters"]["required"]:
+        del schema["parameters"]["required"]
+        schema["parameters"]["nullable"] = True
+
     return schema
 
 
@@ -92,35 +94,69 @@ def parameter_to_schema(
     #######
     parameter_type_schemas = []
     parameter_arguments = get_args(param.annotation)
-    for index, argument in enumerate(parameter_arguments or [param.annotation]):
-        parameter_type_schema = {}
+
+    # Special handling for direct dict type
+    origin = get_origin(param.annotation)
+    if origin is dict:
+        dict_schema = {
+            "type": "object",
+            "additionalProperties": {"type": "any"}
+        }
+        args = get_args(param.annotation)
+        if len(args) > 1:
+            value_type = args[1]
+            dict_schema["additionalProperties"] = {
+                "type": get_type(value_type)
+            }
+        # Preserve the description if it exists
+        if param_docstring:
+            dict_schema["description"] = param_docstring.description or ""
+        return dict_schema
+
+    # Process union types and other types.
+    parameter_type_schemas: list[dict[str, Any]] = []
+    for argument in parameter_arguments or [param.annotation]:
+        parameter_type_schema: dict[str, Any] = {}
+        arg_origin = get_origin(argument)
         parameter_type = get_type(argument)
-        match parameter_type:
-            case "null":
-                parameter_schema["nullable"] = True
-            case "array" | "set":
-                if index > 0:
-                    break
-                parameter_type_schema["type"] = parameter_type
-                item_type = get_args(argument)[0]
-                parameter_type_schema["items"] = {"type": get_type(item_type)}
-            case "enum":
-                assert issubclass(argument, enum.Enum)
-                parameter_type_schema["enum"] = [
-                    enum_member.value for enum_member in argument
-                ]
-            case "dict":
-                if index != 1:
-                    continue
-                parameter_type_schema["type"] = "object"
+
+        if arg_origin is dict:
+            parameter_type_schema["type"] = "object"
+            args = get_args(argument)
+            #  Consider using get, or a guard clause.
+            if len(args) > 1:
                 parameter_type_schema["additionalProperties"] = {
-                    "type": get_type(parameter_arguments[1])
+                    "type": get_type(args[1])
                 }
-            case _:
-                parameter_type_schema["type"] = parameter_type
+        elif parameter_type == "null":
+            parameter_schema["nullable"] = True
+            continue  # Skip adding to type_schemas.
+        elif parameter_type in ("array", "set"):
+            parameter_type_schema["type"] = parameter_type
+            if args := get_args(argument):
+                parameter_type_schema["items"] = {"type": get_type(args[0])}
+        elif parameter_type == "enum" and issubclass(argument, enum.Enum):
+            parameter_type_schema["enum"] = [
+                member.value for member in argument
+            ]  # More concisely.
+        elif parameter_type:
+            parameter_type_schema["type"] = parameter_type
 
         if parameter_type_schema:
             parameter_type_schemas.append(parameter_type_schema)
+
+    # Simplify the logic for setting the final schema type, handling edge cases.
+    match len(parameter_type_schemas):
+        case 0:
+            # If no types were added and it wasn't nullable, default to "any".
+            if "nullable" not in parameter_schema:
+                parameter_schema["type"] = "any"
+        case 1:
+            # Merge the single schema into the main schema.
+            parameter_schema.update(parameter_type_schemas[0])
+        case _:  # > 1
+            # Use anyOf for multiple possible types.
+            parameter_schema["anyOf"] = parameter_type_schemas
 
     if len(parameter_type_schemas) > 1:
         parameter_schema["type"] = parameter_type_schemas

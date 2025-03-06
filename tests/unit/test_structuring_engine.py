@@ -3,6 +3,7 @@ import sys
 from typing import Any
 
 import pytest
+from pydantic import BaseModel
 from transformers import LlamaTokenizer
 
 from pse.types.base.encapsulated import EncapsulatedStateMachine
@@ -245,3 +246,106 @@ def test_python_interpreter(engine: StructuringEngine) -> None:
     assert engine.has_reached_accept_state
     output = engine.get_structured_output()
     assert output == "print('Hello, world!')"
+
+def test_get_structured_output_with_type(engine: StructuringEngine) -> None:
+    """Test get_structured_output with a type parameter."""
+    class SimpleModel(BaseModel):
+        value: int
+
+    engine.configure({"type": "object", "properties": {"value": {"type": "integer"}}, "required": ["value"]})
+    engine.consume_text('{"value": 42}')
+    assert engine.has_reached_accept_state
+
+    # Test with type casting
+    output = engine.get_structured_output(output_type=SimpleModel)
+    assert isinstance(output, SimpleModel)
+    assert output.value == 42
+
+    # Reset for next test
+    engine.reset(hard_reset=True)
+
+def test_get_structured_output_invalid_json(engine: StructuringEngine) -> None:
+    """Test get_structured_output with invalid JSON content."""
+    engine.configure({"type": "string"})
+    engine.consume_text('"not valid json"')
+    assert engine.has_reached_accept_state
+
+    # Test with attempted casting to dict
+    output = engine.get_structured_output(output_type=dict)
+    # Should return original string since it's not valid JSON
+    assert output == "not valid json"
+
+    # Reset for next test
+    engine.reset(hard_reset=True)
+
+def test_get_stateful_structured_output(engine: StructuringEngine) -> None:
+    """Test get_stateful_structured_output method."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "age": {"type": "integer"}
+        },
+        "required": ["name", "age"]
+    }
+
+    engine.configure(schema)
+    engine.consume_text('{"name": "John", "age": 30}')
+    assert engine.has_reached_accept_state
+
+    # Get stateful output
+    stateful_output = list(engine.get_stateful_structured_output())
+    assert len(stateful_output) > 0
+
+    # Check that we have state identifiers and values
+    for state, value in stateful_output:
+        assert isinstance(state, str)
+        assert value is not None
+
+    # Reset for next test
+    engine.reset(hard_reset=True)
+
+def test_get_live_structured_output(engine: StructuringEngine) -> None:
+    """Test get_live_structured_output method."""
+    schema = {"type": "string"}
+    engine.configure(schema)
+
+    # Consume partial input
+    engine.consume_text('"test')
+
+    # Complete the input
+    engine.consume_text('"')
+    assert engine.has_reached_accept_state
+
+    # Reset for next test
+    engine.reset(hard_reset=True)
+
+def test_configure_with_direct_state_machine(engine: StructuringEngine) -> None:
+    """Test configure with a direct StateMachine instance."""
+    from pse_core.state_machine import StateMachine
+
+    from pse.types.base.phrase import PhraseStateMachine
+
+    # Create a simple state machine directly
+    state_machine = StateMachine(
+        {
+            0: [(PhraseStateMachine("hello"), 1)],
+            1: [(PhraseStateMachine(" world"), 2)]
+        },
+        start_state=0,
+        end_states=[2]
+    )
+
+    # Configure with state machine directly
+    engine.configure(state_machine)
+
+    # Check that configuration worked
+    assert engine.state_machine is state_machine
+    assert engine.steppers is not None
+
+    # Test that the state machine works
+    engine.consume_text("hello world")
+    assert engine.has_reached_accept_state
+
+    # Reset for next test
+    engine.reset(hard_reset=True)

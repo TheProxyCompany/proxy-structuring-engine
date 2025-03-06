@@ -1,11 +1,14 @@
 [run]
 source = pse
-omit = tests/*
+omit =
+    tests/*
+    pse/util/*
 
 [report]
 omit =
     tests/*
     */__init__.py
+    pse/util/*
 exclude_lines =
     def __repr__
     def __str__

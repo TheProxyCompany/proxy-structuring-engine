@@ -183,3 +183,85 @@ def test_optional_state_machine():
     steppers = list(stepper.consume("a"))
     assert len(steppers) == 1
     assert steppers[0].get_current_value() == "a"
+
+
+def test_case_insensitive_character():
+    """Test case-insensitive character acceptance."""
+    ci_state_machine = CharacterStateMachine(
+        whitelist_charset=["A", "B", "C"], case_sensitive=False
+    )
+    stepper = CharacterStepper(ci_state_machine)
+
+    # Should accept both uppercase and lowercase with case-insensitive matching
+    steppers = list(stepper.consume("a"))
+    assert len(steppers) == 1
+    # Value in lowercase per implementation (token is lowercase in consume())
+    assert steppers[0].get_current_value() == "a"
+
+    steppers = list(stepper.consume("A"))
+    assert len(steppers) == 1
+    # Also lowercase because of case_sensitive=False
+    assert steppers[0].get_current_value() == "a"
+
+    # Blacklist should also be case-insensitive
+    bl_state_machine = CharacterStateMachine(
+        blacklist_charset=["X", "Y", "Z"], case_sensitive=False
+    )
+    stepper = CharacterStepper(bl_state_machine)
+
+    steppers = list(stepper.consume("x"))
+    assert len(steppers) == 0  # Should not accept lowercase 'x'
+
+    steppers = list(stepper.consume("X"))
+    assert len(steppers) == 0  # Should not accept uppercase 'X'
+
+    # Test graylist charset
+    graylist_state_machine = CharacterStateMachine(
+        graylist_charset=["d", "e", "f"], case_sensitive=False
+    )
+    stepper = graylist_state_machine.get_new_stepper("")
+    steppers = list(stepper.consume("abD"))
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "ab"
+    assert steppers[0].remaining_input == "d"
+
+    steppers = list(stepper.consume("a"))
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "a"
+
+    steppers = list(stepper.consume("d"))
+    assert len(steppers) == 1
+    assert steppers[0].get_current_value() == "d"
+
+
+def test_should_complete_step_with_char_limit():
+    """Test should_complete_step with character limits."""
+    # Test with max characters
+    limited_state_machine = CharacterStateMachine(char_limit=3)
+    stepper = CharacterStepper(limited_state_machine, "abc")  # Already at limit
+    assert stepper.should_complete_step()
+
+    # Test with exceeding max characters
+    stepper = CharacterStepper(limited_state_machine, "abcd")  # Exceeds limit
+    assert not stepper.should_complete_step()
+
+    # Test with min characters
+    min_state_machine = CharacterStateMachine(char_min=2)
+    stepper = CharacterStepper(min_state_machine, "a")  # Below minimum
+    assert not stepper.should_complete_step()
+
+    stepper = CharacterStepper(min_state_machine, "ab")  # At minimum
+    assert stepper.should_complete_step()
+
+
+def test_accepts_any_token():
+    """Test accepts_any_token method."""
+    sm = CharacterStateMachine(whitelist_charset=["a", "b", "c"])
+    stepper = CharacterStepper(sm)
+    assert not stepper.accepts_any_token()
+    assert len(list(stepper.consume("X"))) == 0
+    assert sorted(stepper.get_valid_continuations()) == ["a", "b", "c"]
+
+    sm2 = CharacterStateMachine()
+    stepper2 = CharacterStepper(sm2)
+    assert stepper2.accepts_any_token()

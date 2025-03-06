@@ -36,6 +36,7 @@ def test_basic_wait_for_acceptor() -> None:
     steppers = state_machine.advance_all_basic(steppers, "Hello World")
     assert len(steppers) == 1
     assert steppers[0].has_reached_accept_state()
+    assert not steppers[0].get_invalid_continuations()
 
 
 def test_interrupted_wait_for_acceptor() -> None:
@@ -90,3 +91,65 @@ def test_wait_for_acceptor_with_partial_match():
         assert stepper_delta.stepper.get_current_value() == '"'
     assert len(steppers) == 1
     assert not steppers[0].has_reached_accept_state()
+
+
+def test_get_valid_continuations_buffer_too_short():
+    """Test get_valid_continuations when buffer is shorter than min_buffer_length."""
+    text_acceptor = PhraseStateMachine("Hello")
+    state_machine = WaitFor(text_acceptor, buffer_length=10)
+
+    steppers = list(state_machine.get_steppers())
+    assert len(steppers) == 1
+    stepper = steppers[0]
+
+    # Buffer is empty, should return empty list
+    continuations = stepper.get_valid_continuations()
+    assert continuations == []
+    invalid_continuations = stepper.get_invalid_continuations()
+    assert invalid_continuations == ["Hello"]
+
+def test_should_start_step_with_remaining_input():
+    """Test should_start_step when remaining_input is not None."""
+    text_acceptor = PhraseStateMachine("Hello")
+    state_machine = WaitFor(text_acceptor)
+
+    steppers = list(state_machine.get_steppers())
+    assert len(steppers) == 1
+    stepper = steppers[0]
+
+    # Set remaining_input
+    stepper.remaining_input = "something"
+
+    # should_start_step should be False with remaining_input
+    assert not stepper.should_start_step("Hello")
+
+
+def test_consume_with_no_sub_stepper():
+    """Test consume method when sub_stepper is None."""
+    state_machine = WaitFor(PhraseStateMachine("Hello"))
+    stepper = WaitForStepper(state_machine)
+
+    # Force sub_stepper to be None
+    stepper.sub_stepper = None
+
+    # consume should return empty list
+    result = stepper.consume("any token")
+    assert result == []
+
+
+def test_consume_with_min_buffer_length_negative():
+    """Test consume when min_buffer_length is -1 and not within value."""
+    text_acceptor = PhraseStateMachine("Hello")
+    state_machine = WaitFor(text_acceptor, buffer_length=-1)
+
+    steppers = list(state_machine.get_steppers())
+    assert len(steppers) == 1
+    stepper = steppers[0]
+
+    # Make sure we're not within a value
+    assert not stepper.is_within_value()
+
+    # Try to consume a token that doesn't start the pattern
+    # With buffer_length = -1, this should return empty list
+    result = stepper.consume("NotHello")
+    assert result == []

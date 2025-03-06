@@ -26,11 +26,7 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
     }
 
     # Get description from schema or docstring
-    description = (
-        schema.get("description")
-        or docstring.short_description
-        or ""
-    )
+    description = schema.get("description") or docstring.short_description or ""
 
     # Extract parameters, excluding metadata fields
     parameters = {k: v for k, v in schema.items() if k not in {"title", "description"}}
@@ -43,10 +39,7 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
 
     # Update field schemas with descriptions and requirements
     for field_name, field in model.model_fields.items():
-        if field_name not in properties:
-            continue
-
-        field_schema = properties[field_name]
+        field_schema: dict[str, Any] = properties.get(field_name, {})
 
         # Add field to required list if needed
         if field.is_required():
@@ -58,8 +51,10 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
         )
 
         # Add any extra schema properties
-        if field.json_schema_extra:
-            field_schema.update(field.json_schema_extra)
+        if extra := field.json_schema_extra:
+            if isinstance(extra, dict):
+                # For dictionaries, update the schema with the extra fields
+                field_schema.update(extra)
 
     parameters["required"] = list(required_fields)
 
