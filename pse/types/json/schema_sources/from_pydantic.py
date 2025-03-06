@@ -52,10 +52,7 @@ def pydantic_to_schema(model: type[BaseModel]) -> dict[str, Any]:
 
         # Add any extra schema properties
         if extra := field.json_schema_extra:
-            if callable(extra):
-                # For callables, they modify the schema in-place
-                extra(field_schema)
-            elif isinstance(extra, dict):
+            if isinstance(extra, dict):
                 # For dictionaries, update the schema with the extra fields
                 field_schema.update(extra)
 

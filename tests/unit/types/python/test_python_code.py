@@ -137,3 +137,22 @@ def test_incomplete_but_valid_code(incomplete_code):
     steppers = source_code_sm.advance_all_basic(steppers, incomplete_code)
     assert len(steppers) == 1
     assert all(stepper.can_accept_more_input() for stepper in steppers)
+
+
+def test_identifer():
+    """Test identifier of PythonStateMachine."""
+    assert PythonStateMachine.get_new_stepper(None).get_identifier() == "python"
+
+def test_invalid_code_advance():
+    """Test invalid code advance."""
+    sm = StateMachine(
+        {
+            0: [(PythonStateMachine, "$")],
+        }
+    )
+    steppers = sm.get_steppers()
+    steppers = sm.advance_all_basic(steppers, "print(")
+    assert len(steppers) == 1
+    # advance with invalid characters
+    steppers = sm.advance_all_basic(steppers, '!!!!!!!!!')
+    assert not steppers

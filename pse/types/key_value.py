@@ -81,6 +81,6 @@ class KeyValueStepper(Stepper):
         Returns:
             Tuple[str, Any]: A tuple containing the property name and its corresponding value.
         """
-        if self.prop_name is None:
+        if not self.prop_name:
             return ("", None)
         return (self.prop_name, self.prop_value)

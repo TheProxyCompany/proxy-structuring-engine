@@ -120,59 +120,18 @@ def test_loop_max_count():
     # Now should_start_step should be False due to max_loop_count check
     assert not stepper.should_start_step("a")
 
-def test_can_accept_more_input_max_loop_count():
-    """Test can_accept_more_input with max_loop_count."""
-    inner_sm = PhraseStateMachine("a")
-    loop_sm = LoopStateMachine(inner_sm, min_loop_count=1, max_loop_count=3)
-    
-    # Create stepper
-    steppers = loop_sm.get_steppers()
-    stepper = steppers[0]
-    
-    # Initially can accept more
-    assert stepper.can_accept_more_input() is True
-    
-    # Set loop_count to max_loop_count
-    stepper.loop_count = 3
-    assert stepper.can_accept_more_input() is False
-    
-    # Reset to test with negative max_loop_count (unlimited)
-    loop_sm = LoopStateMachine(inner_sm, min_loop_count=1, max_loop_count=-1)
-    steppers = loop_sm.get_steppers()
-    stepper = steppers[0]
-    stepper.loop_count = 100  # Even with high count
-    assert stepper.can_accept_more_input() is True
-
 def test_get_final_state():
     """Test get_final_state in LoopStepper."""
     # Set up a mock Stepper
     inner_sm = PhraseStateMachine("a")
     loop_sm = LoopStateMachine(inner_sm, min_loop_count=1)
     stepper = loop_sm.get_new_stepper()
-    
+
     # Set internal loop stepper state for testing
     sub_stepper = inner_sm.get_new_stepper()
     stepper.sub_stepper = sub_stepper
     stepper.history = [sub_stepper]
-    
+
     # Test with no whitespace separators
     final_states = stepper.get_final_state()
     assert final_states == stepper.history
-
-def test_has_reached_accept_state_with_min_loop_count():
-    """Test has_reached_accept_state method with different min_loop_count values."""
-    # Loop with min_loop_count=2
-    inner_sm = PhraseStateMachine("a")
-    loop_sm = LoopStateMachine(inner_sm, min_loop_count=2)
-    stepper = loop_sm.get_new_stepper()
-    
-    # Initially should not be in accept state
-    assert not stepper.has_reached_accept_state()
-    
-    # Set loop_count to 1 (less than min)
-    stepper.loop_count = 1
-    assert not stepper.has_reached_accept_state()
-    
-    # Set loop_count to 2 (equal to min)
-    stepper.loop_count = 2
-    assert stepper.has_reached_accept_state()

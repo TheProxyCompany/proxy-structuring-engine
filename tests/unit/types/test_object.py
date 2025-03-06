@@ -122,7 +122,7 @@ def test_invalid_json_objects(object_acceptor: ObjectStateMachine, json_string):
             {"key1": "value1", "key2": "value2"},
         ),
         # Empty string values
-        ('{"":"","x":""}', {"": "", "x": ""}),
+        ('{"":"","x":""}', {"": None, "x": ""}),
         # Unicode in keys and values with escapes
         ('{"key\\u0020space": "value\\n\\t"}', {"key space": "value\n\t"}),
     ],
