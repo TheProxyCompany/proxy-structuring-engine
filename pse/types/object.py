@@ -81,9 +81,6 @@ class ObjectStepper(Stepper):
         cloned_stepper.value = self.value.copy()
         return cloned_stepper
 
-    def is_within_value(self) -> bool:
-        return self.consumed_character_count > 0
-
     def add_to_history(self, stepper: Stepper) -> None:
         if self.current_state == 3:
             prop_name, prop_value = stepper.get_current_value()

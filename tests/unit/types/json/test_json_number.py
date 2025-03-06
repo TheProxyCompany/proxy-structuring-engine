@@ -164,6 +164,32 @@ def test_exponential_notation_transitions() -> None:
     assert not any(stepper.has_reached_accept_state() for stepper in steppers)
 
 
+def test_exclusive_minimum_validation() -> None:
+    """
+    Test validation for exclusiveMinimum constraint in the schema.
+    This specifically tests the line that was missing coverage.
+    """
+    schema = {"type": "number", "exclusiveMinimum": 10}
+    state_machine = NumberSchemaStateMachine(schema)
+    
+    # Directly test the validate_value method
+    assert state_machine.validate_value(10) is False, "Value equal to exclusiveMinimum should be invalid"
+    assert state_machine.validate_value(10.1) is True, "Value greater than exclusiveMinimum should be valid"
+
+
+def test_exclusive_maximum_validation() -> None:
+    """
+    Test validation for exclusiveMaximum constraint in the schema.
+    This specifically tests the line that was missing coverage.
+    """
+    schema = {"type": "number", "exclusiveMaximum": 20}
+    state_machine = NumberSchemaStateMachine(schema)
+    
+    # Directly test the validate_value method
+    assert state_machine.validate_value(20) is False, "Value equal to exclusiveMaximum should be invalid"
+    assert state_machine.validate_value(19.9) is True, "Value less than exclusiveMaximum should be valid"
+
+
 def test_validation_timing() -> None:
     """
     Test that validation happens at the correct time during parsing.

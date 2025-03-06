@@ -152,6 +152,7 @@ class StringSchemaStepper(StringStepper):
     def get_valid_prefix(self, s: str) -> str | None:
         """
         Check whether the string 's' can be a prefix of any string matching the pattern.
+        Uses binary search for efficiency.
         """
         if (
             not self.is_within_value()
@@ -160,19 +161,32 @@ class StringSchemaStepper(StringStepper):
         ):
             return s
 
-        match = None
-        s = self.clean_value(s)
         current_value = self.sub_stepper.get_raw_value()
-        while not match and s:
+        quotes_removed_s = self.clean_value(s)
+
+        left, right = 0, len(quotes_removed_s)
+        best_match = None
+
+        while left <= right:
+            mid = (left + right) // 2
+            working_s = quotes_removed_s[:mid]
             match = regex.match(
                 self.state_machine.pattern.pattern,
-                current_value + s,
+                current_value + working_s,
                 partial=True,
             )
-            if not match:
-                s = s[:-1]
+            if match:
+                best_match = working_s
+                left = mid + 1  # Try a longer prefix
+            else:
+                right = mid - 1  # Try a shorter prefix
 
-        return s if match else None
+        if best_match is not None:
+            if best_match == quotes_removed_s:
+                return s # Return original if the whole string is a valid prefix
+            return best_match
+
+        return None
 
     def validate_value(self, value: str | None = None) -> bool:
         """

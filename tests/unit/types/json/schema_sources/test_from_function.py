@@ -242,6 +242,96 @@ def test_parameter_to_schema_pydantic_model():
     assert schema["description"] == "A User object"
     assert "nullable" in schema or "default" in schema
 
+
+def test_parameter_to_schema_direct_basemodel():
+    """Test parameter_to_schema with a direct BaseModel parameter (not in a union)."""
+    # Define a function with a direct BaseModel parameter (no Union)
+    def function_with_direct_model(user: User):
+        """
+        Function with a direct Pydantic model parameter.
+        
+        Args:
+            user: A User model
+        """
+        return user
+    
+    sig = inspect.signature(function_with_direct_model)
+    docstring = inspect.getdoc(function_with_direct_model)
+    parsed_docstring = pytest.importorskip("docstring_parser").parse(docstring)
+    
+    param = sig.parameters["user"]
+    param_docstring = parsed_docstring.params[0]
+    
+    # This should trigger the BaseModel handling in line 86
+    schema = parameter_to_schema(param, param_docstring, parsed_docstring)
+    
+    # The schema should be a pydantic-derived schema from the User model
+    assert schema.get("type") == "object"
+    assert "properties" in schema
+    assert "name" in schema["properties"]
+    assert "age" in schema["properties"]
+    assert schema["properties"]["name"]["type"] == "string"
+    assert schema["properties"]["age"]["type"] == "integer"
+
+
+def test_parameter_to_schema_complex_dict_args():
+    """Test parameter_to_schema with complex dictionary argument types."""
+    # Define a function with complex dict args
+    def function_with_nested_dict(data: dict[str, dict[str, list[int]]]):
+        """
+        Function with a complex nested dictionary.
+        
+        Args:
+            data: A complex nested dictionary
+        """
+        return data
+    
+    sig = inspect.signature(function_with_nested_dict)
+    docstring = inspect.getdoc(function_with_nested_dict)
+    parsed_docstring = pytest.importorskip("docstring_parser").parse(docstring)
+    
+    param = sig.parameters["data"] 
+    param_docstring = parsed_docstring.params[0]
+    
+    # This tests the complex dict handling case in parameter_to_schema
+    schema = parameter_to_schema(param, param_docstring, parsed_docstring)
+    
+    assert schema["type"] == "object"
+    assert "additionalProperties" in schema
+    # The additionalProperties are themselves supposed to be objects
+    if isinstance(schema["additionalProperties"], dict):
+        assert schema["additionalProperties"]["type"] == "object"
+
+
+def test_parameter_to_schema_no_type_schemas():
+    """Test parameter_to_schema when no valid type schemas are added."""
+    class CustomType:
+        pass
+        
+    # Define a function with a custom type that won't match any standard types
+    def function_with_custom_type(param: CustomType):
+        """
+        Function with a custom type.
+        
+        Args:
+            param: A custom type parameter
+        """
+        return param
+        
+    sig = inspect.signature(function_with_custom_type)
+    docstring = inspect.getdoc(function_with_custom_type)
+    parsed_docstring = pytest.importorskip("docstring_parser").parse(docstring)
+    
+    param = sig.parameters["param"]
+    param_docstring = parsed_docstring.params[0]
+    
+    # This tests the case when no parameter type schemas are created (line 152-153)
+    schema = parameter_to_schema(param, param_docstring, parsed_docstring)
+    
+    # Should default to "any" as fallback
+    assert schema["type"] == "any"
+    assert "description" in schema
+
 # Tests for callable_to_schema function
 def test_callable_to_schema_simple():
     """Test callable_to_schema with a simple function."""

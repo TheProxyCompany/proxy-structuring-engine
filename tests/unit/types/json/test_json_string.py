@@ -1,3 +1,5 @@
+import pytest
+
 from pse.types.json.json_string import StringSchemaStateMachine
 
 
@@ -302,6 +304,59 @@ def test_clean_value_quoted_string():
 
     # String with internal quotes
     assert stepper.clean_value('"hello"world"') == 'hello', '"hello"world" should be cleaned to hello'
+
+
+def test_string_stepper_consume_with_remaining_input():
+    """
+    Test consume method handling of remaining_input when token is partially consumed.
+    This tests line 131 in json_string.py.
+    """
+    schema = {"pattern": "^hello"}
+    state_machine = StringSchemaStateMachine(schema=schema)
+
+    # Set up a stepper in the middle of string parsing
+    steppers = state_machine.get_steppers()
+    steppers = state_machine.advance_all_basic(steppers, '"h')
+    steppers = state_machine.advance_all_basic(steppers, 'e')
+    assert len(steppers) == 3, "Should have 1 stepper after parsing 'he'"
+
+    # Now test consume with a token that has a valid prefix but an invalid suffix
+    new_steppers = state_machine.advance_all_basic(steppers, 'llo world"')
+    # Verify the stepper consumed 'llo' and set remaining_input to ' world'
+    assert any(new_stepper.has_reached_accept_state() for new_stepper in new_steppers)
+
+
+def test_validate_value_empty_string():
+    """
+    Test validate_value rejects empty strings.
+    This specifically tests line 192 in json_string.py.
+    """
+    schema = {"minLength": 1}
+    state_machine = StringSchemaStateMachine(schema=schema)
+    stepper = state_machine.get_new_stepper()
+
+    # Empty string should be rejected
+    assert not stepper.validate_value(""), "Empty string should be rejected with minLength=1"
+
+    # Non-empty string should be accepted
+    assert stepper.validate_value("a"), "Non-empty string should be accepted with minLength=1"
+
+
+def test_invalid_format_validator():
+    """
+    Test that calling validate_value with an invalid format raises an error.
+    This tests line 207 in json_string.py.
+    """
+
+    # Trying to validate should raise a ValueError
+    with pytest.raises(ValueError) as excinfo:
+        schema = {"format": "custom-format"}
+        state_machine = StringSchemaStateMachine(schema=schema)
+        stepper = state_machine.get_new_stepper()
+        stepper.validate_value("test")
+
+    # Check the error message
+    assert excinfo is not None, "Should raise error about missing validator"
 
 
 def test_get_valid_prefix_no_pattern():

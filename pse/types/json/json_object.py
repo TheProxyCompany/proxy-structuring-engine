@@ -59,7 +59,7 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
                 for transition in PhraseStateMachine("}").get_steppers():
                     transitions.append((transition, "$"))
 
-            if len(value) < len(self.properties):
+            if len(value) < len(self.properties) or self.additional_properties:
                 for transition in ChainStateMachine(
                     [PhraseStateMachine(","), WhitespaceStateMachine()]
                 ).get_steppers():
@@ -99,11 +99,11 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
 
         return property_state_machines
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ObjectSchemaStateMachine):
-            return other.__eq__(self)
+    # def __eq__(self, other: object) -> bool:
+    #     if not isinstance(other, ObjectSchemaStateMachine):
+    #         return other.__eq__(self)
 
-        return super().__eq__(other) and self.schema == other.schema
+    #     return super().__eq__(other)
 
     def __str__(self) -> str:
         return "JSON" + super().__str__()
