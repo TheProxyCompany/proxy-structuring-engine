@@ -1,4 +1,7 @@
-from pse.types.json.json_key_value import KeyValueSchemaStateMachine, KeyValueSchemaStepper
+from pse.types.json.json_key_value import (
+    KeyValueSchemaStateMachine,
+    KeyValueSchemaStepper,
+)
 
 
 def test_property_parsing():
@@ -26,15 +29,15 @@ def test_property_parsing_with_string_sm():
         prop_schema={"type": "string"},
         context={"defs": {}, "path": "/parent"},
     )
-    
+
     steppers = list(state_machine.get_steppers())
     steppers = state_machine.advance_all_basic(steppers, '"dynamic_key"')
     assert len(steppers) > 0
-    
+
     steppers = state_machine.advance_all_basic(steppers, ': "value"')
     assert len(steppers) > 0
     assert any(stepper.has_reached_accept_state() for stepper in steppers)
-    
+
     for stepper in steppers:
         if stepper.has_reached_accept_state():
             assert stepper.get_current_value() == ("dynamic_key", "value")
@@ -50,7 +53,7 @@ def test_is_optional_property():
     )
     # Check the behavior of is_optional based on implementation
     # Note that the parent implementation might already make it optional
-    
+
     # Nullable property
     state_machine = KeyValueSchemaStateMachine(
         prop_name="nullable_prop",
@@ -67,7 +70,7 @@ def test_key_value_schema_stepper_initialization():
         prop_schema={"type": "string"},
         context={"defs": {}},
     )
-    
+
     stepper = state_machine.get_new_stepper()
     assert isinstance(stepper, KeyValueSchemaStepper), "Should return a KeyValueSchemaStepper instance"
     assert stepper.state_machine is state_machine, "Stepper should reference the correct state machine"
