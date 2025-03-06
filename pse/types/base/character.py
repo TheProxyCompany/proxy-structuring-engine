@@ -44,8 +44,9 @@ class CharacterStateMachine(StateMachine):
         self.blacklist_charset: set[str] = set()
 
         # Process all charsets efficiently
-        convert_to_set = lambda chars: set(char.lower() for char in chars) if chars else set()
-        
+        def convert_to_set(chars):
+            return set(char.lower() for char in chars) if chars else set()
+
         self.charset = set(whitelist_charset) if case_sensitive else convert_to_set(whitelist_charset)
         self.graylist_charset = set(graylist_charset) if case_sensitive else convert_to_set(graylist_charset)
         self.blacklist_charset = set(blacklist_charset) if case_sensitive else convert_to_set(blacklist_charset)
@@ -172,19 +173,21 @@ class CharacterStepper(Stepper):
         graylist = self.state_machine.graylist_charset
         char_limit = self.state_machine.char_limit
         consumed_count = self.consumed_character_count
-        
+
         # Find the longest valid prefix efficiently
         valid_prefix_len = 0
-        for i, char in enumerate(token):
+        for char in token:
             # Stop at first invalid character or limit
-            if (char in blacklist or 
-                (charset and char not in charset) or
-                (char_limit > 0 and valid_prefix_len + consumed_count >= char_limit) or
-                (graylist and valid_prefix_len > 0 and char in graylist)):
+            is_blacklisted = char in blacklist
+            not_in_charset = len(charset) > 0 and char not in charset
+            exceeds_limit = char_limit > 0 and valid_prefix_len + consumed_count >= char_limit
+            is_graylisted = len(graylist) > 0 and valid_prefix_len > 0 and char in graylist
+
+            if is_blacklisted or not_in_charset or exceeds_limit or is_graylisted:
                 break
-                
+
             valid_prefix_len += 1
-            
+
         # Extract the valid portion using string slicing
         valid_prefix = token[:valid_prefix_len]
 

@@ -6,11 +6,7 @@ characters in structured data formats like JSON.
 
 from __future__ import annotations
 
-import logging
-
 from pse.types.base.character import CharacterStateMachine
-
-logger = logging.getLogger()
 
 # Whitespace characters as defined by the JSON standard
 WHITESPACE_CHARS = " \t\n\r"
