@@ -71,19 +71,26 @@ class WaitForStepper(Stepper):
 
     def accepts_any_token(self) -> bool:
         """
-        Indicates that this state_machine matches all characters
-        until a trigger is found.
-
+        Determines if this stepper can accept any token based on buffer state.
+        
+        The stepper accepts any token if:
+        1. The buffer meets minimum length requirements, or
+        2. The sub-stepper is active and accepts any token
+        
         Returns:
-            bool: Always True.
+            True if the stepper can accept any token, False otherwise
         """
+        # Cache min_buffer_length for performance
+        min_buffer_length = self.state_machine.min_buffer_length
+        
+        # Delegate to sub_stepper if it's active
         if self.sub_stepper and (
-            self.sub_stepper.is_within_value()
-            or self.state_machine.min_buffer_length == -1
+            self.sub_stepper.is_within_value() or min_buffer_length == -1
         ):
             return self.sub_stepper.accepts_any_token()
 
-        return len(self.buffer) >= self.state_machine.min_buffer_length
+        # Otherwise, check buffer length
+        return len(self.buffer) >= min_buffer_length
 
     def get_valid_continuations(self) -> list[str]:
         """
@@ -108,24 +115,45 @@ class WaitForStepper(Stepper):
         return []
 
     def should_start_step(self, token: str) -> bool:
+        """
+        Determines if the stepper should start processing the token.
+        
+        This method decides whether to start a step based on:
+        1. Whether we have remaining input from a previous token
+        2. The buffer length requirements
+        3. The stepper's current state
+        
+        Args:
+            token: The token to potentially process
+            
+        Returns:
+            True if the step should start, False otherwise
+        """
+        # Never start a step if we have remaining input
         if self.remaining_input:
             return False
 
+        # Cache frequently accessed values
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)
-        if required_buffer_length > 0:
-            if should_start and len(self.buffer) >= required_buffer_length:
-                # we have enough characters to start the transition
-                return True
-            elif not should_start and not self.is_within_value():
-                # in this case, we are not within a value,
-                # so we can start the transition to allow the buffer/scratchpad to grow
-                return True
-            else:
-                # we don't have enough characters to start the transition
-                return False
-
-        return should_start or not self.is_within_value()
+        
+        # Handle unlimited buffer length case
+        if required_buffer_length <= 0:
+            return should_start or not self.is_within_value()
+            
+        # For cases with a positive buffer length requirement
+        buffer_length = len(self.buffer)
+        is_in_value = self.is_within_value()
+        
+        # Return True if either:
+        # 1. super().should_start_step() returns True and we have enough buffer, or
+        # 2. super().should_start_step() returns False but we're not within a value
+        if should_start and buffer_length >= required_buffer_length:
+            return True
+        if not should_start and not is_in_value:
+            return True
+            
+        return False
 
     def consume(self, token: str) -> list[Stepper]:
         # No sub_stepper means we can't process anything

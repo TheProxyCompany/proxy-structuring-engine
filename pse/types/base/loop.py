@@ -69,12 +69,27 @@ class LoopStepper(Stepper):
         return clone
 
     def has_reached_accept_state(self) -> bool:
-        if self.loop_count >= self.state_machine.min_loop_count:
-            if self.sub_stepper is not None and self.sub_stepper.is_within_value():
-                return self.sub_stepper.has_reached_accept_state()
-            return True
-
-        return False
+        """
+        Determines if this stepper is in an accept state.
+        
+        A loop stepper is in an accept state if:
+        1. It has completed at least the minimum required iterations, and
+        2. If it's currently processing a sub-stepper, that sub-stepper is in an accept state
+        
+        Returns:
+            True if the stepper is in an accept state, False otherwise
+        """
+        # Early exit if we haven't reached the minimum loop count
+        if self.loop_count < self.state_machine.min_loop_count:
+            return False
+            
+        # If we're currently processing a value through a sub-stepper,
+        # delegate to that sub-stepper's accept state
+        if self.sub_stepper is not None and self.sub_stepper.is_within_value():
+            return self.sub_stepper.has_reached_accept_state()
+            
+        # Otherwise, we're in an accept state if we've met the minimum loop count
+        return True
 
     def can_accept_more_input(self) -> bool:
         if not super().can_accept_more_input():
@@ -102,10 +117,27 @@ class LoopStepper(Stepper):
         return super().add_to_history(stepper)
 
     def get_final_state(self) -> list[Stepper]:
-        if self.sub_stepper and self.sub_stepper.is_within_value() and not (
-            self.state_machine.whitespace_seperator
-            and self.sub_stepper.state_machine == self.state_machine.whitespace_seperator
-        ):
+        """
+        Gets the final state representation for this stepper.
+        
+        This method decides which stepper(s) to return as the final state:
+        - If we're within a value in the sub-stepper (and it's not a whitespace separator),
+          delegate to the sub-stepper's final state
+        - Otherwise, return this stepper's history
+        
+        Returns:
+            List of steppers representing the final state
+        """
+        # Cache whitespace separator for performance
+        whitespace_sep = self.state_machine.whitespace_seperator
+        
+        # Delegate to the sub-stepper if:
+        # 1. We have a sub-stepper that's currently processing a value
+        # 2. The sub-stepper is not a whitespace separator
+        if (self.sub_stepper and 
+            self.sub_stepper.is_within_value() and 
+            not (whitespace_sep and self.sub_stepper.state_machine == whitespace_sep)):
             return self.sub_stepper.get_final_state()
 
+        # Otherwise, return this stepper's history
         return self.history

@@ -22,8 +22,16 @@ class CharacterStateMachine(StateMachine):
         case_sensitive: bool = True,
     ) -> None:
         """
+        Initialize a CharacterStateMachine with character sets and constraints.
+        
         Args:
-            charset (list[str]): A list of characters to be accepted.
+            whitelist_charset: Characters that are explicitly allowed
+            graylist_charset: Characters that are allowed but terminate the match if they follow other characters
+            blacklist_charset: Characters that are explicitly forbidden
+            char_min: Minimum number of characters required (0 if None)
+            char_limit: Maximum number of characters allowed (unlimited if 0 or None)
+            is_optional: Whether this state machine is optional
+            case_sensitive: Whether character matching is case-sensitive
         """
         super().__init__(
             is_optional=is_optional,
@@ -35,24 +43,12 @@ class CharacterStateMachine(StateMachine):
         self.graylist_charset: set[str] = set()
         self.blacklist_charset: set[str] = set()
 
-        if whitelist_charset:
-            self.charset = (
-                set(whitelist_charset)
-                if case_sensitive
-                else set(char.lower() for char in whitelist_charset)
-            )
-        if graylist_charset:
-            self.graylist_charset = (
-                set(graylist_charset)
-                if case_sensitive
-                else set(char.lower() for char in graylist_charset)
-            )
-        if blacklist_charset:
-            self.blacklist_charset = (
-                set(blacklist_charset)
-                if case_sensitive
-                else set(char.lower() for char in blacklist_charset)
-            )
+        # Process all charsets efficiently
+        convert_to_set = lambda chars: set(char.lower() for char in chars) if chars else set()
+        
+        self.charset = set(whitelist_charset) if case_sensitive else convert_to_set(whitelist_charset)
+        self.graylist_charset = set(graylist_charset) if case_sensitive else convert_to_set(graylist_charset)
+        self.blacklist_charset = set(blacklist_charset) if case_sensitive else convert_to_set(blacklist_charset)
 
     def get_new_stepper(self, state: int | str) -> CharacterStepper:
         return CharacterStepper(self)
@@ -155,41 +151,46 @@ class CharacterStepper(Stepper):
         """
         Advance the stepper with the given input.
 
+        This method processes the input token and determines how much of it can be consumed
+        based on character constraints. It stops consuming at the first invalid character.
+
         Args:
-            token (str): The input to advance with.
+            token: The input string to consume
 
         Returns:
-            List[Stepper]: List of new steppers after advancement.
+            List of new steppers after advancement (empty if nothing can be consumed)
         """
         if not token or not self.should_start_step(token):
             return []
 
+        # Apply case sensitivity
         token = token.lower() if not self.state_machine.is_case_sensitive else token
 
-        # Split input at first invalid character
-        valid_prefix = ""
-        for char in (token):
-            if char in self.state_machine.blacklist_charset or (
-                self.state_machine.charset and char not in self.state_machine.charset
-            ):
+        # Cache frequently used properties for performance
+        charset = self.state_machine.charset
+        blacklist = self.state_machine.blacklist_charset
+        graylist = self.state_machine.graylist_charset
+        char_limit = self.state_machine.char_limit
+        consumed_count = self.consumed_character_count
+        
+        # Find the longest valid prefix efficiently
+        valid_prefix_len = 0
+        for i, char in enumerate(token):
+            # Stop at first invalid character or limit
+            if (char in blacklist or 
+                (charset and char not in charset) or
+                (char_limit > 0 and valid_prefix_len + consumed_count >= char_limit) or
+                (graylist and valid_prefix_len > 0 and char in graylist)):
                 break
-            if (
-                self.state_machine.char_limit > 0
-                and len(valid_prefix) + self.consumed_character_count
-                >= self.state_machine.char_limit
-            ):
-                break
-            if (
-                self.state_machine.graylist_charset
-                and valid_prefix
-                and char in self.state_machine.graylist_charset
-            ):
-                break
+                
+            valid_prefix_len += 1
+            
+        # Extract the valid portion using string slicing
+        valid_prefix = token[:valid_prefix_len]
 
-            valid_prefix += char
-
+        # Create new stepper with updated state
         new_value = self.get_raw_value() + valid_prefix
-        remaining_input = token[len(valid_prefix) :] or None
+        remaining_input = token[len(valid_prefix):] or None
         new_stepper = self.step(new_value, remaining_input)
 
         return [new_stepper]

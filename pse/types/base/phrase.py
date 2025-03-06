@@ -114,17 +114,32 @@ class PhraseStepper(Stepper):
         return self.state_machine.phrase[: self.consumed_character_count]
 
     def _get_valid_match_length(self, token: str, pos: int | None = None) -> int:
+        """
+        Calculate the length of the matching prefix between the token and the target phrase.
+        
+        Args:
+            token: The input string to check against the target phrase
+            pos: Starting position in the phrase (defaults to current consumed count)
+            
+        Returns:
+            Length of the matching prefix
+        """
+        # Use current position if not specified
         pos = pos or self.consumed_character_count
-        valid_length = 0
-        for i, c in enumerate(token):
-            if (
-                pos + i < len(self.state_machine.phrase)
-                and c == self.state_machine.phrase[pos + i]
-            ):
-                valid_length += 1
-            else:
-                break
-        return valid_length
+        
+        # Get the remaining portion of the phrase to match against
+        remaining_phrase = self.state_machine.phrase[pos:]
+        
+        # Determine maximum possible match length
+        max_length = min(len(token), len(remaining_phrase))
+        
+        # Find the longest matching prefix using string slicing
+        # This is more efficient than character-by-character comparison
+        for i in range(max_length + 1):
+            if token[:i] != remaining_phrase[:i]:
+                return i - 1
+        
+        return max_length
 
     def __eq__(self, other: object) -> bool:
         return (

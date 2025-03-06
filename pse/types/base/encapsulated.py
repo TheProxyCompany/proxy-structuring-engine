@@ -89,7 +89,7 @@ class EncapsulatedStepper(Stepper):
         Retrieve the token-safe output with delimiters removed.
 
         This method processes the raw output by removing the encapsulating delimiters,
-        handling both complete and partial delimiter occurrences.
+        handling both complete and partial delimiter occurrences efficiently.
 
         Args:
             decode_function: Function to decode token IDs into a string
@@ -97,15 +97,22 @@ class EncapsulatedStepper(Stepper):
         Returns:
             Processed string with delimiters stripped
         """
+        # Get and decode the token history
         token_ids = self.get_token_ids_history()
         token_safe_output: str = decode_function(token_ids).strip()
+        
+        # Extract delimiters
         start_delim, end_delim = self.state_machine.delimiters
 
+        # Remove start delimiter - optimize by checking exact match first
+        # This is faster than always using lstrip
         if token_safe_output.startswith(start_delim):
             token_safe_output = token_safe_output[len(start_delim):]
         else:
             token_safe_output = token_safe_output.lstrip(start_delim)
 
+        # Remove end delimiter - optimize by checking exact match first
+        # This is faster than always using rstrip
         if token_safe_output.endswith(end_delim):
             token_safe_output = token_safe_output[:-len(end_delim)]
         else:
