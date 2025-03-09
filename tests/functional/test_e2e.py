@@ -297,13 +297,13 @@ def test_schema_web_search(
     }
     engine.reset(hard_reset=True)
     engine.configure(schema, delimiters=("<tool>", "</tool>"))
-    prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon",'
+    prefill = '<tool>{"name": "web_search", "arguments": {"query": "popular favorite Pokémon", "max_results":'
     engine.consume_text(prefill)
     raw_prompt = (
         f"This is a test of your abilities."
         f" Please structure your response to follow the following schemas: {schema}."
         f" You must wrap your response with <tool> and </tool>."
-        " Please use the web_search schema to find popular favoirte pokemon."
+        " Please use the web_search schema to find popular favorite pokemon."
     )
     generate(raw_prompt, model, engine, prefill)
     output = engine.get_structured_output()

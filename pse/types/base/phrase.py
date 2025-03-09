@@ -32,7 +32,11 @@ class PhraseStateMachine(StateMachine):
         Raises:
             ValueError: If the provided text is empty.
         """
-        super().__init__(is_optional=is_optional, is_case_sensitive=is_case_sensitive)
+        super().__init__(
+            is_optional=is_optional,
+            is_case_sensitive=is_case_sensitive,
+            identifier=phrase,
+        )
 
         if not phrase:
             raise ValueError("Phrase must be a non-empty string.")
@@ -51,8 +55,15 @@ class PhraseStateMachine(StateMachine):
         """
         return f"Phrase({self.phrase!r})"
 
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, PhraseStateMachine)
+            and self.phrase == other.phrase
+        )
+
 
 class PhraseStepper(Stepper):
+
     def __init__(
         self,
         state_machine: PhraseStateMachine,
@@ -116,34 +127,27 @@ class PhraseStepper(Stepper):
     def _get_valid_match_length(self, token: str, pos: int | None = None) -> int:
         """
         Calculate the length of the matching prefix between the token and the target phrase.
-        
+
         Args:
             token: The input string to check against the target phrase
             pos: Starting position in the phrase (defaults to current consumed count)
-            
+
         Returns:
             Length of the matching prefix
         """
         # Use current position if not specified
         pos = pos or self.consumed_character_count
-        
+
         # Get the remaining portion of the phrase to match against
         remaining_phrase = self.state_machine.phrase[pos:]
-        
+
         # Determine maximum possible match length
         max_length = min(len(token), len(remaining_phrase))
-        
+
         # Find the longest matching prefix using string slicing
         # This is more efficient than character-by-character comparison
         for i in range(max_length + 1):
             if token[:i] != remaining_phrase[:i]:
                 return i - 1
-        
-        return max_length
 
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, PhraseStepper)
-            and super().__eq__(other)
-            and self.state_machine.phrase == other.state_machine.phrase
-        )
+        return max_length

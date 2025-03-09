@@ -55,10 +55,6 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
     def get_new_stepper(self, state: StateId | None = None) -> KeyValueSchemaStepper:
         return KeyValueSchemaStepper(self, state)
 
-    @property
-    def is_optional(self) -> bool:
-        return super().is_optional or self.prop_schema.get("nullable", False)
-
 
 class KeyValueSchemaStepper(KeyValueStepper):
     def __init__(
