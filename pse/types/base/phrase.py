@@ -35,7 +35,6 @@ class PhraseStateMachine(StateMachine):
         super().__init__(
             is_optional=is_optional,
             is_case_sensitive=is_case_sensitive,
-            identifier=phrase,
         )
 
         if not phrase:

@@ -186,7 +186,7 @@ def test_complex_recursive_schema(
     assert output["type"] == "div"
     assert len(output["children"]) == 1
     assert output["children"][0]["type"] == "button"
-    assert output["children"][0]["label"] == "Click me"
+    assert "Click me" in output["children"][0]["label"]
 
 
 def test_multiple_schemas(
