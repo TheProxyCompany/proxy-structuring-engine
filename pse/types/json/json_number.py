@@ -56,7 +56,7 @@ class NumberSchemaStateMachine(NumberStateMachine):
             if value / divisor != value // divisor:
                 return False
 
-        if self.is_integer and not value.is_integer():
+        if self.is_integer and not (isinstance(value, int) or value.is_integer()):
             return False
 
         return True

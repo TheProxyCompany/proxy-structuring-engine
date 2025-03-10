@@ -99,11 +99,12 @@ class ObjectSchemaStateMachine(ObjectStateMachine):
 
         return property_state_machines
 
-    # def __eq__(self, other: object) -> bool:
-    #     if not isinstance(other, ObjectSchemaStateMachine):
-    #         return other.__eq__(self)
-
-    #     return super().__eq__(other)
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, ObjectSchemaStateMachine)
+            and super().__eq__(other)
+            and self.schema == other.schema
+        )
 
     def __str__(self) -> str:
         return "JSON" + super().__str__()

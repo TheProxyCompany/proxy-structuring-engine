@@ -23,7 +23,7 @@ class CharacterStateMachine(StateMachine):
     ) -> None:
         """
         Initialize a CharacterStateMachine with character sets and constraints.
-        
+
         Args:
             whitelist_charset: Characters that are explicitly allowed
             graylist_charset: Characters that are allowed but terminate the match if they follow other characters

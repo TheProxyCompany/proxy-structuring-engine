@@ -71,3 +71,12 @@ def test_invalid_sub_stepper_json():
     steppers = sm.advance_all_basic(steppers, '"invalid json')
     assert len(steppers) == 1
     assert not steppers[0].should_complete_step()
+
+def test_key_value_equality():
+    sm1 = KeyValueStateMachine()
+    sm2 = KeyValueStateMachine()
+    sm3 = KeyValueStateMachine()
+
+    assert sm1 == sm2
+    assert sm1 == sm3
+    assert sm2 == sm3

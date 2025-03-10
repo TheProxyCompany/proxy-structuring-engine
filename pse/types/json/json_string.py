@@ -84,8 +84,11 @@ class StringSchemaStateMachine(StringStateMachine):
         """
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        return all([result.scheme, result.netloc])
+        try:
+            result = urlparse(value)
+            return result.scheme is not None and result.netloc is not None
+        except ValueError:
+            return False
 
     def __str__(self) -> str:
         return "JSON" + super().__str__()

@@ -81,6 +81,11 @@ class EncapsulatedStepper(Stepper):
 
         return super().add_to_history(stepper)
 
+    def get_invalid_continuations(self) -> list[str]:
+        if not self.inner_stepper:
+            return [self.state_machine.delimiters[1]]
+        return super().get_invalid_continuations()
+
     def get_final_state(self) -> list[Stepper]:
         return [self]
 
@@ -100,7 +105,7 @@ class EncapsulatedStepper(Stepper):
         # Get and decode the token history
         token_ids = self.get_token_ids_history()
         token_safe_output: str = decode_function(token_ids).strip()
-        
+
         # Extract delimiters
         start_delim, end_delim = self.state_machine.delimiters
 

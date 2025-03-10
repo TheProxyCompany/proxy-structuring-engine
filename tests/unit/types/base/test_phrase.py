@@ -194,6 +194,21 @@ def test_phrase_stepper_non_equality():
     assert stepper1 != stepper4
 
 
+def test_phrase_state_machine_equality():
+    """Test the equality operator for PhraseStateMachine."""
+    sm1 = PhraseStateMachine("hello")
+    sm2 = PhraseStateMachine("hello")
+
+    assert sm1 == sm2
+    stepper1 = PhraseStepper(sm1, 0)
+    stepper2 = PhraseStepper(sm2, 0)
+
+    assert stepper1 == stepper2
+    stepper1 = sm1.get_new_stepper()
+    stepper2 = sm2.get_new_stepper()
+    # crashes here
+    assert stepper1 == stepper2
+
 def test_should_complete_step():
     """Test the should_complete_step function."""
     text_acceptor = PhraseStateMachine("hello")

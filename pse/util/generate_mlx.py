@@ -31,7 +31,7 @@ def generate(
     encoded_prompt = engine.tokenizer.encode(formatted_prompt, add_special_tokens=False)
     output_tokens: list[int] = []
     for tokens, _ in generate_step(
-        prompt=mx.array(encoded_prompt),
+        prompt=encoded_prompt,
         model=model,
         logits_processors=[engine.process_logits],
         sampler=sampler(engine),

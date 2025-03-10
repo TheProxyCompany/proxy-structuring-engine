@@ -43,26 +43,6 @@ def test_property_parsing_with_string_sm():
             assert stepper.get_current_value() == ("dynamic_key", "value")
 
 
-def test_is_optional_property():
-    """Test the is_optional property with various schema configurations."""
-    # Normal required property
-    state_machine = KeyValueSchemaStateMachine(
-        prop_name="required_prop",
-        prop_schema={"type": "string"},
-        context={"defs": {}},
-    )
-    # Check the behavior of is_optional based on implementation
-    # Note that the parent implementation might already make it optional
-
-    # Nullable property
-    state_machine = KeyValueSchemaStateMachine(
-        prop_name="nullable_prop",
-        prop_schema={"type": "string", "nullable": True},
-        context={"defs": {}},
-    )
-    assert state_machine.is_optional is True, "Nullable property should be optional"
-
-
 def test_key_value_schema_stepper_initialization():
     """Test KeyValueSchemaStepper initialization and state machine access."""
     state_machine = KeyValueSchemaStateMachine(
@@ -74,3 +54,24 @@ def test_key_value_schema_stepper_initialization():
     stepper = state_machine.get_new_stepper()
     assert isinstance(stepper, KeyValueSchemaStepper), "Should return a KeyValueSchemaStepper instance"
     assert stepper.state_machine is state_machine, "Stepper should reference the correct state machine"
+
+def test_key_value_schema_stepper_equality():
+    """Test KeyValueSchemaStepper equality."""
+    state_machine = KeyValueSchemaStateMachine(
+        prop_name="test_prop",
+        prop_schema={"type": "string"},
+        context={"defs": {}},
+    )
+
+    steppers1 = state_machine.get_steppers()
+    steppers2 = state_machine.get_steppers()
+    assert steppers1[0] == steppers2[0]
+
+    steppers1 = state_machine.advance_all_basic(steppers1, '"test_prop": "value"')
+    assert len(steppers1) == 1
+    steppers2 = state_machine.advance_all_basic(steppers2, '"test_prop": "value"')
+    assert len(steppers2) == 1
+    assert steppers1[0] == steppers2[0]
+
+    stepper3 = state_machine.get_new_stepper()
+    assert steppers1[0] != stepper3

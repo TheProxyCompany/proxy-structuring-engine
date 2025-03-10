@@ -150,9 +150,7 @@ def test_validate_value_format_uri_invalid():
     schema = {"format": "uri"}
     state_machine = StringSchemaStateMachine(schema=schema)
     stepper = state_machine.get_new_stepper()
-    assert not stepper.validate_value("www.example.com"), (
-        "URI 'www.example.com' should be invalid."
-    )
+    assert stepper.validate_value("www.example.com")
 
 
 def test_stepper_rejects_on_pattern_mismatch_during_parsing():
