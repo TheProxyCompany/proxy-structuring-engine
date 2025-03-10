@@ -65,9 +65,9 @@ def callable_to_schema(function: Callable) -> dict[str, Any]:
 
 
 def parameter_to_schema(
-        param: inspect.Parameter,
-        param_docstring: DocstringParam | None,
-        docstring: Docstring
+    param: inspect.Parameter,
+    param_docstring: DocstringParam | None,
+    docstring: Docstring
 ) -> dict[str, Any]:
     """
     Generate a schema for a function parameter.
@@ -89,8 +89,11 @@ def parameter_to_schema(
         parameter_schema["type"] = "any"
         return parameter_schema
     elif param.default is not inspect.Parameter.empty:
-        parameter_schema["default"] = str(param.default)
-
+        default_value = param.default
+        if default_value is None:
+            parameter_schema["nullable"] = True
+        else:
+            parameter_schema["default"] = default_value
     #######
     parameter_type_schemas = []
     parameter_arguments = get_args(param.annotation)
@@ -154,9 +157,6 @@ def parameter_to_schema(
         case 1:
             # Merge the single schema into the main schema.
             parameter_schema.update(parameter_type_schemas[0])
-        case _:  # > 1
-            # Use anyOf for multiple possible types.
-            parameter_schema["anyOf"] = parameter_type_schemas
 
     if len(parameter_type_schemas) > 1:
         parameter_schema["type"] = parameter_type_schemas

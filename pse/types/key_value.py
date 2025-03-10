@@ -17,7 +17,7 @@ logger = logging.getLogger()
 
 
 class KeyValueStateMachine(ChainStateMachine):
-    def __init__(self, sequence: list[StateMachine] | None = None) -> None:
+    def __init__(self, sequence: list[StateMachine] | None = None, is_optional: bool = False) -> None:
         from pse.types.json.json_value import JsonStateMachine
 
         super().__init__(
@@ -28,7 +28,8 @@ class KeyValueStateMachine(ChainStateMachine):
                 PhraseStateMachine(":"),
                 WhitespaceStateMachine(),
                 JsonStateMachine(),
-            ]
+            ],
+            is_optional=is_optional,
         )
 
     def get_new_stepper(self, state: StateId | None = None) -> KeyValueStepper:
