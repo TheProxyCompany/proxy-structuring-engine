@@ -2,15 +2,18 @@
   <img src="logo.png" alt="Proxy Structuring Engine" style="object-fit: contain; max-width: 80%;"/>
 </p>
 
-<p align="center">
+<h2 align="center">
   <strong>Steer Your LLM: Stateful Control of Large Language Models</strong>
-</p>
+</h2>
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/coverage-96%25-brightgreen.svg" alt="Test Coverage"></a>
   <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/actions/workflows/python-app.yml"><img src="https://github.com/TheProxyCompany/proxy-structuring-engine/actions/workflows/python-app.yml/badge.svg" alt="Build Status"></a>
   <a href="https://pypi.org/project/pse/"><img src="https://badge.fury.io/py/pse.svg" alt="PyPI version"></a>
+</p>
+<p align="center">
   <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
+  <a href="https://docs.theproxycompany.com/pse/"><img src="https://img.shields.io/badge/docs-latest-blue.svg" alt="Documentation"></a>
 </p>
 
 # Proxy Structuring Engine (PSE)
@@ -26,7 +29,7 @@ The PSE isn't a filter, but a valve; turning a stochastic LLM into a **stateful*
 ```bash
 pip install pse
 ```
-*or, for those in the know:*
+*or*:
 ```bash
 uv pip install pse
 ```
