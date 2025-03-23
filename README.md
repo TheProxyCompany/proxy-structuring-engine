@@ -129,3 +129,21 @@ Source code availability for pse-core will be determined at a later date.
 ## Contact
 
 For questions or support, please open an issue on the GitHub repository.
+
+
+## Citation
+
+If you use this software, please cite it as below:
+
+```bibtex
+@software{wind2025pse,
+  author = {Wind, Jack},
+  title = {Proxy Structuring Engine},
+  year = {2025},
+  publisher = {The Proxy Company},
+  url = {https://github.com/TheProxyCompany/proxy-structuring-engine},
+  version = {3.2.2},
+  month = {2},
+  date = {2025-02-24}
+}
+```

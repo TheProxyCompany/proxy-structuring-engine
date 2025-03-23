@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Wind"
+  given-names: "Jack"
+title: "Proxy Structuring Engine"
+version: 3.2.2
+date-released: 2025-02-24
+url: "https://github.com/TheProxyCompany/proxy-structuring-engine"
+repository-code: "https://github.com/TheProxyCompany/proxy-structuring-engine"
+license: Apache-2.0
+publisher: "The Proxy Company"
