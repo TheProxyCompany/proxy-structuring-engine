@@ -136,7 +136,7 @@ For questions or support, please open an issue on the GitHub repository.
 If you use this software, please cite it as below:
 
 ```bibtex
-@software{wind2025pse,
+@software{Wind_Proxy_Structuring_Engine_2025,
   author = {Wind, Jack},
   title = {Proxy Structuring Engine},
   year = {2025},
