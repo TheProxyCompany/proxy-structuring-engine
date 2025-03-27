@@ -3,7 +3,7 @@
 </p>
 
 <h2 align="center">
-  <strong>Steer Your LLM: Stateful Control of Large Language Models</strong>
+  <strong>Guaranteed structured outputs from any language model.</strong>
 </h2>
 
 <p align="center">
