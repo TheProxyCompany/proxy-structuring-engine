@@ -173,7 +173,7 @@ The required `pse-core` dependency contains the pre-compiled, high-performance e
 ```bibtex
 @software{Wind_Proxy_Structuring_Engine_2025,
   author = {Wind, Jack},
-  title = {{Proxy Structuring Engine: Guaranteed Structured Output via Hierarchical State Machines}},
+  title = {{Proxy Structuring Engine: Guaranteed Structured Output from any Language Model via Hierarchical State Machines }},
   year = {2025},
   publisher = {The Proxy Company},
   url = {https://github.com/TheProxyCompany/proxy-structuring-engine},
