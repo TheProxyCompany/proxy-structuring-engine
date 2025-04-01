@@ -24,9 +24,11 @@
 
 ---
 
-## Raw LLM outputs break systems.
+## Problem: Raw LLM outputs break systems.
 
 Attempts to force structure via prompting are inconsistent. Post-processing with regex or validation loops is inefficient, error-prone, and fails fundamentally on complex, nested formats.
+
+## Solution: The Proxy Structuring Engine (PSE)
 
 We set out to solve this fundamental problem - and the solution is the **Proxy Structuring Engine (PSE)**. It is designed for runtime guarantees, engineering-grade reliability, and an extensible interface for structuring LLM outputs.
 
