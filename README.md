@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="logo.png" alt="Proxy Structuring Engine" style="object-fit: contain; max-width: 80%;"/>
+  <img src="logo.png" alt="Proxy Structuring Engine" style="object-fit: contain; max-width: 50%; padding-top: 20px;"/>
 </p>
-
-<h1 align="center">Proxy Structuring Engine (PSE)</h1>
 
 <h2 align="center">
   <strong>Guaranteed structured outputs from any language model.</strong>
@@ -21,8 +19,6 @@
   <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://docs.theproxycompany.com/pse/"><img src="https://img.shields.io/badge/docs-latest-blue.svg" alt="Documentation"></a>
 </p>
-
----
 
 ## Problem: Raw LLM outputs break systems.
 
