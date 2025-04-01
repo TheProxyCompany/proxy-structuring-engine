@@ -134,7 +134,7 @@ See the [examples/](examples/) directory:
 | **Capability**                 | **PSE (Runtime HSM Enforcement)** | **Prompting / Retries** | **Regex / Post-Processing** | **Simple Masking / Templates** |
 | :----------------------------- | :-------------------------- | :---------------------- | :-------------------------- | :----------------------------- |
 | **Guaranteed Structure**       | ✅ **100%**                 | ❌ Probabilistic        | ❌ Fixes Errors (Maybe)     | ⚠️ Flat Only                   |
-| **Complex/Nested Structures**  | ✅ **Handles Deeply**       | ❌ Brittle / Fails      | ❌ Impractical / Slow       | ❌ Cannot Handle               |
+| **Complex/Nested Structures**  | ✅ **Handles Easily**       | ❌ Brittle / Fails      | ❌ Impractical / Slow       | ❌ Cannot Handle               |
 | **Recursion Handling**         | ✅ **Natively**             | ❌ No                   | ❌ No                       | ❌ No                          |
 | **Reliability**                | ✅ **Production Grade**     | ❌ Low / Inconsistent   | ⚠️ Error-prone            | ⚠️ Brittle                     |
 | **Token Healing**              | ✅ **Built-in**             | N/A                     | N/A                         | ❌ Breaks                      |
