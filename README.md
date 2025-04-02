@@ -175,7 +175,7 @@ The required `pse-core` dependency contains the pre-compiled, high-performance e
   year = {2025},
   publisher = {The Proxy Company},
   url = {https://github.com/TheProxyCompany/proxy-structuring-engine},
-  version = {3.2.2},
+  version = {4.0.0},
   month = {2},
   date = {2025-02-24}
 }
