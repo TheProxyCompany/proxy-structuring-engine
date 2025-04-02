@@ -36,7 +36,7 @@ The PSE integrates directly into the LLM's generation loop. You define the requi
 *   ⚙️ **Master Complexity & Recursion:** Reliably generate deeply nested JSON, valid code, complex API calls, or custom recursive formats. PSE's Hierarchical State Machine (HSM) engine thrives where simpler methods fail.
 *   🚀 **Effortless Schema Definition:** Configure PSE instantly using **Pydantic models**, **Python function signatures**, or standard **JSON Schema**. Focus on your application logic, not grammar implementation.
 *   🛡️ **Unmatched Robustness:** Built-in **Token Healing** intelligently recovers from tokenization artifacts and minor LLM deviations, preventing cascading failures. Ambiguity is resolved via principled path selection.
-*   ⚡ **High-Performance Engine:** Optimized state-machine engine delivers guaranteed structure with minimal latency impact, benchmarked for efficiency. *(Link to Benchmarks needed)*
+*   ⚡ **High-Performance Engine:** Optimized state-machine engine delivers guaranteed structure with minimal latency impact, benchmarked for efficiency (~20ms/token). ([Benchmarks](https://github.com/TheProxyCompany/llm-structured-output-benchmarks))
 *   🔌 **Universal Compatibility:** Integrates with any LLM stack via standard logits processing (`process_logits`) and sampling (`sample`) hooks. Seamless integration with `transformers` (PyTorch, TF, JAX) via optional mixins. Works with local models.
 *   🧩 **Advanced Grammar Composition:** Go beyond standard schemas. Use `pse.types` (`Chain`, `Loop`, `Any`, `Encapsulated`, `WaitFor`, `Character`, `Phrase`, Lark grammars) to build powerful, custom HSMs for bespoke structural requirements.
 
