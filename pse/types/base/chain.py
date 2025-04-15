@@ -13,7 +13,7 @@ class ChainStateMachine(StateMachine):
     Chain multiple StateMachines in a specific order.
     """
 
-    def __init__(self, state_machines: list[StateMachine]) -> None:
+    def __init__(self, state_machines: list[StateMachine], is_optional: bool = False) -> None:
         """
         Args:
             state_machines: State machines to be chained in sequence
@@ -24,6 +24,7 @@ class ChainStateMachine(StateMachine):
                 for i, state_machine in enumerate(state_machines)
             },
             end_states=[len(state_machines)],
+            is_optional=is_optional,
         )
 
     def get_new_stepper(self, state: int | str | None = None) -> Stepper:

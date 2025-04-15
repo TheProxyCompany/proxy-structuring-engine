@@ -42,6 +42,8 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
             )
         else:
             key_value_sm = StringStateMachine()
+
+        is_optional = self.prop_schema.get("nullable", False) or "default" in self.prop_schema
         super().__init__(
             [
                 key_value_sm,
@@ -50,6 +52,7 @@ class KeyValueSchemaStateMachine(KeyValueStateMachine):
                 WhitespaceStateMachine(),
                 _json_schema_to_state_machine(self.prop_schema, self.prop_context),
             ],
+            is_optional=is_optional,
         )
 
     def get_new_stepper(self, state: StateId | None = None) -> KeyValueSchemaStepper:
