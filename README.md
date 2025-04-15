@@ -11,172 +11,149 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/coverage-96%25-brightgreen.svg" alt="Test Coverage"></a>
   <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/actions/workflows/python-app.yml"><img src="https://github.com/TheProxyCompany/proxy-structuring-engine/actions/workflows/python-app.yml/badge.svg" alt="Build Status"></a>
-  <a href="https://pypi.org/project/pse/"><img src="https://badge.fury.io/py/pse.svg" alt="PyPI version"></a>
-</p>
-<p align="center">
-  <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
+  <a href="https://pypi.org/project/pse/"><img src="https://img.shields.io/pypi/v/pse.svg" alt="PyPI Version"></a>
   <a href="https://docs.theproxycompany.com/pse/"><img src="https://img.shields.io/badge/docs-latest-blue.svg" alt="Documentation"></a>
+  <a href="https://github.com/TheProxyCompany/proxy-structuring-engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
 </p>
 
-## Problem: Raw LLM outputs break systems.
+## The Problem: Unreliable LLM Outputs
 
-Attempts to force structure via prompting are inconsistent. Post-processing with regex or validation loops is inefficient, error-prone, and fails fundamentally on complex, nested formats.
+Raw LLM outputs are structurally unpredictable, breaking systems that require specific formats (API calls, tool use, structured data). Prompting for structure is inconsistent; post-processing is inefficient and often fails on complex or nested formats.
 
-## Solution: The Proxy Structuring Engine (PSE)
+## The Solution: Runtime Structural Enforcement
 
-We set out to solve this fundamental problem - and the solution is the **Proxy Structuring Engine (PSE)**. It is designed for runtime guarantees, engineering-grade reliability, and an extensible interface for structuring LLM outputs.
+The **Proxy Structuring Engine (PSE)** provides **guaranteed structural validity** by enforcing constraints *during* LLM generation.
 
-The PSE integrates directly into the LLM's generation loop. You define the required output structure using familiar tools (Pydantic, JSON Schema, function signatures) or compose custom constraints using PSE's types. Its core Hierarchical State Machine (HSM) engine translates this into a stateful grammar validator. The result: **Structurally perfect output, generated correctly the first time.**
+Define your required output structure using Pydantic, JSON Schema, function signatures, or PSE's composable types. PSE compiles this into a high-performance Hierarchical State Machine (HSM). Integrated into the generation loop, the HSM engine guides the LLM, ensuring every generated token conforms to the defined structure.
+
+**Result: Structurally perfect output, generated correctly the first time.**
 
 ## Core Capabilities
 
-*   ✅ **100% Structural Guarantee:** Eliminate schema violations, parsing errors, and malformed outputs. Outputs conform precisely to your defined structure, enabling reliable downstream processing and state tracking.
-*   ⚙️ **Master Complexity & Recursion:** Reliably generate deeply nested JSON, valid code, complex API calls, or custom recursive formats. PSE's Hierarchical State Machine (HSM) engine thrives where simpler methods fail.
-*   🚀 **Effortless Schema Definition:** Configure PSE instantly using **Pydantic models**, **Python function signatures**, or standard **JSON Schema**. Focus on your application logic, not grammar implementation.
-*   🛡️ **Unmatched Robustness:** Built-in **Token Healing** intelligently recovers from tokenization artifacts and minor LLM deviations, preventing cascading failures. Ambiguity is resolved via principled path selection.
-*   ⚡ **High-Performance Engine:** Optimized state-machine engine delivers guaranteed structure with minimal latency impact, benchmarked for efficiency (~20ms/token). ([Benchmarks](https://github.com/TheProxyCompany/llm-structured-output-benchmarks))
-*   🔌 **Universal Compatibility:** Integrates with any LLM stack via standard logits processing (`process_logits`) and sampling (`sample`) hooks. Seamless integration with `transformers` (PyTorch, TF, JAX) via optional mixins. Works with local models.
-*   🧩 **Advanced Grammar Composition:** Go beyond standard schemas. Use `pse.types` (`Chain`, `Loop`, `Any`, `Encapsulated`, `WaitFor`, `Character`, `Phrase`, Lark grammars) to build powerful, custom HSMs for bespoke structural requirements.
+*   **100% Structural Guarantee:** Eliminate schema violations, parsing errors, and malformed outputs. Enables reliable downstream processing and state management.
+*   **Handles Complexity & Recursion:** Reliably generate deeply nested JSON, valid code, or custom recursive formats via the core HSM engine.
+*   **Flexible Schema Definition:** Configure instantly using **Pydantic models**, **JSON Schema**, **Python function signatures**, or compose custom structures with `pse.types`.
+*   **Robust & Resilient:** Built-in **Token Healing** recovers from minor tokenization artifacts. Principled path selection resolves ambiguity deterministically.
+*   **High-Performance C++ Core:** Optimized HSM engine delivers guaranteed structure with minimal latency (~20ms/token overhead). ([Benchmarks](https://github.com/TheProxyCompany/llm-structured-output-benchmarks))
+*   **Model & Framework Agnostic:** Integrates with any local LLM stack via standard logits processing (`process_logits`) and sampling (`sample`) hooks. Optional mixins simplify `transformers` integration (PyTorch, TF, JAX).
+*   **Advanced Grammar Composition:** Use `pse.types` (`Chain`, `Loop`, `Any`, etc.) to build custom HSMs for bespoke structural requirements beyond standard schemas.
 
 ## Installation
 
 ```bash
 pip install pse
 ```
-*or*:
+or
 ```bash
-uv pip install pse
+uv add pse
 ```
-
-*(Installs the `pse` Python library and its required dependency `pse-core`, containing the pre-compiled engine. See the [Installation Docs](https://docs.theproxycompany.com/pse/getting-started/installation/) for framework-specific extras)*
+*(Installs the `pse` Python library and its required `pse-core` dependency. See [Installation Docs](https://docs.theproxycompany.com/pse/getting-started/installation/) for framework extras and setup)*
 
 ## Quickstart: Pydantic to Guaranteed JSON
+
+This example demonstrates generating JSON output matching a Pydantic schema using `transformers`.
 
 ```python
 import torch
 from transformers import AutoTokenizer, LlamaForCausalLM
 from pydantic import BaseModel
-
-# Assuming PSE is installed:
 from pse import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin # Optional: Mixin for easy HF integration
 
-# 1. Define your desired output structure using Pydantic
+# 1. Define structure
 class UserProfile(BaseModel):
     user_id: int
     username: str
     is_active: bool
     roles: list[str]
 
-# 2. (Optional) Apply the PSE mixin to your Hugging Face model class
-class PSE_Llama(PSETorchMixin, LlamaForCausalLM):
-    pass
+# 2. (Optional) Apply PSE mixin to model class
+class PSE_Llama(PSETorchMixin, LlamaForCausalLM): pass
 
-# 3. Load your model and tokenizer
-model_path = "meta-llama/Llama-3.2-1B-Instruct" # Example model
+# 3. Load model & tokenizer
+model_path = "meta-llama/Llama-3.2-1B-Instruct" # Example
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = PSE_Llama.from_pretrained( # Or your base model class
-    model_path,
-    torch_dtype=torch.bfloat16,
-    device_map="auto"
+    model_path, torch_dtype=torch.bfloat16, device_map="auto"
 )
-
-# Ensure padding token is set for generation
 if tokenizer.pad_token is None: tokenizer.pad_token = tokenizer.eos_token
 model.config.pad_token_id = tokenizer.pad_token_id
 
-# 4. Create the StructuringEngine instance.
-#    (Using the mixin attaches it as model.engine)
+# 4. Init & Configure Engine (Mixin attaches as model.engine)
 model.engine = StructuringEngine(tokenizer)
+model.engine.configure(UserProfile) # Compile structure to HSM
 
-# 5. Configure the engine with your Pydantic model
-#    PSE compiles this into an efficient HSM representation.
-model.engine.configure(UserProfile)
-
-# 6. Create your prompt
-prompt = f"Generate a user profile for user ID 999, username 'tester', active status true, roles ['qa', 'dev']. Output ONLY the JSON object."
+# 5. Create prompt & input IDs
+prompt = f"Generate a user profile: ID 999, username 'tester', active true, roles ['qa', 'dev']. Output ONLY the JSON."
 messages = [{"role": "user", "content": prompt}]
 input_ids = tokenizer.apply_chat_template(
     messages, return_tensors="pt", add_generation_prompt=True
 ).to(model.device)
 
-# 7. Generate using the engine's processor and sampler
+# 6. Generate (PSE hooks applied via mixin or manually)
 output_ids = model.generate(
-    input_ids,
-    max_new_tokens=150,
-    do_sample=True,
-    logits_processor=[model.engine.process_logits], # <-- PSE enforces structure here
-    sampler=model.engine.sample                 # <-- PSE handles sampling & state here
+    input_ids, max_new_tokens=150, do_sample=True,
+    # Manual hook example (if not using mixin):
+    # logits_processor=[model.engine.process_logits], sampler=model.engine.sample
 )
 
-# 8. Decode and parse the guaranteed structured output
+# 7. Decode & Parse (Guaranteed by PSE)
 output_text = tokenizer.decode(output_ids[0][input_ids.shape[-1]:], skip_special_tokens=True)
-print("Raw Output (Guided by PSE):\n", output_text)
+structured_output: UserProfile | None = model.engine.get_structured_output(UserProfile)
 
-# PSE guarantees this output can be parsed directly into your Pydantic model
-structured_output: UserProfile = model.engine.get_structured_output(UserProfile)
+print("Raw Output (Guided by PSE):\n", output_text)
 print("\nParsed Pydantic Object:\n", structured_output)
-# Example Parsed Output:
-# UserProfile(user_id=999, username='tester', is_active=True, roles=['qa', 'dev'])
+# Expected: UserProfile(user_id=999, username='tester', is_active=True, roles=['qa', 'dev'])
 ```
 
-### More Examples
-
-See the [examples/](examples/) directory:
-
-*   **`simple_demo.py`:** JSON Schema usage.
-*   **`thinking_answer.py`:** Composing custom `StateMachine` types for structured reasoning flows.
+See the [`examples/`](examples/) directory for more use cases, including JSON Schema and custom `StateMachine` composition.
 
 ## Why PSE?
 
-| **Capability**                 | **PSE (Runtime HSM Enforcement)** | **Prompting / Retries** | **Regex / Post-Processing** | **Simple Masking / Templates** |
-| :----------------------------- | :-------------------------- | :---------------------- | :-------------------------- | :----------------------------- |
-| **Guaranteed Structure**       | ✅ **100%**                 | ❌ Probabilistic        | ❌ Fixes Errors (Maybe)     | ⚠️ Flat Only                   |
-| **Complex/Nested Structures**  | ✅ **Handles Easily**       | ❌ Brittle / Fails      | ❌ Impractical / Slow       | ❌ Cannot Handle               |
-| **Recursion Handling**         | ✅ **Natively**             | ❌ No                   | ❌ No                       | ❌ No                          |
-| **Reliability**                | ✅ **Production Grade**     | ❌ Low / Inconsistent   | ⚠️ Error-prone            | ⚠️ Brittle                     |
-| **Token Healing**              | ✅ **Built-in**             | N/A                     | N/A                         | ❌ Breaks                      |
-| **Performance**                | ✅ **Optimized Engine**     | Variable (Retries Cost) | ❌ Slow                     | ✅ Fast (Simple)               |
+PSE's **runtime HSM enforcement** offers fundamental advantages over other methods:
+
+| Capability                | PSE (Runtime HSM)     | Prompting / Retries   | Regex / Post-Proc.  | Simple Masking      |
+| :------------------------ | :-------------------- | :-------------------- | :------------------ | :------------------ |
+| **Guaranteed Structure**  | **100%**              | Probabilistic         | Fixes Errors        | Flat Only           |
+| **Complex/Nested**        | **Handles Natively**  | Brittle / Fails       | Impractical         | Cannot Handle       |
+| **Recursion**             | **Handles Natively**  | No                    | No                  | No                  |
+| **Reliability**           | **Production Grade**  | Low                   | Error-prone         | Brittle             |
+| **Efficiency**            | **Optimized C++**     | Retries Cost          | Slow                | Fast (Simple)       |
+| **Token Healing**         | **Built-in**          | N/A                   | N/A                 | Breaks              |
 
 ## Integration
 
-Integrate PSE via two hooks:
-1.  **Logits Processing:** Add `engine.process_logits` to your `logits_processor` list.
-2.  **Sampling:** Use `engine.sample` (wrapping your base sampler) as your sampling function.
+Integrate PSE into your generation loop via two hooks:
+1.  `logits_processor=[engine.process_logits]`
+2.  `sampler=engine.sample` (wraps your base sampler)
 
-Works with PyTorch, TensorFlow, JAX, MLX, etc. `transformers` mixins available.
+Works with PyTorch, TensorFlow, JAX, MLX, etc. Optional `transformers` mixins simplify integration. *(See [Docs](https://docs.theproxycompany.com/pse/) for details)*
 
-## Foundation for Reliable Agents: Proxy Base Agent (PBA)
+## Foundation for Reliable Agents
 
-PSE's guarantees enable the **[Proxy Base Agent (PBA)](https://github.com/TheProxyCompany/proxy-base-agent)**:
+PSE provides the structural guarantees required for reliable agentic systems, powering the **[Proxy Base Agent (PBA)](https://github.com/TheProxyCompany/proxy-base-agent)** for dependable state transitions and tool use.
 
-*   Reliable stateful execution (Planning/Action phases via HSM).
-*   Guaranteed tool I/O structuring.
-*   Dynamic, runtime tool integration (MCP).
+## License & Source Availability
 
-## License
+*   **`pse` (Python Library):** Open source under Apache 2.0 ([LICENSE](LICENSE)). Provides the Python interface, schema parsing, and integration logic.
+*   **`pse-core` (C++ Engine):** Required dependency. Distributed as a pre-compiled binary. Contains the high-performance HSM execution core. Source code is proprietary (The Proxy Company, Patent Pending).
 
-The `pse` Python library is licensed under Apache 2.0 ([LICENSE](LICENSE)).
-The required `pse-core` dependency contains the pre-compiled, high-performance engine; its source code is proprietary (Patent Pending) and not available under the Apache 2.0 license.
+## Contact & Support
 
-## Contact
-
-*   **Issues/Support:** [Open an Issue](https://github.com/TheProxyCompany/proxy-structuring-engine/issues)
-*   **Commercial Services:** [The Proxy Company Business Services](https://theproxycompany.com/business) (Custom Development, Integration, Support, Partnerships)
+*   **Issues/Bugs:** [GitHub Issues](https://github.com/TheProxyCompany/proxy-structuring-engine/issues)
+*   **Commercial Services:** [The Proxy Company Business Services](https://theproxycompany.com/business) (Integration, Custom Development, Support)
 
 ## Citation
 
 ```bibtex
 @software{Wind_Proxy_Structuring_Engine_2025,
-  author = {Wind, Jack},
-  title = {{Proxy Structuring Engine: Guaranteed Structured Output from any Language Model via Hierarchical State Machines }},
-  year = {2025},
+  author    = {Wind, Jack},
+  title     = {{Proxy Structuring Engine: Guaranteed Structured Output from Language Models via Runtime Hierarchical State Machine Enforcement}},
+  year      = {2025}, # Adjust year if needed
   publisher = {The Proxy Company},
-  url = {https://github.com/TheProxyCompany/proxy-structuring-engine},
-  version = {4.0.0},
-  month = {2},
-  date = {2025-02-24}
+  version   = {4.0.0}, # Update version as needed
+  date      = {2025-04-15}, # Update release date
+  url       = {https://github.com/TheProxyCompany/proxy-structuring-engine}
 }
 ```
