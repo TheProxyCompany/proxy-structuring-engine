@@ -10,7 +10,8 @@ from pse_core.engine import Engine
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 from pydantic import BaseModel
-from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
 from pse.types.json import JSONSchemaSource, json_schema_state_machine
 from pse.util.get_top_logits import get_top_k
@@ -136,14 +137,12 @@ class StructuringEngine(Engine):
         """
         for stepper in self.steppers:
             if stepper.has_reached_accept_state():
-                token_safe_output = stepper.get_token_safe_output(
-                    lambda x: self.tokenizer.decode(x)
-                )
-                return self.cast_output(
-                    token_safe_output,
+                for _, token_safe_output in self._iter_state_and_output(
+                    stepper,
                     output_type,
                     raise_on_error,
-                )
+                ):
+                    return token_safe_output
 
     def get_stateful_structured_output(
         self,
@@ -170,11 +169,7 @@ class StructuringEngine(Engine):
         """
         Helper method to parse and yield structured output from a stepper.
         """
-        final_states: list[Stepper] = []
-        for step in stepper.history:
-            final_states.extend(step.get_final_state())
-
-        for final_stepper in final_states:
+        for final_stepper in stepper.get_final_state():
             identifier = final_stepper.get_identifier() or str(
                 final_stepper.current_state
             )
