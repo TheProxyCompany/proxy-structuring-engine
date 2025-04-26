@@ -211,13 +211,7 @@ class StructuringEngine(Engine):
         control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
         # do not mask control tokens that might be used as part of the schema
         for whitelisted_token in whitelist_control_tokens or []:
-            if (
-                whitelisted_token
-                not in self.tokenizer.all_special_tokens
-                and whitelisted_token in control_tokens
-            ):
-                # only prevent masking if the token is not a special token
-                # because special tokens like eos need to be masked by default
+            if whitelisted_token and whitelisted_token in control_tokens:
                 del control_tokens[whitelisted_token]
 
         return list(control_tokens.values())
