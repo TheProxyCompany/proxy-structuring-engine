@@ -144,7 +144,7 @@ class StructuringEngine(Engine):
                 ):
                     return token_safe_output
 
-    def get_stateful_structured_output(
+    def get_labeled_output(
         self,
         output_type: type[OutputType] | None = None,
         raise_on_error: bool = False,
@@ -207,7 +207,9 @@ class StructuringEngine(Engine):
 
         return output
 
-    def build_control_tokens(self, whitelist_control_tokens: list[str] | None = None) -> list[int]:
+    def build_control_tokens(
+        self, whitelist_control_tokens: list[str] | None = None
+    ) -> list[int]:
         control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
         # do not mask control tokens that might be used as part of the schema
         for whitelisted_token in whitelist_control_tokens or []:
