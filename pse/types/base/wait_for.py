@@ -49,8 +49,11 @@ class WaitFor(StateMachine):
             transitions.append((transition, "$"))
         return transitions
 
+    def get_new_stepper(self, _: StateId | None = None) -> Stepper:
+        return WaitForStepper(self)
+
     def get_steppers(self, _: StateId | None = None) -> list[Stepper]:
-        return self.branch_stepper(WaitForStepper(self))
+        return self.branch_stepper(self.get_new_stepper())
 
     def __str__(self) -> str:
         return f"WaitFor({self.wait_for_sm})"
