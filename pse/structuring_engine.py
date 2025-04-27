@@ -136,13 +136,12 @@ class StructuringEngine(Engine):
         Parse and cast the output to the given type.
         """
         for stepper in self.steppers:
-            if stepper.has_reached_accept_state():
-                for _, token_safe_output in self._iter_state_and_output(
-                    stepper,
-                    output_type,
-                    raise_on_error,
-                ):
-                    return token_safe_output
+            for _, token_safe_output in self._iter_state_and_output(
+                stepper,
+                output_type,
+                raise_on_error,
+            ):
+                return token_safe_output
 
     def get_labeled_output(
         self,
@@ -153,12 +152,11 @@ class StructuringEngine(Engine):
         Get each part of the output labeled with the identifier of the step that produced it.
         """
         for stepper in self.steppers:
-            if stepper.has_reached_accept_state():
-                yield from self._iter_state_and_output(
-                    stepper,
-                    output_type,
-                    raise_on_error,
-                )
+            yield from self._iter_state_and_output(
+                stepper,
+                output_type,
+                raise_on_error,
+            )
 
     def _iter_state_and_output(
         self,
