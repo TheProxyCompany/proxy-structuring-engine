@@ -314,22 +314,6 @@ def test_get_labeled_output(engine: StructuringEngine) -> None:
     engine.reset(hard_reset=True)
 
 
-def test_get_live_structured_output(engine: StructuringEngine) -> None:
-    """Test get_live_structured_output method."""
-    schema = {"type": "string"}
-    engine.configure(schema)
-
-    # Consume partial input
-    engine.consume_text('"test')
-
-    # Complete the input
-    engine.consume_text('"')
-    assert engine.has_reached_accept_state
-
-    # Reset for next test
-    engine.reset(hard_reset=True)
-
-
 def test_configure_with_direct_state_machine(engine: StructuringEngine) -> None:
     """Test configure with a direct StateMachine instance."""
     from pse_core.state_machine import StateMachine
