@@ -1,12 +1,10 @@
-# flake8: noqa
 import logging
 
-from pse_core import Edge
-import torch
-from transformers import AutoTokenizer, LlamaForCausalLM
+import torch  # type: ignore[reportMissingImports]
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 
 from pse.structuring_engine import StructuringEngine
-from pse.types.base.encapsulated import EncapsulatedStateMachine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
@@ -75,6 +73,7 @@ answer_state_machine = FencedFreeformStateMachine("answer", answer_delimiters)
 # This ensures the model follows a structured thought process before
 # providing its final answer.
 from pse_core.state_machine import StateMachine
+
 from pse.types.base.loop import LoopStateMachine
 
 model.engine.configure(

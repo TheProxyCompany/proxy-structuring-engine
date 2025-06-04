@@ -3,7 +3,7 @@ import logging
 import sys
 
 import mlx.core as mx
-from mlx_lm.utils import generate_step, load
+from mlx_lm.utils import generate_step, load  # type: ignore[reportMissingImports]
 
 from pse.structuring_engine import StructuringEngine
 
