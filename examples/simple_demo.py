@@ -1,9 +1,10 @@
 import json
 import logging
 
-import torch
+import torch  # type: ignore[reportMissingImports]
 from pydantic import BaseModel
-from transformers import AutoTokenizer, LlamaForCausalLM
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 
 from pse.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin
@@ -113,12 +114,12 @@ class CursorPositionModel(BaseModel):
     left_click: bool = False
 
 
-json_schema: dict = model.engine.configure(
+model.engine.configure(
     CursorPositionModel, delimiters=("<cursor>", "</cursor>")
 )
 prompt = (
     "Please use the following schema to generate a cursor position:\n"
-    f"{json.dumps(json_schema, indent=2)}.\n"
+    f"{json.dumps(CursorPositionModel.model_json_schema(), indent=2)}.\n"
     "Pretend to move the cursor to x = 100 and y = 100, with the left mouse button clicked.\n"
     "Wrap your response in <cursor>CursorPositionModel</cursor>."
 )

@@ -1,8 +1,9 @@
 import json
 
-import torch
+import torch  # type: ignore[reportMissingImports]
 from pydantic import BaseModel
-from transformers import AutoTokenizer, LlamaForCausalLM
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 
 from pse.structuring_engine import StructuringEngine
 from pse.util.torch_mixin import PSETorchMixin

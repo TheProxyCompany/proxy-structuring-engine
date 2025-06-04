@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 from pydantic import BaseModel
-from transformers import LlamaTokenizer
+from transformers.models.llama import LlamaTokenizer
 
 from pse.types.base.encapsulated import EncapsulatedStateMachine
 from pse.types.grammar import PythonStateMachine
@@ -164,6 +164,7 @@ def test_multiple_schemas(engine: StructuringEngine) -> None:
     assert len(engine.steppers) == 2
     engine.reset(hard_reset=True)
 
+
 def test_wait_for_acceptor(engine: StructuringEngine) -> None:
     """Test that the wait for acceptor is working correctly."""
     engine.configure({"type": "string", "const": "Hello World!"}, buffer_length=0)
@@ -247,12 +248,20 @@ def test_python_interpreter(engine: StructuringEngine) -> None:
     output = engine.get_structured_output()
     assert output == "print('Hello, world!')"
 
+
 def test_get_structured_output_with_type(engine: StructuringEngine) -> None:
     """Test get_structured_output with a type parameter."""
+
     class SimpleModel(BaseModel):
         value: int
 
-    engine.configure({"type": "object", "properties": {"value": {"type": "integer"}}, "required": ["value"]})
+    engine.configure(
+        {
+            "type": "object",
+            "properties": {"value": {"type": "integer"}},
+            "required": ["value"],
+        }
+    )
     engine.consume_text('{"value": 42}')
     assert engine.has_reached_accept_state
 
@@ -263,6 +272,7 @@ def test_get_structured_output_with_type(engine: StructuringEngine) -> None:
 
     # Reset for next test
     engine.reset(hard_reset=True)
+
 
 def test_get_structured_output_invalid_json(engine: StructuringEngine) -> None:
     """Test get_structured_output with invalid JSON content."""
@@ -278,15 +288,13 @@ def test_get_structured_output_invalid_json(engine: StructuringEngine) -> None:
     # Reset for next test
     engine.reset(hard_reset=True)
 
-def test_get_stateful_structured_output(engine: StructuringEngine) -> None:
-    """Test get_stateful_structured_output method."""
+
+def test_get_labeled_output(engine: StructuringEngine) -> None:
+    """Test get_labeled_output method."""
     schema = {
         "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "integer"}
-        },
-        "required": ["name", "age"]
+        "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+        "required": ["name", "age"],
     }
 
     engine.configure(schema)
@@ -294,7 +302,7 @@ def test_get_stateful_structured_output(engine: StructuringEngine) -> None:
     assert engine.has_reached_accept_state
 
     # Get stateful output
-    stateful_output = list(engine.get_stateful_structured_output())
+    stateful_output = list(engine.get_labeled_output())
     assert len(stateful_output) > 0
 
     # Check that we have state identifiers and values
@@ -305,20 +313,6 @@ def test_get_stateful_structured_output(engine: StructuringEngine) -> None:
     # Reset for next test
     engine.reset(hard_reset=True)
 
-def test_get_live_structured_output(engine: StructuringEngine) -> None:
-    """Test get_live_structured_output method."""
-    schema = {"type": "string"}
-    engine.configure(schema)
-
-    # Consume partial input
-    engine.consume_text('"test')
-
-    # Complete the input
-    engine.consume_text('"')
-    assert engine.has_reached_accept_state
-
-    # Reset for next test
-    engine.reset(hard_reset=True)
 
 def test_configure_with_direct_state_machine(engine: StructuringEngine) -> None:
     """Test configure with a direct StateMachine instance."""
@@ -328,12 +322,9 @@ def test_configure_with_direct_state_machine(engine: StructuringEngine) -> None:
 
     # Create a simple state machine directly
     state_machine = StateMachine(
-        {
-            0: [(PhraseStateMachine("hello"), 1)],
-            1: [(PhraseStateMachine(" world"), 2)]
-        },
+        {0: [(PhraseStateMachine("hello"), 1)], 1: [(PhraseStateMachine(" world"), 2)]},
         start_state=0,
-        end_states=[2]
+        end_states=[2],
     )
 
     # Configure with state machine directly

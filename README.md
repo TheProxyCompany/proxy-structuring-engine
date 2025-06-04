@@ -152,7 +152,7 @@ PSE provides the structural guarantees required for reliable agentic systems, po
   title     = {{Proxy Structuring Engine: Guaranteed Structured Output from Language Models via Runtime Hierarchical State Machine Enforcement}},
   year      = {2025}, # Adjust year if needed
   publisher = {The Proxy Company},
-  version   = {4.0.0}, # Update version as needed
+  version   = {2025.06.1}, # Update version as needed
   date      = {2025-04-15}, # Update release date
   url       = {https://github.com/TheProxyCompany/proxy-structuring-engine}
 }

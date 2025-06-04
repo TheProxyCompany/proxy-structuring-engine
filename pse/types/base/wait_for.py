@@ -28,15 +28,14 @@ class WaitFor(StateMachine):
         strict: bool = True,
     ):
         """
-        Initialize with a target nested StateId Machine.
+        Initialize with a target nested StateMachine.
 
         Args:
-            state_machine (StateMachine): The nested StateId Machine to watch for.
-            min_buffer_length (int):
+            state_machine (StateMachine): The nested StateMachine to watch for.
+            buffer_length (int):
                 The minimum length of the buffer
             strict (bool):
-                If True, the nested StateId Machine's progress is reset
-                when invalid input is detected.
+                If True, the nested StateMachine's progress is reset when invalid input is detected.
         """
         super().__init__()
 
@@ -44,14 +43,17 @@ class WaitFor(StateMachine):
         self.strict = strict
         self.wait_for_sm = state_machine
 
-    def get_transitions(self, stepper: Stepper) -> list[tuple[Stepper, StateId]]:
+    def get_transitions(self, _: Stepper) -> list[tuple[Stepper, StateId]]:
         transitions = []
         for transition in self.wait_for_sm.get_steppers():
             transitions.append((transition, "$"))
         return transitions
 
-    def get_steppers(self, state: StateId | None = None) -> list[Stepper]:
-        return self.branch_stepper(WaitForStepper(self))
+    def get_new_stepper(self, _: StateId | None = None) -> Stepper:
+        return WaitForStepper(self)
+
+    def get_steppers(self, _: StateId | None = None) -> list[Stepper]:
+        return self.branch_stepper(self.get_new_stepper())
 
     def __str__(self) -> str:
         return f"WaitFor({self.wait_for_sm})"
@@ -72,24 +74,26 @@ class WaitForStepper(Stepper):
     def accepts_any_token(self) -> bool:
         """
         Determines if this stepper can accept any token based on buffer state.
-        
+
         The stepper accepts any token if:
         1. The buffer meets minimum length requirements, or
         2. The sub-stepper is active and accepts any token
-        
+
         Returns:
             True if the stepper can accept any token, False otherwise
         """
         # Cache min_buffer_length for performance
         min_buffer_length = self.state_machine.min_buffer_length
-        
+
         # Delegate to sub_stepper if it's active
-        if self.sub_stepper and (
-            self.sub_stepper.is_within_value() or min_buffer_length == -1
-        ):
+        if self.sub_stepper and self.sub_stepper.is_within_value():
             return self.sub_stepper.accepts_any_token()
 
-        # Otherwise, check buffer length
+        # If the buffer is not long enough, we can accept any token
+        if len(self.buffer) < min_buffer_length:
+            return True
+
+        # Otherwise, check the size of the buffer
         return len(self.buffer) >= min_buffer_length
 
     def get_valid_continuations(self) -> list[str]:
@@ -117,15 +121,15 @@ class WaitForStepper(Stepper):
     def should_start_step(self, token: str) -> bool:
         """
         Determines if the stepper should start processing the token.
-        
+
         This method decides whether to start a step based on:
         1. Whether we have remaining input from a previous token
         2. The buffer length requirements
         3. The stepper's current state
-        
+
         Args:
             token: The token to potentially process
-            
+
         Returns:
             True if the step should start, False otherwise
         """
@@ -136,15 +140,15 @@ class WaitForStepper(Stepper):
         # Cache frequently accessed values
         required_buffer_length = self.state_machine.min_buffer_length
         should_start = super().should_start_step(token)
-        
+
         # Handle unlimited buffer length case
         if required_buffer_length <= 0:
             return should_start or not self.is_within_value()
-            
+
         # For cases with a positive buffer length requirement
         buffer_length = len(self.buffer)
         is_in_value = self.is_within_value()
-        
+
         # Return True if either:
         # 1. super().should_start_step() returns True and we have enough buffer, or
         # 2. super().should_start_step() returns False but we're not within a value
@@ -152,7 +156,7 @@ class WaitForStepper(Stepper):
             return True
         if not should_start and not is_in_value:
             return True
-            
+
         return False
 
     def consume(self, token: str) -> list[Stepper]:

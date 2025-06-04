@@ -1,12 +1,13 @@
-# flake8: noqa
 import logging
 
-from pse_core import Edge
-import torch
-from transformers import AutoTokenizer, LlamaForCausalLM
+import torch  # type: ignore[reportMissingImports]
+from pse_core.state_machine import StateMachine
+from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 
 from pse.structuring_engine import StructuringEngine
-from pse.types.base.encapsulated import EncapsulatedStateMachine
+from pse.types.base.loop import LoopStateMachine
+from pse.types.misc.fenced_freeform import FencedFreeformStateMachine
 from pse.util.torch_mixin import PSETorchMixin
 
 # toggle this to logging.DEBUG to see the PSE debug logs!
@@ -39,9 +40,6 @@ if model.generation_config:
 model.engine = StructuringEngine(tokenizer, multi_token_sampling=True)
 
 # define custom state machines
-from pse.types.base.character import CharacterStateMachine
-from pse.types.misc.fenced_freeform import FencedFreeformStateMachine
-
 thinking_delimiters = ("[thinking]", "[/thinking]")
 answer_delimiters = ("[answer]", "[/answer]")
 
@@ -74,8 +72,6 @@ answer_state_machine = FencedFreeformStateMachine("answer", answer_delimiters)
 #
 # This ensures the model follows a structured thought process before
 # providing its final answer.
-from pse_core.state_machine import StateMachine
-from pse.types.base.loop import LoopStateMachine
 
 model.engine.configure(
     StateMachine(
@@ -125,7 +121,7 @@ input_ids = input_ids.to(model.device)
 assert isinstance(input_ids, torch.Tensor)
 output = model.generate(input_ids)
 
-for label, output in model.engine.get_stateful_structured_output():
+for label, output in model.engine.get_labeled_output():
     print("-" * 100)
     print(f"[{label}]")
     print(output)

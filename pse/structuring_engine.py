@@ -10,7 +10,8 @@ from pse_core.engine import Engine
 from pse_core.state_machine import StateMachine
 from pse_core.stepper import Stepper
 from pydantic import BaseModel
-from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
 from pse.types.json import JSONSchemaSource, json_schema_state_machine
 from pse.util.get_top_logits import get_top_k
@@ -135,17 +136,14 @@ class StructuringEngine(Engine):
         Parse and cast the output to the given type.
         """
         for stepper in self.steppers:
-            if stepper.has_reached_accept_state():
-                token_safe_output = stepper.get_token_safe_output(
-                    lambda x: self.tokenizer.decode(x)
-                )
-                return self.cast_output(
-                    token_safe_output,
-                    output_type,
-                    raise_on_error,
-                )
+            for _, token_safe_output in self._iter_state_and_output(
+                stepper,
+                output_type,
+                raise_on_error,
+            ):
+                return token_safe_output
 
-    def get_stateful_structured_output(
+    def get_labeled_output(
         self,
         output_type: type[OutputType] | None = None,
         raise_on_error: bool = False,
@@ -154,12 +152,11 @@ class StructuringEngine(Engine):
         Get each part of the output labeled with the identifier of the step that produced it.
         """
         for stepper in self.steppers:
-            if stepper.has_reached_accept_state():
-                yield from self._iter_state_and_output(
-                    stepper,
-                    output_type,
-                    raise_on_error,
-                )
+            yield from self._iter_state_and_output(
+                stepper,
+                output_type,
+                raise_on_error,
+            )
 
     def _iter_state_and_output(
         self,
@@ -170,11 +167,7 @@ class StructuringEngine(Engine):
         """
         Helper method to parse and yield structured output from a stepper.
         """
-        final_states: list[Stepper] = []
-        for step in stepper.history:
-            final_states.extend(step.get_final_state())
-
-        for final_stepper in final_states:
+        for final_stepper in stepper.get_final_state():
             identifier = final_stepper.get_identifier() or str(
                 final_stepper.current_state
             )
@@ -212,26 +205,16 @@ class StructuringEngine(Engine):
 
         return output
 
-    def build_control_tokens(self, whitelist_control_tokens: list[str] | None = None) -> list[int]:
+    def build_control_tokens(
+        self, whitelist_control_tokens: list[str] | None = None
+    ) -> list[int]:
         control_tokens: dict[str, int] = self.tokenizer.get_added_vocab()  # type: ignore [reportCallIssue]
         # do not mask control tokens that might be used as part of the schema
         for whitelisted_token in whitelist_control_tokens or []:
-            if (
-                whitelisted_token
-                not in self.tokenizer.all_special_tokens
-                and whitelisted_token in control_tokens
-            ):
-                # only prevent masking if the token is not a special token
-                # because special tokens like eos need to be masked by default
+            if whitelisted_token and whitelisted_token in control_tokens:
                 del control_tokens[whitelisted_token]
 
         return list(control_tokens.values())
-
-    def get_live_structured_output(self) -> tuple[str, str] | None:
-        """
-        Get the live structured output.
-        """
-        return self.get_live_token_safe_output(lambda x: self.tokenizer.decode(x))
 
     def print_top_logits(self, logits: Any, top_n: int = 10, flag: str = "🔵") -> str:
         """

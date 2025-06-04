@@ -18,7 +18,8 @@ class EnumStateMachine(StateMachine):
             raise ValueError("Enum values must be provided.")
 
         state_graph: StateGraph = {0: []}
-        for value in enum_values:
+        unique_enum_values = list(set(enum_values))
+        for value in unique_enum_values:
             sm = (
                 PhraseStateMachine(value)
                 if not require_quotes

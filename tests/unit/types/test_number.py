@@ -1,6 +1,6 @@
 import pytest
-from pse_core._core import Stepper
 from pse_core.state_machine import StateMachine
+from pse_core.stepper import Stepper
 
 from pse.types.base.phrase import PhraseStateMachine
 from pse.types.number import NumberStateMachine
