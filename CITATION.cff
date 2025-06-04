@@ -4,8 +4,8 @@ authors:
 - family-names: "Wind"
   given-names: "Jack"
 title: "Proxy Structuring Engine"
-version: 4.0.0
-date-released: 2025-02-24
+version: 2025.06.1
+date-released: 2025-06-03
 url: "https://github.com/TheProxyCompany/proxy-structuring-engine"
 repository-code: "https://github.com/TheProxyCompany/proxy-structuring-engine"
 license: Apache-2.0
